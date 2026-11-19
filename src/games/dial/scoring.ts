@@ -1,4 +1,4 @@
-// Scoring for Tuned In: the dial runs 0–100, the target centre sits in [4, 96], and points
+// Scoring for Spectrum: the dial runs 0–100, the target centre sits in [4, 96], and points
 // depend on how far the locked needle is from that centre.
 
 export type Side = 'left' | 'right';

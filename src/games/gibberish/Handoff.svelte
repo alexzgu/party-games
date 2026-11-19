@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import { playerColor } from './ui';
@@ -10,7 +11,7 @@
   const first = $derived(game.cardsPlayed === 0 && game.players.every((p) => p.score === 0));
 </script>
 
-<Screen title="Say What?" onback={onleave} backLabel="Back to setup">
+<Screen title={gameName('gibberish')} onback={onleave} backLabel="Back to setup">
 <div class="center">
   <div class="hand" style:--c={playerColor(game.reader)}>
     <p class="kicker">Pass the phone to</p>

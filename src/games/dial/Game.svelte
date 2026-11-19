@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Tuned In: routes between setup, "make a pack" (#/dial/make) and the saved game's phase.
+  // Spectrum: routes between setup, "make a pack" (#/dial/make) and the saved game's phase.
   // Every step goes through `set`, which saves, so a reload resumes exactly here.
   import Setup from './Setup.svelte';
   import Make from './Make.svelte';

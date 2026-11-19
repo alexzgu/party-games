@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import FitText from '../../components/FitText.svelte';
@@ -18,7 +19,7 @@
 
 {#if scorer >= 0}<Confetti />{/if}
 
-<Screen title="Say What?" onback={onleave} backLabel="Back to setup">
+<Screen title={gameName('gibberish')} onback={onleave} backLabel="Back to setup">
   <div class="banner {outcome.kind}" style:--c={scorer >= 0 ? playerColor(scorer) : 'var(--text-dim)'}>
     {#if scorer >= 0}
       <span class="big pop-in">🎉 {game.players[scorer].name} got it!</span>

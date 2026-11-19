@@ -1,4 +1,4 @@
-// "Make with Claude" for Say What?: the prompt carries the quality bar, and each streamed
+// "Make with Claude" for Inn Co Hear Ant: the prompt carries the quality bar, and each streamed
 // line becomes a card the moment it arrives.
 import { streamLines } from '../../lib/claude';
 import type { GibberishCard } from '../../lib/content';

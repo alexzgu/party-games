@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Stepper from '../../components/Stepper.svelte';
@@ -58,7 +59,7 @@
   }
 </script>
 
-<Screen title="Say What?" onback={onhome} backLabel="Home">
+<Screen title={gameName('gibberish')} onback={onhome} backLabel="Home">
 <div class="setup">
   {#if inProgress}
     {@const top = standings(inProgress).slice(0, 3)}

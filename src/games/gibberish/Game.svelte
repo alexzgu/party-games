@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Say What? entry. Sub-routes: #/gibberish (setup), #/gibberish/play, #/gibberish/make.
+  // Inn Co Hear Ant entry. Sub-routes: #/gibberish (setup), #/gibberish/play, #/gibberish/make.
   // Using the hash means a reload lands on the same screen. Setup and play replace each other
   // in history, so the phone's back gesture from either goes home; Make is pushed on top.
   import { route, go, back } from '../../lib/router.svelte';

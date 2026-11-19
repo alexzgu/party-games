@@ -1,4 +1,4 @@
-// "Make with Claude" for Tuned In: asks for one `Left | Right` card per line and turns each
+// "Make with Claude" for Spectrum: asks for one `Left | Right` card per line and turns each
 // streamed line into a card, tolerating the list markers, quotes and odd separators models add.
 import { streamLines } from '../../lib/claude';
 import type { Spectrum } from '../../lib/content';
@@ -12,7 +12,7 @@ export const THEME_CHIPS = [
   'Travel', 'Work life', 'Dating', 'Big questions', 'Childhood', 'Spicy (adults)',
 ];
 
-export const SYSTEM = `You write cards for Tuned In, a party game in the style of Wavelength.
+export const SYSTEM = `You write cards for Spectrum, a party game in the style of Wavelength.
 Each card is a scale between two opposite ends. One player secretly gets a spot on the scale and says a clue (a thing, person, place or idea) that belongs at that spot; their team guesses where it sits.
 Good cards: two clear opposites with a smooth range between them, so hundreds of answers fit somewhere along it; short ends of one to three words; fun to argue about; a mix of factual scales (Cold | Hot) and opinion scales (Underrated | Overrated).
 Avoid: scales with only two possible answers, ends that are not true opposites, and anything mean about real groups of people.

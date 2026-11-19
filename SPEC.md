@@ -1,4 +1,4 @@
-# House Rules — specification
+# Jerk Box — specification
 
 A web app of pass-and-play party games for one phone, played by adults in their 20s at a
 house party. Guests have iPhones and Android phones, so it runs in the browser, installs to
@@ -45,7 +45,7 @@ Claude" flow: theme input + quick-pick theme chips → items stream into `Triage
 custom pack (or add to an existing one) → optional "More like these", which sends the items
 already kept so Claude avoids repeats. Without a key the button explains where to add one.
 
-## Game 1 — Hot Head (`forehead`)
+## Game 1 — Heads Down. (`forehead`)
 
 Heads Up-style. One player holds the phone on their forehead, screen facing out; the others
 shout clues; the holder tilts down for "got it", up for "pass".
@@ -70,7 +70,7 @@ shout clues; the holder tilts down for "got it", up for "pass".
   listed so the group can compare.
 - Tilt thresholds are in `src/lib/tilt.ts` (ported from the device-tested Android app).
 
-## Game 2 — Tuned In (`dial`)
+## Game 2 — Spectrum (`dial`)
 
 Wavelength-genre. Two teams. Each round one player of the active team (the reader) secretly
 sees where a target sits on a scale between two opposites, gives one clue out loud, and their
@@ -89,7 +89,7 @@ team sets a dial to where they think the target is.
   target score wins (win screen with confetti, rematch).
 - Game state saved after every step; reopening resumes.
 
-## Game 3 — Say What? (`gibberish`)
+## Game 3 — Inn Co Hear Ant (`gibberish`)
 
 Mad Gab / Incoherent-genre. Each card is a phrase of real but unrelated words that, said
 aloud, sounds like something well known ("Eye Scream" → Ice Cream).

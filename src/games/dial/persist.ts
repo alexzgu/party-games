@@ -1,4 +1,4 @@
-// Where Tuned In keeps its settings and the game in progress (localStorage via lib/storage).
+// Where Spectrum keeps its settings and the game in progress (localStorage via lib/storage).
 import { load, remove, save } from '../../lib/storage';
 import { DEFAULT_NAMES } from './look';
 import { restore, type Config, type Game } from './state';

@@ -1,4 +1,4 @@
-// What Say What? remembers on this phone: the game in progress, the player list and the
+// What Inn Co Hear Ant remembers on this phone: the game in progress, the player list and the
 // last setup. Everything goes through the guarded storage helpers.
 import { load, remove, save } from '../../lib/storage';
 import { validGame, validSetup, type GameState, type SetupPrefs } from './logic';

@@ -1,7 +1,7 @@
-# House Rules
+# Jerk Box
 
-Party games for one phone and a loud room: **Hot Head** (forehead word guessing),
-**Tuned In** (team dial guessing) and **Say What?** (gibberish phrases). A web app that
+Party games for one phone and a loud room: **Heads Down.** (forehead word guessing),
+**Spectrum** (team dial guessing) and **Inn Co Hear Ant** (gibberish phrases). A web app that
 installs to the home screen on iPhone and Android and works offline once loaded.
 
 Play: https://alexzgu.github.io/party-games/

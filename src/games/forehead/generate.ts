@@ -1,4 +1,4 @@
-// "Make with Claude" for Hot Head: a theme in, recognisable party words streamed out.
+// "Make with Claude" for Heads Down: a theme in, recognisable party words streamed out.
 import { streamLines } from '../../lib/claude';
 import { cleanLine, itemKey } from './words';
 
@@ -8,7 +8,7 @@ export const THEME_CHIPS = [
   'Office life', 'Dog breeds', 'Dance moves', 'Cartoons',
 ];
 
-const SYSTEM = `You write cards for Hot Head, a Heads Up-style party game. One player holds the phone to their forehead without seeing the card; friends shout clues until they guess it.
+const SYSTEM = `You write cards for Heads Down, a Heads Up-style party game. One player holds the phone to their forehead without seeing the card; friends shout clues until they guess it.
 
 Write items that a group of adults in their 20s at a house party would instantly recognise and could clue within a few seconds: well-known names, titles, things, places and phrases. Mix easy and medium; skip anything obscure, niche or that needs explaining.
 

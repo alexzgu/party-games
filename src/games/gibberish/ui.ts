@@ -1,4 +1,4 @@
-// Small presentation helpers shared by the Say What? screens.
+// Small presentation helpers shared by the Inn Co Hear Ant screens.
 const PALETTE = ['var(--c-gibberish)', 'var(--c-dial)', 'var(--c-forehead)', 'var(--c-gold)', 'var(--c-good)', 'var(--c-pass)'];
 
 /** A player's colour, by seat. Names are always shown too, so colour is never the only cue. */

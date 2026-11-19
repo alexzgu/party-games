@@ -8,7 +8,7 @@
   import { game, setRound } from './state.svelte';
   import { demoRound } from './demo';
 
-  // Hot Head's router: #/forehead (setup), /play, /decks, /deck?id=…, /make?into=…
+  // Heads Down's router: #/forehead (setup), /play, /decks, /deck?id=…, /make?into=…
   const sub = $derived(route.path.split('/').filter(Boolean)[1] ?? '');
   const demo = route.params.get('demo');
   const rot = Number(route.params.get('rot')) || undefined;

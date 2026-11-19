@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Segmented from './Segmented.svelte';
@@ -40,7 +41,7 @@
   );
 </script>
 
-<Screen title="Hot Head" accent="var(--c-forehead)" onback={() => go('/')}>
+<Screen title={gameName('forehead')} accent="var(--c-forehead)" onback={() => go('/')}>
   <ol class="how" aria-label="How to play">
     <li><span class="step" aria-hidden="true">🤯</span><span>Phone on your forehead, screen facing out</span></li>
     <li><span class="step" aria-hidden="true">🗣️</span><span>Friends shout clues — no saying the word</span></li>

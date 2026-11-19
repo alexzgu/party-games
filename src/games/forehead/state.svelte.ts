@@ -1,4 +1,4 @@
-// Hot Head's saved state: setup choices, the round in progress (survives reloads) and the
+// Heads Down's saved state: setup choices, the round in progress (survives reloads) and the
 // scores of this sitting so the group can compare.
 import { load, save, remove } from '../../lib/storage';
 import { wordDecks, type WordDeck } from '../../lib/content';

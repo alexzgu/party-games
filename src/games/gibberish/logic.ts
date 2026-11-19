@@ -1,4 +1,4 @@
-// Pure game rules for Say What?: every step takes a state and returns the next one,
+// Pure game rules for Inn Co Hear Ant: every step takes a state and returns the next one,
 // so the screens stay thin and each step can be saved and unit-tested.
 import type { GibberishCard } from '../../lib/content';
 import { answerKey } from './parse';

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Stepper from '../../components/Stepper.svelte';
@@ -40,7 +41,7 @@
   }
 </script>
 
-<Screen title="Tuned In" accent="var(--c-dial)" onback={() => go('/')} backLabel="Home">
+<Screen title={gameName('dial')} accent="var(--c-dial)" onback={() => go('/')} backLabel="Home">
   <section class="intro">
     <p class="lead">One clue. A secret spot on a scale. Can your team read your mind?</p>
     <button class="how-btn" aria-expanded={howOpen} onclick={() => (howOpen = !howOpen)}>{howOpen ? 'Hide rules' : 'How to play'}</button>
