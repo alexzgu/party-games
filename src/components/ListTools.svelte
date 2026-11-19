@@ -101,7 +101,7 @@
   .search input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0; color: var(--text); font: inherit; font-size: 1rem; }
   .search input::-webkit-search-cancel-button { display: none; }
   .count { flex: none; font-size: 0.8rem; color: var(--text-faint); }
-  .clear { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); background: rgb(255 255 255 / 0.08); font-size: 0.8rem; }
+  .clear { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); background: var(--overlay); font-size: 0.8rem; }
   .sorts { display: flex; gap: 6px; flex-wrap: wrap; }
   .sorts button {
     padding: 7px 14px; border-radius: var(--r-pill); font-size: 0.88rem; font-weight: 600;

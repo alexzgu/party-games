@@ -10,7 +10,7 @@
   import { settings } from '../../lib/settings.svelte';
   import { finish, makeDealer, mark, openPlay, type EndReason, type Round } from './round';
   import { game, selectedDecks, setRound } from './state.svelte';
-  import { motion, onGravity, stageRotation } from './sensors.svelte';
+  import { getRestPitch, motion, onGravity, stageRotation } from './sensors.svelte';
   import { wakeDevice } from './flow';
 
   type Pause = 'away' | 'confirm';
@@ -41,7 +41,8 @@
   let locked = $state(false);
   let flashN = 0;
   let timers: ReturnType<typeof setTimeout>[] = [];
-  const detector = new TiltDetector();
+  // Sensitivity is read once, as the round starts; tilts count from the holder's resting pitch.
+  const detector = new TiltDetector(settings.tiltSensitivity, getRestPitch() ?? 0);
 
   const tilt = $derived(game.round?.tilt === true && motion.live);
   const secs = $derived(Math.ceil(remaining / 1000));
@@ -249,10 +250,10 @@
 <style>
   .play {
     position: absolute; inset: 0; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none;
-    background: radial-gradient(120% 90% at 50% 50%, color-mix(in srgb, var(--accent) 22%, var(--bg)), var(--bg) 80%);
+    background: radial-gradient(120% 90% at 50% 50%, color-mix(in srgb, var(--accent) var(--stage-tint), var(--stage)), var(--stage) 80%);
     transition: background var(--dur-slow) ease;
   }
-  .play.hot { background: radial-gradient(120% 90% at 50% 50%, color-mix(in srgb, var(--c-bad) 26%, var(--bg)), var(--bg) 80%); }
+  .play.hot { background: radial-gradient(120% 90% at 50% 50%, color-mix(in srgb, var(--c-bad) calc(26% * var(--glow)), var(--stage)), var(--stage) 80%); }
 
   .zone { position: absolute; top: 0; bottom: 0; width: 50%; border: 0; padding: 0; background: transparent; color: inherit; cursor: pointer; }
   .zone.good { --zone: var(--c-good); }
@@ -275,14 +276,14 @@
   .right { display: flex; align-items: center; gap: var(--s-2); }
   .timer, .score {
     font-family: var(--font-display); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1;
-    font-size: clamp(1.5rem, 7vmin, 2.4rem); padding: 8px 16px; border-radius: var(--r-pill); background: rgb(255 255 255 / 0.1);
+    font-size: clamp(1.5rem, 7vmin, 2.4rem); padding: 8px 16px; border-radius: var(--r-pill); background: var(--overlay-strong);
   }
   .timer.hot { background: var(--c-bad); color: #fff; animation: beat 600ms var(--ease-out); }
   @keyframes beat { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
   .score { color: var(--c-good); }
   .close {
     pointer-events: auto; width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center;
-    background: rgb(255 255 255 / 0.1); color: var(--text-dim);
+    background: var(--overlay-strong); color: var(--text-dim);
   }
 
   .word {
@@ -290,6 +291,7 @@
     top: calc(var(--edge) + clamp(44px, 12vmin, 64px)); bottom: calc(var(--edge) + 28px);
     left: calc(var(--edge) + 24px); right: calc(var(--edge) + 24px);
   }
+  .word { color: var(--word); }
   .word.hidden { opacity: 0; }
   .word-in { width: 100%; height: 100%; animation: word-in 260ms var(--ease-out) both; }
   @keyframes word-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
@@ -333,7 +335,7 @@
   .glow.still { animation: none; }
   .glow .flash-ico {
     width: min(20vmin, 110px); height: min(20vmin, 110px); margin: 0 max(26px, 6%);
-    filter: drop-shadow(0 2px 8px rgb(0 0 0 / 0.45));
+    filter: drop-shadow(0 2px 8px color-mix(in srgb, var(--shade) 45%, transparent));
   }
 
   .ending {

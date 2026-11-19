@@ -4,7 +4,7 @@
   import Segmented from '../components/Segmented.svelte';
   import { gameName } from '../app.config';
   import Button from '../components/Button.svelte';
-  import { settings, saveSettings } from '../lib/settings.svelte';
+  import { settings, saveSettings, applyTheme } from '../lib/settings.svelte';
   import { testKey } from '../lib/claude';
   import { sfx } from '../lib/sound';
 
@@ -45,6 +45,16 @@
   </section>
 
   <section class="stack">
+    <h3>Look</h3>
+    <Segmented
+      label="Colours"
+      options={[{ value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }, { value: 'system', label: 'Match phone' }]}
+      bind:value={settings.theme}
+      onchange={() => { saveSettings(); applyTheme(); }}
+    />
+  </section>
+
+  <section class="stack">
     <h3>{gameName('forehead')}</h3>
     <Segmented
       label="When a word is scored"
@@ -53,6 +63,12 @@
       onchange={saveSettings}
     />
     <p class="faint">Light the edge: the edge on the side you tilted glows. Flash the screen: the whole screen turns green or amber.</p>
+    <Segmented
+      label="Tilt needed to score"
+      options={[{ value: 'small', label: 'Small nod' }, { value: 'medium', label: 'Medium' }, { value: 'big', label: 'Big tilt' }]}
+      bind:value={settings.tiltSensitivity}
+      onchange={saveSettings}
+    />
   </section>
 
   <section class="stack">

@@ -94,6 +94,20 @@ export function onGravity(fn: Listener): () => void {
   return () => listeners.delete(fn);
 }
 
+/**
+ * The holder's resting pitch, caught while the phone sat steady before the countdown; tilts
+ * are scored relative to it. Null when the countdown started from a tap or after a reload.
+ */
+let restPitch: number | null = null;
+
+export function setRestPitch(deg: number | null): void {
+  restPitch = deg;
+}
+
+export function getRestPitch(): number | null {
+  return restPitch;
+}
+
 /** Pins the upright edge to the phone's pose right now (the moment the countdown starts). */
 export function pinUpright(): void {
   const e = last ? upEdge(last) : null;

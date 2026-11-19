@@ -94,7 +94,7 @@
   }
   h1 {
     font-size: clamp(2.8rem, 14vw, 4.4rem); line-height: 0.95; color: var(--team); overflow-wrap: anywhere;
-    text-shadow: 0 0 36px color-mix(in srgb, var(--team) 55%, transparent);
+    text-shadow: 0 0 36px color-mix(in srgb, var(--team) calc(55% * var(--glow)), transparent);
   }
   .versus { font-size: 1.15rem; color: var(--text-dim); font-weight: 600; }
   .versus b { color: var(--rival); }

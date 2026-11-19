@@ -4,7 +4,7 @@
   import { SteadyDetector } from '../../lib/tilt';
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
-  import { motion, onGravity, pinUpright, stageRotation } from './sensors.svelte';
+  import { motion, onGravity, pinUpright, setRestPitch, stageRotation } from './sensors.svelte';
   import { wakeDevice } from './flow';
   import type { Round } from './round';
 
@@ -27,12 +27,15 @@
   let timer: ReturnType<typeof setInterval> | undefined;
   let shownAt = performance.now();
   const steady = new SteadyDetector();
+  // A fresh countdown forgets the last holder's resting pitch; only a steady hold sets it.
+  setRestPitch(null);
   const tilt = $derived(round.tilt && motion.live);
 
   $effect(() =>
     onGravity((g, t) => {
       if (count == null && steady.update(g, t) && performance.now() - shownAt > MIN_SHOWN_MS) {
         pinUpright();
+        setRestPitch(steady.baseline());
         begin();
       }
     }),
@@ -129,7 +132,7 @@
     gap: clamp(12px, 4vmin, 32px); text-align: center; user-select: none; -webkit-user-select: none;
     padding: calc(var(--safe-top) + 56px) calc(var(--safe-right) + 20px) calc(var(--safe-bottom) + 20px) calc(var(--safe-left) + 20px);
     background:
-      radial-gradient(90% 70% at 50% 30%, color-mix(in srgb, var(--accent) 45%, transparent), transparent 75%),
+      radial-gradient(90% 70% at 50% 30%, color-mix(in srgb, var(--accent) calc(45% * var(--glow)), transparent), transparent 75%),
       var(--bg);
   }
   .start-area { position: absolute; inset: 0; border: 0; padding: 0; background: transparent; cursor: pointer; }
@@ -140,12 +143,12 @@
   .close {
     position: absolute; top: calc(var(--safe-top) + 12px); left: calc(var(--safe-left) + 12px);
     width: 48px; height: 48px; border-radius: 50%; border: 0; display: grid; place-items: center;
-    background: rgb(255 255 255 / 0.1); color: var(--text);
+    background: var(--overlay-strong); color: var(--text);
   }
   .main { display: flex; flex-direction: column; align-items: center; gap: clamp(10px, 3vmin, 24px); }
   .phone {
     width: clamp(96px, 26vmin, 150px); aspect-ratio: 1.8; border-radius: 22px; display: grid; place-items: center;
-    border: 4px solid var(--text); background: var(--accent); box-shadow: 0 16px 40px color-mix(in srgb, var(--accent) 45%, transparent);
+    border: 4px solid var(--text); background: var(--accent); box-shadow: 0 16px 40px color-mix(in srgb, var(--accent) calc(45% * var(--glow)), transparent);
     animation: lift 2.4s var(--ease-out) infinite;
   }
   .phone span { font-size: clamp(2rem, 9vmin, 3.2rem); }
@@ -182,11 +185,11 @@
 
   .count-bg {
     position: absolute; inset: 0; display: grid; place-items: center;
-    background: radial-gradient(70% 70% at 50% 50%, color-mix(in srgb, var(--accent) 55%, var(--bg)), var(--bg));
+    background: radial-gradient(70% 70% at 50% 50%, color-mix(in srgb, var(--accent) calc(55% * var(--glow)), var(--bg)), var(--bg));
   }
   .num {
     font-family: var(--font-display); font-weight: 800; color: var(--text); line-height: 1;
-    font-size: min(60vmin, 300px); letter-spacing: -0.04em; text-shadow: 0 10px 40px rgb(0 0 0 / 0.35);
+    font-size: min(60vmin, 300px); letter-spacing: -0.04em; text-shadow: 0 10px 40px color-mix(in srgb, var(--shade) 35%, transparent);
     animation: count-pop 700ms var(--ease-spring) both;
   }
   @keyframes count-pop {

@@ -17,6 +17,7 @@
   --c-forehead: #ff6b4a;
   --c-dial: #2fd6c3;
   --c-gibberish: #b57bff;
+  --c-quiz: #ffc93c;
   --c-good: #3ddc84;
   --c-pass: #ffb020;
   --c-bad: #ff4d6d;
@@ -59,6 +60,64 @@
   --safe-right: env(safe-area-inset-right, 0px);
 
   --shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+
+  /* Scheme-dependent helpers, so components never hard-code a colour that assumes a dark page. */
+  --overlay: rgb(255 255 255 / 0.08); /* translucent chip or button on any surface */
+  --overlay-strong: rgb(255 255 255 / 0.1);
+  --scrim: rgb(8 5 18 / 0.82); /* behind popups */
+  --scrim-soft: rgb(0 0 0 / 0.6); /* behind bottom sheets */
+  --shade: #000; /* base of drop and text shadows: color-mix(in srgb, var(--shade) 40%, transparent) */
+  --glow: 1; /* multiplier for coloured glows: calc(40% * var(--glow)) */
+  --on-danger: #ffd0d8; /* text on a danger-tinted surface */
+  --bad-ink: color-mix(in srgb, var(--c-bad) 55%, white); /* error text */
+  --word: var(--text); /* the word on the Heads Down. play screen */
+  --stage: var(--bg); /* Heads Down. play background */
+  --stage-tint: 22%; /* how much of the game colour tints it */
+}
+
+/* Light scheme: soft off-white page, white cards, deeper game colours that pass WCAG AA as text
+   on every surface and carry white text as fills. Chosen in Settings; see applyTheme(). */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f5f3fa;
+  --bg-raised: #ffffff;
+  --bg-sunk: #ece8f5;
+  --surface: #ffffff;
+  --surface-hi: #e9e5f3;
+  --line: rgb(27 21 48 / 0.11);
+  --line-strong: rgb(27 21 48 / 0.22);
+
+  --text: #1b1530;
+  --text-dim: #544c70;
+  --text-faint: #6e6789;
+
+  --c-forehead: #c93a17;
+  --c-dial: #0f766e;
+  --c-gibberish: #7c3aed;
+  --c-quiz: #946200;
+  --c-good: #15803d;
+  --c-pass: #a85207;
+  --c-bad: #d1193f;
+  --c-gold: #a16207;
+  --c-team-a: #c2410c;
+  --c-team-b: #1d4ed8;
+
+  --on-accent: #ffffff;
+
+  --shadow: 0 1px 2px rgb(27 21 48 / 0.06), 0 8px 24px rgb(27 21 48 / 0.08);
+
+  --overlay: rgb(27 21 48 / 0.06);
+  --overlay-strong: rgb(27 21 48 / 0.08);
+  --scrim: rgb(27 21 48 / 0.42);
+  --scrim-soft: rgb(27 21 48 / 0.32);
+  --shade: rgb(27 21 48 / 0.45);
+  --glow: 0.6;
+  --on-danger: #a3122f;
+  --bad-ink: #b3123a;
+  --word: #1a3fbf;
+  --stage: #ffffff;
+  --stage-tint: 0%;
 }
 
 @media (prefers-reduced-motion: reduce) {

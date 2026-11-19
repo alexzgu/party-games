@@ -34,7 +34,7 @@
   .team.on {
     border-color: var(--team);
     background: color-mix(in srgb, var(--team) 22%, var(--surface));
-    box-shadow: 0 0 22px color-mix(in srgb, var(--team) 40%, transparent);
+    box-shadow: 0 0 22px color-mix(in srgb, var(--team) calc(40% * var(--glow)), transparent);
   }
   .team.off { opacity: 0.7; }
   .name { font-weight: 800; font-size: 0.92rem; color: var(--team); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

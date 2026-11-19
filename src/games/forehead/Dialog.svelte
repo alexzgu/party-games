@@ -20,7 +20,7 @@
 <style>
   .scrim {
     position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; padding: var(--edge, 16px);
-    background: rgb(8 5 18 / 0.82); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }
   .card {
     width: min(420px, 100%); background: var(--bg-raised); border: 1.5px solid var(--line-strong);

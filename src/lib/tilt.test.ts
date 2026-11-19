@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SteadyDetector, TiltDetector } from './tilt';
+import { BASELINE_MAX_DEG, SteadyDetector, TiltDetector } from './tilt';
 import { UprightTracker, axisSignFromLookingAt, toScreen, uprightRotation, type Gravity } from './motion';
 
 const G = 9.81;
@@ -15,20 +15,61 @@ describe('TiltDetector', () => {
   }
 
   it('ignores the first tilt until the phone has rested at neutral', () => {
-    const d = new TiltDetector();
+    const d = new TiltDetector('big');
     expect(feed(d, [pitched(-70), pitched(-70)])).toEqual([]);
   });
 
   it('fires correct on tilt down and pass on tilt up, once per gesture', () => {
-    const d = new TiltDetector();
+    const d = new TiltDetector('big');
     const neutral = Array(12).fill(pitched(10));
     expect(feed(d, [...neutral, pitched(-45), pitched(-60), pitched(-80)])).toEqual(['correct']);
     expect(feed(d, [...neutral, pitched(60), pitched(70)], 1000)).toEqual(['pass']);
   });
 
   it('does not fire between the neutral band and the thresholds', () => {
-    const d = new TiltDetector();
+    const d = new TiltDetector('big');
     expect(feed(d, [...Array(12).fill(pitched(0)), pitched(-35), pitched(50)])).toEqual([]);
+  });
+
+  const rest = (deg: number, n = 12) => Array<Gravity>(n).fill(pitched(deg));
+
+  it('scores a small nod at small sensitivity but not at big', () => {
+    const nod = [...rest(0), pitched(-25), pitched(-10), ...rest(0), pitched(28)];
+    expect(feed(new TiltDetector('small'), nod)).toEqual(['correct', 'pass']);
+    expect(feed(new TiltDetector('medium'), nod)).toEqual([]);
+    expect(feed(new TiltDetector('big'), nod)).toEqual([]);
+  });
+
+  it('measures nods from the resting pitch, not from vertical', () => {
+    // Phone tipped back 15° on the forehead: a 25° nod either way lands at -10° and +40°.
+    const d = new TiltDetector('small', 15);
+    expect(feed(d, [...rest(15), pitched(-10), ...rest(15), pitched(42)])).toEqual(['correct', 'pass']);
+    // Measured from vertical, the same resting pose would never arm.
+    const vertical = new TiltDetector('small');
+    expect(feed(vertical, [...rest(15), pitched(-10)])).toEqual([]);
+  });
+
+  it('clamps a bad resting pitch and treats a missing one as vertical', () => {
+    const wild = new TiltDetector('small', 80);
+    const nan = new TiltDetector('small', Number.NaN);
+    expect(feed(wild, [...rest(BASELINE_MAX_DEG), pitched(BASELINE_MAX_DEG - 25)])).toEqual(['correct']);
+    expect(feed(nan, [...rest(0), pitched(-25)])).toEqual(['correct']);
+  });
+
+  it('does not score twice on a wobble around the threshold', () => {
+    const d = new TiltDetector('small');
+    const wobble = [pitched(-24), pitched(-18), pitched(-24), pitched(-12), pitched(-23), pitched(-20), pitched(-25)];
+    expect(feed(d, [...rest(0), ...wobble, ...wobble])).toEqual(['correct']);
+  });
+
+  it('needs a held return to rest between scores', () => {
+    const d = new TiltDetector('small');
+    // Swinging back up through rest after a got-it is not a pass.
+    expect(feed(d, [...rest(0), pitched(-25), pitched(-5), pitched(5), pitched(30), pitched(35)])).toEqual(['correct']);
+    // Back at rest too briefly (under the hold time): still no score.
+    expect(feed(d, [...rest(0, 3), pitched(-25)], 1000)).toEqual([]);
+    // Held at rest long enough: the next nod counts.
+    expect(feed(d, [...rest(0), pitched(-25)], 2000)).toEqual(['correct']);
   });
 });
 
@@ -40,6 +81,18 @@ describe('SteadyDetector', () => {
     expect(d.update(pitched(40), 500)).toBe(false); // too far from vertical: restart
     expect(d.update(pitched(10), 600)).toBe(false);
     expect(d.update(pitched(11), 1300)).toBe(true);
+  });
+
+  it('reports the mean pitch over the steady hold as the resting pose', () => {
+    const d = new SteadyDetector();
+    expect(d.baseline()).toBeNull();
+    d.update(pitched(30), 0); // first hold, then a wobble restarts it
+    d.update(pitched(14), 100);
+    d.update(pitched(18), 200);
+    expect(d.update(pitched(16), 900)).toBe(true);
+    expect(d.baseline()).toBeCloseTo(16, 5);
+    d.reset();
+    expect(d.baseline()).toBeNull();
   });
 
   it('does not fire for a phone held upright in portrait', () => {

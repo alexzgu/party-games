@@ -88,7 +88,7 @@
     transition: transform var(--dur-fast) var(--ease-out);
   }
   .card:active { transform: scale(0.98); }
-  .emoji { font-size: 2.6rem; flex: none; filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.4)); }
+  .emoji { font-size: 2.6rem; flex: none; filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--shade) 40%, transparent)); }
   .txt { display: flex; flex-direction: column; gap: 2px; flex: 1; }
   .name { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; color: var(--accent); letter-spacing: -0.02em; }
   .players { color: var(--text-faint); font-size: 0.85rem; margin-top: 2px; }

@@ -1,0 +1,37 @@
+{"id": "totally-random-trivia", "name": "Totally Random Trivia", "blurb": "Places, food, science, animals and numbers", "added": "2026-11-19", "categories": [
+{"name": "Around the World", "clues": [
+  {"clue": "This is the largest and deepest ocean on Earth.", "answer": "The Pacific Ocean"},
+  {"clue": "The ancient Inca city of Machu Picchu sits high in the Andes of this country.", "answer": "Peru"},
+  {"clue": "Canberra, not Sydney, is the capital of this country.", "answer": "Australia"},
+  {"clue": "Home of the Pope, this is the smallest country in the world.", "answer": "Vatican City"},
+  {"clue": "This country splits its government across three capitals: Pretoria, Cape Town and Bloemfontein.", "answer": "South Africa"}
+]},
+{"name": "Food & Drink", "clues": [
+  {"clue": "Guacamole is mostly made of this green fruit.", "answer": "Avocado"},
+  {"clue": "This Italian dessert layers coffee-soaked ladyfingers with mascarpone cream.", "answer": "Tiramisu"},
+  {"clue": "Picked by hand from crocus flowers, this red-orange spice is the priciest in the world by weight.", "answer": "Saffron"},
+  {"clue": "A Negroni is equal parts gin, sweet vermouth and this bitter red Italian liqueur.", "answer": "Campari"},
+  {"clue": "This tart Japanese citrus fruit gives ponzu sauce its tang.", "answer": "Yuzu"}
+]},
+{"name": "Science-ish", "clues": [
+  {"clue": "Fourth from the Sun, this planet is nicknamed the Red Planet.", "answer": "Mars"},
+  {"clue": "Every biology class calls it the powerhouse of the cell.", "answer": "Mitochondria"},
+  {"clue": "Made of pure carbon, this is the hardest natural material on Earth.", "answer": "Diamond"},
+  {"clue": "This gas makes up about 78 percent of the air we breathe.", "answer": "Nitrogen"},
+  {"clue": "The chemical symbol Fe stands for this metal.", "answer": "Iron"}
+]},
+{"name": "Animal Kingdom", "clues": [
+  {"clue": "This ocean giant is the largest animal known to have ever lived.", "answer": "The blue whale"},
+  {"clue": "A group of lions is called this.", "answer": "A pride"},
+  {"clue": "It cannot fly, but this is the fastest-running bird on the planet.", "answer": "The ostrich"},
+  {"clue": "Koalas eat almost nothing but the leaves of this tree.", "answer": "Eucalyptus"},
+  {"clue": "An octopus has this many hearts.", "answer": "Three"}
+]},
+{"name": "Numbers Game", "clues": [
+  {"clue": "Each soccer team has this many players on the field at once.", "answer": "11"},
+  {"clue": "Leave out the jokers and a standard deck holds this many cards.", "answer": "52"},
+  {"clue": "A marathon is this many miles long.", "answer": "26.2"},
+  {"clue": "In Roman numerals, the letter L stands for this number.", "answer": "50"},
+  {"clue": "An adult human skeleton has this many bones.", "answer": "206"}
+]}
+]}

@@ -21,7 +21,7 @@ the home screen, and works offline once loaded. Names shown to players live in
 ## Stack and layout
 
 Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Hash routing
-(`#/forehead`, `#/dial`, `#/gibberish`, `#/settings`) so any static host works.
+(`#/forehead`, `#/dial`, `#/gibberish`, `#/quiz`, `#/settings`) so any static host works.
 
 - `src/lib/` — shared logic: `storage` (guarded localStorage), `router.svelte`, `settings.svelte`,
   `sound` (synthesised cues; call `unlockAudio()` in the first tap), `haptics`, `wakelock`,
@@ -34,7 +34,7 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
   items while they stream in).
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
-  to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`).
+  to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
 - `src/content/` — built-in packs as JSON (formats in `src/lib/content.ts`).
 
@@ -60,7 +60,7 @@ an edit under the same id that replaces it everywhere on that phone, marked "Edi
 
 ## Shared behaviour
 
-- **Home** shows the three games (name, emoji, player count), History and Settings. No blurbs.
+- **Home** shows every game in `GAMES` (name, emoji, player count), History and Settings. No blurbs.
 - **Rules** live in each game's "?" popup, not on its screens.
 - **History** (`#/history`): one entry per Heads Down. round (rewritten if a word is fixed
   afterwards) and per finished Spectrum or Inn Co Hear Ant game: title, scores, packs and
@@ -105,7 +105,11 @@ shout clues; the holder tilts down for "got it", up for "pass".
 - **Results**: score headline, every word shown marked ✓/✗ and tappable to fix mis-tilts.
   Play again (same settings, next player), change decks, home. Round scores of this session
   listed so the group can compare.
-- Tilt thresholds are in `src/lib/tilt.ts` (ported from the device-tested Android app).
+- Tilt is measured from the player's resting pose (mean pitch while held steady before the
+  countdown, clamped to ±25°; 0 after a tap start). Settings "Tilt needed to score": Small nod
+  (default, 22° down / 26° up), Medium (32/40), Big tilt (40/55, the old Android app's values).
+  After a score the phone must settle near rest for 150 ms before the next one counts.
+  Constants in `src/lib/tilt.ts`.
 
 ## Game 2 — Spectrum (`dial`)
 
@@ -144,6 +148,31 @@ aloud, sounds like something well known ("Eye Scream" → Ice Cream).
   reader taps that player's name → point, answer revealed big with a chime. Time runs out or
   "Nobody" → answer revealed, no point. Skip draws a new card without penalty.
 - Scoreboard between cards; first to the target wins (win screen, rematch). State saved.
+
+## Game 4 — Big Board (`quiz`)
+
+A team quiz board for a host who reads aloud, on a phone or a laptop on the TV. A board has
+3–6 categories across and 3–5 clues down, easiest at the top (`src/content/quiz/*.json`).
+
+- **Setup**: 2–4 teams (default 3, names editable and remembered), one board (search/sort list),
+  points 100–500 per row or doubled (200–1,000), "Wrong answers lose points" (default off).
+- **Board**: fills the screen; categories across, values down; a played tile goes dim with a dot
+  in the winning team's colour. Header: back to setup (game saved), Undo, full screen (wide
+  screens with the Fullscreen API), "?", End. A score strip shows every team at all times;
+  tapping a team opens a fix popup (± each board value). Tiles ignore taps for 400 ms after the
+  board appears (double-tap guard).
+- **Tile**: the clue full screen (FitText) with category and value → "Show answer" → the answer
+  big → tap the team that got it (+value) or "Nobody got it" → back to the board. "Back" puts the
+  tile back unplayed. With the penalty on, ✗ marks a team wrong on either step (−value at once,
+  can be taken back, that team cannot win the tile). Keys: Space/Enter show the answer, 1–4
+  award, 0 nobody, Esc puts the tile back.
+- **Scores** are never stored: they are the sum of the log (tiles closed, hand fixes) plus wrong
+  marks on the open tile. Undo drops the last log entry; an undone tile reopens on its answer
+  with its wrong marks so the right team can be tapped.
+- **End**: every tile played → "See who won", or End with something scored → win screen
+  (confetti, tap to skip; standings with shared places for ties). History gets one entry at that
+  moment (`finished: false` when ended early); End with nothing scored just closes the board.
+  State saved after every step; a reload resumes on the same screen.
 
 ## Hosting
 

@@ -38,7 +38,7 @@
     padding: var(--s-4); border-radius: var(--r-lg);
     background: color-mix(in srgb, var(--team) 14%, var(--bg-raised));
     border: 2px solid var(--team);
-    box-shadow: 0 0 28px color-mix(in srgb, var(--team) 30%, transparent);
+    box-shadow: 0 0 28px color-mix(in srgb, var(--team) calc(30% * var(--glow)), transparent);
   }
   .banner b { color: var(--team); }
   .name { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; line-height: 1.05; color: var(--team); }

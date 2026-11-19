@@ -7,9 +7,14 @@ export interface Spectrum { left: string; right: string }
 export interface SpectrumPack { id: string; name: string; blurb: string; cards: Spectrum[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 export interface GibberishCard { phrase: string; answer: string; hint: string }
 export interface GibberishPack { id: string; name: string; blurb: string; cards: GibberishCard[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+export interface QuizClue { clue: string; answer: string }
+/** One column of a Big Board: its clues run easiest (top row) to hardest. */
+export interface QuizCategory { name: string; clues: QuizClue[] }
+export interface QuizBoard { id: string; name: string; blurb: string; categories: QuizCategory[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 
 const wordFiles = import.meta.glob<WordDeck>('../content/forehead/*.json', { eager: true, import: 'default' });
 const gibberishFiles = import.meta.glob<GibberishPack>('../content/gibberish/*.json', { eager: true, import: 'default' });
+const quizFiles = import.meta.glob<QuizBoard>('../content/quiz/*.json', { eager: true, import: 'default' });
 // A dial file holds one pack, or several under `packs` (the original spectra.json).
 const dialFiles = import.meta.glob<SpectrumPack | { packs: SpectrumPack[] }>('../content/dial/*.json', { eager: true, import: 'default' });
 
@@ -25,6 +30,7 @@ function ordered<T extends { id: string }>(items: T[], order: string[]): T[] {
 
 const builtinDecks = ordered(Object.values(wordFiles), BUILTIN_DECK_ORDER);
 const builtinGibberish = ordered(Object.values(gibberishFiles), ['classic', 'pop', 'sayings', 'after-dark']);
+const builtinQuiz = ordered(Object.values(quizFiles), ['pop-culture-mix', 'totally-random-trivia', 'throwback-2000s-2010s']);
 const builtinSpectra = ordered(Object.values(dialFiles).flatMap((f) => ('packs' in f ? f.packs : [f])), ['classic', 'deep', 'nerdy', 'after-dark']);
 
 /**
@@ -77,14 +83,18 @@ function merged<T extends { id: string }>(saved: T[], builtin: T[]): T[] {
 export const customDecks = customStore<WordDeck>('custom:decks', builtinDecks);
 export const customSpectra = customStore<SpectrumPack>('custom:spectra', builtinSpectra);
 export const customGibberish = customStore<GibberishPack>('custom:gibberish', builtinGibberish);
+export const customQuiz = customStore<QuizBoard>('custom:quiz', builtinQuiz);
 
 /** Every pack: the player's own first, then built-ins (edited versions where edited), in order. */
 export const wordDecks = (): WordDeck[] => merged(customDecks.saved(), builtinDecks);
 export const spectrumPacks = (): SpectrumPack[] => merged(customSpectra.saved(), builtinSpectra);
 export const gibberishPacks = (): GibberishPack[] => merged(customGibberish.saved(), builtinGibberish);
+export const quizBoards = (): QuizBoard[] => merged(customQuiz.saved(), builtinQuiz);
 
-export function isBuiltin(id: string, kind: 'decks' | 'spectra' | 'gibberish'): boolean {
-  return (kind === 'decks' ? customDecks : kind === 'spectra' ? customSpectra : customGibberish).isBuiltin(id);
+const stores = { decks: customDecks, spectra: customSpectra, gibberish: customGibberish, quiz: customQuiz };
+
+export function isBuiltin(id: string, kind: keyof typeof stores): boolean {
+  return stores[kind].isBuiltin(id);
 }
 
 /** Age for sorting packs by Newest/Oldest: ms since epoch, 0 when unknown. */

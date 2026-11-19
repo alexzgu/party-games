@@ -1,0 +1,37 @@
+{"id": "pop-culture-mix", "name": "Pop Culture Mix", "blurb": "Movies, TV, music, famous faces and the internet", "added": "2026-11-19", "categories": [
+{"name": "Big Screen", "clues": [
+  {"clue": "Greta Gerwig directed this 2023 hit about a doll who leaves her perfect pink world.", "answer": "Barbie"},
+  {"clue": "In this Pixar film, a rat named Remy dreams of becoming a chef in Paris.", "answer": "Ratatouille"},
+  {"clue": "Leonardo DiCaprio won his first Oscar playing a frontiersman left for dead after a bear attack in this 2015 film.", "answer": "The Revenant"},
+  {"clue": "This 2019 South Korean thriller was the first film not in English to win Best Picture.", "answer": "Parasite"},
+  {"clue": "In 'The Princess Bride', this Spanish swordsman spends his life hunting the six-fingered man.", "answer": "Inigo Montoya"}
+]},
+{"name": "Binge-Worthy", "clues": [
+  {"clue": "Kids in Hawkins, Indiana, fight monsters from the Upside Down in this Netflix series.", "answer": "Stranger Things"},
+  {"clue": "Six New Yorkers spend half their lives on the couch at the Central Perk coffee shop in this sitcom.", "answer": "Friends"},
+  {"clue": "On 'The Office', this beet farmer insists he is assistant regional manager, not assistant TO the regional manager.", "answer": "Dwight Schrute"},
+  {"clue": "This HBO drama follows the Roy siblings as they fight over their father's media empire.", "answer": "Succession"},
+  {"clue": "On 'Game of Thrones', this is the name of Jon Snow's white direwolf.", "answer": "Ghost"}
+]},
+{"name": "On Repeat", "clues": [
+  {"clue": "This singer's Eras Tour became the highest-grossing concert tour of all time.", "answer": "Taylor Swift"},
+  {"clue": "Harry Styles first got famous in this boy band, put together on 'The X Factor'.", "answer": "One Direction"},
+  {"clue": "Lil Nas X spent 19 weeks at No. 1 in 2019 with this country-rap song about riding a horse.", "answer": "Old Town Road"},
+  {"clue": "This Compton rapper won a Pulitzer Prize for his album 'DAMN.'", "answer": "Kendrick Lamar"},
+  {"clue": "This singer released 'Blonde' in 2016, then went famously quiet for years.", "answer": "Frank Ocean"}
+]},
+{"name": "Famous Faces", "clues": [
+  {"clue": "This reality star co-founded the shapewear brand Skims.", "answer": "Kim Kardashian"},
+  {"clue": "This actor played Tony Stark across more than a decade of Marvel movies.", "answer": "Robert Downey Jr."},
+  {"clue": "This actress won two Emmys for playing Rue on 'Euphoria'.", "answer": "Zendaya"},
+  {"clue": "This former 'SNL' cast member plays a folksy American coach running an English soccer club on Apple TV+.", "answer": "Jason Sudeikis"},
+  {"clue": "This singer and actress played Elphaba opposite Ariana Grande in the 2024 'Wicked' movie.", "answer": "Cynthia Erivo"}
+]},
+{"name": "Online", "clues": [
+  {"clue": "This short-video app, owned by ByteDance, is famous for its endless For You page.", "answer": "TikTok"},
+  {"clue": "The best-selling video game of all time, it lets you build with blocks and run from Creepers.", "answer": "Minecraft"},
+  {"clue": "The dog in the 'Doge' meme is this Japanese breed.", "answer": "Shiba Inu"},
+  {"clue": "Streamers like Kai Cenat built huge audiences on this Amazon-owned live-streaming site.", "answer": "Twitch"},
+  {"clue": "In 2022 this newspaper bought Wordle, the five-letter guessing game.", "answer": "The New York Times"}
+]}
+]}

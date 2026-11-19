@@ -89,7 +89,7 @@
     flex: none; padding: 10px 14px; border-radius: var(--r-pill); background: var(--surface);
     border: 1.5px solid var(--line); color: var(--text-dim); font-weight: 700; white-space: nowrap;
   }
-  .filters button.on { border-color: var(--accent, var(--text)); color: var(--text); background: color-mix(in srgb, var(--accent, white) 16%, var(--surface)); }
+  .filters button.on { border-color: var(--accent, var(--text)); color: var(--text); background: color-mix(in srgb, var(--accent, var(--text)) 16%, var(--surface)); }
   .empty { text-align: center; margin-top: var(--s-6); }
   .list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   .row {

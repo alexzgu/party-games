@@ -11,6 +11,7 @@
     forehead: () => import('./games/forehead/Game.svelte'),
     dial: () => import('./games/dial/Game.svelte'),
     gibberish: () => import('./games/gibberish/Game.svelte'),
+    quiz: () => import('./games/quiz/Game.svelte'),
   };
 
   const segment = $derived(route.path.split('/').filter(Boolean)[0] ?? '');

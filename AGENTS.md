@@ -10,7 +10,8 @@ Content only: `npm run test:content`; list a game's existing items: `npm run lis
 ## Making a new pack (the main live-content route)
 
 The owner, or a friend at the party, asks a chat for a pack, e.g. "make a Spectrum pack about
-our college" or "Heads Down. deck: 2000s cartoons, 60 words". You write it as a built-in pack,
+our college", "Heads Down. deck: 2000s cartoons, 60 words" or "a Big Board about Marvel"
+(a Big Board pack is a whole quiz board made from a topic). You write it as a built-in pack,
 check it, and publish it. Phones get it within a minute of the site rebuilding, the next time
 they are on the main menu. Do the whole thing without asking questions unless the game or
 theme is unclear; pick sensible defaults and say what you chose.
@@ -22,11 +23,15 @@ theme is unclear; pick sensible defaults and say what you chose.
      spot on it. Items: scales.
    - Inn Co Hear Ant (`gibberish/`): a phrase of real words that, read aloud quickly, sounds
      like something well known. Items: phrase + answer + category.
-2. **Size** if not given: Heads Down. 60 words, Spectrum 40 cards, Inn Co Hear Ant 40 cards.
+   - Big Board (`quiz/`): a team quiz board a host reads aloud. Items: categories, each a
+     column of clue + answer, easiest first.
+2. **Size** if not given: Heads Down. 60 words, Spectrum 40 cards, Inn Co Hear Ant 40 cards,
+   Big Board 5 categories × 5 clues (any 3–6 × 3–5 works; every category the same length).
    **List what exists first**: `npm run list -- <folder>` prints every word, scale or answer
    already in that game (and, for Inn Co Hear Ant, the hint categories in use). Spectrum
    scales and Inn Co Hear Ant answers must be new across *all* packs of that game, not just
-   similar ones; Heads Down. words only need to be new within the deck.
+   similar ones; Heads Down. words only need to be new within the deck. Big Board clues must be
+   new within the board; avoid reusing another board's answers.
 3. **Write** `src/content/<folder>/<id>.json`. `id` is a new lowercase slug (`college-life`),
    never an existing file's id. Exact shapes:
 
@@ -34,6 +39,7 @@ theme is unclear; pick sensible defaults and say what you chose.
    {"id": "cartoons-2000s", "name": "2000s Cartoons", "emoji": "📺", "blurb": "Saturday mornings, 2000–2009", "added": "2026-11-21T15:40", "words": ["SpongeBob", "..."]}
    {"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "added": "2026-11-21T15:40", "cards": [{"left": "Easy class", "right": "Hard class"}]}
    {"id": "tv-mix", "name": "TV Mix", "blurb": "Shows everyone watched", "added": "2026-11-21T15:40", "cards": [{"phrase": "Grey Sat Tommy", "answer": "Grey's Anatomy", "hint": "TV Show"}]}
+   {"id": "marvel", "name": "Marvel", "blurb": "Heroes, villains and infinity stones", "added": "2026-11-21T15:40", "categories": [{"name": "Villains", "clues": [{"clue": "This purple Titan snapped away half of all life.", "answer": "Thanos"}]}]}
    ```
 
    (`emoji` is for Heads Down. only. `added` is the local date and time now, `date +%FT%R`; it
@@ -52,11 +58,19 @@ theme is unclear; pick sensible defaults and say what you chose.
      "the" or "and" may appear in the phrase. Avoid near-giveaways: no phrase word that is the
      start of an answer word ("Dumb" for Dumbo) unless nothing better sounds right. Write ~1.5×
      the count and keep the best.
+   - Big Board: 3–6 categories with short, fun names (1–3 words); each column runs easiest (top
+     row) to hardest (bottom row): the top row most of the room gets, the bottom row a real
+     stretch. Each clue is one or two sentences the host can read aloud in one breath, in your
+     own words (never copied from a quiz show or game, no show-style framing), with exactly one
+     right answer that is short (1–5 words) and never named or spelled out in its own clue or a
+     neighbouring one. Check every fact; leave out anything you are not sure of or that may have
+     changed recently. Write ~1.5× the clues and keep the best.
    - "After Dark" style requests: cheeky, never explicit.
 5. **Check**: `npm run test:content` (the content gate in `src/lib/content.test.ts` rejects
    bad shapes, repeats within a deck, any Spectrum scale or Inn Co Hear Ant answer that already
-   exists in another pack, and phrases containing the answer's words; it lists every problem in
-   one run). Fix them all and rerun until it passes. A pack-only change needs nothing else.
+   exists in another pack, phrases containing the answer's words, and Big Boards with the wrong
+   number of categories or clues, uneven categories, empty answers or a repeated clue; it lists
+   every problem in one run). Fix them all and rerun until it passes. A pack-only change needs nothing else.
 6. **Publish**: `git add src/content && git commit -m "Add <game> pack: <name>"` then `git push`.
    If the push is refused for lack of GitHub credentials, ask the owner to run `! git push`
    in the chat.
@@ -64,7 +78,7 @@ theme is unclear; pick sensible defaults and say what you chose.
    `curl -s https://api.github.com/repos/alexzgu/party-games/actions/runs` until the newest run
    for your commit is `completed` / `success` (about 1–2 minutes), then tell the asker:
    "Live. Go back to the main menu, wait a moment, then open <game> and tick <pack name> in
-   the pack list." Mention the 3 to 5 items you are least sure about.
+   the pack list" (Big Board: "pick <board name> in the Board list"). Mention the 3 to 5 items you are least sure about.
 
 ## Other changes
 

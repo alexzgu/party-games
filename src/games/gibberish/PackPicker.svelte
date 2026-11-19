@@ -89,7 +89,7 @@
   }
   .edit::before {
     content: ''; position: absolute; inset: 7px; border-radius: 50%;
-    background: rgb(255 255 255 / 0.08); border: 1.5px solid var(--line-strong);
+    background: var(--overlay); border: 1.5px solid var(--line-strong);
   }
   .edit svg { position: relative; }
   .edit:active::before { background: color-mix(in srgb, var(--accent) 30%, var(--surface)); }

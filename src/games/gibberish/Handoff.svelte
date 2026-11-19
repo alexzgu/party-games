@@ -68,7 +68,7 @@
   .how { margin: 0; padding: var(--s-4) var(--s-4) var(--s-4) calc(var(--s-4) + 1.2em); border-radius: var(--r-md); background: var(--surface); color: var(--text-dim); display: flex; flex-direction: column; gap: var(--s-2); }
   .how b { color: var(--text); }
   .meta { text-align: center; color: var(--text-faint); }
-  .error { color: color-mix(in srgb, var(--c-bad) 55%, white); text-align: center; }
+  .error { color: var(--bad-ink); text-align: center; }
   @keyframes breathe { 50% { transform: scale(1.12); opacity: 0.7; } }
   @media (prefers-reduced-motion: reduce) { .glow { animation: none; } }
 </style>

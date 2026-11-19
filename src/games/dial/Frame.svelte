@@ -84,7 +84,7 @@
     padding: var(--s-3) 0 calc(var(--safe-bottom) + var(--s-4));
     background: linear-gradient(to top, var(--bg) 70%, transparent);
   }
-  .scrim { position: fixed; inset: 0; background: rgb(0 0 0 / 0.6); z-index: 10; }
+  .scrim { position: fixed; inset: 0; background: var(--scrim-soft); z-index: 10; }
   .sheet {
     position: fixed; z-index: 11; left: 50%; bottom: 0; width: min(640px, 100%); transform: translateX(-50%);
     display: flex; flex-direction: column; gap: var(--s-3);

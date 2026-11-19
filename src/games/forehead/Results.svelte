@@ -90,7 +90,7 @@
   .big {
     font-family: var(--font-display); font-weight: 800; font-size: clamp(5rem, 26vw, 7.5rem); line-height: 0.9;
     color: var(--accent); letter-spacing: -0.05em; font-variant-numeric: tabular-nums;
-    text-shadow: 0 10px 40px color-mix(in srgb, var(--accent) 40%, transparent);
+    text-shadow: 0 10px 40px color-mix(in srgb, var(--accent) calc(40% * var(--glow)), transparent);
   }
   .hero-txt { display: flex; flex-direction: column; gap: var(--s-1); }
   .cheer { font-family: var(--font-display); font-weight: 800; font-size: 1.7rem; line-height: 1.05; letter-spacing: -0.02em; }

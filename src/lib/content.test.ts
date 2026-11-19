@@ -2,7 +2,7 @@
 // every pack must load, be well formed, and repeat nothing. Each test lists every problem
 // it finds at once, so a new pack needs one fix-up pass, not one run per mistake.
 import { describe, expect, it, vi } from 'vitest';
-import { dedupe, gibberishPacks, slugify, spectrumPacks, wordDecks } from './content';
+import { dedupe, gibberishPacks, quizBoards, slugify, spectrumPacks, wordDecks } from './content';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Small words a phrase may share with its answer without giving it away. */
@@ -90,6 +90,37 @@ describe('Inn Co Hear Ant packs', () => {
       }
     }
     expect(packs.slice(0, 4).map((p) => p.id)).toEqual(['classic', 'pop', 'sayings', 'after-dark']);
+    expect(problems).toEqual([]);
+  });
+});
+
+describe('Big Board boards', () => {
+  it('are well formed: 3–6 categories of 3–5 clues each, all the same length, no clue twice', () => {
+    const problems: string[] = [];
+    const boards = quizBoards();
+    packBasics(boards, problems);
+    for (const b of boards) {
+      const cats = Array.isArray(b.categories) ? b.categories : [];
+      if (cats.length < 3 || cats.length > 6) problems.push(`${b.id}: ${cats.length} categories (need 3–6)`);
+      const len = cats[0]?.clues?.length ?? 0;
+      if (len < 3 || len > 5) problems.push(`${b.id}: ${len} clues per category (need 3–5)`);
+      const names = new Set<string>();
+      const clues = new Set<string>();
+      for (const c of cats) {
+        if (!c.name?.trim()) problems.push(`${b.id}: a category has no name`);
+        else if (names.has(key(c.name))) problems.push(`${b.id}: category "${c.name}" repeats`);
+        names.add(key(c.name ?? ''));
+        if (!Array.isArray(c.clues)) { problems.push(`${b.id}: "${c.name}" has no clues list`); continue; }
+        if (c.clues.length !== len) problems.push(`${b.id}: "${c.name}" has ${c.clues.length} clues, the first category has ${len}`);
+        for (const k of c.clues) {
+          if (!k.clue?.trim()) problems.push(`${b.id}: "${c.name}" has an empty clue`);
+          if (!k.answer?.trim()) problems.push(`${b.id}: "${c.name}": "${k.clue}" has no answer`);
+          if (k.clue && clues.has(key(k.clue))) problems.push(`${b.id}: clue "${k.clue}" repeats`);
+          clues.add(key(k.clue ?? ''));
+        }
+      }
+    }
+    expect(boards.length).toBeGreaterThanOrEqual(3);
     expect(problems).toEqual([]);
   });
 });

@@ -121,7 +121,7 @@
     background: color-mix(in srgb, var(--team) 10%, var(--bg-sunk));
     color: var(--team); font-family: var(--font-display); font-weight: 800; font-size: 1.2rem;
   }
-  .team input:focus { border-color: var(--team); box-shadow: 0 0 18px color-mix(in srgb, var(--team) 35%, transparent); }
+  .team input:focus { border-color: var(--team); box-shadow: 0 0 18px color-mix(in srgb, var(--team) calc(35% * var(--glow)), transparent); }
   .vs {
     align-self: center; font-family: var(--font-display); font-weight: 800; font-size: 0.85rem;
     color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; line-height: 1;

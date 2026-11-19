@@ -60,15 +60,15 @@
     background: radial-gradient(110% 55% at var(--x) 0%, color-mix(in srgb, var(--team) 38%, transparent), transparent 75%), var(--bg);
   }
   .done :global(.pop-in), .done.pop-in, .done.fade-in { animation: none; }
-  .trophy { font-size: 5rem; line-height: 1; filter: drop-shadow(0 10px 24px rgb(0 0 0 / 0.5)); }
+  .trophy { font-size: 5rem; line-height: 1; filter: drop-shadow(0 10px 24px color-mix(in srgb, var(--shade) 50%, transparent)); }
   h1 { font-size: clamp(2.6rem, 12vw, 4rem); line-height: 1; }
-  h1 span { color: var(--team); display: block; text-shadow: 0 0 36px color-mix(in srgb, var(--team) 55%, transparent); overflow-wrap: anywhere; }
+  h1 span { color: var(--team); display: block; text-shadow: 0 0 36px color-mix(in srgb, var(--team) calc(55% * var(--glow)), transparent); overflow-wrap: anywhere; }
   .final { width: 100%; display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-3); }
   .row {
     display: flex; justify-content: space-between; align-items: center;
     padding: var(--s-3) var(--s-4); border-radius: var(--r-md);
     background: color-mix(in srgb, var(--team) 18%, var(--surface)); border: 2px solid var(--team);
-    box-shadow: 0 0 24px color-mix(in srgb, var(--team) 35%, transparent);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--team) calc(35% * var(--glow)), transparent);
     font-weight: 800; font-size: 1.15rem; color: var(--team);
   }
   .row b { font-family: var(--font-display); font-size: 2rem; line-height: 1; color: var(--text); }

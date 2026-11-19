@@ -52,8 +52,8 @@
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .lg { min-height: 68px; font-size: 1.35rem; }
   .sm { min-height: 44px; font-size: 0.98rem; padding: 0 var(--s-4); width: auto; }
-  .primary { background: var(--accent); color: var(--on-accent); box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .primary { background: var(--accent); color: var(--on-accent); box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) calc(35% * var(--glow)), transparent); }
   .secondary { background: var(--surface); color: var(--text); }
   .ghost { background: transparent; color: var(--text-dim); }
-  .danger { background: color-mix(in srgb, var(--c-bad) 18%, var(--surface)); color: #ffd0d8; }
+  .danger { background: color-mix(in srgb, var(--c-bad) 18%, var(--surface)); color: var(--on-danger); }
 </style>

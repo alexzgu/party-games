@@ -191,7 +191,7 @@
   .word { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
   .error {
     display: flex; align-items: center; gap: var(--s-3); justify-content: space-between; padding: var(--s-3) var(--s-4);
-    border-radius: var(--r-md); background: color-mix(in srgb, var(--c-bad) 16%, var(--surface)); color: #ffd0d8;
+    border-radius: var(--r-md); background: color-mix(in srgb, var(--c-bad) 16%, var(--surface)); color: var(--on-danger);
   }
   .note { font-size: 0.92rem; }
   .nokey { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s-2); color: var(--text-dim); }

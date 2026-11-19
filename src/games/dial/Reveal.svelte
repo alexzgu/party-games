@@ -169,7 +169,7 @@
   .score { display: flex; align-items: center; gap: var(--s-4); }
   .pts {
     font-family: var(--font-display); font-weight: 800; font-size: 4.6rem; line-height: 1;
-    color: var(--team); text-shadow: 0 0 28px color-mix(in srgb, var(--team) 50%, transparent); font-variant-numeric: tabular-nums; min-width: 2.2ch; text-align: center;
+    color: var(--team); text-shadow: 0 0 28px color-mix(in srgb, var(--team) calc(50% * var(--glow)), transparent); font-variant-numeric: tabular-nums; min-width: 2.2ch; text-align: center;
   }
   .pts.zero { color: var(--text-faint); text-shadow: none; }
   .fly { display: inline-block; }

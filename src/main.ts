@@ -5,6 +5,10 @@ import { mount } from 'svelte';
 import App from './App.svelte';
 import { startUpdates } from './lib/update';
 import { requestPersistence } from './lib/storage';
+import { applyTheme } from './lib/settings.svelte';
+
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
 mount(App, { target: document.getElementById('app')! });
 
