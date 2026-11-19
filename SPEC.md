@@ -62,7 +62,7 @@ shout clues; the holder tilts down for "got it", up for "pass".
 
 - **Setup**: grid of decks (emoji, name, word count); tap to select one or several (mixed).
   Round length 30/60/90/120 s (default 60). Controls: Tilt (default when motion works) or Tap.
-  Entry to "My decks" (create, edit, delete, make with Claude).
+  Entry to "My decks" (create, edit, delete, make a deck).
 - **Start tap**: `unlockAudio()`, `requestMotion()` (iOS prompt), sample gravity for the sign fix
   (`axisSignFromLookingAt`), `keepAwake(true)`, and on Android try fullscreen + landscape lock
   (guarded; iOS has neither).
@@ -88,7 +88,7 @@ team sets a dial to where they think the target is.
 
 - **Setup**: two team names (editable), points to win (default 10), packs (multi-select),
   optional "steal" rule: the other team then guesses whether the target is left or right of
-  the needle for 1 point. Entry to make a pack with Claude.
+  the needle for 1 point. Entry to "Make a pack" (paste a list or ask Claude).
 - **Round**: hand-off screen ("Team X — pick a reader, hand them the phone") → reader view:
   scale card + dial showing the target zone; one free redraw of the card; optional clue text
   field → "Hide & hand over" → team view: scale + clue, big semicircle dial with a draggable
@@ -105,7 +105,7 @@ Mad Gab / Incoherent-genre. Each card is a phrase of real but unrelated words th
 aloud, sounds like something well known ("Eye Scream" → Ice Cream).
 
 - **Setup**: player names (3+; add/remove; remembered), packs (multi-select), seconds per card
-  (off/20/30/45/60, default 30), points to win (default 5). Entry to make a pack with Claude.
+  (off/20/30/45/60, default 30), points to win (default 5). Entry to "Make a pack" (paste a list or ask Claude).
 - **Card**: the reader rotates each card. Hand-off screen ("X reads — everyone else, eyes off the
   phone") → reader view: the phrase huge, a "Show category" button the reader may read out,
   answer hidden until press-and-hold, countdown ring. When someone shouts the answer the
