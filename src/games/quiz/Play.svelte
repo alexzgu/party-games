@@ -63,6 +63,7 @@
     if (team >= 0) { sfx.correct(); haptic.correct(); } else { sfx.pass(); haptic.pass(); }
     commit(next);
     if (team >= 0) pop(team, value);
+    else if (rules.solo(game) && game.penalty) pop(0, -value); // a solo miss costs the tile
   }
 
   function undo() {
@@ -72,6 +73,7 @@
     commit(rules.undo(game));
     if (last.kind === 'adjust') pop(last.team, -last.delta);
     else if (last.winner >= 0) pop(last.winner, -rules.tileValue(game, last.tile));
+    else if (rules.solo(game) && last.wrong.length) pop(0, rules.tileValue(game, last.tile));
   }
 
   function adjust(delta: number) {
@@ -91,7 +93,8 @@
   }
 </script>
 
-<div class="play" class:over={game.phase === 'win'}>
+<!-- Many teams on a clue (more so with ✗ marks) can outgrow a phone screen: there the page scrolls. -->
+<div class="play" class:over={game.phase === 'win'} class:tall={game.phase !== 'board' && game.teams.length > 8}>
   <TapToFinish>
     {#if game.phase === 'win'}
       <Win {game} {onnew} {onhome} />
@@ -120,6 +123,7 @@
     -webkit-user-select: none; user-select: none;
   }
   .play.over { height: auto; min-height: 100dvh; }
+  @media (max-width: 699px) { .play.tall { height: auto; min-height: 100dvh; } }
   /* Phone on its side: too short to fit everything, so the page grows and scrolls instead. */
   @media (max-height: 560px) { .play { height: auto; min-height: 100dvh; } }
 </style>

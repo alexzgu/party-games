@@ -1,25 +1,26 @@
 <script lang="ts">
-  import Segmented from '../../components/Segmented.svelte';
+  import Stepper from '../../components/Stepper.svelte';
   import { MAX_TEAMS, MIN_TEAMS } from './logic';
   import { DEFAULT_TEAMS, teamColor } from './look';
 
-  // How many teams, and their names. All four names are kept, so going 4 → 2 → 4 loses nothing.
+  // How many teams (one team is a solo player), and their names. All twenty names are kept, so
+  // going 12 → 3 → 12 loses nothing. Past four the names sit two to a row on wider screens.
   let { names = $bindable(), count = $bindable() }: { names: string[]; count: number } = $props();
-  const counts = Array.from({ length: MAX_TEAMS - MIN_TEAMS + 1 }, (_, i) => ({ value: MIN_TEAMS + i, label: `${MIN_TEAMS + i} teams` }));
 </script>
 
 <section class="teams" aria-labelledby="teams-h">
   <h3 id="teams-h">Teams</h3>
-  <Segmented bind:value={count} options={counts} label="Number of teams" />
-  <ul>
+  <Stepper bind:value={count} min={MIN_TEAMS} max={MAX_TEAMS} label={count === 1 ? 'Solo: one player' : 'Number of teams'} />
+  {#if count === 1}<p class="hint">Play for a high score: each tile is “Got it” or “Missed”.</p>{/if}
+  <ul class:many={count > 4}>
     {#each names.slice(0, count) as _, i (i)}
       <li class="pop-in" style:--team={teamColor(i)}>
-        <span class="dot" aria-hidden="true"></span>
+        <span class="dot" aria-hidden="true">{count > 1 && i < 9 ? i + 1 : ''}</span>
         <input
           type="text"
           bind:value={names[i]}
           placeholder={DEFAULT_TEAMS[i]}
-          aria-label="Team {i + 1} name"
+          aria-label={count === 1 ? 'Player name' : `Team ${i + 1} name`}
           autocomplete="off" autocapitalize="words" enterkeyhint="done" maxlength="18"
         />
       </li>
@@ -29,12 +30,15 @@
 
 <style>
   .teams { display: flex; flex-direction: column; gap: var(--s-2); }
-  ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+  .hint { margin: 0; color: var(--text-dim); font-size: 0.9rem; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-2); }
+  @media (min-width: 520px) { ul.many { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   li { position: relative; }
   .dot {
-    position: absolute; left: 14px; top: 50%; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%;
+    position: absolute; left: 10px; top: 50%; width: 22px; height: 22px; margin-top: -11px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 0.72rem; font-weight: 800; color: var(--bg);
     background: var(--team); box-shadow: 0 0 10px color-mix(in srgb, var(--team) 60%, transparent);
   }
-  input { padding-left: 38px; font-weight: 700; border-color: color-mix(in srgb, var(--team) 45%, var(--line-strong)); }
+  input { padding-left: 42px; font-weight: 700; border-color: color-mix(in srgb, var(--team) 45%, var(--line-strong)); }
   input::placeholder { color: var(--text-faint); font-weight: 600; }
 </style>

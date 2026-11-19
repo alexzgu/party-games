@@ -8,9 +8,9 @@
 <div class="stepper" role="group" aria-label={label}>
   <span class="label">{label}</span>
   <div class="ctrl">
-    <button onclick={() => set(value - step)} disabled={value <= min} aria-label="Less">−</button>
+    <button type="button" onclick={() => set(value - step)} disabled={value <= min} aria-label="Less">−</button>
     <output aria-live="polite">{format(value)}</output>
-    <button onclick={() => set(value + step)} disabled={value >= max} aria-label="More">+</button>
+    <button type="button" onclick={() => set(value + step)} disabled={value >= max} aria-label="More">+</button>
   </div>
 </div>
 

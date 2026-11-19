@@ -1,36 +1,61 @@
 <script lang="ts">
-  import { points, scores, signed, type Game } from './logic';
+  import { tick } from 'svelte';
+  import { leaders, points, scores, signed, type Game } from './logic';
   import { teamColor } from './look';
 
   // Every team's score, always on screen. Tapping a team opens the score fix.
   // `flash` floats the last change (+300, −200) over that team; `n` restarts it.
+  // Up to four teams get big score boxes. More get compact chips: on a phone two rows up to
+  // eight teams, then one row that scrolls sideways with the leader pinned at its start;
+  // on a wide screen up to ten across, then two even rows.
   let { game, flash = null, onfix }: {
     game: Game;
     flash?: { team: number; delta: number; n: number } | null;
     onfix: (team: number) => void;
   } = $props();
   const s = $derived(scores(game));
+  const n = $derived(game.teams.length);
+  const top = $derived(leaders(game));
+  const size = $derived(n <= 4 ? 'big' : n <= 8 ? 'mid' : 'many');
+  const wideCols = $derived(n <= 10 ? n : Math.ceil(n / 2));
+  let list = $state<HTMLOListElement>();
+
+  // In the sideways row a changed score may be out of view: bring it in.
+  $effect(() => {
+    if (!flash || size !== 'many') return;
+    const team = flash.team;
+    void tick().then(() => list?.querySelector(`[data-team="${team}"]`)?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' }));
+  });
 </script>
 
-<ol class="strip" style:--n={game.teams.length} aria-label="Scores">
-  {#each game.teams as name, i (i)}
-    <li style:--team={teamColor(i)}>
-      <button onclick={() => onfix(i)} aria-label="{name}: {points(s[i])} points. Fix score">
-        <span class="name">{name}</span>
-        <b class="score" class:neg={s[i] < 0}>{points(s[i])}</b>
-      </button>
-      {#if flash && flash.team === i}
-        {#key flash.n}
-          <span class="float" class:down={flash.delta < 0} aria-hidden="true">{signed(flash.delta)}</span>
-        {/key}
-      {/if}
-    </li>
-  {/each}
-</ol>
+<div class="wrap {size}">
+  {#if size === 'many' && top.length}
+    <p class="lead" style:--team={top.length === 1 ? teamColor(top[0]) : 'var(--accent)'} aria-label="Leading">
+      <span class="lname"><span class="crown" aria-hidden="true">👑</span>{top.length === 1 ? game.teams[top[0]] : `${top.length} tied`}</span>
+      <b>{points(s[top[0]])}</b>
+    </p>
+  {/if}
+  <ol class="strip" bind:this={list} style:--n={n} style:--wide={wideCols} style:--phone={size === 'mid' ? Math.ceil(n / 2) : n} aria-label="Scores">
+    {#each game.teams as name, i (i)}
+      <li style:--team={teamColor(i)} data-team={i}>
+        <button onclick={() => onfix(i)} aria-label="{name}: {points(s[i])} points{top.includes(i) && n > 1 ? ', leading' : ''}. Fix score">
+          <span class="name">{#if size !== 'big' && top.includes(i)}<span class="crown" aria-hidden="true">👑</span>{/if}{name}</span>
+          <b class="score" class:neg={s[i] < 0}>{points(s[i])}</b>
+        </button>
+        {#if flash && flash.team === i}
+          {#key flash.n}
+            <span class="float" class:down={flash.delta < 0} aria-hidden="true">{signed(flash.delta)}</span>
+          {/key}
+        {/if}
+      </li>
+    {/each}
+  </ol>
+</div>
 
 <style>
+  .wrap { display: flex; gap: 6px; min-width: 0; }
   .strip {
-    list-style: none; margin: 0; padding: 0;
+    flex: 1; min-width: 0; list-style: none; margin: 0; padding: 0;
     display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: clamp(6px, 1vmin, 14px);
   }
   li { position: relative; min-width: 0; }
@@ -47,11 +72,37 @@
     max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     font-weight: 700; font-size: clamp(0.8rem, 1.9vmin, 1.5rem); color: var(--text-dim);
   }
+  .crown { margin-right: 2px; font-size: 0.85em; }
   .score {
     font-family: var(--font-display); font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums;
     font-size: clamp(1.35rem, 5vmin, 3.6rem); letter-spacing: -0.02em;
   }
   .score.neg { color: var(--c-bad); }
+
+  /* Compact chips (five teams or more). */
+  .mid .strip, .many .strip { gap: 6px; }
+  .mid button, .many button { min-height: 48px; padding: 3px 6px; border-width: 1.5px; border-top-width: 4px; border-radius: var(--r-sm); }
+  .mid .name, .many .name { font-size: clamp(0.72rem, 1.6vmin, 1.05rem); }
+  .mid .score, .many .score { font-size: clamp(1.05rem, 3vmin, 2rem); }
+  .mid .strip { grid-template-columns: repeat(var(--phone), minmax(0, 1fr)); }
+  .many .strip {
+    display: flex; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none;
+  }
+  .many .strip::-webkit-scrollbar { display: none; }
+  .many li { flex: none; width: 96px; scroll-snap-align: start; }
+  .lead {
+    flex: none; width: 104px; min-height: 48px; margin: 0; padding: 3px 6px; border-radius: var(--r-sm);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--team) 22%, var(--bg-raised)); border: 2px solid var(--team);
+  }
+  .lname { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.72rem; font-weight: 800; color: var(--team); }
+  .lead b { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  @media (min-width: 700px) {
+    .mid .strip, .many .strip { display: grid; grid-template-columns: repeat(var(--wide), minmax(0, 1fr)); overflow: visible; }
+    .many li { width: auto; }
+    .lead { display: none; }
+  }
+
   .float {
     position: absolute; left: 50%; top: 0; translate: -50% 0; pointer-events: none;
     font-family: var(--font-display); font-weight: 800; font-size: clamp(1.3rem, 4.5vmin, 3rem); color: var(--c-good);
@@ -62,6 +113,18 @@
     from { opacity: 0; transform: translateY(10px) scale(0.6); }
     25% { opacity: 1; transform: translateY(-70%) scale(1.15); }
     to { opacity: 0; transform: translateY(-130%); }
+  }
+  /* A sideways-scrolling row clips anything above it, so there the change shows on the chip itself. */
+  .many .float {
+    top: 50%; translate: -50% -50%; padding: 0 8px; border-radius: var(--r-pill);
+    background: var(--bg-raised); font-size: 1.3rem; animation-name: badge;
+  }
+  @media (min-width: 700px) { .many .float { top: 0; translate: -50% 0; padding: 0; background: none; animation-name: float; font-size: clamp(1.3rem, 4.5vmin, 3rem); } }
+  @keyframes badge {
+    from { opacity: 0; transform: scale(0.6); }
+    20% { opacity: 1; transform: scale(1.1); }
+    70% { opacity: 1; transform: scale(1); }
+    to { opacity: 0; }
   }
   @media (prefers-reduced-motion: reduce) { .float { animation: none; opacity: 0; } }
 </style>

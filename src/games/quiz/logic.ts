@@ -3,9 +3,11 @@
 // sum of the log (plus wrong marks on the clue that is open), so undo is just "drop the last entry".
 import type { HistoryEntry } from '../../lib/history';
 import type { QuizBoard, QuizCategory } from '../../lib/content';
+import { emptyTiles, sizeProblem } from './board';
 
-export const MIN_TEAMS = 2;
-export const MAX_TEAMS = 4;
+/** One team is a solo player; 20 fills a big room. */
+export const MIN_TEAMS = 1;
+export const MAX_TEAMS = 20;
 export const BASE_STEP = 100;
 
 /** board: tiles · clue: host reads the clue · answer: answer shown, host picks who got it · win: game over */
@@ -39,8 +41,11 @@ export interface Options { teams: string[]; board: QuizBoard; double: boolean; p
 export const rowValues = (rows: number, double: boolean): number[] =>
   Array.from({ length: rows }, (_, r) => (r + 1) * BASE_STEP * (double ? 2 : 1));
 
+/** A board that cannot be played yet: wrong size or empty tiles. Setup never offers to start one. */
 export function newGame(o: Options): Game {
   if (o.teams.length < MIN_TEAMS || o.teams.length > MAX_TEAMS) throw new Error(`Need ${MIN_TEAMS}–${MAX_TEAMS} teams`);
+  const bad = sizeProblem(o.board) || (emptyTiles(o.board).length ? 'it has empty tiles' : '');
+  if (bad) throw new Error(`Board "${o.board.name}" cannot be played: ${bad}`);
   const rows = o.board.categories[0]?.clues.length ?? 0;
   return {
     v: 1,
@@ -54,6 +59,9 @@ export function newGame(o: Options): Game {
     ended: false,
   };
 }
+
+/** One team: a solo player going for a high score, with "Got it / Missed" instead of a contest. */
+export const solo = (g: Game) => g.teams.length === 1;
 
 // Tiles are numbered column by column: category c, row r → c * rows + r.
 export const rows = (g: Game) => g.values.length;
@@ -100,18 +108,25 @@ export function showAnswer(g: Game): Game {
   return g.phase === 'clue' ? { ...g, phase: 'answer' } : g;
 }
 
-/** Marks a team wrong on the open tile, or takes the mark back. Only with the penalty rule on. */
+/**
+ * Marks a team wrong on the open tile, or takes the mark back. Only with the penalty rule on and
+ * two or more teams: a solo player's wrong answer is their "Missed" (see award).
+ */
 export function toggleWrong(g: Game, team: number): Game {
-  if (!g.open || !g.penalty || (g.phase !== 'clue' && g.phase !== 'answer') || !g.teams[team]) return g;
+  if (!g.open || !g.penalty || solo(g) || (g.phase !== 'clue' && g.phase !== 'answer') || !g.teams[team]) return g;
   const wrong = g.open.wrong.includes(team) ? g.open.wrong.filter((t) => t !== team) : [...g.open.wrong, team].sort((a, b) => a - b);
   return { ...g, open: { ...g.open, wrong } };
 }
 
-/** The host taps the team that got it (or -1, nobody): the tile is used and play returns to the board. */
+/**
+ * The host taps the team that got it (or -1, nobody): the tile is used and play returns to the board.
+ * Solo, -1 is "Missed": with the penalty rule on it costs the player the tile's value.
+ */
 export function award(g: Game, winner: number): Game {
   if (g.phase !== 'answer' || !g.open) return g;
   if (winner !== -1 && (!g.teams[winner] || g.open.wrong.includes(winner))) return g;
-  const entry: LogEntry = { kind: 'tile', tile: g.open.tile, winner, wrong: g.open.wrong };
+  const wrong = solo(g) ? (winner === -1 && g.penalty ? [0] : []) : g.open.wrong;
+  const entry: LogEntry = { kind: 'tile', tile: g.open.tile, winner, wrong };
   return { ...g, phase: 'board', open: null, log: [...g.log, entry] };
 }
 
@@ -130,7 +145,8 @@ export function undo(g: Game): Game {
   if (g.phase !== 'board' || !last) return g;
   const log = g.log.slice(0, -1);
   if (last.kind === 'adjust') return { ...g, log };
-  return { ...g, log, phase: 'answer', open: { tile: last.tile, wrong: last.wrong } };
+  // Solo, a wrong mark only ever comes from "Missed", so the reopened tile starts clean.
+  return { ...g, log, phase: 'answer', open: { tile: last.tile, wrong: solo(g) ? [] : last.wrong } };
 }
 
 /** What Undo would take back, in a few words, or '' when there is nothing to undo. */
@@ -139,7 +155,7 @@ export function undoLabel(g: Game): string {
   if (!last) return '';
   if (last.kind === 'adjust') return `${g.teams[last.team]} ${signed(last.delta)}`;
   const { category, value } = tileInfo(g, last.tile);
-  return `${category} ${value}: ${last.winner >= 0 ? g.teams[last.winner] : 'nobody'}`;
+  return `${category} ${value}: ${outcome(g, last.winner)}`;
 }
 
 export const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
@@ -178,7 +194,10 @@ export function leaders(g: Game): number[] {
 
 export type Summary = Omit<HistoryEntry, 'id' | 'at'>;
 
-/** The History entry for a game reaching the win screen ("Brainiacs won 1500–900–200"). */
+/** Who a closed tile went to, in words: a team, "nobody", or solo "got it" / "missed". */
+const outcome = (g: Game, winner: number) => (solo(g) ? (winner >= 0 ? 'got it' : 'missed') : winner >= 0 ? g.teams[winner] : 'nobody');
+
+/** The History entry for a game reaching the win screen ("Brainiacs won 1,500–900–200"). */
 export function gameRecord(g: Game): Summary {
   return entry(g, g.ended ? 'led' : 'won', !g.ended);
 }
@@ -193,14 +212,17 @@ export function endedRecord(g: Game): Summary | null {
   return entry(g, 'led', false);
 }
 
+/** Teams whose scores all fit in a History title; more get the top score and a head count. */
+const TITLE_TEAMS = 4;
+
 function entry(g: Game, verb: 'won' | 'led', finished: boolean): Summary {
   const rows = standings(g);
   const top = leaders(g).map((i) => g.teams[i]);
-  const line = rows.map((r) => points(r.score)).join('–');
-  const head = top.length === 0 ? 'Nobody scored' : top.length === 1 ? `${top[0]} ${verb}` : `${listed(top)} tied`;
+  const line = rows.length > TITLE_TEAMS ? `${points(rows[0].score)} · ${rows.length} teams` : rows.map((r) => points(r.score)).join('–');
+  const head = top.length === 0 ? 'Nobody scored' : top.length === 1 ? `${top[0]} ${verb}` : top.length > 3 ? `${top.length} teams tied` : `${listed(top)} tied`;
   return {
     game: 'quiz',
-    title: `${head} ${line}`,
+    title: solo(g) ? `${g.teams[0]} scored ${points(rows[0].score)}` : `${head} ${line}`,
     scores: rows.map((r) => ({ name: r.name, score: r.score })),
     packs: [g.board.name],
     details: g.log.map((e) => detail(g, e)),
@@ -215,10 +237,11 @@ function detail(g: Game, e: LogEntry): string {
   if (e.kind === 'adjust') return `Score fix: ${g.teams[e.team]} ${signed(e.delta)}`;
   const t = tileInfo(g, e.tile);
   const wrong = g.penalty && e.wrong.length ? ` (wrong: ${e.wrong.map((i) => g.teams[i]).join(', ')})` : '';
-  return `${t.category} ${t.value} · ${t.answer}: ${e.winner >= 0 ? g.teams[e.winner] : 'nobody'}${wrong}`;
+  return `${t.category} ${t.value} · ${t.answer}: ${outcome(g, e.winner)}${solo(g) ? '' : wrong}`;
 }
 
 // ---- Saved state: everything a screen reads is checked, so a damaged save falls back to setup.
+// Saves from before 1–20 teams (2–4 teams, 3–6 × 3–5 boards) have the same shape and load as they are.
 
 const isInt = (x: unknown, min: number, max: number): x is number => Number.isInteger(x) && (x as number) >= min && (x as number) <= max;
 const str = (x: unknown): x is string => typeof x === 'string';

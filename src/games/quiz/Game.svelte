@@ -1,17 +1,24 @@
 <script lang="ts">
-  // Big Board entry. Sub-routes: #/quiz (setup) and #/quiz/play (board, clue, win). Using the
-  // hash means a reload lands on the same screen; the saved game puts it in the same state.
-  import { route, go } from '../../lib/router.svelte';
+  // Big Board entry. Sub-routes: #/quiz (setup), #/quiz/play (board, clue, win), #/quiz/make
+  // (make a board), #/quiz/board?id=<board> (see and edit one board) and #/quiz/board?new=1 (the
+  // board just made, not saved yet). Using the hash means a reload lands on the same screen; the
+  // saved game (or board in the making) puts it in the same state.
+  import { route, go, back } from '../../lib/router.svelte';
   import Setup from './Setup.svelte';
   import Play from './Play.svelte';
+  import MakeBoard from './MakeBoard.svelte';
+  import BoardEditor from './BoardEditor.svelte';
   import { loadGame, saveGame } from './store';
   import { endedRecord, newGame, type Game, type Options } from './logic';
   import { record } from '../../lib/history';
   import { demoGame } from './demo';
 
   const demo = route.params.get('demo') ?? '';
-  let game = $state.raw<Game | null>(demo ? demoGame(demo) : loadGame());
+  const demoTeams = Number(route.params.get('teams')) || 3;
+  let game = $state.raw<Game | null>(demo ? demoGame(demo, demoTeams) : loadGame());
   const sub = $derived(demo ? (game ? 'play' : '') : (route.path.split('/').filter(Boolean)[1] ?? ''));
+  /** What the paste step skipped, for the editor to show once. */
+  let note = $state('');
 
   function commit(next: Game | null) {
     game = next;
@@ -42,8 +49,30 @@
       onnew={() => { commit(null); go('/quiz', true); }}
       onhome={() => { commit(null); go('/', true); }}
     />
+  {:else if sub === 'make'}
+    <MakeBoard
+      onmade={(_, n) => { note = n; go('/quiz/board?new=1', true); }}
+      onresume={() => { note = ''; go('/quiz/board?new=1', true); }}
+      onback={() => back('/quiz')}
+    />
+  {:else if sub === 'board'}
+    {#key route.params.toString()}
+      <BoardEditor
+        id={route.params.get('new') ? null : (route.params.get('id') ?? '')}
+        {note}
+        onback={() => { note = ''; back('/quiz'); }}
+        onsaved={() => { note = ''; back('/quiz'); }}
+      />
+    {/key}
   {:else}
-    <Setup saved={game} onstart={start} onresume={() => go('/quiz/play', true)} onhome={() => go('/', true)} />
+    <Setup
+      saved={game}
+      onstart={start}
+      onresume={() => go('/quiz/play', true)}
+      onhome={() => go('/', true)}
+      onedit={(id) => go(`/quiz/board?id=${encodeURIComponent(id)}`)}
+      onmake={() => go('/quiz/make')}
+    />
   {/if}
 </div>
 

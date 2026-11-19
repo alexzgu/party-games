@@ -7,6 +7,8 @@
   // Fix one team's score by a board value, up or down. Each tap counts at once and can be undone.
   let { game, team, onadjust, onclose }: { game: Game; team: number; onadjust: (delta: number) => void; onclose: () => void } = $props();
   const score = $derived(scores(game)[team]);
+  /** Up to five values a row; taller boards wrap into even rows. */
+  const cols = $derived(Math.ceil(game.values.length / Math.ceil(game.values.length / 5)));
 </script>
 
 <Popup title="Fix the score" {onclose}>
@@ -15,15 +17,15 @@
     <p class="score" aria-live="polite">{points(score)}</p>
     <div class="rows">
       <span class="label">Add</span>
-      <div class="vals" style:--n={game.values.length}>
+      <div class="vals" style:--n={cols}>
         {#each game.values as v (v)}
-          <button class="up" onclick={() => onadjust(v)} aria-label="Add {v}">+{v}</button>
+          <button class="up" onclick={() => onadjust(v)} aria-label="Add {v}">+{points(v)}</button>
         {/each}
       </div>
       <span class="label">Take away</span>
-      <div class="vals" style:--n={game.values.length}>
+      <div class="vals" style:--n={cols}>
         {#each game.values as v (v)}
-          <button class="down" onclick={() => onadjust(-v)} aria-label="Take away {v}">−{v}</button>
+          <button class="down" onclick={() => onadjust(-v)} aria-label="Take away {v}">−{points(v)}</button>
         {/each}
       </div>
     </div>

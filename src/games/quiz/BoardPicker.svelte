@@ -4,14 +4,22 @@
   import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
   import { boardSize, findBoards } from './find';
+  import { emptyTiles } from './board';
 
   // Pick one board. Search and sort only change what is shown; the pick stays even when hidden.
-  let { boards, selected = $bindable() }: { boards: QuizBoard[]; selected: string | null } = $props();
+  // The pencil on a row opens that board in the editor; "Make a board" sits at the end.
+  let { boards, selected = $bindable(), onedit, onmake }: {
+    boards: QuizBoard[];
+    selected: string | null;
+    onedit: (id: string) => void;
+    onmake: () => void;
+  } = $props();
 
   let query = $state('');
   let sort = $state<SortKey>('suggested');
   const shown = $derived(findBoards(boards, query, sort));
   const tag = (b: QuizBoard) => (b.custom ? ' · Mine' : customQuiz.isEdited(b.id) ? ' · Edited' : '');
+  const empty = (b: QuizBoard) => emptyTiles(b).length;
 
   function pick(id: string) {
     selected = id;
@@ -27,6 +35,7 @@
   <ul role="radiogroup" aria-labelledby="boards-h">
     {#each shown as { b, hit } (b.id)}
       {@const on = selected === b.id}
+      {@const gaps = empty(b)}
       <li>
         <button class="row" class:on role="radio" aria-checked={on} onclick={() => pick(b.id)}>
           <span class="radio" aria-hidden="true">{on ? '✓' : ''}</span>
@@ -35,11 +44,23 @@
             <span class="blurb">{b.blurb}</span>
             {#if hit}<span class="hit">{hit}</span>{/if}
             <span class="cats">{b.categories.map((c) => c.name).join(' · ')}</span>
+            <span class="size">{boardSize(b)}{tag(b)}{#if gaps}<span class="gaps"> · {gaps} empty</span>{/if}</span>
           </span>
-          <span class="size">{boardSize(b)}{tag(b)}</span>
+        </button>
+        <button class="edit" onclick={() => onedit(b.id)} aria-label="See and edit {b.name}">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg>
         </button>
       </li>
     {/each}
+    <li>
+      <button class="row make" onclick={onmake}>
+        <span class="spark" aria-hidden="true">✨</span>
+        <span class="txt">
+          <span class="name">Make a board</span>
+          <span class="blurb">Start blank, paste one, or ask Claude</span>
+        </span>
+      </button>
+    </li>
   </ul>
 </section>
 
@@ -47,9 +68,10 @@
   .boards { display: flex; flex-direction: column; }
   .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+  li { position: relative; }
   .row {
     width: 100%; display: flex; align-items: flex-start; gap: var(--s-3); text-align: left;
-    padding: var(--s-3) var(--s-3) var(--s-3) var(--s-3); border-radius: var(--r-md);
+    padding: var(--s-3) 56px var(--s-3) var(--s-3); border-radius: var(--r-md);
     border: 2px solid var(--line); background: var(--surface);
     transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) ease, background var(--dur-fast) ease;
   }
@@ -65,5 +87,19 @@
   .blurb { color: var(--text-dim); font-size: 0.88rem; line-height: 1.3; }
   .hit { color: var(--text-faint); font-size: 0.8rem; font-style: italic; overflow-wrap: anywhere; }
   .cats { color: var(--text-faint); font-size: 0.78rem; line-height: 1.3; margin-top: 2px; }
-  .size { flex: none; color: var(--text-faint); font-size: 0.8rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .size { color: var(--text-faint); font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .gaps { color: var(--c-pass); }
+  .make { border-style: dashed; border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: transparent; padding-right: var(--s-3); }
+  .spark { flex: none; width: 26px; font-size: 1.3rem; text-align: center; }
+  /* 48px to tap, drawn as a smaller circle so it reads as part of the row */
+  .edit {
+    position: absolute; top: 50%; right: 4px; translate: 0 -50%; width: 48px; height: 48px; padding: 0;
+    border: 0; background: transparent; color: var(--text-dim); display: grid; place-items: center;
+  }
+  .edit::before {
+    content: ''; position: absolute; inset: 6px; border-radius: 50%;
+    background: var(--overlay); border: 1.5px solid var(--line-strong);
+  }
+  .edit svg { position: relative; }
+  .edit:active::before { background: color-mix(in srgb, var(--accent) 30%, var(--surface)); }
 </style>
