@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { award, newGame, next, noPoint, rematch, showCard, undo, validGame, validSetup, winner } from './logic';
+import { award, gameRecord, newGame, next, noPoint, rematch, showCard, undo, validGame, validSetup, winner } from './logic';
 
 const card = { phrase: 'Eye Scream', answer: 'Ice Cream', hint: 'Food' };
 const start = () => newGame(['Ana', 'Ben', 'Cy'], { target: 2, seconds: 30, packIds: ['classic'] });
@@ -74,6 +74,23 @@ describe('say what rules', () => {
     s = showCard(s, { ...card, phrase: 'I Scream' });
     expect(s.dealt).toEqual(['icecream']);
     expect(rematch(next(noPoint(s, 'nobody'))).dealt).toEqual(['icecream']);
+  });
+
+  it('logs each played card for the history entry; undo and rematch unlog', () => {
+    let s = next(award(showCard(start(), card), 1)); // Ben gets Ice Cream
+    s = undo(award(showCard(s, { phrase: 'Sand A Claws', answer: 'Santa Claus', hint: '' }), 0)); // wrong name, undone
+    s = next(noPoint(s, 'timeout'));
+    s = { ...award(showCard(s, card), 1), players: [{ name: 'Ana', score: 1 }, { name: 'Ben', score: 2 }, { name: 'Cy', score: 0 }] };
+    expect(gameRecord(s, ['Classic'])).toEqual({
+      game: 'gibberish',
+      title: 'Ben won 2–1–0',
+      scores: [{ name: 'Ben', score: 2 }, { name: 'Ana', score: 1 }, { name: 'Cy', score: 0 }],
+      packs: ['Classic'],
+      details: ['Eye Scream → Ice Cream: Ben', 'Sand A Claws → Santa Claus: nobody', 'Eye Scream → Ice Cream: Ben'],
+    });
+    expect(rematch(next(s)).log).toEqual([]);
+    const { log: _, ...older } = s;
+    expect(validGame(older)?.log).toEqual([]); // saves from before the log still load
   });
 
   it('checks each saved setup field on its own', () => {

@@ -3,6 +3,7 @@
   import { GAMES } from './app.config';
   import Home from './pages/Home.svelte';
   import Settings from './pages/Settings.svelte';
+  import History from './pages/History.svelte';
   import Crashed from './pages/Crashed.svelte';
 
   // Games load on demand; the service worker has them cached, so this is instant offline too.
@@ -25,6 +26,8 @@
   <Home />
 {:else if segment === 'settings'}
   <Settings />
+{:else if segment === 'history'}
+  <History />
 {:else if games[segment]}
   <svelte:boundary>
     {#await games[segment]() then mod}

@@ -27,8 +27,10 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   `sound` (synthesised cues; call `unlockAudio()` in the first tap), `haptics`, `wakelock`,
   `motion` (permission, gravity stream, sign fix, upright rotation), `tilt` (gesture detector),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
-  `claude` (live generation, streamed line by line), `random`.
-- `src/components/` — `Screen` (page frame: back button, title, sticky actions), `Button`,
+  `claude` (live generation, streamed line by line), `history` (finished rounds and games),
+  `paste` (reading pasted lists), `update` (new versions switch in on the main menu), `random`.
+- `src/components/` — `Screen` (page frame: back button, title, sticky actions), `Popup`,
+  `HowTo` (the "?" header button that opens a game's rules), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
   items while they stream in).
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
@@ -52,6 +54,21 @@ Three routes, in the order the owner chose to rely on them:
    `streamLines()` hands each line over as soon as it is complete; items stream into `Triage`;
    "More" sends the items already kept so Claude avoids repeats.
 
+**Every pack can be opened and edited**, built-in or the player's own. Editing a built-in saves
+an edit under the same id that replaces it everywhere on that phone, marked "Edited", until
+"Restore original". Only the player's own packs can be deleted.
+
+## Shared behaviour
+
+- **Home** shows the three games (name, emoji, player count), History and Settings. No blurbs.
+- **Rules** live in each game's "?" popup, not on its screens.
+- **History** (`#/history`): one entry per Heads Down. round (rewritten if a word is fixed
+  afterwards) and per finished Spectrum or Inn Co Hear Ant game: title, scores, packs and
+  details. Filter by game, open, delete one, or clear all. Stored on the phone only.
+- **Tap to skip**: a tap finishes any animation players are waiting through (reveals, points,
+  win screens); scores are applied before animations start, so skipping never changes them.
+  Live play (Heads Down. countdown and round, Inn Co Hear Ant card timer) is never skippable.
+
 Updates reach phones without interrupting play: a new version downloads in the background
 (checked every minute) and switches in only on the main menu (`src/lib/update.ts`).
 
@@ -62,7 +79,7 @@ shout clues; the holder tilts down for "got it", up for "pass".
 
 - **Setup**: grid of decks (emoji, name, word count); tap to select one or several (mixed).
   Round length 30/60/90/120 s (default 60). Controls: Tilt (default when motion works) or Tap.
-  Entry to "My decks" (create, edit, delete, make a deck).
+  "Edit decks" opens the deck list: open any deck to see, edit or restore its words.
 - **Start tap**: `unlockAudio()`, `requestMotion()` (iOS prompt), sample gravity for the sign fix
   (`axisSignFromLookingAt`), `keepAwake(true)`, and on Android try fullscreen + landscape lock
   (guarded; iOS has neither).
@@ -71,8 +88,9 @@ shout clues; the holder tilts down for "got it", up for "pass".
 - **Play**: the word as large as possible (`FitText`), timer, score. The screen content is rotated
   so text reads upright for the people facing the phone, even when the phone's rotation lock
   keeps the page in portrait (`uprightRotation` combined with `screen.orientation.angle`; fixed
-  at countdown start). Tilt down → correct (green flash, ✓, chime, double buzz); tilt up → pass
-  (amber flash, buzz). Tap fallback always on: right half correct, left half pass. Last 10 s:
+  at countdown start). Tilt down → correct (✓, chime, double buzz); tilt up → pass (buzz).
+  Feedback (Settings): by default the screen edge on the side of the matching tap zone glows
+  green or amber; "Flash the screen" flashes the whole screen instead. Tap fallback always on: right half correct, left half pass. Last 10 s:
   tick each second and a red pulsing timer. Leaving the app pauses; returning shows a Resume
   overlay. A small ✕ ends the round after confirmation. Deck exhausted → round ends early.
 - **Results**: score headline, every word shown marked ✓/✗ and tappable to fix mis-tilts.
@@ -88,7 +106,11 @@ team sets a dial to where they think the target is.
 
 - **Setup**: two team names (editable), points to win (default 10), packs (multi-select),
   optional "steal" rule: the other team then guesses whether the target is left or right of
-  the needle for 1 point. Entry to "Make a pack" (paste a list or ask Claude).
+  the needle for 1 point. Entry to "Make a pack" (paste a list or ask Claude). Each pack row
+  has a separate › that opens the pack editor.
+- **Teams**: Early Birds (`--c-team-a`, warm orange) vs Night Owls (`--c-team-b`, blue), on the
+  dark theme: team colour as glow, border and name, never a full bright fill. The scoreboard
+  is a face-off; the hand-off shows round, both scores and the rival.
 - **Round**: hand-off screen ("Team X — pick a reader, hand them the phone") → reader view:
   scale card + dial showing the target zone; one free redraw of the card; optional clue text
   field → "Hide & hand over" → team view: scale + clue, big semicircle dial with a draggable
@@ -106,6 +128,7 @@ aloud, sounds like something well known ("Eye Scream" → Ice Cream).
 
 - **Setup**: player names (3+; add/remove; remembered), packs (multi-select), seconds per card
   (off/20/30/45/60, default 30), points to win (default 5). Entry to "Make a pack" (paste a list or ask Claude).
+  A pencil on each pack tile opens the pack editor (giveaway check applies to edits).
 - **Card**: the reader rotates each card. Hand-off screen ("X reads — everyone else, eyes off the
   phone") → reader view: the phrase huge, a "Show category" button the reader may read out,
   answer hidden until press-and-hold, countdown ring. When someone shouts the answer the

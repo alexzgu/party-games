@@ -3,6 +3,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Stepper from '../../components/Stepper.svelte';
+  import HowTo from '../../components/HowTo.svelte';
   import Players from './Players.svelte';
   import PackPicker from './PackPicker.svelte';
   import { gibberishPacks } from '../../lib/content';
@@ -11,17 +12,18 @@
   import { MIN_PLAYERS, TARGET_RANGE, TIMER_CHOICES, standings, type GameState } from './logic';
   import { timerLabel } from './ui';
 
-  let { saved, onstart, onresume, onmake, onhome }: {
+  let { saved, onstart, onresume, onmake, onedit, onhome }: {
     saved: GameState | null;
     onstart: (names: string[], opts: { target: number; seconds: number; packIds: string[] }) => void;
     onresume: () => void;
     onmake: () => void;
+    onedit: (packId: string) => void;
     onhome: () => void;
   } = $props();
 
   const prefs = loadSetup();
   const allPacks = gibberishPacks();
-  let packs = $state(allPacks);
+  const packs = allPacks;
   let names = $state(loadPlayers());
   let seconds = $state(prefs.seconds);
   let target = $state(prefs.target);
@@ -60,6 +62,19 @@
 </script>
 
 <Screen title={gameName('gibberish')} onback={onhome} backLabel="Home">
+  {#snippet trailing()}
+    <HowTo>
+      <ol>
+        <li>Each card, one player is the <b>reader</b>. The phone tells you who.</li>
+        <li>The reader reads a nonsense phrase out loud, like <b>“Eye Scream”</b>. Again and again, faster each time.</li>
+        <li>Everyone else shouts what it really sounds like: <b>Ice Cream</b>.</li>
+        <li>Stuck? The reader can show the category and read it out.</li>
+        <li>The reader taps the name of whoever said it first. They get a point.</li>
+        <li>No point if the timer runs out or nobody gets it. Skip swaps in a new card, no penalty.</li>
+        <li>The phone passes to the next reader. First to {target} points wins.</li>
+      </ol>
+    </HowTo>
+  {/snippet}
 <div class="setup">
   {#if inProgress}
     {@const top = standings(inProgress).slice(0, 3)}
@@ -69,13 +84,10 @@
         <span>{top.map((r) => `${r.player.name} ${r.player.score}`).join(' · ')}{inProgress.players.length > 3 ? ' …' : ''}</span>
       </span>
     </div>
-  {:else}
-    <p class="intro">Read nonsense out loud. First to hear the real thing scores.</p>
-    <p class="example" aria-label="Example: Eye Scream sounds like Ice Cream"><span>“Eye Scream”</span> <b aria-hidden="true">→</b> <span>Ice Cream</span></p>
   {/if}
 
   <Players bind:names />
-  <PackPicker bind:packs bind:selected {onmake} />
+  <PackPicker {packs} bind:selected {onmake} {onedit} />
 
   <section class="opts" aria-labelledby="opts-h">
     <h3 id="opts-h">Rules</h3>
@@ -109,10 +121,6 @@
   .setup :global(h3) {
     color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700;
   }
-  .intro { color: var(--text-dim); }
-  .example { margin-top: calc(-1 * var(--s-2)); font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--text-faint); }
-  .example b { color: var(--accent); margin: 0 var(--s-1); }
-  .example span:last-child { color: var(--c-gold); }
   .resume {
     display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); text-align: left;
     padding: var(--s-4); border-radius: var(--r-lg); border: 2px solid var(--accent);

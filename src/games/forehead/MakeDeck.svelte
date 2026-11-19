@@ -6,7 +6,7 @@
   import Triage from '../../components/Triage.svelte';
   import PasteList from '../../components/PasteList.svelte';
   import Segmented from '../../components/Segmented.svelte';
-  import { customDecks, dedupe, slugify } from '../../lib/content';
+  import { customDecks, dedupe, slugify, wordDecks } from '../../lib/content';
   import { hasKey } from '../../lib/claude';
   import { back, go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
@@ -19,8 +19,9 @@
   // repeating what is there.
   let { into = null, demo = null }: { into?: string | null; demo?: string | null } = $props();
 
-  const mine = customDecks.all();
   const start = untrack(() => ({ into, demo: demo === 'triage', isDemo: demo != null }));
+  // Decks words can be added to: my own, plus the built-in deck this was opened from (that saves an edit of it).
+  const mine = [...customDecks.all(), ...wordDecks().filter((d) => d.id === start.into && customDecks.isBuiltin(d.id))];
   let target = $state(mine.some((d) => d.id === start.into) ? start.into! : 'new');
   let theme = $state('');
   let count = $state(40);

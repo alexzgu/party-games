@@ -2,22 +2,21 @@
   import { customGibberish, type GibberishPack } from '../../lib/content';
   import { sfx } from '../../lib/sound';
 
-  // Multi-select pack tiles. Packs made on this phone carry a "Mine" tag and can be deleted.
-  let { packs = $bindable(), selected = $bindable(), onmake }: { packs: GibberishPack[]; selected: string[]; onmake: () => void } = $props();
-  let confirming = $state('');
+  // Multi-select pack tiles. Tapping a tile ticks it; the pencil in its corner opens the pack
+  // to see, edit or delete its cards. Own packs carry "Mine", edited built-ins "Edited".
+  let { packs, selected = $bindable(), onmake, onedit }: {
+    packs: GibberishPack[];
+    selected: string[];
+    onmake: () => void;
+    onedit: (packId: string) => void;
+  } = $props();
 
   function toggle(id: string) {
     selected = selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id];
     sfx.tap();
   }
 
-  function del(id: string) {
-    if (confirming !== id) { confirming = id; return; }
-    customGibberish.remove(id);
-    packs = packs.filter((p) => p.id !== id);
-    selected = selected.filter((x) => x !== id);
-    confirming = '';
-  }
+  const tag = (p: GibberishPack) => (p.custom ? ' · Mine' : customGibberish.isEdited(p.id) ? ' · Edited' : '');
 </script>
 
 <section class="packs" aria-labelledby="packs-h">
@@ -30,14 +29,11 @@
           <span class="check" aria-hidden="true">{on ? '✓' : ''}</span>
           <span class="name">{p.name}</span>
           <span class="blurb">{p.blurb}</span>
-          <span class="meta">{p.cards.length} cards{p.custom ? ' · Mine' : ''}</span>
+          <span class="meta">{p.cards.length} cards{tag(p)}</span>
         </button>
-        {#if p.custom}
-          <button class="del" class:confirm={confirming === p.id} onclick={() => del(p.id)} onblur={() => (confirming = '')}
-            aria-label={confirming === p.id ? `Tap again to delete ${p.name}` : `Delete ${p.name}`}>
-            {confirming === p.id ? 'Delete?' : '✕'}
-          </button>
-        {/if}
+        <button class="edit" onclick={() => onedit(p.id)} aria-label="See and edit {p.name}">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg>
+        </button>
       </li>
     {/each}
     <li>
@@ -69,12 +65,18 @@
   .name { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; line-height: 1.1; padding-right: 30px; }
   .name.wide { padding-right: 0; }
   .blurb { color: var(--text-dim); font-size: 0.85rem; line-height: 1.25; flex: 1; }
-  .meta { color: var(--text-faint); font-size: 0.8rem; font-weight: 600; }
+  .meta { color: var(--text-faint); font-size: 0.8rem; font-weight: 600; padding-right: 40px; min-height: 30px; display: flex; align-items: flex-end; }
   .make { border-style: dashed; border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: transparent; }
   .spark { font-size: 1.4rem; }
-  .del {
-    position: absolute; bottom: 6px; right: 6px; min-width: 44px; height: 44px; padding: 0 var(--s-2);
-    border: 0; border-radius: var(--r-pill); background: transparent; color: var(--text-faint); font-weight: 700;
+  /* 44px to tap, drawn as a smaller circle so it reads as part of the tile */
+  .edit {
+    position: absolute; bottom: 2px; right: 2px; width: 48px; height: 48px; padding: 0;
+    border: 0; background: transparent; color: var(--text-dim); display: grid; place-items: center;
   }
-  .del.confirm { background: color-mix(in srgb, var(--c-bad) 30%, var(--surface)); color: var(--text); }
+  .edit::before {
+    content: ''; position: absolute; inset: 7px; border-radius: 50%;
+    background: rgb(255 255 255 / 0.08); border: 1.5px solid var(--line-strong);
+  }
+  .edit svg { position: relative; }
+  .edit:active::before { background: color-mix(in srgb, var(--accent) 30%, var(--surface)); }
 </style>

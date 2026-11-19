@@ -15,6 +15,7 @@
     interactive = false,
     showNeedle = true,
     markHit = false,
+    instant = false,
     label = 'Dial',
     valuetext = '',
     onrelease,
@@ -28,6 +29,8 @@
     showNeedle?: boolean;
     /** Makes the wedge under the needle glow, for the reveal. */
     markHit?: boolean;
+    /** Skips the sweep and the glow: everything shows in its final state at once. */
+    instant?: boolean;
     label?: string;
     valuetext?: string;
     onrelease?: (v: number) => void;
@@ -128,6 +131,7 @@
   class="dial"
   class:interactive
   class:dragging
+  class:instant
   role="slider"
   tabindex={interactive ? 0 : -1}
   aria-label={label}
@@ -237,6 +241,10 @@
   .needle-tip { fill: var(--text); stroke: var(--bg-sunk); stroke-width: 3; }
   .hub { fill: var(--surface-hi); stroke: var(--text); stroke-width: 3; }
   .hub-dot { fill: var(--accent); }
+
+  /* transition: none cancels a sweep already under way (a shorter duration would not). */
+  .instant .cover { transition: none; }
+  .instant .band.hit { animation: none; }
 
   @media (prefers-reduced-motion: reduce) {
     .dial { --sweep: 0ms; }

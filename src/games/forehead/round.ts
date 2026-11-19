@@ -17,6 +17,8 @@ export interface Round {
   remainingMs: number;
   phase: Phase;
   ended?: EndReason;
+  /** This round's entry in the shared history, rewritten when a mark is fixed. */
+  logId?: string;
 }
 
 export const ROUND_LENGTHS = [30, 60, 90, 120] as const;

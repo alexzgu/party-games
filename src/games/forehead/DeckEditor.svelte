@@ -1,20 +1,28 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
-  import { customDecks, dedupe, slugify, type WordDeck } from '../../lib/content';
+  import { customDecks, dedupe, slugify, wordDecks, type WordDeck } from '../../lib/content';
   import { back, go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
 
-  // Edit one of my decks. Every change saves at once; there is no Save button to forget.
+  // See and edit any deck. Every change saves at once; there is no Save button to forget.
+  // Changing a built-in deck saves an edit of it on this phone, which "Restore original" undoes.
   let { id }: { id: string } = $props();
 
   const EMOJIS = ['🃏', '✨', '🎉', '🔥', '🍿', '🎤', '🐶', '🍔', '🌴', '🏆', '🎸', '👻', '💼', '🚀'];
 
-  const existing = customDecks.all().find((d) => d.id === id);
+  const openId = untrack(() => id); // the page is re-created for another id
+  const existing = wordDecks().find((d) => d.id === openId);
+  const builtin = customDecks.isBuiltin(openId);
   let deck = $state<WordDeck>(existing ?? { id: '', name: '', emoji: '🃏', blurb: '', words: [] });
+  let edited = $state(customDecks.isEdited(openId));
+  /** A built-in deck's own icon stays pickable. */
+  const emojis = existing?.emoji && !EMOJIS.includes(existing.emoji) ? [existing.emoji, ...EMOJIS] : EMOJIS;
   let draft = $state('');
   let confirmDelete = $state(false);
+  let confirmRestore = $state(false);
   let input: HTMLInputElement | undefined = $state();
 
   /** A new deck is picked for the next round once, when its first words arrive (never while empty). */
@@ -27,6 +35,8 @@
       history.replaceState(null, '', '#/forehead/deck?id=' + encodeURIComponent(deck.id));
     }
     customDecks.put({ ...$state.snapshot(deck), name: deck.name.trim() || 'My deck' });
+    edited = builtin;
+    confirmRestore = false;
     if (!picked && deck.words.length > 0) {
       picked = true;
       if (!prefs.deckIds.includes(deck.id)) prefs.deckIds = [deck.id, ...prefs.deckIds];
@@ -60,20 +70,44 @@
     back('/forehead/decks');
   }
 
+  function restore() {
+    if (!confirmRestore) { confirmRestore = true; return; }
+    customDecks.restore(deck.id);
+    const original = customDecks.original(deck.id);
+    if (original) deck = structuredClone(original);
+    edited = false;
+    confirmRestore = false;
+    sfx.tick();
+  }
+
   function claude() {
-    persist();
+    // A built-in only becomes an edit once words are actually added (MakeDeck saves it).
+    if (!builtin) persist();
     go('/forehead/make?into=' + encodeURIComponent(deck.id));
   }
 </script>
 
-<Screen title={existing ? 'Edit deck' : 'New deck'} accent="var(--c-forehead)">
+<Screen title={existing ? (builtin ? 'Built-in deck' : 'Edit deck') : 'New deck'} accent="var(--c-forehead)">
+  {#if builtin}
+    <div class="note" class:edited>
+      {#if edited}
+        <p><b>Edited</b> on this phone. Your changes replace the original everywhere.</p>
+        <Button size="sm" variant={confirmRestore ? 'danger' : 'secondary'} onclick={restore}>
+          {confirmRestore ? 'Tap again to undo all changes' : 'Restore original'}
+        </Button>
+      {:else}
+        <p>Comes with the game. Any change you make saves as your own version; you can restore the original later.</p>
+      {/if}
+    </div>
+  {/if}
+
   <section class="stack">
     <label class="field">
       <span class="lbl">Name</span>
       <input type="text" placeholder="e.g. Our Friend Group" bind:value={deck.name} oninput={persist} maxlength="40" />
     </label>
     <div class="emojis" role="radiogroup" aria-label="Deck icon">
-      {#each EMOJIS as e (e)}
+      {#each emojis as e (e)}
         <button role="radio" aria-checked={deck.emoji === e} class:on={deck.emoji === e} onclick={() => { deck.emoji = e; persist(); }}>{e}</button>
       {/each}
     </div>
@@ -101,7 +135,7 @@
     {/if}
   </section>
 
-  {#if deck.id}
+  {#if deck.id && !builtin}
     <Button variant={confirmDelete ? 'danger' : 'ghost'} onclick={remove}>{confirmDelete ? 'Tap again to delete this deck' : 'Delete deck'}</Button>
   {/if}
 
@@ -111,6 +145,12 @@
 </Screen>
 
 <style>
+  .note {
+    display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); padding: var(--s-3) var(--s-4);
+    border-radius: var(--r-md); background: var(--surface); color: var(--text-dim); font-size: 0.95rem;
+  }
+  .note.edited { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+  .note b { color: var(--accent); }
   .field { display: flex; flex-direction: column; gap: var(--s-1); }
   .lbl { font-weight: 600; color: var(--text-dim); font-size: 0.92rem; }
   .emojis { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }

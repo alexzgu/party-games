@@ -2,6 +2,7 @@
   import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
+  import HowTo from '../../components/HowTo.svelte';
   import Stepper from '../../components/Stepper.svelte';
   import Toggle from '../../components/Toggle.svelte';
   import { spectrumPacks, customSpectra, type SpectrumPack } from '../../lib/content';
@@ -12,11 +13,9 @@
 
   let { config, onstart, onmake }: { config: Config; onstart: (c: Config) => void; onmake: () => void } = $props();
 
-  let packs = $state<SpectrumPack[]>(spectrumPacks());
+  const packs: SpectrumPack[] = spectrumPacks();
   // svelte-ignore state_referenced_locally
   let cfg = $state<Config>({ ...config, names: [...config.names], packIds: config.packIds.filter((id) => packs.some((p) => p.id === id)) });
-  let confirmDelete = $state<string | null>(null);
-  let howOpen = $state(false);
 
   const selected = $derived(new Set(cfg.packIds));
   const cardCount = $derived(packs.filter((p) => selected.has(p.id)).reduce((n, p) => n + p.cards.length, 0));
@@ -27,14 +26,6 @@
     cfg.packIds = selected.has(id) ? cfg.packIds.filter((x) => x !== id) : [...cfg.packIds, id];
   }
 
-  function remove(id: string) {
-    if (confirmDelete !== id) { confirmDelete = id; return; }
-    customSpectra.remove(id);
-    packs = spectrumPacks();
-    cfg.packIds = cfg.packIds.filter((x) => x !== id);
-    confirmDelete = null;
-  }
-
   function start() {
     cfg.names = cfg.names.map((n, i) => n.trim() || ['Team 1', 'Team 2'][i]) as [string, string];
     onstart($state.snapshot(cfg) as Config);
@@ -42,34 +33,37 @@
 </script>
 
 <Screen title={gameName('dial')} accent="var(--c-dial)" onback={() => go('/')} backLabel="Home">
-  <section class="intro">
-    <p class="lead">One clue. A secret spot on a scale. Can your team read your mind?</p>
-    <button class="how-btn" aria-expanded={howOpen} onclick={() => (howOpen = !howOpen)}>{howOpen ? 'Hide rules' : 'How to play'}</button>
-    {#if howOpen}
-      <ol class="how fade-in">
-        <li>Split into two teams. Each turn, one player is the <b>reader</b>.</li>
-        <li>Only the reader sees where the target sits between two opposites, like <i>Cold</i> and <i>Hot</i>.</li>
-        <li>The reader says one clue that belongs at that spot. Their team drags the needle to it.</li>
-        <li>Reveal: closer is better, up to 4 points. Teams take turns. First to the goal wins.</li>
+  {#snippet trailing()}
+    <HowTo title="How to play {gameName('dial')}">
+      <ol>
+        <li>Two teams take turns. Each turn, one player on the team is the <b>reader</b>.</li>
+        <li>Only the reader sees where the hidden <b>target</b> sits on a scale between two opposites, like Cold and Hot.</li>
+        <li>The reader gives <b>one clue</b> that fits that spot. No other hints.</li>
+        <li>Their team turns the <b>dial</b> to where they think the target is, then locks it in.</li>
+        <li>Scoring: right on target <b>4</b> points, close <b>3</b>, near <b>2</b>, further off nothing.</li>
+        <li><b>Steal</b> (optional): the other team then calls whether the target is left or right of the needle. A right call wins them <b>1</b> point.</li>
+        <li>First team to the points goal wins. A tie keeps playing.</li>
       </ol>
-    {/if}
-  </section>
+    </HowTo>
+  {/snippet}
 
   <section class="stack">
     <h3>Teams</h3>
-    {#each cfg.names as _, i (i)}
-      <label class="team" style:--team={teamColor(i as 0 | 1)}>
-        <span class="dot" aria-hidden="true"></span>
-        <span class="sr-only">Team {i + 1} name</span>
-        <input type="text" maxlength="18" autocomplete="off" bind:value={cfg.names[i]} />
-      </label>
-    {/each}
+    <div class="teams">
+      {#each cfg.names as _, i (i)}
+        {#if i === 1}<span class="vs" aria-hidden="true">vs</span>{/if}
+        <label class="team" style:--team={teamColor(i as 0 | 1)}>
+          <span class="sr-only">Team {i + 1} name</span>
+          <input type="text" maxlength="18" autocomplete="off" bind:value={cfg.names[i]} />
+        </label>
+      {/each}
+    </div>
   </section>
 
   <section class="stack">
     <h3>Rules</h3>
     <Stepper label="Points to win" bind:value={cfg.goal} min={5} max={30} />
-    <Toggle label="Steal rule" hint="After each guess, the other team calls left or right of the needle for 1 point" bind:checked={cfg.steal} />
+    <Toggle label="Steal rule" bind:checked={cfg.steal} />
   </section>
 
   <section class="stack">
@@ -80,17 +74,14 @@
           <button class="pack" class:on={selected.has(p.id)} aria-pressed={selected.has(p.id)} onclick={() => togglePack(p.id)}>
             <span class="check" aria-hidden="true">{selected.has(p.id) ? '✓' : ''}</span>
             <span class="txt">
-              <span class="name">{p.name}{#if p.custom}<span class="yours">yours</span>{/if}</span>
-              <span class="blurb">{p.blurb || `${p.cards.length} cards`}</span>
+              <span class="name">{p.name}{#if p.custom}<span class="tag">yours</span>{:else if customSpectra.isEdited(p.id)}<span class="tag">edited</span>{/if}</span>
+              {#if p.blurb}<span class="blurb">{p.blurb}</span>{/if}
             </span>
-            <span class="n">{p.cards.length}</span>
           </button>
-          {#if p.custom}
-            <button class="del" class:armed={confirmDelete === p.id} onclick={() => remove(p.id)}
-              aria-label={confirmDelete === p.id ? `Confirm delete ${p.name}` : `Delete ${p.name}`}>
-              {confirmDelete === p.id ? 'Delete?' : '✕'}
-            </button>
-          {/if}
+          <button class="open" onclick={() => go(`/dial/pack?id=${encodeURIComponent(p.id)}`)} aria-label="See and edit the cards in {p.name} ({p.cards.length})">
+            <span class="n">{p.cards.length}</span>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </li>
       {/each}
     </ul>
@@ -102,21 +93,24 @@
   {/snippet}
 </Screen>
 
-<svelte:window onclick={(e) => { if (confirmDelete && !(e.target as Element).closest?.('.del')) confirmDelete = null; }} />
-
 <style>
-  .intro { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
-  .lead { font-size: 1.15rem; }
-  .how-btn { background: none; border: 0; padding: var(--s-2) 0; min-height: 44px; color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
-  .how { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: var(--s-2); color: var(--text-dim); }
-  .team { display: flex; align-items: center; gap: var(--s-3); }
-  .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--team); flex: none; }
-  .team input { border-color: color-mix(in srgb, var(--team) 55%, transparent); font-weight: 700; }
+  .teams { display: flex; flex-direction: column; gap: var(--s-2); }
+  .team { display: block; }
+  .team input {
+    border: 2px solid color-mix(in srgb, var(--team) 60%, transparent);
+    background: color-mix(in srgb, var(--team) 10%, var(--bg-sunk));
+    color: var(--team); font-family: var(--font-display); font-weight: 800; font-size: 1.2rem;
+  }
+  .team input:focus { border-color: var(--team); box-shadow: 0 0 18px color-mix(in srgb, var(--team) 35%, transparent); }
+  .vs {
+    align-self: center; font-family: var(--font-display); font-weight: 800; font-size: 0.85rem;
+    color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; line-height: 1;
+  }
   .packs-head { display: flex; justify-content: space-between; align-items: baseline; }
   .packs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   .pack-item { display: flex; gap: var(--s-2); align-items: stretch; }
   .pack {
-    flex: 1; display: flex; align-items: center; gap: var(--s-3); text-align: left;
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--s-3); text-align: left;
     min-height: var(--tap); padding: var(--s-3) var(--s-4); border-radius: var(--r-md);
     background: var(--surface); border: 2px solid transparent;
     transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
@@ -129,12 +123,12 @@
   .pack.on .check { background: var(--accent); border-color: var(--accent); }
   .txt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
   .name { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: var(--s-2); }
-  .yours { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 6px; border-radius: var(--r-pill); background: var(--surface-hi); color: var(--text-dim); }
+  .tag { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 6px; border-radius: var(--r-pill); background: var(--surface-hi); color: var(--text-dim); }
   .blurb { color: var(--text-dim); font-size: 0.9rem; }
-  .n { color: var(--text-faint); font-variant-numeric: tabular-nums; font-size: 0.9rem; }
-  .del {
-    flex: none; min-width: 52px; border-radius: var(--r-md); border: 0; background: var(--surface); color: var(--text-faint);
-    font-weight: 700; padding: 0 var(--s-3);
+  .open {
+    flex: none; width: 64px; border-radius: var(--r-md); border: 0; background: var(--surface); color: var(--text-dim);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   }
-  .del.armed { background: color-mix(in srgb, var(--c-bad) 25%, var(--surface)); color: var(--text); }
+  .open:active { background: var(--surface-hi); }
+  .n { font-variant-numeric: tabular-nums; font-size: 0.85rem; font-weight: 700; line-height: 1; }
 </style>

@@ -6,6 +6,7 @@
   import Button from '../../components/Button.svelte';
   import type { Game, TeamIndex } from './state';
   import { scoresBefore } from './state';
+  import { teamColor } from './look';
 
   let {
     game,
@@ -28,7 +29,8 @@
   const close = () => { menu = false; confirmEnd = false; };
 </script>
 
-<div class="frame fade-in">
+<div class="frame fade-in" class:t1={active === 1} class:lit={active !== null} style:--team={active !== null ? teamColor(active) : undefined}
+  style:--accent={active !== null ? teamColor(active) : undefined}>
   <header>
     <div class="grow"><Scoreboard teams={game.teams} scores={scoresBefore(game)} goal={game.goal} {active} /></div>
     <button class="menu" aria-label="Game menu" aria-expanded={menu} onclick={() => (menu = true)}>
@@ -62,7 +64,14 @@
     min-height: 100dvh; max-width: 640px; margin: 0 auto;
     display: flex; flex-direction: column;
     padding: calc(var(--safe-top) + var(--s-3)) calc(var(--safe-right) + var(--s-4)) 0 calc(var(--safe-left) + var(--s-4));
+    position: relative; isolation: isolate;
   }
+  /* A soft glow in the playing team's colour, from its side of the scoreboard. */
+  .lit::before {
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(80% 40% at 15% -5%, color-mix(in srgb, var(--team) 20%, transparent), transparent 70%), var(--bg);
+  }
+  .lit.t1::before { background: radial-gradient(80% 40% at 85% -5%, color-mix(in srgb, var(--team) 20%, transparent), transparent 70%), var(--bg); }
   header { display: flex; align-items: center; gap: var(--s-2); }
   .menu {
     flex: none; width: 48px; height: 48px; border-radius: var(--r-pill); border: 0;

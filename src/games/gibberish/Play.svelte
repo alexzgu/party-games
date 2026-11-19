@@ -4,10 +4,13 @@
   import Card from './Card.svelte';
   import Reveal from './Reveal.svelte';
   import Win from './Win.svelte';
+  import TapToFinish from './TapToFinish.svelte';
   import { makeDealer } from './deal';
   import { unlockAudio, sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
   import { keepAwake } from '../../lib/wakelock';
+  import { record } from '../../lib/history';
+  import { gibberishPacks } from '../../lib/content';
   import * as rules from './logic';
   import type { GameState } from './logic';
 
@@ -77,13 +80,17 @@
 
   function next() {
     const n = rules.next(game);
-    if (n.phase === 'win') { sfx.win(); haptic.end(); }
+    if (n.phase === 'win') {
+      sfx.win();
+      haptic.end();
+      if (!demo) record(rules.gameRecord(n, gibberishPacks().filter((p) => n.packIds.includes(p.id)).map((p) => p.name)));
+    }
     step(n);
   }
 </script>
 
 {#if game.phase === 'handoff'}
-  <Handoff {game} onbegin={begin} {onleave} {error} />
+  <TapToFinish><Handoff {game} onbegin={begin} {onleave} {error} /></TapToFinish>
 {:else if game.phase === 'card'}
   {#key game.card}
     <Card
@@ -100,7 +107,7 @@
     />
   {/key}
 {:else if game.phase === 'reveal'}
-  <Reveal {game} onnext={next} onundo={() => step(rules.undo(game))} {onleave} />
+  <TapToFinish><Reveal {game} onnext={next} onundo={() => step(rules.undo(game))} {onleave} /></TapToFinish>
 {:else}
-  <Win {game} onrematch={() => step(rules.rematch(game))} onnew={onleave} {onhome} />
+  <TapToFinish><Win {game} onrematch={() => step(rules.rematch(game))} onnew={onleave} {onhome} /></TapToFinish>
 {/if}

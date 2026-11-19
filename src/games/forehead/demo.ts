@@ -1,4 +1,4 @@
-// Dev-only fixtures for screenshots: #/forehead/play?demo=ready|count|play|flash|pause|timesup|results
+// Dev-only fixtures for screenshots: #/forehead/play?demo=ready|count|play|flash|flashpass|pause|timesup|results
 // (add &rot=90 to see the turned play screen), #/forehead/make?demo=form|triage. Never linked from the UI.
 import { newRound, type Round } from './round';
 import { recordScore } from './state.svelte';

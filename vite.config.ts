@@ -16,7 +16,7 @@ export default defineConfig({
       manifest: {
         name: APP.name,
         short_name: APP.shortName,
-        description: APP.tagline,
+        description: APP.name,
         theme_color: '#120d24',
         background_color: '#120d24',
         display: 'standalone',

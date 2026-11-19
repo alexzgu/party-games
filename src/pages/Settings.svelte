@@ -1,6 +1,8 @@
 <script lang="ts">
   import Screen from '../components/Screen.svelte';
   import Toggle from '../components/Toggle.svelte';
+  import Segmented from '../components/Segmented.svelte';
+  import { gameName } from '../app.config';
   import Button from '../components/Button.svelte';
   import { settings, saveSettings } from '../lib/settings.svelte';
   import { testKey } from '../lib/claude';
@@ -40,6 +42,17 @@
     <h3>Feel</h3>
     <Toggle label="Sound" bind:checked={settings.sound} onchange={saveSettings} hint="Plays even with the iPhone silent switch on" />
     <Toggle label="Vibration" bind:checked={settings.haptics} onchange={saveSettings} hint="Android buzzes; recent iPhones give a light tick" />
+  </section>
+
+  <section class="stack">
+    <h3>{gameName('forehead')}</h3>
+    <Segmented
+      label="When a word is scored"
+      options={[{ value: 'edge', label: 'Light the edge' }, { value: 'screen', label: 'Flash the screen' }]}
+      bind:value={settings.headsDownFeedback}
+      onchange={saveSettings}
+    />
+    <p class="faint">Light the edge: the edge on the side you tilted glows. Flash the screen: the whole screen turns green or amber.</p>
   </section>
 
   <section class="stack">

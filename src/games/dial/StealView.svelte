@@ -36,9 +36,12 @@
   .banner {
     display: flex; flex-direction: column; gap: var(--s-1);
     padding: var(--s-4); border-radius: var(--r-lg);
-    background: var(--team); color: var(--bg);
+    background: color-mix(in srgb, var(--team) 14%, var(--bg-raised));
+    border: 2px solid var(--team);
+    box-shadow: 0 0 28px color-mix(in srgb, var(--team) 30%, transparent);
   }
-  .name { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; line-height: 1.05; }
+  .banner b { color: var(--team); }
+  .name { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; line-height: 1.05; color: var(--team); }
   .ask { font-size: 1.1rem; font-weight: 600; }
   .clue { text-align: center; }
   .tuner { display: flex; flex-direction: column; gap: var(--s-3); }

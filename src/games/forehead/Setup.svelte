@@ -3,7 +3,8 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Segmented from '../../components/Segmented.svelte';
-  import { wordDecks } from '../../lib/content';
+  import HowTo from '../../components/HowTo.svelte';
+  import { customDecks, wordDecks } from '../../lib/content';
   import { go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
@@ -42,16 +43,24 @@
 </script>
 
 <Screen title={gameName('forehead')} accent="var(--c-forehead)" onback={() => go('/')}>
-  <ol class="how" aria-label="How to play">
-    <li><span class="step" aria-hidden="true">🤯</span><span>Phone on your forehead, screen facing out</span></li>
-    <li><span class="step" aria-hidden="true">🗣️</span><span>Friends shout clues — no saying the word</span></li>
-    <li><span class="step" aria-hidden="true">↕️</span><span><b class="good">Tilt down</b> if you got it, <b class="pass">tilt up</b> to pass</span></li>
-  </ol>
+  {#snippet trailing()}
+    <HowTo>
+      <ol>
+        <li>Hold the phone sideways on your forehead, screen facing out.</li>
+        <li>The countdown starts once the phone is steady.</li>
+        <li>Your friends shout clues. They can't say the word itself.</li>
+        <li><b>Tilt down</b> when you get it. <b>Tilt up</b> to pass.</li>
+        <li>Rather tap? Your right hand taps <b>Got it</b>, your left hand taps <b>Pass</b>. Each side is labelled on its edge.</li>
+        <li>Score as many as you can before the timer runs out. Pick the round length below.</li>
+        <li>Tilted the wrong way? Tap the word on the results screen to fix it.</li>
+      </ol>
+    </HowTo>
+  {/snippet}
 
   <section class="stack">
     <div class="sec-head">
       <h3>Decks <span class="faint count">{chosen.length ? `${chosen.length} picked · ${wordCount} words` : 'pick one or more'}</span></h3>
-      <button class="link" onclick={() => go('/forehead/decks')}>My decks</button>
+      <button class="link" onclick={() => go('/forehead/decks')}>Edit decks</button>
     </div>
     <ul class="grid">
       {#each decks as d, i (d.id)}
@@ -60,7 +69,7 @@
           <button class="deck" class:on aria-pressed={on} onclick={() => toggleDeck(d.id)}>
             <span class="emoji" aria-hidden="true">{d.emoji || '🃏'}</span>
             <span class="name">{d.name}</span>
-            <span class="meta">{d.custom ? 'Mine · ' : ''}{d.words.length} words</span>
+            <span class="meta">{d.custom ? 'Mine · ' : customDecks.isEdited(d.id) ? 'Edited · ' : ''}{d.words.length} words</span>
             <span class="check" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </span>
@@ -87,8 +96,8 @@
     <Segmented label="Controls" options={controls} bind:value={prefs.control} onchange={savePrefs} />
     <p class="faint small">
       {prefs.control === 'tilt'
-        ? 'Tilt the phone to score. Tapping the screen works too: right side got it, left side pass.'
-        : 'No tilting: tap the right side for got it, the left side to pass.'}
+        ? 'Tilt the phone to score. Tapping works too: right hand got it, left hand pass.'
+        : 'No tilting: tap with your right hand for got it, your left hand to pass.'}
     </p>
   </section>
 
@@ -98,13 +107,6 @@
 </Screen>
 
 <style>
-  .how { list-style: none; margin: 0; padding: var(--s-3) var(--s-4); display: flex; flex-direction: column; gap: var(--s-2);
-    background: color-mix(in srgb, var(--accent) 10%, var(--bg-raised)); border: 1.5px solid color-mix(in srgb, var(--accent) 30%, transparent);
-    border-radius: var(--r-lg); }
-  .how li { display: flex; align-items: center; gap: var(--s-3); font-size: 1rem; }
-  .step { font-size: 1.4rem; width: 1.8rem; text-align: center; flex: none; }
-  .good { color: var(--c-good); }
-  .pass { color: var(--c-pass); }
   .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
   .count { font-family: var(--font-body); font-weight: 500; font-size: 0.9rem; letter-spacing: 0; margin-left: var(--s-1); }
   .link { border: 0; background: transparent; color: var(--accent); font-weight: 700; min-height: 44px; padding: 0 var(--s-2); }

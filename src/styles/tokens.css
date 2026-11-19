@@ -22,6 +22,10 @@
   --c-bad: #ff4d6d;
   --c-gold: #ffd166;
 
+  /* Spectrum's two rival teams: warm sunrise vs cool moonlight, apart for red-green colour blindness too. */
+  --c-team-a: #ff8547;
+  --c-team-b: #5b8cff;
+
   --accent: var(--c-gibberish);
   --on-accent: #120d24;
 

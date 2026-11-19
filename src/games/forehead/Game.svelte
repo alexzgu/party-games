@@ -7,6 +7,7 @@
   import { route, go } from '../../lib/router.svelte';
   import { game, setRound } from './state.svelte';
   import { demoRound } from './demo';
+  import { tapToSkip } from './skip';
 
   // Heads Down's router: #/forehead (setup), /play, /decks, /deck?id=…, /make?into=…
   const sub = $derived(route.path.split('/').filter(Boolean)[1] ?? '');
@@ -18,6 +19,10 @@
   const playing = $derived(game.round?.phase === 'play');
   const view = $derived(sub === 'play' || (sub === '' && playing) ? 'play' : sub);
 
+  // Entrance animations finish on a tap, except during the countdown and the round itself.
+  const skip = tapToSkip();
+  const skippable = $derived(view !== 'play' || game.round?.phase === 'results');
+
   $effect(() => {
     if (sub === '' && playing) {
       game.interrupt = true;
@@ -27,7 +32,7 @@
 
 </script>
 
-<div class="forehead">
+<div class="forehead" onpointerdowncapture={skippable ? skip.onpointerdowncapture : undefined} onclickcapture={skippable ? skip.onclickcapture : undefined}>
   {#if view === 'play'}
     <Round demo={demo} rotation={rot} />
   {:else if view === 'decks'}

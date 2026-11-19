@@ -4,6 +4,7 @@
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
   import { score, toggle, type Round } from './round';
+  import { relogRound } from './log';
   import { clearSession, deckLabel, recordScore, selectedDecks, session, setRound } from './state.svelte';
 
   // Score headline, every word (tap to fix a mis-tilt), this sitting's scores, what next.
@@ -25,6 +26,7 @@
     const shown = toggle(round.shown, i);
     const next = { ...round, shown };
     setRound(next);
+    if (round.logId) relogRound(round.logId, next);
     recordScore({ id: round.id, score: score(shown), total: shown.length, decks });
     if (shown[i].ok) { sfx.correct(); haptic.correct(); } else { sfx.pass(); haptic.pass(); }
   }

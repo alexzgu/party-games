@@ -1,8 +1,10 @@
 <script lang="ts">
-  // Spectrum: routes between setup, "make a pack" (#/dial/make) and the saved game's phase.
+  // Spectrum: routes between setup, "make a pack" (#/dial/make), a pack's cards (#/dial/pack?id=…)
+  // and the saved game's phase.
   // Every step goes through `set`, which saves, so a reload resumes exactly here.
   import Setup from './Setup.svelte';
   import Make from './Make.svelte';
+  import PackEditor from './PackEditor.svelte';
   import Handoff from './Handoff.svelte';
   import ReaderView from './ReaderView.svelte';
   import TeamView from './TeamView.svelte';
@@ -12,11 +14,13 @@
   import { route, go, back } from '../../lib/router.svelte';
   import { unlockAudio } from '../../lib/sound';
   import { keepAwake } from '../../lib/wakelock';
-  import { teamColor } from './look';
   import { drawCard } from './deck';
   import { randomTarget } from './scoring';
   import { clearGame, loadConfig, loadGame, saveGame } from './persist';
   import { demoGame, demoItems } from './demo';
+  import { summarize } from './summary';
+  import { record } from '../../lib/history';
+  import { spectrumPacks } from '../../lib/content';
   import {
     beginRound, callSide, lockIn, markRevealed, newGame, nextTurn, redraw, rematch, setClue, setGuess, showTeam,
     type Config, type Game,
@@ -67,12 +71,15 @@
 
   function next(g: Game) {
     readerOpen = false;
-    set(nextTurn(g));
+    const n = nextTurn(g);
+    set(n);
+    if (n.phase === 'win' && !demo) record(summarize(n, packNames(n.packIds)));
   }
+
+  const packNames = (ids: string[]) => spectrumPacks().filter((p) => ids.includes(p.id)).map((p) => p.name);
 
   const home = () => go('/');
   const end = () => set(null);
-  const scoreLine = (g: Game) => `Round ${g.roundNo + 1} · ${g.teams[0].name} ${g.teams[0].score} – ${g.teams[1].score} ${g.teams[1].name}`;
 </script>
 
 <svelte:window onpointerdown={firstTouch} />
@@ -81,20 +88,23 @@
   <div class="glow" aria-hidden="true"></div>
   {#if sub === 'make'}
     <Make initial={demo === 'triage' ? demoItems : []} onback={() => back('/dial')} onuse={() => go('/dial', true)} />
+  {:else if sub === 'pack'}
+    {#key route.params.get('id')}
+      <PackEditor id={route.params.get('id') ?? ''} onback={() => back('/dial')} />
+    {/key}
   {:else if !game}
     <Setup config={loadConfig()} onstart={start} onmake={() => go('/dial/make')} />
   {:else if game.phase === 'handoff'}
     {@const g = game}
     {#key g.roundNo}
       <Handoff
-        color={teamColor(g.active)}
-        team={g.teams[g.active].name}
-        title="Your turn"
+        game={g}
+        team={g.active}
+        kicker="Round {g.roundNo + 1} · your turn"
         steps={[
-          { icon: 'phone', text: 'Pick a reader and give them the phone.' },
-          { icon: 'hide', text: 'Everyone else: eyes off the screen until the reader says so.' },
+          { icon: 'phone', text: 'Pick a reader. Hand them the phone.' },
+          { icon: 'hide', text: 'Everyone else: eyes off the screen.' },
         ]}
-        note={scoreLine(g)}
         button="I'm the reader · show me"
         onready={() => openReader(g)}
         onclose={home}
@@ -105,9 +115,9 @@
     {@const r = game.round}
     {#if !readerOpen}
       <Handoff
-        color={teamColor(g.active)}
-        team={g.teams[g.active].name}
-        title="Reader only"
+        game={g}
+        team={g.active}
+        kicker="Round {g.roundNo} · reader only"
         steps={[
           { icon: 'eye', text: 'Only the reader looks at the next screen.' },
           { icon: 'hide', text: 'Everyone else: look away now.' },

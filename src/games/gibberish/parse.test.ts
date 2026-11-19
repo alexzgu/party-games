@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { givesAway, parseLine } from './parse';
+import { checkCard, givesAway, parseLine } from './parse';
 
 describe('parseLine', () => {
   it('reads a plain line', () => {
@@ -29,5 +29,20 @@ describe('parseLine', () => {
     expect(givesAway('Eye Scream', 'Ice Cream')).toBe(false);
     expect(givesAway('Lure Dove The Rings', 'Lord of the Rings')).toBe(true);
     expect(givesAway('Lure Dove The Wrings', 'Lord of the Rings')).toBe(false); // "the" alone is no giveaway
+  });
+});
+
+describe('checkCard', () => {
+  const pack = [{ phrase: 'Eye Scream', answer: 'Ice Cream', hint: 'Food' }];
+
+  it('tidies a good card', () => {
+    expect(checkCard({ phrase: ' Sand  A Claws ', answer: 'Santa Claus', hint: ' Holiday ' }, pack))
+      .toEqual({ card: { phrase: 'Sand A Claws', answer: 'Santa Claus', hint: 'Holiday' }, error: '' });
+  });
+
+  it('says why a card cannot be saved', () => {
+    expect(checkCard({ phrase: '', answer: 'Santa Claus', hint: '' }, pack).error).toMatch(/phrase/);
+    expect(checkCard({ phrase: 'Lure Dove The Rings', answer: 'Lord of the Rings', hint: '' }, pack).error).toMatch(/“Rings”.*gives it away/);
+    expect(checkCard({ phrase: 'I Scream', answer: 'ice cream!', hint: '' }, pack).error).toMatch(/already in this pack/);
   });
 });

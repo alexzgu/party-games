@@ -5,7 +5,7 @@ import { DEFAULT_NAMES } from './look';
 
 const card: Spectrum = { left: 'Underrated', right: 'Overrated' };
 
-const SCREENS = ['handoff', 'gate', 'reader', 'team', 'steal', 'reveal', 'revealed', 'win'];
+const SCREENS = ['handoff', 'handoff-b', 'gate', 'reader', 'team', 'steal', 'reveal', 'revealed', 'win'];
 
 export function demoGame(screen: string): Game | null {
   let g = newGame({ names: DEFAULT_NAMES, goal: 10, steal: true, packIds: ['classic'] });
@@ -14,6 +14,7 @@ export function demoGame(screen: string): Game | null {
   g.roundNo = 4;
   if (!SCREENS.includes(screen)) return null;
   if (screen === 'handoff') return g;
+  if (screen === 'handoff-b') return { ...g, active: 1, roundNo: 5 };
   g = beginRound(g, card, 38);
   if (screen === 'gate' || screen === 'reader') return g;
   g = { ...g, phase: 'team', round: { ...g.round!, clue: 'Pineapple on pizza' } };

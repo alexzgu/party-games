@@ -7,6 +7,7 @@
   import { TiltDetector } from '../../lib/tilt';
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
+  import { settings } from '../../lib/settings.svelte';
   import { finish, makeDealer, mark, openPlay, type EndReason, type Round } from './round';
   import { game, selectedDecks, setRound } from './state.svelte';
   import { motion, onGravity, stageRotation } from './sensors.svelte';
@@ -20,6 +21,7 @@
     /** Opened from a reload or by coming back: wait for a Resume tap. */
     paused?: boolean;
     rotation?: number;
+    /** `flash`: show a frozen got-it (true) or pass (false) mark. */
     demo?: { flash?: boolean; ending?: EndReason; pause?: Pause };
   } = $props();
 
@@ -34,7 +36,7 @@
 
   let remaining = $state(start.remainingMs);
   let pause = $state<Pause | null>(untrack(() => demo?.pause ?? (paused || document.visibilityState === 'hidden' ? 'away' : null)));
-  let flash = $state<Flash | null>(untrack(() => (demo?.flash ? { ok: true, n: 0 } : null)));
+  let flash = $state<Flash | null>(untrack(() => (demo?.flash != null ? { ok: demo.flash, n: 0 } : null)));
   let ending = $state<EndReason | null>(untrack(() => demo?.ending ?? null));
   let locked = $state(false);
   let flashN = 0;
@@ -201,14 +203,24 @@
       {:else}<span class="p">◀ tap: pass</span><span class="g">tap: got it ▶</span>{/if}
     </p>
 
+    {#snippet mark(ok: boolean)}
+      <svg class="flash-ico" viewBox="0 0 24 24" aria-hidden="true">
+        {#if ok}<path d="M4.5 12.5l5 5L19.5 6.5" />{:else}<path d="M5 5.5l6.5 6.5L5 18.5M12.5 5.5l6.5 6.5-6.5 6.5" />{/if}
+      </svg>
+    {/snippet}
     {#if flash}
       {#key flash.n}
-        <div class="flash" class:ok={flash.ok} class:still={!!demo} style:--flash-ms="{FLASH_MS}ms">
-          <svg class="flash-ico" viewBox="0 0 24 24" aria-hidden="true">
-            {#if flash.ok}<path d="M4.5 12.5l5 5L19.5 6.5" />{:else}<path d="M5 5.5l6.5 6.5L5 18.5M12.5 5.5l6.5 6.5-6.5 6.5" />{/if}
-          </svg>
-          <span class="flash-txt">{flash.ok ? 'Got it!' : 'Pass'}</span>
-        </div>
+        {#if settings.headsDownFeedback === 'screen'}
+          <div class="flash" class:ok={flash.ok} class:still={!!demo} style:--flash-ms="{FLASH_MS}ms">
+            {@render mark(flash.ok)}
+            <span class="flash-txt">{flash.ok ? 'Got it!' : 'Pass'}</span>
+          </div>
+        {:else}
+          <!-- The edge of the zone that was picked lights up: the got-it zone's side for got it. -->
+          <div class="glow {flash.ok !== mirrored ? 'right' : 'left'}" class:ok={flash.ok} class:still={!!demo} style:--flash-ms="{FLASH_MS}ms">
+            {@render mark(flash.ok)}
+          </div>
+        {/if}
       {/key}
     {/if}
 
@@ -305,6 +317,25 @@
   @keyframes flash { 0% { opacity: 0; } 8% { opacity: 1; } 38% { opacity: 1; } 100% { opacity: 0; } }
   @keyframes ico-pop { from { transform: scale(0.4) rotate(-12deg); } to { transform: none; } }
 
+  /* Edge feedback: a thick band, solid at the screen edge and fading inwards, readable across a dim room. */
+  .glow {
+    --g: var(--c-pass);
+    position: absolute; top: 0; bottom: 0; z-index: 10; width: clamp(120px, 36%, 320px); pointer-events: none;
+    display: flex; align-items: center; color: #fff; animation: flash var(--flash-ms) ease-out both;
+  }
+  .glow.ok { --g: var(--c-good); }
+  .glow.right { right: 0; justify-content: flex-end; background: linear-gradient(to left, var(--glow-stops)); }
+  .glow.left { left: 0; justify-content: flex-start; background: linear-gradient(to right, var(--glow-stops)); }
+  .glow {
+    --glow-stops: var(--g) 0, var(--g) 18px, color-mix(in srgb, var(--g) 80%, transparent) 30%,
+      color-mix(in srgb, var(--g) 35%, transparent) 65%, transparent;
+  }
+  .glow.still { animation: none; }
+  .glow .flash-ico {
+    width: min(20vmin, 110px); height: min(20vmin, 110px); margin: 0 max(26px, 6%);
+    filter: drop-shadow(0 2px 8px rgb(0 0 0 / 0.45));
+  }
+
   .ending {
     position: absolute; inset: 0; z-index: 15; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: var(--s-2); background: var(--c-bad); color: #fff; animation: pop-in var(--dur-slow) var(--ease-spring) both;
@@ -315,6 +346,6 @@
   .end-sub { font-family: var(--font-display); font-weight: 700; font-size: min(7vmin, 36px); opacity: 0.85; }
 
   @media (prefers-reduced-motion: reduce) {
-    .flash, .flash-ico, .word-in, .timer.hot, .ending { animation: none; }
+    .flash, .glow, .flash-ico, .word-in, .timer.hot, .ending { animation: none; }
   }
 </style>

@@ -19,10 +19,15 @@ function tidy(part: string): string {
     .trim();
 }
 
+/** The meaningful answer word the phrase repeats (a giveaway), or '' when it repeats none. */
+export function repeatedWord(phrase: string, answer: string): string {
+  const said = new Set(words(phrase));
+  return words(answer).find((w) => !FILLER.has(w) && w.length > 1 && said.has(w)) ?? '';
+}
+
 /** True when the phrase repeats a meaningful word of the answer (a giveaway). */
 export function givesAway(phrase: string, answer: string): boolean {
-  const said = new Set(words(phrase));
-  return words(answer).some((w) => !FILLER.has(w) && w.length > 1 && said.has(w));
+  return repeatedWord(phrase, answer) !== '';
 }
 
 /** Why a line made no card: decoration to ignore, the wrong shape, or a giveaway phrase. */
@@ -49,6 +54,26 @@ export function parseLine(raw: string, fallbackCategory = ''): GibberishCard | n
 }
 
 export const answerKey = (c: GibberishCard) => fold(c.answer).replace(/[^a-z0-9]/g, '');
+
+const clean = (s: string) => s.trim().replace(/\s+/g, ' ');
+
+/** A card typed in the pack editor, tidied, or the reason it cannot be saved. `others` are the pack's other cards. */
+export function checkCard(input: GibberishCard, others: readonly GibberishCard[]): { card: GibberishCard; error: '' } | { card: null; error: string } {
+  const card = { phrase: clean(input.phrase), answer: clean(input.answer), hint: clean(input.hint) };
+  const fail = (error: string) => ({ card: null, error });
+  if (!card.phrase) return fail('Type the phrase the reader says.');
+  if (!card.answer) return fail('Type the answer it sounds like.');
+  if (card.phrase.length > 70) return fail('Keep the phrase under 70 letters.');
+  if (card.answer.length > 60) return fail('Keep the answer under 60 letters.');
+  if (fold(card.phrase) === fold(card.answer)) return fail('The phrase is the answer itself. That gives it away.');
+  const word = repeatedWord(card.phrase, card.answer);
+  if (word) {
+    const said = card.phrase.split(/[\s-]+/).find((w) => words(w).includes(word)) ?? word;
+    return fail(`The phrase says “${said}”, which is in the answer. That gives it away.`);
+  }
+  if (others.some((c) => answerKey(c) === answerKey(card))) return fail(`“${card.answer}” is already in this pack.`);
+  return { card, error: '' };
+}
 
 // A pasted list (often copied from the Claude app): `Phrase | Answer | Category` per line,
 // category optional. Every skipped line carries its reason.

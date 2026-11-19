@@ -1,11 +1,13 @@
 <script lang="ts">
-  // Inn Co Hear Ant entry. Sub-routes: #/gibberish (setup), #/gibberish/play, #/gibberish/make.
-  // Using the hash means a reload lands on the same screen. Setup and play replace each other
-  // in history, so the phone's back gesture from either goes home; Make is pushed on top.
+  // Inn Co Hear Ant entry. Sub-routes: #/gibberish (setup), #/gibberish/play, #/gibberish/make,
+  // #/gibberish/pack?id=<pack> (see and edit one pack). Using the hash means a reload lands on
+  // the same screen. Setup and play replace each other in history, so the phone's back gesture
+  // from either goes home; Make and the pack editor are pushed on top.
   import { route, go, back } from '../../lib/router.svelte';
   import Setup from './Setup.svelte';
   import Play from './Play.svelte';
   import Make from './Make.svelte';
+  import PackEditor from './PackEditor.svelte';
   import { loadGame, saveGame, loadSetup, saveSetup } from './store';
   import { newGame, type GameOptions, type GameState } from './logic';
   import { demoGame, DEMO_CARDS } from './demo';
@@ -39,6 +41,8 @@
 <div class="say-what">
   {#if sub === 'play' && game}
     <Play {game} {commit} {demo} onleave={() => go('/gibberish', true)} onhome={() => go('/', true)} />
+  {:else if sub === 'pack'}
+    <PackEditor id={route.params.get('id') ?? ''} onback={() => back('/gibberish')} />
   {:else if sub === 'make'}
     <Make
       onsaved={packSaved}
@@ -47,7 +51,7 @@
       demoNoKey={demo === 'make-nokey'}
     />
   {:else}
-    <Setup saved={game} onstart={start} onresume={() => go('/gibberish/play', true)} onmake={() => go('/gibberish/make')} onhome={() => go('/', true)} />
+    <Setup saved={game} onstart={start} onresume={() => go('/gibberish/play', true)} onmake={() => go('/gibberish/make')} onedit={(id) => go(`/gibberish/pack?id=${encodeURIComponent(id)}`)} onhome={() => go('/', true)} />
   {/if}
 </div>
 

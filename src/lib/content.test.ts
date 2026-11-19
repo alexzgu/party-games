@@ -1,7 +1,7 @@
 // Gate for built-in packs, including packs a Claude Code chat adds (see AGENTS.md):
 // every pack must load, be well formed, and repeat nothing. Each test lists every problem
 // it finds at once, so a new pack needs one fix-up pass, not one run per mistake.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { dedupe, gibberishPacks, slugify, spectrumPacks, wordDecks } from './content';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -98,5 +98,38 @@ describe('helpers', () => {
   });
   it('slugifies names', () => {
     expect(slugify('2000s Cartoons!')).toBe('2000s-cartoons');
+  });
+});
+
+describe('editing built-in packs', () => {
+  it('replaces the built-in in place until restored, and is not listed as the player\'s own', async () => {
+    const mem = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => mem.set(k, v), removeItem: (k: string) => mem.delete(k) });
+    const { customDecks } = await import('./content');
+    const first = wordDecks().find((d) => !d.custom)!;
+    customDecks.put({ ...first, words: ['Only Word'] });
+    const after = wordDecks();
+    expect(after.filter((d) => d.id === first.id)).toHaveLength(1);
+    expect(after.find((d) => d.id === first.id)!.words).toEqual(['Only Word']);
+    expect(after.find((d) => d.id === first.id)!.custom).toBe(false);
+    expect(customDecks.isEdited(first.id)).toBe(true);
+    expect(customDecks.all().some((d) => d.id === first.id)).toBe(false);
+    customDecks.restore(first.id);
+    expect(customDecks.isEdited(first.id)).toBe(false);
+    expect(wordDecks().find((d) => d.id === first.id)!.words).toEqual(customDecks.original(first.id)!.words);
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('own packs that share an id with a built-in', () => {
+  it('stay the player\'s own under a new id', async () => {
+    const mem = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => mem.set(k, v), removeItem: (k: string) => mem.delete(k) });
+    const { customDecks } = await import('./content');
+    const builtinId = wordDecks().find((d) => !d.custom)!.id;
+    mem.set('hr:custom:decks', JSON.stringify([{ id: builtinId, name: 'Mine', emoji: '📝', blurb: '', words: ['A'], custom: true }]));
+    expect(customDecks.isEdited(builtinId)).toBe(false);
+    expect(customDecks.all().map((d) => d.id)).toEqual(['my-' + builtinId]);
+    vi.unstubAllGlobals();
   });
 });

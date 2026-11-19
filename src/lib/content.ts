@@ -1,5 +1,5 @@
 // Built-in packs (bundled JSON, precached for offline play) merged with packs players
-// make on the phone (saved in localStorage). Custom packs shadow built-ins with the same id.
+// make or edit on the phone (saved in localStorage). An edit of a built-in replaces it in place.
 import { load, save } from './storage';
 
 export interface WordDeck { id: string; name: string; emoji: string; blurb: string; words: string[]; custom?: boolean }
@@ -27,35 +27,62 @@ const builtinDecks = ordered(Object.values(wordFiles), BUILTIN_DECK_ORDER);
 const builtinGibberish = ordered(Object.values(gibberishFiles), ['classic', 'pop', 'sayings', 'after-dark']);
 const builtinSpectra = ordered(Object.values(dialFiles).flatMap((f) => ('packs' in f ? f.packs : [f])), ['classic', 'deep', 'nerdy', 'after-dark']);
 
-function customStore<T extends { id: string }>(key: string) {
+/**
+ * Packs saved on this phone. A pack whose id matches a built-in is an edit of that built-in:
+ * it replaces it everywhere until restored. Any other id is the player's own pack (`custom`).
+ */
+function customStore<T extends { id: string; custom?: boolean }>(key: string, builtin: T[]) {
+  const builtinIds = new Set(builtin.map((b) => b.id));
+  // An own pack (custom: true) whose id a later built-in also uses stays the player's own,
+  // under a new id, so it is never mistaken for an edit and "restored" away.
+  const stored = (): T[] => {
+    const items = load<T[]>(key, []);
+    if (!items.some((x) => x.custom && builtinIds.has(x.id))) return items;
+    const moved = items.map((x) => (x.custom && builtinIds.has(x.id) ? { ...x, id: 'my-' + x.id } : x));
+    save(key, moved);
+    return moved;
+  };
   return {
-    all: (): T[] => load<T[]>(key, []),
+    /** The player's own packs (not edits of built-ins). */
+    all: (): T[] => stored().filter((x) => !builtinIds.has(x.id)),
+    /** Everything saved, own packs and edits, for merging over the built-ins. */
+    saved: stored,
     put(item: T) {
-      const items = load<T[]>(key, []).filter((x) => x.id !== item.id);
-      save(key, [{ ...item, custom: true }, ...items]);
+      const items = stored().filter((x) => x.id !== item.id);
+      save(key, [{ ...item, custom: !builtinIds.has(item.id) }, ...items]);
     },
     remove(id: string) {
-      save(key, load<T[]>(key, []).filter((x) => x.id !== id));
+      save(key, stored().filter((x) => x.id !== id));
+    },
+    isBuiltin: (id: string) => builtinIds.has(id),
+    /** True when a built-in pack has been edited on this phone. */
+    isEdited: (id: string) => builtinIds.has(id) && stored().some((x) => x.id === id),
+    /** The pack as shipped, for "Restore original". */
+    original: (id: string): T | undefined => builtin.find((b) => b.id === id),
+    /** Drops this phone's edit of a built-in pack. */
+    restore(id: string) {
+      if (builtinIds.has(id)) save(key, stored().filter((x) => x.id !== id));
     },
   };
 }
 
-function merged<T extends { id: string }>(custom: T[], builtin: T[]): T[] {
-  const ids = new Set(custom.map((c) => c.id));
-  return [...custom, ...builtin.filter((b) => !ids.has(b.id))];
+function merged<T extends { id: string }>(saved: T[], builtin: T[]): T[] {
+  const byId = new Map(saved.map((c) => [c.id, c]));
+  const own = saved.filter((c) => !builtin.some((b) => b.id === c.id));
+  return [...own, ...builtin.map((b) => byId.get(b.id) ?? b)];
 }
 
-export const customDecks = customStore<WordDeck>('custom:decks');
-export const customSpectra = customStore<SpectrumPack>('custom:spectra');
-export const customGibberish = customStore<GibberishPack>('custom:gibberish');
+export const customDecks = customStore<WordDeck>('custom:decks', builtinDecks);
+export const customSpectra = customStore<SpectrumPack>('custom:spectra', builtinSpectra);
+export const customGibberish = customStore<GibberishPack>('custom:gibberish', builtinGibberish);
 
-export const wordDecks = (): WordDeck[] => merged(customDecks.all(), builtinDecks);
-export const spectrumPacks = (): SpectrumPack[] => merged(customSpectra.all(), builtinSpectra);
-export const gibberishPacks = (): GibberishPack[] => merged(customGibberish.all(), builtinGibberish);
+/** Every pack: the player's own first, then built-ins (edited versions where edited), in order. */
+export const wordDecks = (): WordDeck[] => merged(customDecks.saved(), builtinDecks);
+export const spectrumPacks = (): SpectrumPack[] => merged(customSpectra.saved(), builtinSpectra);
+export const gibberishPacks = (): GibberishPack[] => merged(customGibberish.saved(), builtinGibberish);
 
 export function isBuiltin(id: string, kind: 'decks' | 'spectra' | 'gibberish'): boolean {
-  const list = kind === 'decks' ? builtinDecks : kind === 'spectra' ? builtinSpectra : builtinGibberish;
-  return list.some((x) => x.id === id);
+  return (kind === 'decks' ? customDecks : kind === 'spectra' ? customSpectra : customGibberish).isBuiltin(id);
 }
 
 export function slugify(name: string): string {

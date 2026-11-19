@@ -1,6 +1,7 @@
 // Pure game rules for Inn Co Hear Ant: every step takes a state and returns the next one,
 // so the screens stay thin and each step can be saved and unit-tested.
 import type { GibberishCard } from '../../lib/content';
+import type { HistoryEntry } from '../../lib/history';
 import { answerKey } from './parse';
 
 export const MIN_PLAYERS = 3;
@@ -16,6 +17,9 @@ export type Outcome =
   | { kind: 'point'; scorer: number }
   | { kind: 'nobody' }
   | { kind: 'timeout' };
+
+/** A card that was played to the end (skipped cards are not): who got it, or -1 for nobody. */
+export interface PlayedCard { phrase: string; answer: string; by: number }
 
 export interface GameState {
   v: 1;
@@ -35,6 +39,8 @@ export interface GameState {
   cardsPlayed: number;
   /** Answers dealt so far (folded), so no answer comes up twice, even from another pack. */
   dealt: string[];
+  /** Cards played this game, oldest first, for the history entry. */
+  log: PlayedCard[];
 }
 
 export interface GameOptions { target: number; seconds: number; packIds: string[] }
@@ -54,6 +60,7 @@ export function newGame(names: string[], opts: GameOptions): GameState {
     outcome: null,
     cardsPlayed: 0,
     dealt: [],
+    log: [],
   };
 }
 
@@ -72,13 +79,15 @@ export function tickTimer(s: GameState, timeLeft: number): GameState {
 export function award(s: GameState, scorer: number): GameState {
   if (s.phase !== 'card' || scorer === s.reader || !s.players[scorer]) return s;
   const players = s.players.map((p, i) => (i === scorer ? { ...p, score: p.score + 1 } : p));
-  return { ...s, players, phase: 'reveal', outcome: { kind: 'point', scorer }, cardsPlayed: s.cardsPlayed + 1 };
+  return { ...s, players, phase: 'reveal', outcome: { kind: 'point', scorer }, cardsPlayed: s.cardsPlayed + 1, log: logged(s, scorer) };
 }
 
 export function noPoint(s: GameState, kind: 'nobody' | 'timeout'): GameState {
   if (s.phase !== 'card') return s;
-  return { ...s, phase: 'reveal', outcome: { kind }, cardsPlayed: s.cardsPlayed + 1, timeLeft: kind === 'timeout' ? 0 : s.timeLeft };
+  return { ...s, phase: 'reveal', outcome: { kind }, cardsPlayed: s.cardsPlayed + 1, timeLeft: kind === 'timeout' ? 0 : s.timeLeft, log: logged(s, -1) };
 }
+
+const logged = (s: GameState, by: number): PlayedCard[] => [...s.log, { phrase: s.card?.phrase ?? '', answer: s.card?.answer ?? '', by }];
 
 /** Wrong name tapped: take the point back and return to the same card. */
 export function undo(s: GameState): GameState {
@@ -86,7 +95,7 @@ export function undo(s: GameState): GameState {
   const o = s.outcome;
   const players = o.kind === 'point' ? s.players.map((p, i) => (i === o.scorer ? { ...p, score: p.score - 1 } : p)) : s.players;
   const timeLeft = o.kind === 'timeout' ? s.seconds * 1000 : s.timeLeft;
-  return { ...s, players, phase: 'card', outcome: null, timeLeft, cardsPlayed: s.cardsPlayed - 1 };
+  return { ...s, players, phase: 'card', outcome: null, timeLeft, cardsPlayed: s.cardsPlayed - 1, log: s.log.slice(0, -1) };
 }
 
 /** Index of the player who reached the target, or -1. */
@@ -107,7 +116,20 @@ export function rematch(s: GameState): GameState {
     ...s,
     players: s.players.map((p) => ({ ...p, score: 0 })),
     reader: (s.reader + 1) % s.players.length,
-    phase: 'handoff', card: null, outcome: null, timeLeft: s.seconds * 1000, cardsPlayed: 0,
+    phase: 'handoff', card: null, outcome: null, timeLeft: s.seconds * 1000, cardsPlayed: 0, log: [],
+  };
+}
+
+/** The history entry for a finished game: "Sam won 5–3–2", every score, and one line per card played. */
+export function gameRecord(s: GameState, packs: string[]): Omit<HistoryEntry, 'id' | 'at'> {
+  const rows = standings(s);
+  const top = rows[0]?.player;
+  return {
+    game: 'gibberish',
+    title: `${top?.name ?? 'Nobody'} won ${rows.map((r) => r.player.score).join('–')}`,
+    scores: rows.map((r) => ({ name: r.player.name, score: r.player.score })),
+    packs,
+    details: s.log.map((c) => `${c.phrase} → ${c.answer}: ${s.players[c.by]?.name ?? 'nobody'}`),
   };
 }
 
@@ -127,6 +149,10 @@ export function checkName(raw: string, existing: string[]): { name: string; erro
 
 const num = (x: unknown, min: number, max = Infinity): x is number => typeof x === 'number' && Number.isFinite(x) && x >= min && x <= max;
 const strings = (x: unknown): x is string[] => Array.isArray(x) && x.every((v) => typeof v === 'string');
+const isPlayed = (c: unknown): c is PlayedCard => {
+  const k = c as PlayedCard | null;
+  return !!k && typeof k.phrase === 'string' && typeof k.answer === 'string' && Number.isInteger(k.by);
+};
 const isCard = (c: unknown): c is GibberishCard => {
   const k = c as GibberishCard | null;
   return !!k && typeof k.phrase === 'string' && k.phrase !== '' && typeof k.answer === 'string' && (k.hint === undefined || typeof k.hint === 'string');
@@ -152,7 +178,7 @@ export function validGame(x: unknown): GameState | null {
     if (!o || !['point', 'nobody', 'timeout'].includes(o.kind)) return null;
     if (o.kind === 'point' && !(Number.isInteger(o.scorer) && o.scorer >= 0 && o.scorer < s.players.length)) return null;
   }
-  return { ...s, card: s.card ?? null, outcome: s.phase === 'reveal' ? s.outcome : null, dealt: strings(s.dealt) ? s.dealt : [] };
+  return { ...s, card: s.card ?? null, outcome: s.phase === 'reveal' ? s.outcome : null, dealt: strings(s.dealt) ? s.dealt : [], log: Array.isArray(s.log) ? s.log.filter(isPlayed) : [] };
 }
 
 export interface SetupPrefs { packIds: string[] | null; seconds: number; target: number }

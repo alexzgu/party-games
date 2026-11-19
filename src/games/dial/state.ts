@@ -21,6 +21,9 @@ export interface Round {
   revealed: boolean;
 }
 
+/** One finished round, kept for the game's history entry. */
+export interface RoundLog { team: TeamIndex; left: string; right: string; clue: string; points: number; steal: number }
+
 export interface Config { names: [string, string]; goal: number; steal: boolean; packIds: string[] }
 
 export interface Game {
@@ -37,6 +40,8 @@ export interface Game {
   winner: TeamIndex | null;
   /** Cards dealt this game (by cardId), so none comes back before the game ends. */
   played: string[];
+  /** Every scored round, oldest first. */
+  log: RoundLog[];
 }
 
 const PHASES: Phase[] = ['handoff', 'reader', 'team', 'steal', 'reveal', 'win'];
@@ -59,6 +64,7 @@ export function newGame(cfg: Config, starter: TeamIndex = 0): Game {
     roundNo: 0,
     winner: null,
     played: [],
+    log: [],
   };
 }
 
@@ -89,7 +95,8 @@ function score(g: Game, call: Side | null): Game {
   const teams = g.teams.map((t) => ({ ...t })) as [Team, Team];
   teams[g.active].score += points;
   teams[other(g.active)].score += steal;
-  return { ...g, teams, phase: 'reveal', round: { ...r, call, points, stealPoints: steal } };
+  const entry: RoundLog = { team: g.active, left: r.card.left, right: r.card.right, clue: r.clue, points, steal };
+  return { ...g, teams, phase: 'reveal', round: { ...r, call, points, stealPoints: steal }, log: [...g.log, entry] };
 }
 
 export function lockIn(g: Game, guess: number): Game {
@@ -157,5 +164,6 @@ export function restore(raw: unknown): Game | null {
   if (!isIdx(g.active) || !isIdx(g.starter) || !isNum(g.roundNo) || g.roundNo < 0) return null;
   if (g.winner !== null && !isIdx(g.winner)) return null;
   if (g.phase === 'win' ? g.winner === null : g.phase !== 'handoff' && !validRound(g.round)) return null;
-  return g;
+  // Games saved before the round log existed resume with an empty one.
+  return Array.isArray(g.log) ? g : { ...g, log: [] };
 }

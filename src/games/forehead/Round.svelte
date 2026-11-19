@@ -6,6 +6,7 @@
   import { score, type EndReason, type Round } from './round';
   import { deckLabel, game, prefs, recordScore, selectedDecks, setRound } from './state.svelte';
   import { releaseDevice, startRound } from './flow';
+  import { logRound } from './log';
 
   // The round itself: get ready → play → results, driven by the saved round's phase so a
   // reload lands back on the same step.
@@ -33,7 +34,7 @@
 
   function ended(fin: Round) {
     fresh = false;
-    setRound(fin);
+    setRound({ ...fin, logId: demo ? undefined : logRound(fin) });
     recordScore({ id: fin.id, score: score(fin.shown), total: fin.shown.length, decks: deckLabel(selectedDecks(fin.deckIds)) });
     releaseDevice();
   }
@@ -46,7 +47,7 @@
   const demoPlay = $derived.by(() => {
     const ending: Record<string, EndReason> = { timesup: 'time', out: 'out' };
     return demo && demo !== 'play'
-      ? { flash: demo === 'flash', ending: ending[demo], pause: demo === 'pause' ? ('confirm' as const) : undefined }
+      ? { flash: demo === 'flash' ? true : demo === 'flashpass' ? false : undefined, ending: ending[demo], pause: demo === 'pause' ? ('confirm' as const) : undefined }
       : demo ? {} : undefined;
   });
 </script>
