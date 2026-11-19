@@ -31,12 +31,13 @@ theme is unclear; pick sensible defaults and say what you chose.
    never an existing file's id. Exact shapes:
 
    ```json
-   {"id": "cartoons-2000s", "name": "2000s Cartoons", "emoji": "📺", "blurb": "Saturday mornings, 2000–2009", "words": ["SpongeBob", "..."]}
-   {"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "cards": [{"left": "Easy class", "right": "Hard class"}]}
-   {"id": "tv-mix", "name": "TV Mix", "blurb": "Shows everyone watched", "cards": [{"phrase": "Grey Sat Tommy", "answer": "Grey's Anatomy", "hint": "TV Show"}]}
+   {"id": "cartoons-2000s", "name": "2000s Cartoons", "emoji": "📺", "blurb": "Saturday mornings, 2000–2009", "added": "2026-11-21T15:40", "words": ["SpongeBob", "..."]}
+   {"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "added": "2026-11-21T15:40", "cards": [{"left": "Easy class", "right": "Hard class"}]}
+   {"id": "tv-mix", "name": "TV Mix", "blurb": "Shows everyone watched", "added": "2026-11-21T15:40", "cards": [{"phrase": "Grey Sat Tommy", "answer": "Grey's Anatomy", "hint": "TV Show"}]}
    ```
 
-   (`emoji` is for Heads Down. only.) Read one existing file of that game first to match its style.
+   (`emoji` is for Heads Down. only. `added` is the local date and time now, `date +%FT%R`; it
+   sorts the pack under "Newest".) Read one existing file of that game first to match its style.
 4. **Quality bar** (players are adults in their 20s at a US house party; original content, never
    copied from commercial games):
    - Heads Down.: things most of the room would recognise; Title Case; at most 4 words; no

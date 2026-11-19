@@ -5,7 +5,9 @@
   import HowTo from '../../components/HowTo.svelte';
   import Stepper from '../../components/Stepper.svelte';
   import Toggle from '../../components/Toggle.svelte';
-  import { spectrumPacks, customSpectra, type SpectrumPack } from '../../lib/content';
+  import ListTools from '../../components/ListTools.svelte';
+  import { spectrumPacks, customSpectra, packAge, type Spectrum, type SpectrumPack } from '../../lib/content';
+  import { matches, sorted, type SortKey } from '../../lib/listing';
   import { go } from '../../lib/router.svelte';
   import { teamColor } from './look';
   import { saveConfig } from './persist';
@@ -19,6 +21,18 @@
 
   const selected = $derived(new Set(cfg.packIds));
   const cardCount = $derived(packs.filter((p) => selected.has(p.id)).reduce((n, p) => n + p.cards.length, 0));
+
+  let query = $state('');
+  let sort = $state<SortKey>('suggested');
+
+  /** How a pack matches the search: by its name or blurb, or else by its first matching card. */
+  type Hit = { pack: SpectrumPack; card?: Spectrum };
+  function hit(p: SpectrumPack): Hit | null {
+    if (matches(`${p.name} ${p.blurb}`, query)) return { pack: p };
+    const card = p.cards.find((c) => matches(`${c.left} ${c.right}`, query));
+    return card ? { pack: p, card } : null;
+  }
+  const hits = $derived(sorted(packs.map(hit).filter((h) => h !== null), sort, (h) => h.pack.name, (h) => packAge(h.pack)));
 
   $effect(() => saveConfig($state.snapshot(cfg) as Config));
 
@@ -67,24 +81,30 @@
   </section>
 
   <section class="stack">
-    <div class="packs-head"><h3>Card packs</h3><span class="faint">{cardCount} cards</span></div>
-    <ul class="packs">
-      {#each packs as p (p.id)}
-        <li class="pack-item">
-          <button class="pack" class:on={selected.has(p.id)} aria-pressed={selected.has(p.id)} onclick={() => togglePack(p.id)}>
-            <span class="check" aria-hidden="true">{selected.has(p.id) ? '✓' : ''}</span>
-            <span class="txt">
-              <span class="name">{p.name}{#if p.custom}<span class="tag">yours</span>{:else if customSpectra.isEdited(p.id)}<span class="tag">edited</span>{/if}</span>
-              {#if p.blurb}<span class="blurb">{p.blurb}</span>{/if}
-            </span>
-          </button>
-          <button class="open" onclick={() => go(`/dial/pack?id=${encodeURIComponent(p.id)}`)} aria-label="See and edit the cards in {p.name} ({p.cards.length})">
-            <span class="n">{p.cards.length}</span>
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        </li>
-      {/each}
-    </ul>
+    <div>
+      <ListTools key="dial:setup" bind:query bind:sort placeholder="Search packs and cards" shown={hits.length} total={packs.length}>
+        {#snippet title()}<div class="packs-head"><h3>Card packs</h3><span class="faint">· {cardCount} cards</span></div>{/snippet}
+      </ListTools>
+      <ul class="packs">
+        {#each hits as { pack: p, card } (p.id)}
+          <li class="pack-item">
+            <button class="pack" class:on={selected.has(p.id)} aria-pressed={selected.has(p.id)} onclick={() => togglePack(p.id)}>
+              <span class="check" aria-hidden="true">{selected.has(p.id) ? '✓' : ''}</span>
+              <span class="txt">
+                <span class="name">{p.name}{#if p.custom}<span class="tag">yours</span>{:else if customSpectra.isEdited(p.id)}<span class="tag">edited</span>{/if}</span>
+                {#if p.blurb}<span class="blurb">{p.blurb}</span>{/if}
+                {#if card}<span class="has">has “{card.left} | {card.right}”</span>{/if}
+              </span>
+            </button>
+            <button class="open" onclick={() => go(`/dial/pack?id=${encodeURIComponent(p.id)}`)} aria-label="See and edit the cards in {p.name} ({p.cards.length})">
+              <span class="n">{p.cards.length}</span>
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </li>
+        {/each}
+      </ul>
+      {#if hits.length === 0}<p class="faint none">No packs match “{query.trim()}”</p>{/if}
+    </div>
     <Button variant="secondary" onclick={onmake}>✨ Make a pack</Button>
   </section>
 
@@ -106,7 +126,10 @@
     align-self: center; font-family: var(--font-display); font-weight: 800; font-size: 0.85rem;
     color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; line-height: 1;
   }
-  .packs-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .packs-head { display: flex; align-items: baseline; gap: var(--s-2); }
+  .packs-head .faint { font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+  .has { color: var(--text-faint); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .none { text-align: center; padding: var(--s-2) 0; }
   .packs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   .pack-item { display: flex; gap: var(--s-2); align-items: stretch; }
   .pack {

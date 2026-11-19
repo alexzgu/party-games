@@ -16,13 +16,16 @@ function fields(round: Round): Fields {
   };
 }
 
-/** Adds the finished round to the history; returns the entry's id (none for a round with no words). */
+/**
+ * Adds the ended round to the history; returns the entry's id (none for a round with no words).
+ * A round stopped from the pause menu is kept but marked unfinished.
+ */
 export function logRound(round: Round): string | undefined {
   if (round.shown.length === 0) return undefined;
-  return record({ game: 'forehead', ...fields(round) });
+  return record({ game: 'forehead', ...fields(round), finished: round.ended !== 'quit' });
 }
 
-/** Rewrites the round's entry after a fix; packs stay as they were when it was played. */
+/** Rewrites the round's entry after a fix; packs and the finished flag stay as they were. */
 export function relogRound(id: string, round: Round): void {
   const { title, scores, details } = fields(round);
   updateEntry(id, { title, scores, details });

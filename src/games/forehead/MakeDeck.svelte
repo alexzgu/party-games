@@ -70,7 +70,8 @@
   function save(kept: string[]) {
     let id = target;
     if (targetDeck) {
-      customDecks.put({ ...targetDeck, words: dedupe([...targetDeck.words, ...kept]) });
+      // On top, like words typed in the deck editor: the list reads newest first.
+      customDecks.put({ ...targetDeck, words: dedupe([...kept, ...targetDeck.words]) });
     } else {
       const fromPaste = mode === 'paste';
       const name = (fromPaste ? deckName.trim() : titleCase(theme.trim())).slice(0, 40) || (fromPaste ? 'My deck' : 'Claude deck');

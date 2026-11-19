@@ -5,12 +5,11 @@
   import Reveal from './Reveal.svelte';
   import Win from './Win.svelte';
   import TapToFinish from './TapToFinish.svelte';
-  import { makeDealer } from './deal';
+  import { makeDealer, packNames } from './deal';
   import { unlockAudio, sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
   import { keepAwake } from '../../lib/wakelock';
   import { record } from '../../lib/history';
-  import { gibberishPacks } from '../../lib/content';
   import * as rules from './logic';
   import type { GameState } from './logic';
 
@@ -83,7 +82,7 @@
     if (n.phase === 'win') {
       sfx.win();
       haptic.end();
-      if (!demo) record(rules.gameRecord(n, gibberishPacks().filter((p) => n.packIds.includes(p.id)).map((p) => p.name)));
+      if (!demo) record(rules.gameRecord(n, packNames(n.packIds)));
     }
     step(n);
   }

@@ -15,6 +15,8 @@ export interface HistoryEntry {
   packs: string[];
   /** Optional lines shown when the entry is opened (words got/passed, clues given...). */
   details?: string[];
+  /** False when the round or game was ended before it finished; missing means finished. */
+  finished?: boolean;
 }
 
 const KEY = 'history';

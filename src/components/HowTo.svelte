@@ -14,7 +14,7 @@
 
 <style>
   .q {
-    width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+    width: 44px; height: 44px; border: 0; border-radius: 50%; display: grid; place-items: center;
     font-weight: 800; font-size: 1.25rem; color: var(--accent); background: rgb(255 255 255 / 0.08);
   }
   .rules :global(ol), .rules :global(ul) { padding-left: 1.2em; display: flex; flex-direction: column; gap: var(--s-2); }

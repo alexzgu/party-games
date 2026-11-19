@@ -2,7 +2,11 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Popup from '../../components/Popup.svelte';
+  import ListTools from '../../components/ListTools.svelte';
   import CardForm from './CardForm.svelte';
+  import { tick } from 'svelte';
+  import { cardMatches, findCards } from './find';
+  import type { SortKey } from '../../lib/listing';
   import { customGibberish, gibberishPacks, type GibberishCard, type GibberishPack } from '../../lib/content';
   import { sfx } from '../../lib/sound';
 
@@ -21,6 +25,12 @@
   /** Index of the card open in the form, 'new' for a new one, null when closed. */
   let open = $state<number | 'new' | null>(null);
   let confirm = $state<'' | 'restore' | 'delete'>('');
+  let query = $state('');
+  let sort = $state<SortKey>('suggested');
+  /** Index of the card just added or changed, briefly highlighted where it landed. */
+  let fresh = $state<number | null>(null);
+  let list = $state<HTMLUListElement>();
+  const shown = $derived(pack ? findCards(pack.cards, query, sort) : []);
 
   const categories = [...new Set(gibberishPacks().flatMap((p) => p.cards.map((c) => c.hint)).filter(Boolean))].sort();
 
@@ -42,9 +52,20 @@
     if (!pack || open === null) return;
     // A new card goes first, where the player can see it landed.
     const cards = open === 'new' ? [card, ...pack.cards] : pack.cards.map((c, i) => (i === open ? card : c));
+    const at = open === 'new' ? 0 : open;
     persist({ ...pack, cards });
     open = null;
     sfx.correct();
+    // A card the search would hide clears the search, so it never vanishes on save.
+    if (!cardMatches(card, query)) query = '';
+    show(at);
+  }
+
+  async function show(i: number) {
+    fresh = i;
+    await tick();
+    list?.querySelector(`[data-i="${i}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    setTimeout(() => { if (fresh === i) fresh = null; }, 1600);
   }
 
   function deleteCard(index: number) {
@@ -88,18 +109,26 @@
       <input type="text" bind:value={name} onchange={rename} maxlength="40" autocomplete="off" enterkeyhint="done" />
     </label>
 
-    <h3 class="count">{pack.cards.length} {pack.cards.length === 1 ? 'card' : 'cards'} · tap one to change it</h3>
-    <ul class="cards">
-      {#each pack.cards as c, i (i)}
-        <li>
-          <button class="card" onclick={() => (open = i)}>
-            <span class="ph">{c.phrase}</span>
-            <span class="an">→ {c.answer}</span>
-            {#if c.hint}<span class="hi">{c.hint}</span>{/if}
-          </button>
-        </li>
-      {/each}
-    </ul>
+    <section class="list" aria-label="Cards">
+      <ListTools key="gibberish:cards" bind:query bind:sort placeholder="Search phrases, answers, categories" shown={shown.length} total={pack.cards.length}>
+        {#snippet title()}
+          <h3 class="count">{pack?.cards.length} {pack?.cards.length === 1 ? 'card' : 'cards'}</h3>
+          <p class="tip">Tap one to change it</p>
+        {/snippet}
+      </ListTools>
+      {#if query && !shown.length}<p class="none">No cards match “{query.trim()}”</p>{/if}
+      <ul class="cards" bind:this={list}>
+        {#each shown as { c, i } (i)}
+          <li>
+            <button class="card" class:fresh={fresh === i} data-i={i} onclick={() => (open = i)}>
+              <span class="ph">{c.phrase}</span>
+              <span class="an">→ {c.answer}</span>
+              {#if c.hint}<span class="hi">{c.hint}</span>{/if}
+            </button>
+          </li>
+        {/each}
+      </ul>
+    </section>
   {/if}
 
   {#snippet actions()}
@@ -143,11 +172,16 @@
   .act { flex: none; white-space: nowrap; }
   .name { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
   .count { color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700; }
+  .list { display: flex; flex-direction: column; }
+  .tip { margin: 0; color: var(--text-faint); font-size: 0.8rem; }
+  .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   .card {
     width: 100%; min-height: 64px; text-align: left; padding: var(--s-2) var(--s-4); border-radius: var(--r-md);
     border: 1.5px solid var(--line); background: var(--surface); display: flex; flex-direction: column;
   }
+  .card.fresh { animation: fresh 1.6s var(--ease-out); }
+  @keyframes fresh { from { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--surface)); } }
   .card:active { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
   .ph { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; line-height: 1.15; }
   .an { color: var(--text-dim); font-weight: 600; }

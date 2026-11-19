@@ -65,6 +65,15 @@ an edit under the same id that replaces it everywhere on that phone, marked "Edi
 - **History** (`#/history`): one entry per Heads Down. round (rewritten if a word is fixed
   afterwards) and per finished Spectrum or Inn Co Hear Ant game: title, scores, packs and
   details. Filter by game, open, delete one, or clear all. Stored on the phone only.
+- **Search and sort** (`ListTools`): every pack list and every pack's contents has a search
+  toggle (matches names, blurbs and the items inside; a pack found only through an item shows
+  `has "…"`) and a sort toggle (Suggested, Newest, Oldest, A–Z). Each list remembers its toggles
+  and order on the phone. Packs carry an `added` date; built-ins without one count as oldest.
+  Ticking packs during a search still counts every picked pack.
+- **Ended early**: a Heads Down. round quit from the pause menu, or a Spectrum / Inn Co Hear Ant
+  game thrown away before a winner (End game; Start a new game over a saved one) is still
+  recorded, with `finished: false` and an "Ended early" tag, if anything was scored. Leaving a
+  saved, resumable game is not ending it.
 - **Tap to skip**: a tap finishes any animation players are waiting through (reveals, points,
   win screens); scores are applied before animations start, so skipping never changes them.
   Live play (Heads Down. countdown and round, Inn Co Hear Ant card timer) is never skippable.

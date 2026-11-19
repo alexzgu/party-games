@@ -4,6 +4,8 @@
   import Button from '../../components/Button.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import HowTo from '../../components/HowTo.svelte';
+  import ListTools from '../../components/ListTools.svelte';
+  import type { SortKey } from '../../lib/listing';
   import { customDecks, wordDecks } from '../../lib/content';
   import { go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
@@ -11,10 +13,16 @@
   import { prefs, savePrefs, selectedDecks, type Control } from './state.svelte';
   import { ROUND_LENGTHS } from './round';
   import { startRound } from './flow';
+  import { findDecks } from './find';
 
   const decks = wordDecks();
   // Drop selections of decks that were deleted since.
   prefs.deckIds = prefs.deckIds.filter((id) => decks.some((d) => d.id === id));
+
+  let query = $state('');
+  let sort = $state<SortKey>('suggested');
+  /** The tiles on show; the count and Start always cover every picked deck, shown or not. */
+  const shown = $derived(findDecks(decks, query, sort));
 
   const chosen = $derived(selectedDecks(prefs.deckIds));
   const wordCount = $derived(chosen.reduce((n, d) => n + d.words.length, 0));
@@ -57,33 +65,42 @@
     </HowTo>
   {/snippet}
 
-  <section class="stack">
-    <div class="sec-head">
-      <h3>Decks <span class="faint count">{chosen.length ? `${chosen.length} picked · ${wordCount} words` : 'pick one or more'}</span></h3>
-      <button class="link" onclick={() => go('/forehead/decks')}>Edit decks</button>
-    </div>
+  <section>
+    <ListTools key="forehead:setup" bind:query bind:sort placeholder="Search decks or words" shown={shown.length} total={decks.length}>
+      {#snippet title()}
+        <h3>Decks</h3>
+        <p class="faint count">{chosen.length ? `${chosen.length} picked · ${wordCount} words` : 'pick one or more'}</p>
+      {/snippet}
+      {#snippet extra()}
+        <button class="link" onclick={() => go('/forehead/decks')}>Edit decks</button>
+      {/snippet}
+    </ListTools>
     <ul class="grid">
-      {#each decks as d, i (d.id)}
+      {#each shown as { deck: d, via }, i (d.id)}
         {@const on = prefs.deckIds.includes(d.id)}
         <li class="pop-in" style:animation-delay="{Math.min(i, 12) * 25}ms">
           <button class="deck" class:on aria-pressed={on} onclick={() => toggleDeck(d.id)}>
             <span class="emoji" aria-hidden="true">{d.emoji || '🃏'}</span>
             <span class="name">{d.name}</span>
             <span class="meta">{d.custom ? 'Mine · ' : customDecks.isEdited(d.id) ? 'Edited · ' : ''}{d.words.length} words</span>
+            {#if via}<span class="via">has “{via}”</span>{/if}
             <span class="check" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </span>
           </button>
         </li>
       {/each}
-      <li>
-        <button class="deck make" onclick={() => go('/forehead/make')}>
-          <span class="emoji" aria-hidden="true">✨</span>
-          <span class="name">Make a deck</span>
-          <span class="meta">paste a list or ask Claude</span>
-        </button>
-      </li>
+      {#if !query.trim()}
+        <li>
+          <button class="deck make" onclick={() => go('/forehead/make')}>
+            <span class="emoji" aria-hidden="true">✨</span>
+            <span class="name">Make a deck</span>
+            <span class="meta">paste a list or ask Claude</span>
+          </button>
+        </li>
+      {/if}
     </ul>
+    {#if !shown.length && query.trim()}<p class="faint none">No decks match “{query.trim()}”</p>{/if}
   </section>
 
   <section class="stack">
@@ -107,8 +124,7 @@
 </Screen>
 
 <style>
-  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
-  .count { font-family: var(--font-body); font-weight: 500; font-size: 0.9rem; letter-spacing: 0; margin-left: var(--s-1); }
+  .count { font-size: 0.85rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .link { border: 0; background: transparent; color: var(--accent); font-weight: 700; min-height: 44px; padding: 0 var(--s-2); }
   .small { font-size: 0.9rem; }
   .grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-2); }
@@ -123,6 +139,8 @@
   .emoji { font-size: 1.7rem; line-height: 1.1; margin-bottom: var(--s-1); }
   .name { font-family: var(--font-display); font-weight: 800; font-size: 1.08rem; line-height: 1.1; letter-spacing: -0.01em; }
   .meta { color: var(--text-faint); font-size: 0.82rem; }
+  .via { color: var(--text-dim); font-size: 0.8rem; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .none { text-align: center; padding: var(--s-2) 0; }
   .check {
     position: absolute; top: var(--s-2); right: var(--s-2); width: 26px; height: 26px; border-radius: 50%;
     display: grid; place-items: center; background: var(--accent); color: var(--on-accent);

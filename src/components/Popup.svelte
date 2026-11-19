@@ -34,7 +34,7 @@
   header { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4) var(--s-4) var(--s-2) var(--s-5); }
   h2 { flex: 1; margin: 0; }
   .x {
-    width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 1.1rem;
+    width: 44px; height: 44px; border: 0; border-radius: 50%; display: grid; place-items: center; font-size: 1.1rem;
     background: rgb(255 255 255 / 0.08); color: var(--text);
   }
   .body { overflow-y: auto; padding: var(--s-2) var(--s-5) var(--s-5); }

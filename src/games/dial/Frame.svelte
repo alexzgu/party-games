@@ -7,6 +7,7 @@
   import type { Game, TeamIndex } from './state';
   import { scoresBefore } from './state';
   import { teamColor } from './look';
+  import { revealedLog } from './summary';
 
   let {
     game,
@@ -46,7 +47,7 @@
   <div class="sheet pop-in" role="dialog" aria-modal="true" aria-label="Game menu">
     {#if confirmEnd}
       <h3>End game?</h3>
-      <p class="muted">Scores will be lost.</p>
+      <p class="muted">{revealedLog(game).length ? 'The scores so far go in History, marked as ended early.' : 'No round has been scored yet, so nothing goes in History.'}</p>
       <Button size="lg" variant="danger" onclick={onend}>Yes, end the game</Button>
       <Button variant="secondary" onclick={close}>No, keep playing</Button>
     {:else}

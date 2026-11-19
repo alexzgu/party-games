@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { beginRound, callSide, lockIn, newGame, nextTurn, restore, setClue, showTeam, type Game } from './state';
-import { summarize } from './summary';
+import { beginRound, callSide, lockIn, markRevealed, newGame, nextTurn, restore, setClue, showTeam, type Game } from './state';
+import { summarize, summarizeEarly } from './summary';
 
 const card = { left: 'Cold', right: 'Hot' };
 
@@ -20,10 +20,37 @@ describe('game summary', () => {
     expect(s.title).toBe('Birds beat Owls 5–2');
     expect(s.scores).toEqual([{ name: 'Birds', score: 5 }, { name: 'Owls', score: 2 }]);
     expect(s.packs).toEqual(['Classic']);
+    expect(s.finished).toBe(true);
     expect(s.details).toEqual([
       '1. Birds · Cold ↔ Hot · “Soup” · 4 pts',
       '2. Owls · Cold ↔ Hot · 2 pts · Birds stole 1',
     ]);
+  });
+
+  it('records a game ended early with the scores as they stood, leader first', () => {
+    let g = newGame({ names: ['Birds', 'Owls'], goal: 10, steal: false, packIds: ['classic'] });
+    g = round(g, 30, 40, 'Tea'); // Birds 2
+    g = lockIn(showTeam(beginRound(g, card, 50)), 50); // Owls 4, on the reveal screen, not yet shown
+    const hidden = summarizeEarly(g, ['Classic']);
+    expect(hidden?.title).toBe('Birds 2 – Owls 0');
+    expect(hidden?.details).toEqual(['1. Birds · Cold ↔ Hot · “Tea” · 2 pts']);
+    const s = summarizeEarly(markRevealed(g), ['Classic']);
+    expect(s).toEqual({
+      game: 'dial',
+      title: 'Owls 4 – Birds 2',
+      scores: [{ name: 'Owls', score: 4 }, { name: 'Birds', score: 2 }],
+      packs: ['Classic'],
+      details: ['1. Birds · Cold ↔ Hot · “Tea” · 2 pts', '2. Owls · Cold ↔ Hot · 4 pts'],
+      finished: false,
+    });
+  });
+
+  it('records nothing for a game ended before any result was shown, or one already won', () => {
+    const g = newGame({ names: ['Birds', 'Owls'], goal: 4, steal: false, packIds: [] });
+    expect(summarizeEarly(g, [])).toBeNull();
+    const firstReveal = lockIn(showTeam(beginRound(g, card, 50)), 50);
+    expect(summarizeEarly(firstReveal, [])).toBeNull();
+    expect(summarizeEarly(nextTurn(markRevealed(firstReveal)), [])).toBeNull(); // Birds won
   });
 
   it('resumes a game saved before the round log existed', () => {

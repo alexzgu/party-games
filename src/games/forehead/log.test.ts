@@ -19,6 +19,15 @@ describe('round history', () => {
     expect(history()).toMatchObject([{ id, title: '2 got · 0 passed', scores: [{ score: 2 }], details: ['✓ Titanic', '✓ Jaws'] }]);
   });
 
+  it('marks a round ended from the pause menu as unfinished, and keeps it through a fix', () => {
+    logRound({ ...played, ended: 'time' });
+    logRound({ ...played, ended: 'out' });
+    const id = logRound({ ...played, ended: 'quit' })!;
+    expect(history().map((e) => e.finished)).toEqual([false, true, true]);
+    relogRound(id, { ...played, ended: 'quit', shown: toggle(played.shown, 1) });
+    expect(history()[0]).toMatchObject({ id, finished: false, title: '2 got · 0 passed' });
+  });
+
   it('skips a round with no words', () => {
     expect(logRound({ ...played, shown: [] })).toBeUndefined();
     expect(history()).toEqual([]);

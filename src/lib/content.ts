@@ -2,11 +2,11 @@
 // make or edit on the phone (saved in localStorage). An edit of a built-in replaces it in place.
 import { load, save } from './storage';
 
-export interface WordDeck { id: string; name: string; emoji: string; blurb: string; words: string[]; custom?: boolean }
+export interface WordDeck { id: string; name: string; emoji: string; blurb: string; words: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 export interface Spectrum { left: string; right: string }
-export interface SpectrumPack { id: string; name: string; blurb: string; cards: Spectrum[]; custom?: boolean }
+export interface SpectrumPack { id: string; name: string; blurb: string; cards: Spectrum[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 export interface GibberishCard { phrase: string; answer: string; hint: string }
-export interface GibberishPack { id: string; name: string; blurb: string; cards: GibberishCard[]; custom?: boolean }
+export interface GibberishPack { id: string; name: string; blurb: string; cards: GibberishCard[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 
 const wordFiles = import.meta.glob<WordDeck>('../content/forehead/*.json', { eager: true, import: 'default' });
 const gibberishFiles = import.meta.glob<GibberishPack>('../content/gibberish/*.json', { eager: true, import: 'default' });
@@ -31,7 +31,7 @@ const builtinSpectra = ordered(Object.values(dialFiles).flatMap((f) => ('packs' 
  * Packs saved on this phone. A pack whose id matches a built-in is an edit of that built-in:
  * it replaces it everywhere until restored. Any other id is the player's own pack (`custom`).
  */
-function customStore<T extends { id: string; custom?: boolean }>(key: string, builtin: T[]) {
+function customStore<T extends { id: string; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }>(key: string, builtin: T[]) {
   const builtinIds = new Set(builtin.map((b) => b.id));
   // An own pack (custom: true) whose id a later built-in also uses stays the player's own,
   // under a new id, so it is never mistaken for an edit and "restored" away.
@@ -49,7 +49,9 @@ function customStore<T extends { id: string; custom?: boolean }>(key: string, bu
     saved: stored,
     put(item: T) {
       const items = stored().filter((x) => x.id !== item.id);
-      save(key, [{ ...item, custom: !builtinIds.has(item.id) }, ...items]);
+      const own = !builtinIds.has(item.id);
+      const added = item.added ?? (own ? new Date().toISOString() : undefined);
+      save(key, [{ ...item, custom: own, ...(added ? { added } : {}) }, ...items]);
     },
     remove(id: string) {
       save(key, stored().filter((x) => x.id !== id));
@@ -84,6 +86,9 @@ export const gibberishPacks = (): GibberishPack[] => merged(customGibberish.save
 export function isBuiltin(id: string, kind: 'decks' | 'spectra' | 'gibberish'): boolean {
   return (kind === 'decks' ? customDecks : kind === 'spectra' ? customSpectra : customGibberish).isBuiltin(id);
 }
+
+/** Age for sorting packs by Newest/Oldest: ms since epoch, 0 when unknown. */
+export const packAge = (p: { added?: string }): number => (p.added ? Date.parse(p.added) || 0 : 0);
 
 export function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'pack';

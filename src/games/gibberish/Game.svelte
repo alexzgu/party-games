@@ -9,7 +9,9 @@
   import Make from './Make.svelte';
   import PackEditor from './PackEditor.svelte';
   import { loadGame, saveGame, loadSetup, saveSetup } from './store';
-  import { newGame, type GameOptions, type GameState } from './logic';
+  import { endedRecord, newGame, type GameOptions, type GameState } from './logic';
+  import { packNames } from './deal';
+  import { record } from '../../lib/history';
   import { demoGame, DEMO_CARDS } from './demo';
 
   const demo = route.params.get('demo') ?? '';
@@ -22,6 +24,9 @@
   }
 
   function start(names: string[], opts: GameOptions) {
+    // Starting over throws away a game nobody won yet: keep it in History as ended early.
+    const ended = !demo && game ? endedRecord(game, packNames(game.packIds)) : null;
+    if (ended) record(ended);
     commit(newGame(names, opts));
     go('/gibberish/play', true);
   }

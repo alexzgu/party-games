@@ -18,7 +18,7 @@
   import { randomTarget } from './scoring';
   import { clearGame, loadConfig, loadGame, saveGame } from './persist';
   import { demoGame, demoItems } from './demo';
-  import { summarize } from './summary';
+  import { summarize, summarizeEarly } from './summary';
   import { record } from '../../lib/history';
   import { spectrumPacks } from '../../lib/content';
   import {
@@ -79,7 +79,19 @@
   const packNames = (ids: string[]) => spectrumPacks().filter((p) => ids.includes(p.id)).map((p) => p.name);
 
   const home = () => go('/');
-  const end = () => set(null);
+  /** Clears a game that is over (already in History) to go back to setup. */
+  const close = () => set(null);
+  /**
+   * The only way a game in progress is thrown away ("End game" in the menu): it goes in History
+   * as ended early when at least one result was shown. Pausing to go home keeps it saved instead.
+   */
+  function end() {
+    const g = game;
+    if (!g) return;
+    const early = demo ? null : summarizeEarly(g, packNames(g.packIds));
+    if (early) record(early);
+    set(null);
+  }
 </script>
 
 <svelte:window onpointerdown={firstTouch} />
@@ -141,7 +153,7 @@
     <Reveal game={g} round={g.round!} onrevealed={() => set(markRevealed(game!))} onnext={() => next(game!)} onhome={home} onend={end} />
   {:else if game.phase === 'win'}
     {@const g = game}
-    <Win game={g} onrematch={() => set(rematch(g))} onsetup={end} onhome={() => { set(null); home(); }} />
+    <Win game={g} onrematch={() => set(rematch(g))} onsetup={close} onhome={() => { close(); home(); }} />
   {/if}
 </div>
 

@@ -123,11 +123,31 @@ export function rematch(s: GameState): GameState {
 /** The history entry for a finished game: "Sam won 5–3–2", every score, and one line per card played. */
 export function gameRecord(s: GameState, packs: string[]): Omit<HistoryEntry, 'id' | 'at'> {
   const rows = standings(s);
-  const top = rows[0]?.player;
+  return { ...entry(s, packs, `${rows[0]?.player.name ?? 'Nobody'} won ${line(rows)}`), finished: true };
+}
+
+/**
+ * The history entry for a game thrown away before it was won ("Maya led 3–2–1", scores as they
+ * stood), or null when no card was played. A game already won is recorded by the win itself.
+ */
+export function endedRecord(s: GameState, packs: string[]): Omit<HistoryEntry, 'id' | 'at'> | null {
+  if (s.phase === 'win' || s.cardsPlayed === 0) return null;
+  // Someone reached the target but nobody tapped on to the win screen: that is still a win.
+  if (winner(s) >= 0) return gameRecord(s, packs);
+  const rows = standings(s);
+  const best = rows[0].player.score;
+  const leaders = rows.filter((r) => r.player.score === best).map((r) => r.player.name);
+  const lead = best === 0 ? 'Nobody scored' : leaders.length === 1 ? `${leaders[0]} led` : leaders.length === 2 ? `${leaders.join(' and ')} tied` : `${leaders.length}-way tie`;
+  return { ...entry(s, packs, `${lead} ${line(rows)}`), finished: false };
+}
+
+const line = (rows: { player: Player }[]) => rows.map((r) => r.player.score).join('–');
+
+function entry(s: GameState, packs: string[], title: string): Omit<HistoryEntry, 'id' | 'at'> {
   return {
     game: 'gibberish',
-    title: `${top?.name ?? 'Nobody'} won ${rows.map((r) => r.player.score).join('–')}`,
-    scores: rows.map((r) => ({ name: r.player.name, score: r.player.score })),
+    title,
+    scores: standings(s).map((r) => ({ name: r.player.name, score: r.player.score })),
     packs,
     details: s.log.map((c) => `${c.phrase} → ${c.answer}: ${s.players[c.by]?.name ?? 'nobody'}`),
   };

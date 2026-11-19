@@ -2,10 +2,13 @@
   import { untrack } from 'svelte';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
+  import ListTools from '../../components/ListTools.svelte';
+  import type { SortKey } from '../../lib/listing';
   import { customDecks, dedupe, slugify, wordDecks, type WordDeck } from '../../lib/content';
   import { back, go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
+  import { findWords } from './find';
 
   // See and edit any deck. Every change saves at once; there is no Save button to forget.
   // Changing a built-in deck saves an edit of it on this phone, which "Restore original" undoes.
@@ -24,6 +27,9 @@
   let confirmDelete = $state(false);
   let confirmRestore = $state(false);
   let input: HTMLInputElement | undefined = $state();
+  let query = $state('');
+  let sort = $state<SortKey>('suggested');
+  const words = $derived(findWords(deck.words, query, sort));
 
   /** A new deck is picked for the next round once, when its first words arrive (never while empty). */
   let picked = (existing?.words.length ?? 0) > 0;
@@ -50,6 +56,7 @@
     if (!items.length) return;
     deck.words = dedupe([...items.reverse(), ...deck.words]);
     draft = '';
+    query = ''; // a search must not hide the word just added
     sfx.tick();
     persist();
     input?.focus();
@@ -114,14 +121,18 @@
   </section>
 
   <section class="stack">
-    <h3>Words <span class="faint n">{deck.words.length}</span></h3>
+    <div class="head">
+      <ListTools key="forehead:words" bind:query bind:sort placeholder="Search words" shown={words.length} total={deck.words.length}>
+        {#snippet title()}<h3>Words <span class="faint n">{deck.words.length}</span></h3>{/snippet}
+      </ListTools>
+    </div>
     <form class="add" onsubmit={add}>
       <input type="text" placeholder="Type a word, press Enter" bind:value={draft} bind:this={input} enterkeyhint="done" autocapitalize="words" aria-label="New word" />
       <Button type="submit" size="sm" disabled={!draft.trim()}>Add</Button>
     </form>
-    {#if deck.words.length}
+    {#if words.length}
       <ul class="chips">
-        {#each deck.words as w (w)}
+        {#each words as w (w)}
           <li class="chip pop-in">
             <span>{w}</span>
             <button aria-label="Remove {w}" onclick={() => removeWord(w)}>
@@ -130,6 +141,8 @@
           </li>
         {/each}
       </ul>
+    {:else if deck.words.length}
+      <p class="faint none">No words match “{query.trim()}”</p>
     {:else}
       <p class="faint">No words yet. Add them one by one, or paste a whole list.</p>
     {/if}
@@ -159,6 +172,9 @@
   .n { font-family: var(--font-body); font-weight: 500; font-size: 0.95rem; }
   .add { display: flex; gap: var(--s-2); align-items: center; }
   .add input { flex: 1; }
+  /* ListTools brings its own space below; the stack's gap already gives it. */
+  .head { margin-bottom: calc(-1 * var(--s-3)); }
+  .none { text-align: center; padding: var(--s-2) 0; }
   .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
   .chip { display: flex; align-items: center; gap: 2px; padding-left: var(--s-3); border-radius: var(--r-pill); background: var(--surface); min-height: 44px; }
   .chip button { width: 40px; height: 40px; border: 0; background: transparent; color: var(--text-faint); display: grid; place-items: center; border-radius: 50%; }

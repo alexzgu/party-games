@@ -44,6 +44,7 @@
             <span class="emoji" aria-hidden="true">{emoji(e.game)}</span>
             <span class="txt">
               <span class="title">{e.title}</span>
+              {#if e.finished === false}<span class="early">Ended early</span>{/if}
               <span class="faint">{when(e.at)}{e.packs.length ? ' · ' + e.packs.join(', ') : ''}</span>
             </span>
           </button>
@@ -58,6 +59,7 @@
   <Popup title={gameName(open.game)} onclose={() => (open = null)}>
     <p class="faint">{when(open.at)}</p>
     <p class="big">{open.title}</p>
+    {#if open.finished === false}<p class="early-note">Ended early: these are the scores when it stopped.</p>{/if}
     <ol class="scores">
       {#each open.scores as s, i (i)}
         <li><span>{s.name}</span><b>{s.score}</b></li>
@@ -97,6 +99,11 @@
   .emoji { font-size: 1.5rem; }
   .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .title { font-weight: 700; }
+  .early {
+    align-self: flex-start; padding: 1px 8px; border-radius: var(--r-pill);
+    font-size: 0.72rem; font-weight: 700; color: var(--c-pass); border: 1px solid color-mix(in srgb, var(--c-pass) 50%, transparent);
+  }
+  .early-note { color: var(--c-pass); font-size: 0.9rem; margin: calc(-1 * var(--s-2)) 0 var(--s-3); }
   .clear { margin-top: var(--s-4); display: flex; justify-content: center; }
   .big { font-size: 1.2rem; font-weight: 800; margin: var(--s-2) 0 var(--s-3); }
   .scores { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--s-3); }

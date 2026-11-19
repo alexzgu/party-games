@@ -5,7 +5,9 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Popup from '../../components/Popup.svelte';
+  import ListTools from '../../components/ListTools.svelte';
   import { customSpectra, spectrumPacks, type Spectrum, type SpectrumPack } from '../../lib/content';
+  import { matches, sorted, type SortKey } from '../../lib/listing';
   import { cardId } from './state';
 
   let { id, onback }: { id: string; onback: () => void } = $props();
@@ -28,6 +30,16 @@
   let editRight = $state('');
   let editError = $state('');
   let confirm = $state<'restore' | 'delete' | null>(null);
+  let query = $state('');
+  let sort = $state<SortKey>('suggested');
+  /** The card just added, lit up briefly so it is easy to spot in any order. */
+  let fresh = $state('');
+
+  // New cards go on top, so a card's position is its age: the first is the newest.
+  const rows = $derived(sorted(
+    (pack?.cards ?? []).map((c, i) => ({ c, i })).filter(({ c }) => matches(`${c.left} ${c.right}`, query)),
+    sort, (r) => r.c.left, (r) => -r.i,
+  ));
 
   const clean = (s: string) => s.trim().replace(/\s+/g, ' ');
 
@@ -48,6 +60,9 @@
     if (clash(c) >= 0) { addError = 'That card is already in this pack.'; return; }
     save({ ...pack, cards: [c, ...pack.cards] });
     addLeft = addRight = addError = '';
+    query = ''; // so the new card is never hidden by an old search
+    fresh = cardId(c);
+    setTimeout(() => { if (fresh === cardId(c)) fresh = ''; }, 1600);
     document.getElementById('add-left')?.focus();
   }
 
@@ -119,35 +134,41 @@
       {#if addError}<p class="err">{addError}</p>{/if}
     </form>
 
-    <ul class="cards">
-      {#each pack.cards as c, i (cardId(c) + i)}
-        <li>
-          {#if editing === i}
-            <form class="edit" onsubmit={saveEdit}>
-              <div class="pair">
-                <input type="text" maxlength="40" autocomplete="off" aria-label="Left side" bind:value={editLeft} oninput={() => (editError = '')} />
-                <input type="text" maxlength="40" autocomplete="off" aria-label="Right side" bind:value={editRight} oninput={() => (editError = '')} enterkeyhint="done" />
-              </div>
-              {#if editError}<p class="err">{editError}</p>{/if}
-              <div class="edit-actions">
-                <Button type="submit" size="sm" disabled={!clean(editLeft) || !clean(editRight)}>Save</Button>
-                <Button variant="ghost" size="sm" onclick={() => (editing = null)}>Cancel</Button>
-                <span class="grow"></span>
-                <Button variant="danger" size="sm" onclick={() => removeCard(i)}>Delete</Button>
-              </div>
-            </form>
-          {:else}
-            <button class="card" onclick={() => startEdit(i)} aria-label="Edit {c.left} to {c.right}">
-              <span class="l">{c.left}</span>
-              <span class="bar" aria-hidden="true">|</span>
-              <span class="r">{c.right}</span>
-              <svg class="pen" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>
-            </button>
-          {/if}
-        </li>
-      {/each}
-    </ul>
-    {#if pack.cards.length === 0}<p class="faint">No cards yet. Add one above.</p>{/if}
+    <div>
+      <ListTools key="dial:cards" bind:query bind:sort placeholder="Search cards" shown={rows.length} total={pack.cards.length}>
+        {#snippet title()}<h3>Cards</h3>{/snippet}
+      </ListTools>
+      <ul class="cards">
+        {#each rows as { c, i } (cardId(c) + i)}
+          <li class:fresh={fresh === cardId(c)}>
+            {#if editing === i}
+              <form class="edit" onsubmit={saveEdit}>
+                <div class="pair">
+                  <input type="text" maxlength="40" autocomplete="off" aria-label="Left side" bind:value={editLeft} oninput={() => (editError = '')} />
+                  <input type="text" maxlength="40" autocomplete="off" aria-label="Right side" bind:value={editRight} oninput={() => (editError = '')} enterkeyhint="done" />
+                </div>
+                {#if editError}<p class="err">{editError}</p>{/if}
+                <div class="edit-actions">
+                  <Button type="submit" size="sm" disabled={!clean(editLeft) || !clean(editRight)}>Save</Button>
+                  <Button variant="ghost" size="sm" onclick={() => (editing = null)}>Cancel</Button>
+                  <span class="grow"></span>
+                  <Button variant="danger" size="sm" onclick={() => removeCard(i)}>Delete</Button>
+                </div>
+              </form>
+            {:else}
+              <button class="card" onclick={() => startEdit(i)} aria-label="Edit {c.left} to {c.right}">
+                <span class="l">{c.left}</span>
+                <span class="bar" aria-hidden="true">|</span>
+                <span class="r">{c.right}</span>
+                <svg class="pen" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>
+              </button>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+      {#if pack.cards.length === 0}<p class="faint">No cards yet. Add one above.</p>
+      {:else if rows.length === 0}<p class="faint none">No cards match “{query.trim()}”</p>{/if}
+    </div>
   {/if}
 
   {#snippet actions()}
@@ -194,6 +215,9 @@
     background: var(--surface); border: 0; text-align: left; font-weight: 600; line-height: 1.2;
   }
   .card:active { background: var(--surface-hi); }
+  .fresh .card { animation: fresh 1.6s ease-out; }
+  @keyframes fresh { from { box-shadow: inset 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); } }
+  .none { text-align: center; padding: var(--s-2) 0; }
   .l { overflow-wrap: anywhere; }
   .r { overflow-wrap: anywhere; text-align: right; }
   .bar { color: var(--accent); font-weight: 800; }

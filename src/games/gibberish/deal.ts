@@ -36,3 +36,8 @@ export function makeDealer(packIds: string[]) {
     },
   };
 }
+
+/** Names of the chosen packs, in pack order, for a history entry. */
+export function packNames(packIds: string[]): string[] {
+  return gibberishPacks().filter((p) => packIds.includes(p.id)).map((p) => p.name);
+}

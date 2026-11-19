@@ -18,6 +18,8 @@ function packBasics(packs: { id: string; name: string; blurb: string }[], proble
     if (!SLUG.test(p.id)) problems.push(`bad id "${p.id}" (use lowercase-with-dashes)`);
     if (!p.name?.trim()) problems.push(`${p.id}: missing name`);
     if (!p.blurb?.trim()) problems.push(`${p.id}: missing blurb`);
+    const added = (p as { added?: string }).added;
+    if (added !== undefined && !/^\d{4}-\d{2}-\d{2}/.test(added)) problems.push(`${p.id}: "added" should be a date like 2026-11-21`);
   }
 }
 

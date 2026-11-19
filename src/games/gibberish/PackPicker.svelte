@@ -1,9 +1,13 @@
 <script lang="ts">
+  import ListTools from '../../components/ListTools.svelte';
   import { customGibberish, type GibberishPack } from '../../lib/content';
+  import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
+  import { findPacks } from './find';
 
   // Multi-select pack tiles. Tapping a tile ticks it; the pencil in its corner opens the pack
   // to see, edit or delete its cards. Own packs carry "Mine", edited built-ins "Edited".
+  // Search and sort only change what is shown: ticks on hidden packs stay and still count.
   let { packs, selected = $bindable(), onmake, onedit }: {
     packs: GibberishPack[];
     selected: string[];
@@ -16,19 +20,27 @@
     sfx.tap();
   }
 
+  let query = $state('');
+  let sort = $state<SortKey>('suggested');
+  const shown = $derived(findPacks(packs, query, sort));
+
   const tag = (p: GibberishPack) => (p.custom ? ' · Mine' : customGibberish.isEdited(p.id) ? ' · Edited' : '');
 </script>
 
 <section class="packs" aria-labelledby="packs-h">
-  <h3 id="packs-h">Packs</h3>
+  <ListTools key="gibberish:packs" bind:query bind:sort placeholder="Search packs and cards" shown={shown.length} total={packs.length}>
+    {#snippet title()}<h3 id="packs-h">Packs</h3>{/snippet}
+  </ListTools>
+  {#if query && !shown.length}<p class="none">No packs match “{query.trim()}”</p>{/if}
   <ul class="grid">
-    {#each packs as p (p.id)}
+    {#each shown as { p, hit } (p.id)}
       {@const on = selected.includes(p.id)}
       <li>
         <button class="tile" class:on aria-pressed={on} onclick={() => toggle(p.id)}>
           <span class="check" aria-hidden="true">{on ? '✓' : ''}</span>
           <span class="name">{p.name}</span>
           <span class="blurb">{p.blurb}</span>
+          {#if hit}<span class="hit">{hit}</span>{/if}
           <span class="meta">{p.cards.length} cards{tag(p)}</span>
         </button>
         <button class="edit" onclick={() => onedit(p.id)} aria-label="See and edit {p.name}">
@@ -47,7 +59,8 @@
 </section>
 
 <style>
-  .packs { display: flex; flex-direction: column; gap: var(--s-2); }
+  .packs { display: flex; flex-direction: column; }
+  .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
   li { position: relative; }
   .tile {
@@ -65,6 +78,7 @@
   .name { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; line-height: 1.1; padding-right: 30px; }
   .name.wide { padding-right: 0; }
   .blurb { color: var(--text-dim); font-size: 0.85rem; line-height: 1.25; flex: 1; }
+  .hit { color: var(--text-faint); font-size: 0.8rem; font-style: italic; line-height: 1.25; overflow-wrap: anywhere; }
   .meta { color: var(--text-faint); font-size: 0.8rem; font-weight: 600; padding-right: 40px; min-height: 30px; display: flex; align-items: flex-end; }
   .make { border-style: dashed; border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: transparent; }
   .spark { font-size: 1.4rem; }
