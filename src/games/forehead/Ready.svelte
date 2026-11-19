@@ -67,6 +67,7 @@
       clearInterval(timer);
       count = null;
       steady.reset();
+      setRestPitch(null);
       shownAt = performance.now();
     };
     document.addEventListener('visibilitychange', hide);

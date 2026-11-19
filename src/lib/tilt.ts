@@ -30,6 +30,14 @@ export const REARM_FRACTION = 0.4;
 export const NEUTRAL_HOLD_MS = 150;
 /** A resting pitch further from vertical than this is clamped: a bad capture cannot break play. */
 export const BASELINE_MAX_DEG = 25;
+/**
+ * The second way to re-arm: the phone held still (within STILL_DEG for STILL_MS) anywhere
+ * within BASELINE_MAX_DEG of vertical, at least halfway back from the side that last scored.
+ * That pose becomes the new baseline, so a missed or stale baseline (tap start, a reload, the
+ * player leaning back mid-round) can never leave the detector stuck.
+ */
+export const STILL_DEG = 4;
+export const STILL_MS = 300;
 
 function pitchDeg(u2: number): number {
   return (Math.asin(Math.max(-1, Math.min(1, u2))) * 180) / Math.PI;
@@ -39,7 +47,10 @@ export class TiltDetector {
   /** Starts fired: the phone must settle at neutral before the first gesture can count. */
   private armed = false;
   private neutralSince: number | null = null;
-  private readonly base: number;
+  private base: number;
+  private last: TiltEvent | null = null;
+  private stillRef = NaN;
+  private stillSince = 0;
   private readonly fire: TiltThresholds;
 
   /** `baselineDeg`: the player's resting pitch; 0 (true vertical) when none was caught. */
@@ -53,7 +64,12 @@ export class TiltDetector {
   update(g: readonly [number, number, number], nowMs: number): TiltEvent | null {
     const mag = Math.hypot(g[0], g[1], g[2]);
     if (!(mag > 1)) return null; // garbage or missing sample
-    const rel = pitchDeg(g[2] / mag) - this.base;
+    const pitch = pitchDeg(g[2] / mag);
+    const rel = pitch - this.base;
+    if (!(Math.abs(pitch - this.stillRef) <= STILL_DEG)) {
+      this.stillRef = pitch;
+      this.stillSince = nowMs;
+    }
 
     if (this.armed) {
       if (rel <= -this.fire.down) return this.fired('correct');
@@ -68,18 +84,33 @@ export class TiltDetector {
       }
     } else {
       this.neutralSince = null;
+      if (this.settledElsewhere(pitch, rel, nowMs)) {
+        this.base = pitch;
+        this.armed = true;
+      }
     }
     return null;
+  }
+
+  private settledElsewhere(pitch: number, rel: number, nowMs: number): boolean {
+    if (nowMs - this.stillSince < STILL_MS || Math.abs(pitch) > BASELINE_MAX_DEG) return false;
+    if (this.last === 'correct') return rel > -this.fire.down / 2;
+    if (this.last === 'pass') return rel < this.fire.up / 2;
+    return true;
   }
 
   reset(): void {
     this.armed = false;
     this.neutralSince = null;
+    this.last = null;
+    this.stillRef = NaN;
   }
 
   private fired(e: TiltEvent): TiltEvent {
     this.armed = false;
     this.neutralSince = null;
+    this.last = e;
+    this.stillRef = NaN;
     return e;
   }
 }

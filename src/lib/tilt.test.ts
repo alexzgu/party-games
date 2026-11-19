@@ -44,7 +44,7 @@ describe('TiltDetector', () => {
     // Phone tipped back 15° on the forehead: a 25° nod either way lands at -10° and +40°.
     const d = new TiltDetector('small', 15);
     expect(feed(d, [...rest(15), pitched(-10), ...rest(15), pitched(42)])).toEqual(['correct', 'pass']);
-    // Measured from vertical, the same resting pose would never arm.
+    // Measured from vertical, a brief rest at that pose (under STILL_MS) does not arm.
     const vertical = new TiltDetector('small');
     expect(feed(vertical, [...rest(15), pitched(-10)])).toEqual([]);
   });
@@ -70,6 +70,30 @@ describe('TiltDetector', () => {
     expect(feed(d, [...rest(0, 3), pitched(-25)], 1000)).toEqual([]);
     // Held at rest long enough: the next nod counts.
     expect(feed(d, [...rest(0), pitched(-25)], 2000)).toEqual(['correct']);
+  });
+});
+
+describe('TiltDetector re-arms on a still pose', () => {
+  function feed(d: TiltDetector, samples: Gravity[], start = 0, step = 20) {
+    return samples.map((g, i) => d.update(g, start + i * step)).filter(Boolean);
+  }
+  const rest = (deg: number, n = 20) => Array<Gravity>(n).fill(pitched(deg));
+
+  it('arms and re-bases when no resting pitch was caught (tap start, reload)', () => {
+    const d = new TiltDetector('small'); // baseline 0, but the phone rests tipped back 15°
+    expect(feed(d, [...rest(15), pitched(-10)])).toEqual(['correct']);
+  });
+
+  it('keeps working when the player leans back mid-round', () => {
+    const d = new TiltDetector('small');
+    expect(feed(d, [...rest(0), pitched(-25)])).toEqual(['correct']);
+    // Settles 12° further back than before, outside the narrow band: re-arms there.
+    expect(feed(d, [...rest(12), pitched(-12)], 1000)).toEqual(['correct']);
+  });
+
+  it('does not re-arm while still held on the side that just scored', () => {
+    const d = new TiltDetector('small');
+    expect(feed(d, [...rest(0), pitched(-25), ...rest(-20), pitched(10)])).toEqual(['correct']);
   });
 });
 

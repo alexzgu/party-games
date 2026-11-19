@@ -39,9 +39,13 @@
   // With a game saved, starting over takes a second tap so nobody wipes the scores by accident.
   let confirming = $state(false);
   let confirmTimer: ReturnType<typeof setTimeout> | undefined;
+  let confirmAt = 0;
   function startOver() {
+    // A double tap must not count as the confirming second tap.
+    if (confirming && performance.now() - confirmAt < 400) return;
     if (!confirming) {
       confirming = true;
+      confirmAt = performance.now();
       clearTimeout(confirmTimer);
       confirmTimer = setTimeout(() => (confirming = false), 4000);
       return;

@@ -8,7 +8,10 @@ import { requestPersistence } from './lib/storage';
 import { applyTheme } from './lib/settings.svelte';
 
 applyTheme();
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+// Older Safari (iOS 13) only has addListener; the app must still start there.
+const schemeQuery = matchMedia('(prefers-color-scheme: dark)');
+if (schemeQuery.addEventListener) schemeQuery.addEventListener('change', applyTheme);
+else schemeQuery.addListener(applyTheme);
 
 mount(App, { target: document.getElementById('app')! });
 
