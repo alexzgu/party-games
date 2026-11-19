@@ -12,6 +12,8 @@
     <li>With <b>Wrong answers lose points</b> on, tap ✗ for a team that guessed wrong: they lose the tile's value and can't win that tile.</li>
     <li>Most points when every tile is gone wins.</li>
   </ol>
+  <p>Anywhere from 1 to 20 teams; a team can be one person. Playing alone? Pick 1 and go for a high score: each tile is <b>Got it</b> or <b>Missed</b>.</p>
+  <p>Your own board: <b>Make a board</b> under the board list (blank, pasted, or written by Claude). The pencil on any board opens it to change clues, categories and levels.</p>
   <p>Tapped the wrong team? <b>Undo</b> on the board takes it back. Tap a team's score to fix it by hand.</p>
-  <p>On a keyboard: <b>Space</b> shows the answer, <b>1–4</b> picks the team that got it, <b>0</b> is nobody, <b>Esc</b> puts the tile back.</p>
+  <p>On a keyboard: <b>Space</b> shows the answer, <b>1–9</b> picks the team that got it (teams past nine: tap them), <b>0</b> is nobody, <b>Esc</b> puts the tile back.</p>
 </HowTo>

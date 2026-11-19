@@ -1,11 +1,13 @@
 <script lang="ts">
   import Button from '../../components/Button.svelte';
   import Confetti from './Confetti.svelte';
-  import { leaders, points, standings, type Game } from './logic';
+  import { leaders, points, scores, solo, standings, tileCount, type Game } from './logic';
   import { teamColor } from './look';
 
   // Game over: the winner (or a tie) big, every team's final score, confetti in the winner's
-  // colour. Any tap clears the confetti; the entrance itself is skipped by TapToFinish.
+  // colour. Any tap clears the confetti; the entrance itself is skipped by TapToFinish. A solo
+  // player gets their score and how many tiles they got; nine teams or more get compact rows
+  // (two columns on a wide screen) that come in faster.
   let { game, onnew, onhome }: { game: Game; onnew: () => void; onhome: () => void } = $props();
 
   const rows = $derived(standings(game));
@@ -13,35 +15,46 @@
   /** Shared places for ties: 1, 1, 3. */
   const place = (score: number) => 1 + rows.filter((r) => r.score > score).length;
   const tied = $derived(top.map((i) => game.teams[i]));
-  const color = $derived(top.length === 1 ? teamColor(top[0]) : 'var(--accent)');
+  const alone = $derived(solo(game));
+  const many = $derived(game.teams.length > 8);
+  const color = $derived(alone ? teamColor(0) : top.length === 1 ? teamColor(top[0]) : 'var(--accent)');
+  const soloScore = $derived(scores(game)[0]);
+  const got = $derived(game.log.filter((e) => e.kind === 'tile' && e.winner === 0).length);
+  const step = $derived(many ? 40 : 110);
+  const after = $derived(alone ? 300 : 360 + rows.length * step);
   let confetti = $state(true);
 </script>
 
 <svelte:window onpointerdown={() => (confetti = false)} />
 
-{#if confetti && top.length}<Confetti colors={[color, color, 'var(--c-gold)', ...game.teams.map((_, i) => teamColor(i))]} />{/if}
+{#if confetti && (alone ? soloScore > 0 : top.length)}<Confetti colors={[color, color, 'var(--c-gold)', ...game.teams.map((_, i) => teamColor(i))]} />{/if}
 
 <div class="win fade-in" style:--win={color}>
-  <div class="trophy pop-in" aria-hidden="true">{top.length ? '🏆' : '🤷'}</div>
+  <div class="trophy pop-in" aria-hidden="true">{alone ? (soloScore > 0 ? '🏆' : '🤷') : top.length ? '🏆' : '🤷'}</div>
   <h1 class="pop-in" style:animation-delay="120ms">
-    {#if top.length === 1}<span>{game.teams[top[0]]}</span> win!
+    {#if alone}<span>{game.teams[0]}</span> scored<b class="solo-score" class:neg={soloScore < 0}>{points(soloScore)}</b>
+    {:else if top.length === 1}<span>{game.teams[top[0]]}</span> win!
     {:else if top.length > 1}It's a tie!<span class="tie">{tied.length < 3 ? tied.join(' & ') : `${tied.slice(0, -1).join(', ')} & ${tied.at(-1)}`}</span>
     {:else}Nobody scored{/if}
   </h1>
   {#if game.ended}<p class="early pop-in" style:animation-delay="200ms">Ended early: scores when the game stopped</p>{/if}
 
-  <ol class="final" aria-label="Final scores">
-    {#each rows as r, k (r.index)}
-      <li class="pop-in" class:lead={top.includes(r.index)} style:--team={teamColor(r.index)} style:animation-delay="{300 + k * 110}ms">
-        <span class="place">{place(r.score)}</span>
-        <span class="tname">{r.name}</span>
-        <b>{points(r.score)}</b>
-      </li>
-    {/each}
-  </ol>
-  <p class="faint pop-in" style:animation-delay="{360 + rows.length * 110}ms">{game.board.name}</p>
+  {#if alone}
+    <p class="tiles pop-in" style:animation-delay="240ms">Got {got} of {tileCount(game)} tiles</p>
+  {:else}
+    <ol class="final" class:many style:--half={Math.ceil(rows.length / 2)} aria-label="Final scores">
+      {#each rows as r, k (r.index)}
+        <li class="pop-in" class:lead={top.includes(r.index)} style:--team={teamColor(r.index)} style:animation-delay="{300 + k * step}ms">
+          <span class="place">{place(r.score)}</span>
+          <span class="tname">{r.name}</span>
+          <b>{points(r.score)}</b>
+        </li>
+      {/each}
+    </ol>
+  {/if}
+  <p class="faint pop-in" style:animation-delay="{after}ms">{game.board.name}</p>
 
-  <div class="actions pop-in" style:animation-delay="{460 + rows.length * 110}ms">
+  <div class="actions pop-in" style:animation-delay="{after + 100}ms">
     <Button size="lg" onclick={onnew}>Play another board</Button>
     <Button variant="ghost" onclick={onhome}>Home</Button>
   </div>
@@ -74,4 +87,13 @@
   .tname { flex: 1; min-width: 0; text-align: left; color: var(--team); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   li b { font-family: var(--font-display); font-size: 1.4em; line-height: 1; font-variant-numeric: tabular-nums; }
   .actions { width: min(100%, 520px); margin-top: auto; display: flex; flex-direction: column; gap: var(--s-2); }
+  .final.many { display: grid; gap: 6px; }
+  .final.many li { padding: 6px var(--s-3); font-size: clamp(1rem, 2.2vmin, 1.4rem); border-width: 1.5px; }
+  .final.many li.lead { box-shadow: none; }
+  @media (min-width: 700px) {
+    .final.many { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(var(--half), auto); grid-auto-flow: column; column-gap: var(--s-3); }
+  }
+  .solo-score { display: block; font-size: 1.25em; font-variant-numeric: tabular-nums; }
+  .solo-score.neg { color: var(--c-bad); }
+  .tiles { color: var(--text-dim); font-weight: 700; font-size: clamp(1.1rem, 2.8vmin, 1.8rem); }
 </style>

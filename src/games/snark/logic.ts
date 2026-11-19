@@ -4,6 +4,7 @@
 import { assignPrompts } from './assign';
 import { FINAL_VOTES_EACH, scoreDuel, scoreFinal, validFinalBallot, type Result } from './scoring';
 import { shuffle } from '../../lib/random';
+import type { ToHost } from './protocol';
 
 export const MIN_PLAYERS = 3;
 export const MAX_PLAYERS = 8;
@@ -185,9 +186,11 @@ export function votersFor(g: Game, item: Item): string[] {
 /** Final-round answers a player may vote for: real answers that are not their own. */
 export const votableFinal = (item: Finale, pid: string) => item.authors.filter((a) => a !== pid && item.answers[a] != null);
 
+/** A vote for one side of the current head-to-head; never for a side with no answer. */
 export function vote(g: Game, pid: string, choice: 'a' | 'b'): Game {
   const item = currentItem(g);
   if (g.phase !== 'vote' || item?.kind !== 'duel' || pid in item.ballots || !votersFor(g, item).includes(pid)) return g;
+  if (item.answers[item[choice]] == null) return g;
   return withItem(g, { ...item, ballots: { ...item.ballots, [pid]: item[choice] } });
 }
 
@@ -203,6 +206,15 @@ export function voteFinal(g: Game, pid: string, byPosition: Record<string, numbe
   }
   if (!validFinalBallot(pid, ballot, new Set(votableFinal(item, pid)))) return g;
   return withItem(g, { ...item, ballots: { ...item.ballots, [pid]: ballot } });
+}
+
+/** An answer or vote from a phone, applied only if it is for the round and prompt now in play. */
+export function fromPhone(g: Game, pid: string, msg: ToHost): Game {
+  if (msg.t !== 'answer' && msg.t !== 'vote' && msg.t !== 'votes') return g;
+  if (msg.r !== g.round) return g;
+  if (msg.t === 'answer') return answer(g, pid, msg.i, msg.text);
+  if (msg.at !== g.at) return g;
+  return msg.t === 'vote' ? vote(g, pid, msg.c) : voteFinal(g, pid, msg.v);
 }
 
 /** Every voter whose phone is connected has voted (and at least one has). */

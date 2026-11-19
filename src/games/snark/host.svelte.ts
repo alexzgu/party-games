@@ -9,7 +9,7 @@ import { currentBroker } from './broker';
 import { hostPeerId, newCode } from './code';
 import * as L from './logic';
 import { playerView } from './view';
-import { readToHost, type ToHost, type ToPhone } from './protocol';
+import { readToHost, type ToPhone } from './protocol';
 import { loadGame, loadSettings, saveGame, saveSettings } from './store';
 import { gameRecord } from './record';
 import { dedupe, snarkPacks } from '../../lib/content';
@@ -141,19 +141,10 @@ class HostSession {
     if (msg.t === 'hello') return this.hello(conn, msg.pid, msg.name);
     const pid = this.pidOf.get(conn);
     if (!pid) return;
-    const next = this.apply(g, pid, msg);
+    const next = L.fromPhone(g, pid, msg);
     if (next === g) this.sendView(pid); // refused: put the phone back in step
     this.commit(next);
     this.tick();
-  }
-
-  private apply(g: L.Game, pid: string, msg: ToHost): L.Game {
-    switch (msg.t) {
-      case 'answer': return L.answer(g, pid, msg.i, msg.text);
-      case 'vote': return L.vote(g, pid, msg.c);
-      case 'votes': return L.voteFinal(g, pid, msg.v);
-      default: return g;
-    }
   }
 
   private hello(conn: DataConnection, pid: string, name: string): void {

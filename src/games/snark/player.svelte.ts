@@ -36,6 +36,8 @@ class PlayerSession {
   private watchdog: ReturnType<typeof setInterval> | null = null;
   /** Answers and votes not yet confirmed by the host; sent again after a reconnect. */
   private outbox: ToHost[] = [];
+  /** Reconnected: re-send the outbox once the host's fresh view has pruned it. */
+  private replay = false;
 
   constructor() {
     if (typeof document !== 'undefined') {
@@ -206,12 +208,16 @@ class PlayerSession {
         this.trouble = '';
         this.attempts = 0;
         this.missing = 0;
-        for (const m of this.outbox) this.write(m);
+        this.replay = true; // the host sends a view right after: replay what still applies then
         break;
       case 'view':
         this.view = msg.v;
         this.viewAt = Date.now();
         this.prune(msg.v);
+        if (this.replay) {
+          this.replay = false;
+          for (const m of this.outbox) this.write(m);
+        }
         break;
       case 'reject':
         this.halt(msg.why);
@@ -224,13 +230,13 @@ class PlayerSession {
     }
   }
 
-  /** Drops queued messages the host has clearly received (or that no longer apply). */
+  /** Drops queued messages the host has clearly received (or that are for a prompt that moved on). */
   private prune(v: PlayerView): void {
     const s = v.screen;
     this.outbox = this.outbox.filter((m) =>
-      m.t === 'answer' ? s.k === 'write' && s.tasks.some((t) => t.i === m.i)
-      : m.t === 'vote' ? s.k === 'vote' && s.voted === null
-      : m.t === 'votes' ? s.k === 'vote3' && !s.sent
+      m.t === 'answer' ? s.k === 'write' && m.r === v.round && s.tasks.some((t) => t.i === m.i)
+      : m.t === 'vote' ? s.k === 'vote' && m.r === v.round && m.at === s.at && s.voted === null
+      : m.t === 'votes' ? s.k === 'vote3' && m.r === v.round && m.at === s.at && !s.sent
       : false);
   }
 

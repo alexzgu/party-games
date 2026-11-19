@@ -6,7 +6,9 @@
   import { teamColor } from './look';
 
   // One tile, full screen: the clue for the host to read, then the answer and who got it.
-  // With the penalty rule on, teams can be marked wrong on either step.
+  // With the penalty rule on, teams can be marked wrong on either step. Up to four teams get big
+  // buttons and their own row of ✗ marks; five or more get a compact grid where each team's ✗
+  // sits beside its name. A solo player just gets "Got it" or "Missed".
   let { game, onanswer, onaward, onwrong, onback }: {
     game: Game;
     onanswer: () => void;
@@ -18,6 +20,9 @@
   const open = $derived(game.open!);
   const info = $derived(tileInfo(game, open.tile));
   const answering = $derived(game.phase === 'answer');
+  const n = $derived(game.teams.length);
+  const alone = $derived(n === 1);
+  const compact = $derived(n > 4);
 
   // Taps this soon after the clue or the answer appears are the tail of a double tap on the
   // previous screen, so they must not score a team or mark one wrong.
@@ -25,7 +30,8 @@
   $effect.pre(() => { void game.phase; shownAt = performance.now(); });
   const settled = () => performance.now() - shownAt >= 400;
 
-  // Keys for a laptop host: Space/Enter show the answer, 1–4 award, 0 nobody, Esc puts the tile back.
+  // Keys for a laptop host: Space/Enter show the answer, 1–9 award teams 1–9 (solo: 1 got it),
+  // 0 nobody (solo: missed), Esc puts the tile back. Teams past nine use the buttons.
   // A button the host just clicked or tapped keeps focus but is not "in use" from the keyboard,
   // so the shortcuts win there; a button reached with Tab keeps its own Space and Enter.
   let tabbing = false;
@@ -52,7 +58,7 @@
 
 <svelte:window onkeydown={key} onpointerdown={() => (tabbing = false)} />
 
-<div class="clue">
+<div class="clue" class:many={n > 8}>
   <TopBar backLabel="Put the tile back on the board" onback={onback}>
     {#snippet title()}
       <p class="where"><span class="cat">{info.category}</span><b class="val">{info.value}</b></p>
@@ -68,9 +74,34 @@
     {/if}
   </section>
 
-  {#if answering}
+  {#if answering && alone}
+    <p class="ask">Did {game.teams[0]} get it?</p>
+    <div class="solo">
+      <button class="team" style:--team={teamColor(0)} onclick={() => settled() && onaward(0)} aria-label="Got it, plus {info.value}">
+        <span class="tname">✓ Got it</span><span class="pts">+{info.value}</span>
+      </button>
+      <button class="team missed" onclick={() => settled() && onaward(-1)} aria-label={game.penalty ? `Missed, minus ${info.value}` : 'Missed'}>
+        <span class="tname">✗ Missed</span><span class="pts">{game.penalty ? `−${info.value}` : 'no points'}</span>
+      </button>
+    </div>
+  {:else if answering && compact}
+    <p class="ask">Who got it? <span class="faint">+{info.value}</span></p>
+    <ul class="cells" class:pen={game.penalty} style:--n={n}>
+      {#each game.teams as name, i (i)}
+        {@const wrong = open.wrong.includes(i)}
+        <li class="cell" class:wrong style:--team={teamColor(i)}>
+          <button class="got" disabled={wrong} onclick={() => settled() && onaward(i)} aria-label={wrong ? `${name}, marked wrong` : `${name} got it, plus ${info.value}`}>
+            {#if i < 9}<span class="num" aria-hidden="true">{i + 1}</span>{/if}<span class="cname">{name}</span>
+          </button>
+          {#if game.penalty}
+            <button class="x" class:on={wrong} aria-pressed={wrong} onclick={() => settled() && onwrong(i)} aria-label="{name} answered wrong">✗</button>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+  {:else if answering}
     <p class="ask">Who got it?</p>
-    <div class="teams" style:--n={game.teams.length}>
+    <div class="teams" style:--n={n}>
       {#each game.teams as name, i (i)}
         {@const wrong = open.wrong.includes(i)}
         <button class="team" class:wrong style:--team={teamColor(i)} disabled={wrong} onclick={() => settled() && onaward(i)} aria-label={wrong ? `${name}, marked wrong` : `${name} got it, plus ${info.value}`}>
@@ -81,10 +112,10 @@
     </div>
   {/if}
 
-  {#if game.penalty}
+  {#if game.penalty && !alone && !(answering && compact)}
     <div class="wrongs" role="group" aria-label="Wrong answers lose {info.value}">
       <span class="wlabel">Wrong answer? <span class="faint">−{info.value}</span></span>
-      <div class="wbtns" style:--n={game.teams.length}>
+      <div class="wbtns" class:compact style:--n={n}>
         {#each game.teams as name, i (i)}
           {@const on = open.wrong.includes(i)}
           <button class="wbtn" class:on style:--team={teamColor(i)} aria-pressed={on} onclick={() => settled() && onwrong(i)} aria-label="{name} answered wrong">
@@ -95,13 +126,11 @@
     </div>
   {/if}
 
-  <div class="actions">
-    {#if answering}
-      <Button variant="secondary" onclick={() => onaward(-1)}>Nobody got it</Button>
-    {:else}
-      <Button size="lg" onclick={onanswer}>Show answer</Button>
-    {/if}
-  </div>
+  {#if !answering}
+    <div class="actions"><Button size="lg" onclick={onanswer}>Show answer</Button></div>
+  {:else if !alone}
+    <div class="actions"><Button variant="secondary" onclick={() => settled() && onaward(-1)}>Nobody got it</Button></div>
+  {/if}
 </div>
 
 <style>
@@ -141,6 +170,7 @@
   .wrongs { display: flex; flex-direction: column; gap: 6px; }
   .wlabel { font-size: 0.85rem; font-weight: 700; color: var(--text-dim); text-align: center; }
   .wbtns { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 6px; }
+  .wbtns.compact { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
   .wbtn {
     min-height: 44px; padding: 4px 6px; border-radius: var(--r-pill); display: flex; align-items: center; justify-content: center; gap: 4px;
     background: var(--surface); border: 1.5px solid color-mix(in srgb, var(--team) 50%, transparent); color: var(--text-dim); font-weight: 700; font-size: 0.9rem;
@@ -150,7 +180,39 @@
   .wbtn.on > span:first-child { color: var(--c-bad); }
 
   .actions { display: flex; flex-direction: column; }
+
+  .solo { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
+  .team.missed { --team: var(--c-bad); background: var(--surface); border-color: var(--line-strong); }
+  .team.missed .pts { color: var(--c-bad); }
+
+  /* Five teams or more: a compact grid, each team's ✗ beside its name. */
+  .cells { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+  .cells.pen { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  @media (min-width: 700px) {
+    .cells { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .cells.pen { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  }
+  .cell { display: flex; min-width: 0; border-radius: var(--r-sm); border: 2px solid var(--team); background: color-mix(in srgb, var(--team) 14%, var(--surface)); overflow: hidden; }
+  .got {
+    flex: 1; min-width: 0; min-height: 48px; padding: 4px 8px; border: 0; background: none; color: var(--text);
+    display: flex; align-items: center; gap: 6px; text-align: left;
+  }
+  .got:active:not(:disabled) { background: color-mix(in srgb, var(--team) 30%, transparent); }
+  .num {
+    flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+    font-size: 0.7rem; font-weight: 800; background: var(--team); color: var(--bg);
+  }
+  .cname { min-width: 0; font-weight: 800; font-size: clamp(0.85rem, 1.9vmin, 1.25rem); line-height: 1.1; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .x {
+    flex: none; width: 44px; border: 0; border-left: 1.5px solid color-mix(in srgb, var(--team) 50%, transparent);
+    background: var(--surface); color: var(--text-faint); font-weight: 800; font-size: 1.05rem;
+  }
+  .x.on { background: color-mix(in srgb, var(--c-bad) 26%, var(--surface)); color: var(--c-bad); }
+  .cell.wrong { border-style: dashed; border-color: var(--c-bad); background: var(--surface); }
+  .cell.wrong .got { opacity: 0.45; }
   @media (max-height: 560px) { .panel { flex: none; height: 240px; min-height: 0; } }
+  /* A phone page that scrolls (nine teams or more) gives the clue a fixed share of the screen. */
+  @media (max-width: 699px) { .clue.many .panel { flex: none; height: max(220px, 32vh); min-height: 0; } }
   @media (min-width: 900px) and (orientation: landscape) {
     .actions { align-self: center; width: min(560px, 100%); }
   }
