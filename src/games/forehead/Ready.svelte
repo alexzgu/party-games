@@ -30,6 +30,13 @@
   // A fresh countdown forgets the last holder's resting pitch; only a steady hold sets it.
   setRestPitch(null);
   const tilt = $derived(round.tilt && motion.live);
+  // Some browsers (Brave) grant motion but never send a reading: say so instead of waiting.
+  let silent = $state(false);
+  $effect(() => {
+    if (!round.tilt || motion.live) return;
+    const t = setTimeout(() => (silent = !motion.live), 1500);
+    return () => clearTimeout(t);
+  });
 
   $effect(() =>
     onGravity((g, t) => {
@@ -121,8 +128,11 @@
       <span class="dot" aria-hidden="true"></span>
       {#if motion.live}Starts when it's steady, or tap anywhere{:else}Tap anywhere to start{/if}
     </p>
-    {#if motion.denied && round.tilt}
-      <p class="note">Motion is off for this browser, so tap the screen: right hand got it, left hand pass.</p>
+    {#if round.tilt && (motion.denied || silent)}
+      <p class="note">
+        {motion.denied ? 'Motion is off for this browser' : 'This browser is not sharing tilt (Brave blocks it)'}, so tap the
+        screen: right hand got it, left hand pass. For tilt, use Chrome on Android or Safari on iPhone.
+      </p>
     {/if}
   </div>
 {/if}
