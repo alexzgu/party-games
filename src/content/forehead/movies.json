@@ -1,0 +1,14 @@
+{"id": "movies", "name": "Movies", "emoji": "🎬", "blurb": "Blockbusters, classics and cult hits", "words": [
+"Titanic", "Jurassic Park", "The Lion King", "Toy Story", "Frozen", "Shrek", "Finding Nemo", "Star Wars", "The Avengers", "Avatar",
+"Home Alone", "Back to the Future", "Forrest Gump", "The Matrix", "Mean Girls", "Barbie", "Oppenheimer", "Ghostbusters", "The Dark Knight", "Inception",
+"Black Panther", "Spider-Man", "Iron Man", "Moana", "Coco", "Up", "Inside Out", "Monsters Inc", "The Incredibles", "Despicable Me",
+"Kung Fu Panda", "Cars", "Ratatouille", "Encanto", "Zootopia", "Top Gun", "The Notebook", "Pretty Woman", "Dirty Dancing", "The Breakfast Club",
+"Ferris Bueller's Day Off", "Clueless", "Legally Blonde", "Bridesmaids", "Superbad", "The Hangover", "Step Brothers", "Anchorman", "Elf", "Napoleon Dynamite",
+"Pitch Perfect", "La La Land", "The Hunger Games", "Twilight", "Lord of the Rings", "Pirates of the Caribbean", "Fast and Furious", "Mission Impossible", "Jurassic World", "Get Out",
+"Parasite", "Knives Out", "Gone Girl", "The Social Network", "Pulp Fiction", "Fight Club", "The Shining", "Scream", "A Quiet Place", "Jumanji",
+"Men in Black", "Independence Day", "Die Hard", "The Terminator", "Gladiator", "Saving Private Ryan", "Dune", "Interstellar", "The Martian", "Good Will Hunting",
+"The Truman Show", "Mrs Doubtfire", "Groundhog Day", "Beetlejuice", "Mamma Mia", "The Princess Bride", "The Devil Wears Prada", "Love Actually", "Crazy Rich Asians", "Wolf of Wall Street",
+"Joker", "Deadpool", "Guardians of the Galaxy", "Wonder Woman", "Avengers Endgame", "The Sixth Sense", "Shutter Island", "Black Swan", "Whiplash", "Kill Bill",
+"Django Unchained", "Slumdog Millionaire", "Wicked", "Aladdin", "Beauty and the Beast", "The Little Mermaid", "Mulan", "Lilo and Stitch", "School of Rock", "Night at the Museum",
+"Ice Age", "Zoolander", "Spirited Away", "Paddington", "The Goonies", "Edward Scissorhands", "The Grand Budapest Hotel", "Into the Spider-Verse", "Mad Max Fury Road", "Hocus Pocus"
+]}

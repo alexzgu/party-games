@@ -1,0 +1,14 @@
+{"id": "places", "name": "Places", "emoji": "🌍", "blurb": "Countries, cities, landmarks and everyday spots", "words": [
+"Japan", "France", "Italy", "Mexico", "Canada", "Brazil", "Australia", "Egypt", "India", "China",
+"Germany", "Spain", "Greece", "England", "Ireland", "Iceland", "South Korea", "Thailand", "Jamaica", "Switzerland",
+"Netherlands", "Morocco", "Peru", "Cuba", "New York City", "Los Angeles", "Las Vegas", "Paris", "London", "Tokyo",
+"Rome", "Venice", "Chicago", "Miami", "New Orleans", "San Francisco", "Seattle", "Nashville", "Boston", "Hollywood",
+"Dubai", "Sydney", "Barcelona", "Amsterdam", "Rio de Janeiro", "Toronto", "Cancun", "Eiffel Tower", "Statue of Liberty", "Grand Canyon",
+"Great Wall of China", "The Pyramids", "Mount Everest", "Niagara Falls", "Golden Gate Bridge", "Times Square", "Mount Rushmore", "Colosseum", "Leaning Tower of Pisa", "Big Ben",
+"Stonehenge", "Taj Mahal", "Machu Picchu", "Disney World", "Central Park", "White House", "Area 51", "Bermuda Triangle", "Amazon Rainforest", "Sahara Desert",
+"North Pole", "Antarctica", "Hawaii", "Texas", "California", "Florida", "Alaska", "New Jersey", "Ohio", "Colorado",
+"Airport Security", "Gas Station", "Laundromat", "DMV", "Dentist Office", "Gym", "Library", "Hospital", "Haunted House", "Water Park",
+"Casino", "Nightclub", "Food Court", "Costco", "IKEA", "Bowling Alley", "Movie Theater", "Zoo", "Aquarium", "Museum",
+"Beach", "Ski Resort", "Cruise Ship", "Subway Station", "Waiting Room", "Dorm Room", "Wedding Reception", "Farmers Market", "Car Wash", "Parking Lot",
+"Hot Tub", "Treehouse", "Igloo", "Castle", "Lighthouse", "Volcano", "Desert Island", "Space Station", "Hogwarts", "Sydney Opera House"
+]}

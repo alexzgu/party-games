@@ -1,0 +1,46 @@
+<script lang="ts">
+  // The other team calls which side of the locked needle the target is on.
+  import Frame from './Frame.svelte';
+  import Dial from './Dial.svelte';
+  import ScaleCard from './ScaleCard.svelte';
+  import Button from '../../components/Button.svelte';
+  import { other, type Game, type Round } from './state';
+  import { teamColor } from './look';
+  import type { Side } from './scoring';
+
+  let { game, round, oncall, onhome, onend }:
+    { game: Game; round: Round; oncall: (s: Side) => void; onhome: () => void; onend: () => void } = $props();
+
+  const thief = $derived(other(game.active));
+</script>
+
+<Frame {game} active={thief} {onhome} {onend}>
+  <div class="banner pop-in" style:--team={teamColor(thief)}>
+    <span class="name">{game.teams[thief].name}</span>
+    <span class="ask">Steal a point: is the target <b>left</b> or <b>right</b> of the needle?</span>
+  </div>
+  {#if round.clue}<p class="clue faint">Clue: <q>{round.clue}</q></p>{/if}
+  <div class="tuner">
+    <Dial value={round.guess} label="Locked guess" />
+    <ScaleCard card={round.card} />
+  </div>
+  {#snippet actions()}
+    <div class="pick" style:--accent={teamColor(thief)}>
+      <Button size="lg" onclick={() => oncall('left')}>◀ Left</Button>
+      <Button size="lg" onclick={() => oncall('right')}>Right ▶</Button>
+    </div>
+  {/snippet}
+</Frame>
+
+<style>
+  .banner {
+    display: flex; flex-direction: column; gap: var(--s-1);
+    padding: var(--s-4); border-radius: var(--r-lg);
+    background: var(--team); color: var(--bg);
+  }
+  .name { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; line-height: 1.05; }
+  .ask { font-size: 1.1rem; font-weight: 600; }
+  .clue { text-align: center; }
+  .tuner { display: flex; flex-direction: column; gap: var(--s-3); }
+  .pick { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
+</style>

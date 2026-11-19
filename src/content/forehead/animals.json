@@ -1,0 +1,14 @@
+{"id": "animals", "name": "Animals", "emoji": "🐾", "blurb": "Pets, wild beasts, birds, bugs and sea creatures", "words": [
+"Dog", "Cat", "Elephant", "Giraffe", "Lion", "Tiger", "Bear", "Panda", "Koala", "Kangaroo",
+"Penguin", "Dolphin", "Shark", "Whale", "Octopus", "Jellyfish", "Starfish", "Crab", "Lobster", "Turtle",
+"Snake", "Crocodile", "Alligator", "Frog", "Lizard", "Chameleon", "Monkey", "Gorilla", "Chimpanzee", "Sloth",
+"Zebra", "Horse", "Donkey", "Cow", "Pig", "Sheep", "Goat", "Chicken", "Duck", "Goose",
+"Turkey", "Owl", "Eagle", "Parrot", "Flamingo", "Peacock", "Ostrich", "Hummingbird", "Pigeon", "Seagull",
+"Bat", "Rabbit", "Squirrel", "Raccoon", "Skunk", "Hedgehog", "Porcupine", "Beaver", "Otter", "Deer",
+"Moose", "Camel", "Llama", "Hippo", "Rhino", "Cheetah", "Leopard", "Wolf", "Fox", "Hamster",
+"Guinea Pig", "Mouse", "Rat", "Butterfly", "Bee", "Ant", "Spider", "Mosquito", "Ladybug", "Snail",
+"Worm", "Scorpion", "Grasshopper", "Seal", "Walrus", "Polar Bear", "Goldfish", "Hyena", "Platypus", "Armadillo",
+"Jaguar", "Buffalo", "Toucan", "Pelican", "Swan", "Crow", "Woodpecker", "Anteater", "Narwhal", "Manatee",
+"Stingray", "Seahorse", "Pufferfish", "Clownfish", "Komodo Dragon", "Meerkat", "Lemur", "Orangutan", "Red Panda", "Chihuahua",
+"Poodle", "Pug", "Golden Retriever", "Coyote", "Tarantula", "Caterpillar", "Firefly", "Cockroach", "Axolotl", "Capybara"
+]}

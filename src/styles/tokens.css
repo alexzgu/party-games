@@ -1,0 +1,66 @@
+/* Design tokens. Every colour, radius, spacing step and font lives here. */
+:root {
+  color-scheme: dark;
+
+  --bg: #120d24;
+  --bg-raised: #1c1536;
+  --bg-sunk: #0b0818;
+  --surface: #251c46;
+  --surface-hi: #30255a;
+  --line: rgb(255 255 255 / 0.1);
+  --line-strong: rgb(255 255 255 / 0.22);
+
+  --text: #f7f4ff;
+  --text-dim: #b9b0d6;
+  --text-faint: #8a80ad;
+
+  --c-forehead: #ff6b4a;
+  --c-dial: #2fd6c3;
+  --c-gibberish: #b57bff;
+  --c-good: #3ddc84;
+  --c-pass: #ffb020;
+  --c-bad: #ff4d6d;
+  --c-gold: #ffd166;
+
+  --accent: var(--c-gibberish);
+  --on-accent: #120d24;
+
+  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-pill: 999px;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+
+  --tap: 56px; /* minimum height of anything tappable */
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur: 220ms;
+  --dur-slow: 420ms;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  --shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur: 0ms;
+    --dur-slow: 0ms;
+  }
+}

@@ -1,0 +1,8 @@
+node_modules
+dist
+.agent-cache
+.inbox
+*.local
+.claude/
+.mcp.json
+.gitmodules

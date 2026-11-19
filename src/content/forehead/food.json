@@ -1,0 +1,14 @@
+{"id": "food", "name": "Food & Drink", "emoji": "🍕", "blurb": "Dishes, snacks, sweets and drinks", "words": [
+"Pizza", "Hamburger", "Hot Dog", "Tacos", "Burrito", "Sushi", "Ramen", "Spaghetti", "Mac and Cheese", "Grilled Cheese",
+"French Fries", "Chicken Nuggets", "Fried Chicken", "Buffalo Wings", "Pancakes", "Waffles", "French Toast", "Bacon", "Scrambled Eggs", "Avocado Toast",
+"Bagel", "Croissant", "Donut", "Cupcake", "Birthday Cake", "Cheesecake", "Apple Pie", "Brownie", "Chocolate Chip Cookie", "Ice Cream",
+"Milkshake", "Popsicle", "Cotton Candy", "Popcorn", "Pretzel", "Nachos", "Guacamole", "Salsa", "Hummus", "Peanut Butter",
+"Nutella", "Cereal", "Oatmeal", "Smoothie", "Coffee", "Espresso", "Latte", "Bubble Tea", "Lemonade", "Orange Juice",
+"Coca-Cola", "Red Bull", "Gatorade", "Margarita", "Mimosa", "Beer", "Wine", "Champagne", "Tequila", "Sangria",
+"Pina Colada", "Mojito", "Hot Chocolate", "Doritos", "Cheetos", "Oreos", "Pringles", "Takis", "Skittles", "Kit Kat",
+"Twinkie", "Pop-Tarts", "Lunchables", "Cup Noodles", "Hot Pocket", "Pad Thai", "Fried Rice", "Dumplings", "Spring Rolls", "Pho",
+"Curry", "Butter Chicken", "Naan", "Kimchi", "Korean BBQ", "Falafel", "Gyro", "Lasagna", "Meatballs", "Fettuccine Alfredo",
+"Caesar Salad", "Clam Chowder", "Lobster Roll", "Philly Cheesesteak", "Corn Dog", "Funnel Cake", "Mozzarella Sticks", "Onion Rings", "Mashed Potatoes", "Corn on the Cob",
+"Watermelon", "Banana", "Strawberry", "Pineapple", "Pickle", "Broccoli", "Hot Sauce", "Ketchup", "Ranch Dressing", "Quesadilla",
+"Churros", "Fish and Chips", "Tiramisu", "Macarons", "Fondue", "Charcuterie Board", "S'mores", "Kombucha", "Poutine", "Bibimbap"
+]}

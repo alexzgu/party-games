@@ -1,0 +1,147 @@
+<script lang="ts">
+  // Tuned In: routes between setup, "make a pack" (#/dial/make) and the saved game's phase.
+  // Every step goes through `set`, which saves, so a reload resumes exactly here.
+  import Setup from './Setup.svelte';
+  import Make from './Make.svelte';
+  import Handoff from './Handoff.svelte';
+  import ReaderView from './ReaderView.svelte';
+  import TeamView from './TeamView.svelte';
+  import StealView from './StealView.svelte';
+  import Reveal from './Reveal.svelte';
+  import Win from './Win.svelte';
+  import { route, go, back } from '../../lib/router.svelte';
+  import { unlockAudio } from '../../lib/sound';
+  import { keepAwake } from '../../lib/wakelock';
+  import { teamColor } from './look';
+  import { drawCard } from './deck';
+  import { randomTarget } from './scoring';
+  import { clearGame, loadConfig, loadGame, saveGame } from './persist';
+  import { demoGame, demoItems } from './demo';
+  import {
+    beginRound, callSide, lockIn, markRevealed, newGame, nextTurn, redraw, rematch, setClue, setGuess, showTeam,
+    type Config, type Game,
+  } from './state';
+
+  const sub = $derived(route.path.split('/').filter(Boolean)[1] ?? '');
+  const demo = route.params.get('demo');
+
+  let game = $state.raw<Game | null>(demo ? demoGame(demo) : loadGame());
+  // Not saved on purpose: after a reload the reader passes a gate again before the target shows.
+  let readerOpen = $state(demo === 'reader');
+
+  function set(g: Game | null) {
+    game = g;
+    if (demo) return;
+    if (g) saveGame(g);
+    else clearGame();
+  }
+
+  $effect(() => {
+    keepAwake(!!game && sub !== 'make');
+    return () => keepAwake(false);
+  });
+
+  let unlocked = false;
+  function firstTouch() {
+    if (unlocked) return;
+    unlocked = true;
+    unlockAudio();
+  }
+
+  function start(cfg: Config) {
+    unlockAudio();
+    set(newGame(cfg));
+  }
+
+  function openReader(g: Game) {
+    const card = drawCard(g.packIds, g.played);
+    if (!card) return;
+    set(beginRound(g, card, randomTarget()));
+    readerOpen = true;
+  }
+
+  function newCard(g: Game) {
+    const card = drawCard(g.packIds, g.played);
+    if (card) set(redraw(g, card));
+  }
+
+  function next(g: Game) {
+    readerOpen = false;
+    set(nextTurn(g));
+  }
+
+  const home = () => go('/');
+  const end = () => set(null);
+  const scoreLine = (g: Game) => `Round ${g.roundNo + 1} · ${g.teams[0].name} ${g.teams[0].score} – ${g.teams[1].score} ${g.teams[1].name}`;
+</script>
+
+<svelte:window onpointerdown={firstTouch} />
+
+<div class="dial-game">
+  <div class="glow" aria-hidden="true"></div>
+  {#if sub === 'make'}
+    <Make initial={demo === 'triage' ? demoItems : []} onback={() => back('/dial')} onuse={() => go('/dial', true)} />
+  {:else if !game}
+    <Setup config={loadConfig()} onstart={start} onmake={() => go('/dial/make')} />
+  {:else if game.phase === 'handoff'}
+    {@const g = game}
+    {#key g.roundNo}
+      <Handoff
+        color={teamColor(g.active)}
+        team={g.teams[g.active].name}
+        title="Your turn"
+        steps={[
+          { icon: 'phone', text: 'Pick a reader and give them the phone.' },
+          { icon: 'hide', text: 'Everyone else: eyes off the screen until the reader says so.' },
+        ]}
+        note={scoreLine(g)}
+        button="I'm the reader · show me"
+        onready={() => openReader(g)}
+        onclose={home}
+      />
+    {/key}
+  {:else if game.phase === 'reader' && game.round}
+    {@const g = game}
+    {@const r = game.round}
+    {#if !readerOpen}
+      <Handoff
+        color={teamColor(g.active)}
+        team={g.teams[g.active].name}
+        title="Reader only"
+        steps={[
+          { icon: 'eye', text: 'Only the reader looks at the next screen.' },
+          { icon: 'hide', text: 'Everyone else: look away now.' },
+        ]}
+        button="I'm the reader · show me"
+        onready={() => (readerOpen = true)}
+        onclose={home}
+      />
+    {:else}
+      <ReaderView game={g} round={r} onredraw={() => newCard(g)} onclue={(c) => set(setClue(game!, c))}
+        onhide={() => set(showTeam(game!))} onhome={home} onend={end} />
+    {/if}
+  {:else if game.phase === 'team' && game.round}
+    {@const g = game}
+    <TeamView game={g} round={g.round!} onguess={(v) => set(setGuess(game!, v))} onlock={(v) => set(lockIn(game!, v))} onhome={home} onend={end} />
+  {:else if game.phase === 'steal' && game.round}
+    {@const g = game}
+    <StealView game={g} round={g.round!} oncall={(s) => set(callSide(g, s))} onhome={home} onend={end} />
+  {:else if game.phase === 'reveal' && game.round}
+    {@const g = game}
+    <Reveal game={g} round={g.round!} onrevealed={() => set(markRevealed(game!))} onnext={() => next(game!)} onhome={home} onend={end} />
+  {:else if game.phase === 'win'}
+    {@const g = game}
+    <Win game={g} onrematch={() => set(rematch(g))} onsetup={end} onhome={() => { set(null); home(); }} />
+  {/if}
+</div>
+
+<style>
+  .dial-game { --accent: var(--c-dial); }
+  /* The page glow in this game's colour (the body's own glow uses the global accent). */
+  .glow {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--c-dial) 16%, transparent), transparent 70%),
+      var(--bg);
+  }
+</style>
