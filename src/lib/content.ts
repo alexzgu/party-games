@@ -131,9 +131,18 @@ const builtinQuick = ordered(Object.values(quickFiles), ['classic', 'pop-culture
 export const customQuick = customStore<QuickPack>('custom:quick', builtinQuick);
 export const quickPacks = (): QuickPack[] => merged(customQuick.saved(), builtinQuick);
 
-// Earworm (song): clips streamed from YouTube on the host phone; a pack holds only titles,
-// artists, YouTube video ids and the second each clip starts at (the hook).
-export interface Song { title: string; artist: string; /** 11-character YouTube video id */ youtube: string; /** Seconds into the video where the clip starts. */ start: number }
+// Earworm (song): clips of Apple Music's 30-second previews, played on the host phone; a pack
+// holds only titles, artists, Apple track ids and, optionally, a clip start and a YouTube video.
+export interface Song {
+  title: string;
+  artist: string;
+  /** Apple Music track id: its 30-second preview is what the room hears. */
+  apple: number;
+  /** Seconds into the preview where the clip starts; without it the game picks the moment itself. */
+  start?: number;
+  /** 11-character YouTube video id, shown (never hidden) at the reveal only. */
+  youtube?: string;
+}
 export interface SongPack { id: string; name: string; blurb: string; songs: Song[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 const songFiles = import.meta.glob<SongPack>('../content/song/*.json', { eager: true, import: 'default' });
 const builtinSongs = ordered(Object.values(songFiles), ['2000s-bangers', '2010s-hits', 'throwbacks']);

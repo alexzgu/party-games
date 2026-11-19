@@ -29,7 +29,7 @@ for (const p of packs) {
   for (const it of items) {
     if (typeof it === 'string') console.log(it);
     else if ('left' in it) console.log(`${it.left} | ${it.right}`);
-    else if ('youtube' in it) console.log(`${it.title} — ${it.artist}  [${it.youtube} from ${it.start}s]`);
+    else if ('apple' in it) console.log(`${it.title} — ${it.artist}  [apple ${it.apple}${it.start !== undefined ? `, from ${it.start}s` : ''}${it.youtube ? `, video ${it.youtube}` : ''}]`);
     else if ('banned' in it) console.log(`${it.word}: ${it.banned.join(', ')}`);
     else { console.log(`${it.answer}  ←  ${it.phrase}`); hints.set(it.hint, (hints.get(it.hint) ?? 0) + 1); }
   }

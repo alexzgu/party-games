@@ -242,22 +242,26 @@ describe('Snark Tank packs', () => {
 });
 
 describe('Earworm packs', () => {
-  it('hold real YouTube ids and start times, and never repeat a video or a song across packs', () => {
+  it('hold Apple track ids (plus optional clip starts and YouTube ids), and never repeat a song across packs', () => {
     const problems: string[] = [];
     const packs = songPacks();
     packBasics(packs, problems);
-    const ids = new Map<string, string>();
+    const ids = new Map<number, string>();
     const songs = new Map<string, string>();
     for (const p of packs) {
       if (!Array.isArray(p.songs) || p.songs.length < 10) { problems.push(`${p.id}: only ${p.songs?.length ?? 0} songs (need 10+)`); continue; }
       for (const s of p.songs) {
         const name = `"${s.title}" by ${s.artist}`;
         if (!s.title?.trim() || !s.artist?.trim()) problems.push(`${p.id}: a song is missing its title or artist (${JSON.stringify(s)})`);
-        if (!/^[A-Za-z0-9_-]{11}$/.test(s.youtube ?? '')) problems.push(`${p.id}: ${name}: "${s.youtube}" is not an 11-character YouTube video id`);
-        if (typeof s.start !== 'number' || !Number.isInteger(s.start) || s.start < 0) problems.push(`${p.id}: ${name}: start should be a whole number of seconds, 0 or more`);
-        const prevId = ids.get(s.youtube);
-        if (prevId) problems.push(`${p.id}: ${name}: video ${s.youtube} already exists in ${prevId}`);
-        ids.set(s.youtube, p.id);
+        if (!Number.isInteger(s.apple) || s.apple <= 0) problems.push(`${p.id}: ${name}: "apple" should be the Apple Music track id (a whole number)`);
+        // The longest clip (10 s) must end inside the 30-second preview.
+        if (s.start !== undefined && (typeof s.start !== 'number' || s.start < 0 || s.start > 19.5)) problems.push(`${p.id}: ${name}: start should be seconds into the preview, 0 to 19.5 (or left out)`);
+        if (s.youtube !== undefined && !/^[A-Za-z0-9_-]{11}$/.test(s.youtube)) problems.push(`${p.id}: ${name}: "${s.youtube}" is not an 11-character YouTube video id`);
+        const extra = Object.keys(s).filter((k) => !['title', 'artist', 'apple', 'start', 'youtube'].includes(k));
+        if (extra.length) problems.push(`${p.id}: ${name}: unknown field ${extra.join(', ')}`);
+        const prevId = ids.get(s.apple);
+        if (prevId) problems.push(`${p.id}: ${name}: Apple track ${s.apple} already exists in ${prevId}`);
+        ids.set(s.apple, p.id);
         // Same title by the same lead artist, whoever is featured ("Timber" by Pitbull ft. Kesha).
         const k = `${key(s.title ?? '')} | ${key((s.artist ?? '').split(/\s+(?:ft\.|feat\.|featuring|&|and|x)\s+/i)[0])}`;
         const prevSong = songs.get(k);

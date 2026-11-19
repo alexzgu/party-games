@@ -8,124 +8,210 @@
   import Win from './Win.svelte';
   import TapToFinish from './TapToFinish.svelte';
   import { makeDealer, packNames } from './deal';
-  import { Clip, PERMANENT_ERRORS, type ClipStatus } from './clip';
-  import { loadYouTube, makePlayer } from './youtube';
-  import { loadBroken, markBroken } from './store';
-  import { unlockAudio, sfx } from '../../lib/sound';
+  import { ClipPlayer, prepare, unlockMusic, type Prepared } from './audio';
+  import { lookupMany, NetError } from './itunes';
+  import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
   import { keepAwake } from '../../lib/wakelock';
   import { record } from '../../lib/history';
   import type { Song } from '../../lib/content';
+  import type { Track } from './match';
   import * as rules from './logic';
   import type { GameState } from './logic';
+  import type { ClipStatus } from './ui';
 
   // Runs a game from the first Play to the win. Every step goes through `step`, which saves it.
-  // One YouTube player lives here for the whole game (Stage); the screens only drive it.
-  let { game, commit, onleave, onhome, demo = '', demoStatus = 'cued' }: {
+  // At the start every song's preview link is looked up in a few batched calls; each song's
+  // preview is then downloaded and decoded just before it is needed (the next one during the
+  // reveal), so Play answers at once.
+  let { game, commit, onleave, onhome, demo = '', demoStatus = 'ready', demoTrack = null }: {
     game: GameState;
     commit: (next: GameState) => void;
     onleave: () => void;
     onhome: () => void;
     demo?: string;
     demoStatus?: ClipStatus;
+    demoTrack?: Track | null;
   } = $props();
 
-  /** Seconds the reveal lets the video play on. */
-  const PAYOFF_S = 8;
-  /** How long YouTube may take to load before the game says it cannot reach it. */
-  const READY_TIMEOUT_MS = 20000;
+  /** Seconds of the song the reveal plays, from the clip's start. */
+  const PAYOFF_S = 10;
 
   // svelte-ignore state_referenced_locally
-  const dealer = makeDealer(game.packIds, loadBroken());
+  const dealer = makeDealer(game.packIds);
+  const player = new ClipPlayer();
   // svelte-ignore state_referenced_locally
-  let status = $state<ClipStatus>(demo ? demoStatus : 'idle');
+  let status = $state<ClipStatus>(demo ? demoStatus : 'loading');
   // svelte-ignore state_referenced_locally
   let progress = $state(demo ? 0.4 : 0);
   // svelte-ignore state_referenced_locally
-  let problem = $state<'' | 'offline' | 'failed'>(demo === 'ready-offline' ? 'offline' : '');
+  let net = $state<'looking' | 'ok' | 'offline' | 'failed'>(demo === 'ready-offline' ? 'offline' : demo ? 'ok' : 'looking');
   let note = $state('');
-  let clip = $state<Clip | null>(null);
+  let current = $state<Prepared | null>(null);
+  // svelte-ignore state_referenced_locally
+  let payoff = $state(demo === 'reveal');
+  const tracks = new Map<number, Track | null>();
+  const preps = new Map<number, Promise<Prepared>>();
+  let failures = 0;
+  /** The upcoming song whose preview is loaded and ready. */
+  let readyNext = $state(0);
 
   // `game` is the parent's state: after commit it reads the new value at once.
   const step = (next: GameState) => commit(next);
 
   onMount(() => {
     keepAwake(true);
-    if (!game.song && game.phase === 'ready') step(rules.replaceSong(game, dealer.next(game.dealt)));
-    return () => { clip?.dispose(); keepAwake(false); };
+    if (!demo) void connect();
+    return () => { player.stop(); keepAwake(false); };
   });
 
-  async function connect(host: HTMLElement) {
-    const slow = setTimeout(() => { if (!clip) problem = navigator.onLine ? 'failed' : 'offline'; }, READY_TIMEOUT_MS);
+  /** Looks up every song in the chosen packs (batched), then loads the current one. */
+  async function connect() {
+    net = 'looking';
     try {
-      const YT = await loadYouTube();
-      const player = await makePlayer(YT, host, { onError: (code) => clip?.fail(code), onState: () => clip?.changed() });
-      clip = new Clip(player, { status: onStatus, progress: (f) => (progress = f), error: onError });
-      problem = '';
-      cueForPhase();
+      const found = await lookupMany(dealer.appleIds());
+      for (const [id, t] of found) {
+        tracks.set(id, t);
+        if (!t?.preview) dealer.drop(String(id));
+      }
+      net = 'ok';
+      failures = 0;
+      if (!game.song && game.phase === 'ready') step(rules.replaceSong(game, dealer.next(game.dealt)));
+      await loadForPhase();
+    } catch (e) {
+      net = e instanceof NetError && e.offline ? 'offline' : navigator.onLine ? 'failed' : 'offline';
+    }
+  }
+
+  /** After a load or reload: whatever the current screen needs next. */
+  async function loadForPhase() {
+    if (game.phase === 'ready' || game.phase === 'listen' || game.phase === 'reveal') await loadCurrent();
+    if (game.phase === 'reveal' || game.phase === 'scores') preload();
+  }
+
+  async function trackFor(song: Song): Promise<Track | null> {
+    if (tracks.has(song.apple)) return tracks.get(song.apple) ?? null;
+    const t = (await lookupMany([song.apple])).get(song.apple) ?? null;
+    tracks.set(song.apple, t);
+    return t;
+  }
+
+  class NoPreview extends Error {}
+
+  /** A song's preview, downloaded and decoded once; a dead preview link is looked up afresh once. */
+  function prep(song: Song): Promise<Prepared> {
+    const hit = preps.get(song.apple);
+    if (hit) return hit;
+    const p = (async () => {
+      const track = await trackFor(song);
+      if (!track?.preview) throw new NoPreview();
+      try {
+        return await prepare(song, track);
+      } catch (e) {
+        if (!navigator.onLine) throw new NetError('offline', true);
+        const again = (await lookupMany([song.apple], true)).get(song.apple) ?? null;
+        tracks.set(song.apple, again);
+        if (!again?.preview || again.preview === track.preview) throw e instanceof Error && /decode/i.test(e.message) ? new NoPreview() : e;
+        return prepare(song, again);
+      }
+    })();
+    preps.set(song.apple, p);
+    p.catch(() => preps.delete(song.apple));
+    return p;
+  }
+
+  async function loadCurrent() {
+    const song = game.song;
+    if (!song) return;
+    if (current?.apple !== song.apple) { current = null; status = 'loading'; }
+    try {
+      const p = await prep(song);
+      if (game.song?.apple !== song.apple) return;
+      current = p;
+      failures = 0;
+      if (status === 'loading' || status === 'error') status = 'ready';
+    } catch (e) {
+      if (game.song?.apple !== song.apple) return;
+      if (e instanceof NoPreview || ++failures < 2) { unplayable(song); return; }
+      // Two songs in a row would not load: the network, not the songs.
+      status = 'error';
+      net = navigator.onLine ? 'failed' : 'offline';
+    }
+  }
+
+  /** The next song's preview loads while the room cheers; one that will not load is swapped now. */
+  async function preload() {
+    const song = game.upcoming;
+    if (!song) return;
+    try {
+      await prep(song);
+      readyNext = song.apple;
     } catch {
-      problem = navigator.onLine ? 'failed' : 'offline';
-    } finally {
-      clearTimeout(slow);
-    }
-  }
-
-  const cue = (s: Song | null, offset = 0) => { if (s && clip) clip.cue(s.youtube, s.start + offset); };
-
-  /** After a load or reload: the player gets whatever the current screen needs next. */
-  function cueForPhase() {
-    if (game.phase === 'ready' || game.phase === 'listen') cue(game.song);
-    else if (game.phase === 'reveal') cue(game.song, rules.clipSeconds(game));
-    else if (game.phase === 'scores') cue(game.upcoming);
-  }
-
-  function onStatus(s: ClipStatus) {
-    status = s;
-    // The reveal video ended (or was skipped): load the next song while the room cheers.
-    if (s === 'done' && game.phase === 'reveal') cue(game.upcoming);
-  }
-
-  /** YouTube would not play a song: never deal it again, swap in another, no penalty. */
-  function onError(code: number, id: string) {
-    console.warn(`Earworm: YouTube error ${code} for video ${id}; skipped.`);
-    if (PERMANENT_ERRORS.includes(code)) markBroken(id);
-    dealer.drop(id);
-    if (id === game.upcoming?.youtube && game.phase !== 'ready' && game.phase !== 'listen') {
+      if (game.upcoming?.apple !== song.apple) return;
+      dealer.drop(rules.songKey(song));
       step(rules.replaceUpcoming(game, dealer.next(game.dealt)));
-      if (game.phase === 'scores') cue(game.upcoming);
-      return;
+      void preload();
     }
-    if (id !== game.song?.youtube || (game.phase !== 'ready' && game.phase !== 'listen')) return;
-    const was = game.phase;
+  }
+
+  /** A song whose preview will not play: skipped with no penalty, another dealt at once. */
+  function unplayable(song: Song) {
+    console.warn(`Earworm: no playable preview for Apple track ${song.apple}; skipped.`);
+    dealer.drop(rules.songKey(song));
+    if (game.phase !== 'ready' && game.phase !== 'listen') return;
     step(rules.replaceSong(game, dealer.next(game.dealt), true));
-    note = game.song ? 'YouTube wouldn’t play that one, so here’s another.' : 'No more songs that play here. Pick other packs.';
-    cue(game.song);
-    // The room is waiting: carry on with the new song at once.
-    if (was === 'listen' && game.song) clip?.play(rules.clipSeconds(game));
+    note = game.song ? 'That song wouldn’t play, so here’s another.' : 'No more songs that play here. Pick other packs.';
+    if (game.phase === 'listen') step({ ...game, phase: 'ready' });
+    void loadCurrent();
+  }
+
+  function playClip(seconds: number) {
+    if (!current) return;
+    note = '';
+    status = 'playing';
+    progress = 0;
+    player.play(current.buffer, current.start, seconds, {
+      progress: (f) => (progress = f),
+      ended: () => (status = 'done'),
+      blocked: () => (status = 'blocked'),
+    });
   }
 
   function play() {
-    unlockAudio();
-    note = '';
-    clip?.play(rules.CLIPS[0]);
+    unlockMusic();
     step(rules.listen(game));
+    playClip(rules.CLIPS[0]);
   }
 
   function again() {
-    note = '';
-    clip?.play(rules.clipSeconds(game));
+    unlockMusic();
+    playClip(rules.clipSeconds(game));
   }
 
   function longer() {
-    note = '';
+    unlockMusic();
     const n = rules.longer(game);
-    clip?.play(rules.clipSeconds(n));
     step(n);
+    playClip(rules.clipSeconds(n));
+  }
+
+  /** The reveal: the song plays on from the clip's start while everyone sees what it was. */
+  function hearIt() {
+    if (!current) return;
+    unlockMusic();
+    payoff = true;
+    player.play(current.buffer, current.start, PAYOFF_S, { ended: () => (payoff = false) });
+  }
+
+  function stopMusic() {
+    player.stop();
+    payoff = false;
   }
 
   function reveal(next: GameState) {
-    clip?.payoff(PAYOFF_S);
     step(rules.setUpcoming(next, game.upcoming ?? dealer.next(next.dealt)));
+    hearIt();
+    void preload();
   }
 
   function award(i: number) {
@@ -143,13 +229,13 @@
     const s = dealer.next(game.dealt);
     if (!s) { note = 'No other songs in these packs.'; return; }
     note = '';
-    clip?.stop();
+    player.stop();
     step(rules.replaceSong(game, s));
-    cue(s);
+    void loadCurrent();
   }
 
   function next() {
-    if (game.phase === 'reveal') clip?.stop();
+    stopMusic();
     const n = rules.next(game);
     if (n.phase === 'win') {
       sfx.win();
@@ -157,46 +243,48 @@
       if (!demo) record(rules.gameRecord(n, packNames(n.packIds)));
     }
     step(n);
-    if (n.phase === 'ready' && clip?.videoId !== n.song?.youtube) cue(n.song);
     if (n.phase === 'ready' && !n.song) step(rules.replaceSong(n, dealer.next(n.dealt)));
+    if (game.phase === 'ready') void loadCurrent();
   }
 
   function undo() {
-    clip?.stop();
+    stopMusic();
     step(rules.undo(game));
-    cue(game.song);
+    status = current ? 'done' : 'loading';
   }
 
   function rematch() {
     const r = rules.rematch(game);
     step(r.song ? r : rules.replaceSong(r, dealer.next(r.dealt)));
-    cue(game.song);
+    void loadCurrent();
   }
 
-  function watch() {
-    unlockAudio();
-    clip?.payoff(PAYOFF_S);
+  function unblock() {
+    unlockMusic();
+    playClip(rules.clipSeconds(game));
   }
 
   function leave() {
-    clip?.stop();
+    player.stop();
     onleave();
   }
 
-  const mode = $derived(game.phase === 'listen' ? 'covered' : game.phase === 'reveal' ? 'shown' : 'hidden');
-  const canPlay = $derived(!!game.song && (demo ? true : status !== 'idle' && status !== 'error' && !!clip));
+  const shownTrack = $derived(demo ? demoTrack : current?.apple === game.song?.apple ? current?.track ?? null : (game.song ? tracks.get(game.song.apple) ?? null : null));
+  const canPlay = $derived(!!game.song && (demo ? true : net === 'ok' && !!current && current.apple === game.song.apple));
+  const problem = $derived(net === 'offline' || net === 'failed' ? net : game.song || net === 'looking' ? '' : 'empty');
+  const upcomingReady = $derived(demo || !game.upcoming || readyNext === game.upcoming.apple);
 </script>
 
-<div class="game" class:live={mode !== 'hidden'}>
-  <Stage {mode} {status} {progress} demo={!!demo} onhost={connect} onskip={() => clip?.stop()} onwatch={game.phase === 'reveal' ? watch : undefined} />
+<div class="game" class:live={game.phase === 'listen' || game.phase === 'reveal'}>
   {#if game.phase === 'ready'}
-    <Ready {game} {canPlay} problem={problem || (game.song ? '' : 'empty')} {note} onplay={play} onretry={() => location.reload()} onleave={leave} />
+    <Ready {game} {canPlay} {problem} looking={net === 'looking'} {note} onplay={play} onretry={connect} onleave={leave} />
   {:else if game.phase === 'listen'}
+    <Stage {status} {progress} onunblock={unblock} />
     <Listen {game} {status} {note} onagain={again} onlonger={longer} onaward={award} onnobody={nobody} onskip={skipSong} onleave={leave} />
   {:else if game.phase === 'reveal'}
-    <TapToFinish><Reveal {game} onnext={next} onundo={undo} /></TapToFinish>
+    <TapToFinish><Reveal {game} track={shownTrack} playing={payoff} demo={!!demo} onhear={hearIt} onstop={stopMusic} onnext={next} onundo={undo} /></TapToFinish>
   {:else if game.phase === 'scores'}
-    <TapToFinish><Scores {game} loading={!demo && !!game.upcoming && (status === 'idle' || clip?.videoId !== game.upcoming.youtube)} onnext={next} onleave={leave} /></TapToFinish>
+    <TapToFinish><Scores {game} loading={!upcomingReady} onnext={next} onleave={leave} /></TapToFinish>
   {:else}
     <TapToFinish><Win {game} onrematch={rematch} onnew={leave} {onhome} /></TapToFinish>
   {/if}
@@ -210,9 +298,9 @@
     padding: calc(var(--safe-top) + var(--s-3)) calc(var(--safe-right) + var(--s-4)) 0 calc(var(--safe-left) + var(--s-4));
     -webkit-user-select: none; user-select: none;
   }
-  /* Laptop or TV: the player on the left, the controls on the right. */
+  /* Laptop or TV: the record or the reveal's picture on the left, the controls on the right. */
   @media (min-width: 900px) and (orientation: landscape) {
-    .game.live { max-width: 1180px; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(340px, 1fr); grid-template-rows: auto 1fr; column-gap: var(--s-5); align-content: start; }
-    .game.live > :global(.stage) { grid-column: 1; grid-row: 1 / span 2; max-width: none; align-self: start; margin-top: var(--s-2); }
+    .game.live { max-width: 1180px; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(340px, 1fr); grid-template-rows: auto 1fr; column-gap: var(--s-5); align-content: start; }
+    .game.live :global(.stage), .game.live :global(.media) { grid-column: 1; grid-row: 1 / span 2; max-width: none; align-self: start; margin-top: var(--s-2); }
   }
 </style>

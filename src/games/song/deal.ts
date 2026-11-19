@@ -2,15 +2,16 @@
 // switching pack combinations never resets what a group has already played.
 import { makeBag } from '../../lib/bag';
 import { songPacks, type Song } from '../../lib/content';
+import { songKey } from './logic';
 
-const songKey = (s: Song) => s.youtube;
 const MAX_TRIES = 40;
 
-export function makeDealer(packIds: string[], broken: readonly string[] = []) {
-  const skip = new Set(broken);
-  const packs = songPacks().filter((p) => packIds.includes(p.id) && p.songs.some((s) => !skip.has(s.youtube)));
+/** `unplayable`: songs (by songKey) never to deal, because Apple has no preview for them. */
+export function makeDealer(packIds: string[], unplayable: readonly string[] = []) {
+  const skip = new Set(unplayable);
+  const packs = songPacks().filter((p) => packIds.includes(p.id) && p.songs.some((s) => !skip.has(songKey(s))));
   const bags = packs.map((p) => {
-    const songs = p.songs.filter((s) => !skip.has(s.youtube));
+    const songs = p.songs.filter((s) => !skip.has(songKey(s)));
     return { size: songs.length, bag: makeBag('song:' + p.id, songs, songKey) };
   });
 
@@ -25,19 +26,23 @@ export function makeDealer(packIds: string[], broken: readonly string[] = []) {
 
   return {
     total: bags.reduce((n, b) => n + b.size, 0),
-    /** A song not in `dealt` (ids used this game) when one is left, else any song. */
+    /** A song not in `dealt` (songs used this game) when one is left, else any playable song. */
     next(dealt: readonly string[] = []): Song | null {
       const used = new Set(dealt);
       let song: Song | undefined;
       for (let i = 0; i < MAX_TRIES; i++) {
         song = draw();
-        if (!song || (!used.has(song.youtube) && !skip.has(song.youtube))) return song ?? null;
+        if (!song || (!used.has(songKey(song)) && !skip.has(songKey(song)))) return song ?? null;
       }
-      return song && !skip.has(song.youtube) ? song : null;
+      return song && !skip.has(songKey(song)) ? song : null;
     },
-    /** Never deal this id again in this game (YouTube refused it). */
-    drop(id: string) {
-      skip.add(id);
+    /** Never deal this song again in this game (its preview would not play). */
+    drop(key: string) {
+      skip.add(key);
+    },
+    /** Every Apple track id in the chosen packs, to look their previews up at the start. */
+    appleIds(): number[] {
+      return [...new Set(packs.flatMap((p) => p.songs.map((s) => s.apple)))];
     },
   };
 }

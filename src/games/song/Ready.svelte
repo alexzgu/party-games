@@ -6,12 +6,14 @@
 
   // Before each song: the room quiets down, the host taps Play. That tap starts the sound
   // (iPhones only allow it inside a tap), so the big button is the whole screen's point.
-  let { game, canPlay, problem, note = '', onplay, onretry, onleave }: {
+  let { game, canPlay, problem, looking = false, note = '', onplay, onretry, onleave }: {
     game: GameState;
-    /** The player has the song loaded. */
+    /** The song's preview is loaded. */
     canPlay: boolean;
-    /** '' or why YouTube cannot be reached. */
+    /** '' or why the songs cannot be played. */
     problem: '' | 'offline' | 'failed' | 'empty';
+    /** Still asking Apple Music about this game's songs. */
+    looking?: boolean;
     note?: string;
     onplay: () => void;
     onretry: () => void;
@@ -35,11 +37,11 @@
     <div class="problem" role="alert">
       <span class="icon" aria-hidden="true">{problem === 'offline' ? '📵' : problem === 'empty' ? '📭' : '⚠️'}</span>
       {#if problem === 'offline'}
-        <p><b>No internet.</b> {gameName('song')} streams songs from YouTube, so this phone needs to be online. Connect, then try again.</p>
+        <p><b>No internet.</b> {gameName('song')} plays song previews from Apple Music, so this device needs to be online. Connect, then try again.</p>
       {:else if problem === 'empty'}
         <p><b>No songs to play.</b> Go back and pick a pack with songs in it.</p>
       {:else}
-        <p><b>Can’t reach YouTube.</b> Check the internet connection (some school or work Wi-Fi blocks YouTube), then try again.</p>
+        <p><b>Can’t reach Apple Music.</b> Check the internet connection (some school or work Wi-Fi blocks it), then try again.</p>
       {/if}
     </div>
   {:else}
@@ -47,7 +49,7 @@
       <span class="halo" aria-hidden="true"></span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg>
     </button>
-    <p class="hint">{canPlay ? 'Everyone quiet. Tap to play.' : 'Loading the song…'}</p>
+    <p class="hint">{canPlay ? 'Everyone quiet. Tap to play.' : looking ? 'Getting the songs…' : 'Loading the song…'}</p>
   {/if}
 
   {#if note}<p class="note" role="status">{note}</p>{/if}

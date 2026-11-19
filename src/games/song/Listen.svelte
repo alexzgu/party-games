@@ -2,10 +2,10 @@
   import Button from '../../components/Button.svelte';
   import Avatar from './Avatar.svelte';
   import { CLIPS, POINTS, clipSeconds, pointsNow, type GameState } from './logic';
-  import type { ClipStatus } from './clip';
+  import type { ClipStatus } from './ui';
 
   // The host's screen while the room listens: replay or lengthen the clip, then tap who named
-  // it. The covered player sits between the header and these controls (see Play.svelte).
+  // it. The spinning record (Stage) sits between the header and these controls.
   let { game, status, note = '', onagain, onlonger, onaward, onnobody, onskip, onleave }: {
     game: GameState;
     status: ClipStatus;
@@ -21,8 +21,8 @@
   const last = $derived(game.step >= CLIPS.length - 1);
   const nextLen = $derived(CLIPS[Math.min(game.step + 1, CLIPS.length - 1)]);
   const nextPts = $derived(POINTS[Math.min(game.step + 1, POINTS.length - 1)]);
-  const loaded = $derived(status !== 'idle' && status !== 'error');
-  const fresh = $derived(status === 'cued');
+  const loaded = $derived(status !== 'loading' && status !== 'error');
+  const fresh = $derived(status === 'ready');
 
   // Taps this soon after the screen appears are the tail of the Play tap.
   const shownAt = performance.now();

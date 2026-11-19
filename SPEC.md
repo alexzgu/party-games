@@ -262,37 +262,62 @@ few seconds to name three things that fit it out loud; the room judges.
 ## Game 8 — Earworm (`song`)
 
 Name-that-tune. One device (a phone, or a laptop on the TV) plays a short clip of a song; players
-shout the title; the host taps who got it first. Songs stream from YouTube through the official
-IFrame Player API on that device: nothing is downloaded or stored, and packs
-(`src/content/song/*.json`) hold only title, artist, YouTube video id and start second. It is
-the only game that needs internet; without it the ready screen says so ("No internet" or "Can't
-reach YouTube") with Try again.
+shout the title; the host taps who got it first. The clips are Apple Music's 30-second song
+previews (iTunes Search API: no key, open to any site); packs (`src/content/song/*.json`) hold
+only title, artist, Apple track id and, optionally, a clip start and a YouTube video id for the
+reveal. Nothing plays hidden: there is no video while guessing. It is the only game that needs
+internet; without it the ready screen says so ("No internet" or "Can't reach Apple Music") with
+Try again.
 
 - **Setup**: players (2+, remembered), packs (multi-select; pencil opens the pack editor; "New
-  pack" makes an empty own pack to fill from YouTube links), points to win (default 10, 3–30).
-- **Round**: ready screen ("Song N", one big Play button) → Play plays the 2-second clip from the
-  song's start → listen screen: the player is covered by a record that spins while the clip
-  plays, with a ring for the clip's progress; "Again" replays the clip, "Longer" replays from the
-  start at 5 s then 10 s. Naming it is worth 3 / 2 / 1 points at 2 / 5 / 10 s. Tap the player who
-  got it, or "Nobody got it"; "Skip song" swaps in another with no penalty. Keys on a laptop:
-  Space again, L longer, 1–9 award, 0 nobody.
-- **Reveal**: who scored (+points), title and artist big, and the video uncovered, playing on
-  for 8 s as a payoff ("Skip video"); "Wrong name? Undo" returns to the same clip. Then the
-  scoreboard (bars toward the target) → "Next song" → ready. First to the target wins (win
-  screen, confetti, rematch). History gets one entry per finished game, `finished: false` when a
-  game with something scored is thrown away; refused songs are listed in its details.
-- **Player** (`clip.ts`, one YouTube player for the whole game, never moved or re-created so the
-  iPhone keeps its permission to play sound): the Play tap itself calls play (iOS only starts
-  sound inside a tap). A clip counts only while the video's own clock is inside it, so an ad
-  (another video id, or our video stuck before the start) never eats the clip: after 1.2 s the
-  cover says "One sec, YouTube is showing an ad" and the clip starts from its start once the ad
-  ends. If play gets no answer for 3.5 s the cover says "Tap here to start the sound" and lets
-  that tap through to the player. The next song is chosen and loaded while the reveal plays.
-  A video YouTube refuses (errors 100/101/150, or any other error) is skipped with no penalty,
-  logged, swapped for another at once, and (for 100/101/150) never dealt again on that phone.
+  pack" makes an empty own pack and opens "Add songs"), points to win (default 10, 3–30).
+- **Start**: every song in the chosen packs is looked up in batched calls (`lookup` takes 50 ids a
+  call; answers are kept on the phone for a week); songs Apple has no preview for are left out.
+  Each song's preview is downloaded and decoded just before it is needed (the next one during
+  the reveal), so Play answers at once and the clip starts on the exact second.
+- **Round**: ready screen ("Song N", one big Play button) → Play plays the 2-second clip → listen
+  screen: a record spins while the clip plays, with a ring for its progress; "Again" replays,
+  "Longer" replays from the start at 5 s then 10 s. Naming it is worth 3 / 2 / 1 points at
+  2 / 5 / 10 s. Tap the player who got it, or "Nobody got it"; "Skip song" swaps in another with
+  no penalty. Keys on a laptop: Space again, L longer, 1–9 award, 0 nobody. If the browser will
+  not start sound, the record says "Tap to start the sound".
+- **Clip start** (`pick.ts`): a pack's `start` (seconds into the preview) wins; otherwise the game
+  picks the moment itself and remembers it per track: loudness every 50 ms and onset strength,
+  Apple's fade-in and fade-out (first and last 1.5 s) ignored, the start in 1.5–20 s that best
+  begins the loudest sustained stretch (mean loudness of the next 5 s, plus a bonus for starting
+  just after a clear rise or hit), moved back up to 0.3 s to the quietest moment so it opens in a
+  breath, not mid-word. The 10-second clip always ends inside the preview.
+- **Reveal**: who scored (+points), title and artist big, album art, the song playing on from the
+  clip's start for 10 s ("Stop the music" / "Hear it again"), and "Listen on Apple Music" (opens
+  the song's Apple Music page in a new tab). A song with a YouTube id shows the video instead of
+  the big art, uncovered, at least 200×200, with YouTube's own controls; starting it stops the
+  preview. "Wrong name? Undo" returns to the same clip. Then the scoreboard → "Next song" →
+  ready. First to the target wins (win screen, confetti, rematch). History gets one entry per
+  finished game, `finished: false` when a game with something scored is thrown away; songs
+  whose preview would not play are listed in its details.
+- **Pack editor**: every song with its art; tap one to change its title and artist, the clip
+  start (the preview's loudness drawn as bars: tap to place the start, ▶ 2 / 5 / 10 s to hear it,
+  "Auto" to let the game pick again) and an optional YouTube link for the reveal. "+ Add songs"
+  opens the adding screen.
+- **Add songs** (one screen per pack; nothing is saved until "Add N songs"): Paste (one per line,
+  any mix of YouTube links in every form, Apple Music song links, "Title - Artist" or "Artist -
+  Title", numbered or bulleted lists, tables from a chat), Playlist (a YouTube playlist link: an
+  off-screen IFrame API player reads up to 200 video ids and is never played), or Ask Claude
+  (with an API key: a theme and a count; "Title | Artist" lines stream in; without a key the
+  screen says how to ask any Claude chat and paste the answer). Every line goes through the
+  matcher (`match.ts`): a YouTube link's title comes from oEmbed and is cleaned (official video,
+  lyrics, HD, remastered, featured artists, VEVO and "- Topic" channels), then searched on Apple;
+  results are ranked by title and artist likeness, preferring the original studio recording over
+  live, demo, karaoke, remix and cover versions; when no result is clearly right, the artist's own
+  catalogue is searched too. Results stream into a review list ("Matched 12 of 40", about how
+  long is left): art, ▶ preview, keep or drop, "Check this match" on doubtful ones, "Wrong match?
+  Pick another" listing the other results, and songs already in the pack marked. The YouTube id a
+  line came from is kept for the reveal. Apple allows about 20 calls a minute, so calls go one by
+  one through a queue that keeps under it. The review list survives a reload.
 - State saved after every step; a reload resumes on the same screen (the clip waits for a tap).
-  `npm run check:songs` asks YouTube's oEmbed endpoint whether every built-in video may be
-  embedded.
+  A game saved by the YouTube version cannot carry on: setup says so once and its scores go to
+  History as ended early. `npm run check:songs` asks Apple whether every built-in track still
+  has a preview, and YouTube whether every reveal video may still be embedded.
 
 ## Hosting
 

@@ -1,15 +1,26 @@
-// Loads the official YouTube IFrame Player API and makes one hidden-able player. Nothing is
-// downloaded or stored: the songs stream from YouTube while the game runs.
-import type { PlayerLike } from './clip';
+// The official YouTube IFrame Player API, used for two things only, never to play a clip:
+// reading a playlist's video ids (a player that is never played or shown, so no API key is
+// needed) and the reveal's music video, shown uncovered with YouTube's own controls.
 
 export const API_URL = 'https://www.youtube.com/iframe_api';
 const LOAD_TIMEOUT_MS = 15000;
+/** YT.PlayerState.PLAYING and CUED. */
+export const PLAYING = 1;
+const CUED = 5;
+/** getPlaylist() returns at most this many ids. */
+export const PLAYLIST_MAX = 200;
 
-interface YTPlayer extends PlayerLike { destroy(): void }
+export interface YTPlayer {
+  destroy(): void;
+  pauseVideo(): void;
+  cuePlaylist(o: { list: string; listType?: string }): void;
+  getPlaylist(): string[] | null;
+}
 interface YTNamespace {
   Player: new (el: HTMLElement, opts: {
     width?: number | string;
     height?: number | string;
+    videoId?: string;
     playerVars?: Record<string, string | number>;
     events?: {
       onReady?: () => void;
@@ -25,10 +36,7 @@ declare global {
 
 let loading: Promise<YTNamespace> | null = null;
 
-/**
- * The API, loaded once; rejects when YouTube cannot be reached, so a retry can try again. It always
- * tries, even when the browser says it is offline, because that flag is wrong on some networks.
- */
+/** The API, loaded once; rejects when YouTube cannot be reached, so a retry can try again. */
 export function loadYouTube(): Promise<YTNamespace> {
   if (window.YT?.Player) return Promise.resolve(window.YT);
   if (loading) return loading;
@@ -58,27 +66,54 @@ export function loadYouTube(): Promise<YTNamespace> {
   return loading;
 }
 
-export interface PlayerHooks { onError(code: number): void; onState(): void }
+/**
+ * The video ids in a playlist (up to 200). A player is made off screen just to ask YouTube for
+ * the list; it is never played and is destroyed as soon as the ids are in.
+ */
+export async function readPlaylist(list: string): Promise<string[]> {
+  const YT = await loadYouTube();
+  const host = document.createElement('div');
+  host.setAttribute('aria-hidden', 'true');
+  host.style.cssText = 'position:fixed;left:-10000px;top:0;width:200px;height:200px;';
+  const el = document.createElement('div');
+  host.appendChild(el);
+  document.body.appendChild(host);
+  let player: YTPlayer | null = null;
+  try {
+    return await new Promise<string[]>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('timeout')), LOAD_TIMEOUT_MS);
+      const read = () => {
+        const ids = player?.getPlaylist();
+        if (ids?.length) { clearTimeout(timer); resolve(ids.slice(0, PLAYLIST_MAX)); }
+      };
+      player = new YT.Player(el, {
+        width: 200, height: 200,
+        playerVars: { autoplay: 0, controls: 0, playsinline: 1, origin: location.origin },
+        events: {
+          onReady: () => player?.cuePlaylist({ list, listType: 'playlist' }),
+          onStateChange: (e) => { if (e.data === CUED) read(); },
+          onError: () => { clearTimeout(timer); reject(new Error('playlist')); },
+        },
+      });
+    });
+  } finally {
+    try { (player as YTPlayer | null)?.destroy(); } catch { /* gone */ }
+    host.remove();
+  }
+}
 
-/** A player in `el` (replaced by YouTube's iframe), resolved once it is ready for commands. */
-export function makePlayer(YT: YTNamespace, el: HTMLElement, hooks: PlayerHooks): Promise<YTPlayer> {
+/** The reveal's video in `el`, shown with YouTube's normal controls. `onplay` fires when someone starts it. */
+export async function revealPlayer(el: HTMLElement, videoId: string, onplay: () => void): Promise<YTPlayer> {
+  const YT = await loadYouTube();
   return new Promise((resolve) => {
     const player: YTPlayer = new YT.Player(el, {
       width: '100%',
       height: '100%',
-      playerVars: {
-        playsinline: 1, // iPhone: play in the page, not full screen
-        controls: 0,
-        disablekb: 1,
-        fs: 0,
-        rel: 0,
-        iv_load_policy: 3,
-        origin: location.origin,
-      },
+      videoId,
+      playerVars: { playsinline: 1, rel: 0, controls: 1, origin: location.origin },
       events: {
         onReady: () => resolve(player),
-        onError: (e) => hooks.onError(e.data),
-        onStateChange: () => hooks.onState(),
+        onStateChange: (e) => { if (e.data === PLAYING) onplay(); },
       },
     });
   });

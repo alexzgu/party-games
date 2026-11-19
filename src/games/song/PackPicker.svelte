@@ -55,7 +55,7 @@
       <button class="tile make" onclick={onnew}>
         <span class="spark" aria-hidden="true">＋</span>
         <span class="name wide">New pack</span>
-        <span class="blurb">Add songs from YouTube links</span>
+        <span class="blurb">From links, a list, a playlist or Claude</span>
       </button>
     </li>
   </ul>

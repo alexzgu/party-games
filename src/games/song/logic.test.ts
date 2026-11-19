@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Song } from '../../lib/content';
 import * as r from './logic';
 
-const song = (n: number): Song => ({ title: `Song ${n}`, artist: `Artist ${n}`, youtube: `vid${String(n).padStart(8, '0')}`, start: 30 });
+const song = (n: number): Song => ({ title: `Song ${n}`, artist: `Artist ${n}`, apple: 1000 + n });
 const start = (target = 5) => r.newGame(['Maya', 'Jordan', 'Sam'], { target, packIds: ['p'] }, song(1));
 
 describe('Earworm rules', () => {
@@ -10,7 +10,7 @@ describe('Earworm rules', () => {
     expect(() => r.newGame(['Solo'], { target: 5, packIds: [] }, song(1))).toThrow();
     const g = start();
     expect(g.phase).toBe('ready');
-    expect(g.dealt).toEqual([song(1).youtube]);
+    expect(g.dealt).toEqual(['1001']);
   });
 
   it('scores 3, 2 or 1 by clip length, and Longer stops at the longest clip', () => {
@@ -29,7 +29,7 @@ describe('Earworm rules', () => {
   it('goes reveal → scores → ready with the upcoming song, and never deals a song twice', () => {
     let g = r.award(r.listen(start()), 0);
     g = r.setUpcoming(g, song(2));
-    expect(g.dealt).toEqual([song(1).youtube, song(2).youtube]);
+    expect(g.dealt).toEqual(['1001', '1002']);
     g = r.next(g);
     expect(g.phase).toBe('scores');
     g = r.next(g);
@@ -53,7 +53,7 @@ describe('Earworm rules', () => {
     expect(u.log).toEqual([]);
   });
 
-  it('a song YouTube refused is swapped without penalty and noted for history', () => {
+  it('a song whose preview will not play is swapped without penalty and noted for history', () => {
     let g = r.longer(r.listen(start()));
     g = r.replaceSong(g, song(3), true);
     expect(g.song).toEqual(song(3));
@@ -91,11 +91,21 @@ describe('Earworm rules', () => {
     const g = r.longer(r.listen(start()));
     const back = r.validGame(JSON.parse(JSON.stringify(g)));
     expect(back).toEqual(g);
-    expect(r.validGame({ ...g, phase: 'listen', song: { title: 'x', artist: 'y', youtube: 'short', start: 1 } })).toBeNull();
+    expect(r.validGame({ ...g, phase: 'listen', song: { title: 'x', artist: 'y', apple: 'abc' } })).toBeNull();
+    expect(r.validGame({ ...g, phase: 'listen', song: { ...song(2), start: 25 } })).toBeNull();
+    expect(r.validGame({ ...g, song: { ...song(2), start: 12.5, youtube: 'dQw4w9WgXcQ' } })?.song).toEqual({ ...song(2), start: 12.5, youtube: 'dQw4w9WgXcQ' });
     expect(r.validGame({ ...g, step: 7 })).toBeNull();
     expect(r.validGame({ ...g, players: [{ name: 'A', score: 0 }] })).toBeNull();
     expect(r.validGame(null)).toBeNull();
     expect(r.validSetup({ target: 99, packIds: 'x' })).toEqual(r.DEFAULT_SETUP);
     expect(r.validSetup({ target: 12, packIds: ['a'] })).toEqual({ target: 12, packIds: ['a'] });
+  });
+
+  it('a game saved by the YouTube version is refused, but its scores still reach History', () => {
+    const old = { ...r.next(r.award(r.listen(start(10)), 1)), v: 1, song: { title: 'Toxic', artist: 'Britney Spears', youtube: 'LOZuxwVk7TU', start: 69 } };
+    expect(r.validGame(JSON.parse(JSON.stringify(old)))).toBeNull();
+    expect(r.retiredRecord(old, ['2000s Bangers'])).toMatchObject({ title: 'Jordan led 3–0–0', finished: false, packs: ['2000s Bangers'] });
+    expect(r.retiredRecord({ ...old, songsPlayed: 0 }, [])).toBeNull();
+    expect(r.retiredRecord(start(), [])).toBeNull();
   });
 });

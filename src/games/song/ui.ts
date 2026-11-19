@@ -5,3 +5,9 @@ const PALETTE = ['var(--c-song)', 'var(--c-dial)', 'var(--c-forehead)', 'var(--c
 export const playerColor = (i: number) => PALETTE[i % PALETTE.length];
 
 export const initial = (name: string) => [...name.trim()][0]?.toUpperCase() ?? '?';
+
+/**
+ * Where the current clip is: its preview is loading, ready to play, playing, played out, waiting
+ * for a tap before the browser allows sound, or would not load.
+ */
+export type ClipStatus = 'loading' | 'ready' | 'playing' | 'done' | 'blocked' | 'error';

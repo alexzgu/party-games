@@ -1,5 +1,5 @@
 // Pure game rules for Earworm: every step takes a state and returns the next one, so the
-// screens stay thin and each step can be saved and unit-tested. Audio lives in clip.ts.
+// screens stay thin and each step can be saved and unit-tested. Audio lives in audio.ts.
 import type { Song } from '../../lib/content';
 import type { HistoryEntry } from '../../lib/history';
 
@@ -20,23 +20,26 @@ export type Outcome = { kind: 'point'; scorer: number; points: number } | { kind
 /** A song played to the end (skipped ones are not): who got it (-1 nobody) and for how many points. */
 export interface PlayedSong { title: string; artist: string; by: number; points: number }
 
+/** Saved-game format. 1 was the YouTube version; those saves cannot carry on (see retiredRecord). */
+export const VERSION = 2;
+
 export interface GameState {
-  v: 1;
+  v: typeof VERSION;
   players: Player[];
   target: number;
   packIds: string[];
   phase: Phase;
   /** The song on the ready, listen and reveal screens. */
   song: Song | null;
-  /** The song after this one, chosen at the reveal so the player can load it early. */
+  /** The song after this one, chosen at the reveal so its preview can load early. */
   upcoming: Song | null;
   /** Clip length index into CLIPS. */
   step: number;
   outcome: Outcome | null;
   songsPlayed: number;
-  /** Video ids used this game (played or skipped), so none comes up twice. */
+  /** Songs used this game (played or skipped, by songKey), so none comes up twice. */
   dealt: string[];
-  /** Songs YouTube would not play, for the history entry. */
+  /** Songs Apple had no preview for, for the history entry. */
   skipped: string[];
   log: PlayedSong[];
 }
@@ -46,7 +49,7 @@ export interface GameOptions { target: number; packIds: string[] }
 export function newGame(names: string[], opts: GameOptions, first: Song | null): GameState {
   if (names.length < MIN_PLAYERS) throw new Error(`Need at least ${MIN_PLAYERS} players`);
   return {
-    v: 1,
+    v: VERSION,
     players: names.map((name) => ({ name, score: 0 })),
     target: opts.target,
     packIds: opts.packIds,
@@ -56,13 +59,16 @@ export function newGame(names: string[], opts: GameOptions, first: Song | null):
     step: 0,
     outcome: null,
     songsPlayed: 0,
-    dealt: first ? [first.youtube] : [],
+    dealt: first ? [songKey(first)] : [],
     skipped: [],
     log: [],
   };
 }
 
-const withDealt = (dealt: string[], song: Song | null) => (song && !dealt.includes(song.youtube) ? [...dealt, song.youtube] : dealt);
+/** A song's identity for dealing: its Apple track id. */
+export const songKey = (s: Pick<Song, 'apple'>) => String(s.apple);
+
+const withDealt = (dealt: string[], song: Song | null) => (song && !dealt.includes(songKey(song)) ? [...dealt, songKey(song)] : dealt);
 
 /** Play was tapped: the room hears the shortest clip. */
 export function listen(s: GameState): GameState {
@@ -103,14 +109,14 @@ export function undo(s: GameState): GameState {
   return { ...s, players, phase: 'listen', outcome: null, songsPlayed: s.songsPlayed - 1, log: s.log.slice(0, -1) };
 }
 
-/** The song after this one is chosen (at the reveal), so it can load while the room cheers. */
+/** The song after this one is chosen (at the reveal), so its preview loads while the room cheers. */
 export function setUpcoming(s: GameState, song: Song | null): GameState {
   return { ...s, upcoming: song, dealt: withDealt(s.dealt, song) };
 }
 
 /**
- * Swap the current song for another without a penalty: the host skipped it, or YouTube would
- * not play it (`broken`, kept for the history entry). Back to the shortest clip.
+ * Swap the current song for another without a penalty: the host skipped it, or its preview
+ * would not play (`broken`, kept for the history entry). Back to the shortest clip.
  */
 export function replaceSong(s: GameState, song: Song | null, broken = false): GameState {
   const skipped = broken && s.song ? [...s.skipped, `${s.song.title} — ${s.song.artist}`] : s.skipped;
@@ -171,7 +177,7 @@ const line = (rows: { player: Player }[]) => rows.map((r) => r.player.score).joi
 
 function entry(s: GameState, packs: string[], title: string): Omit<HistoryEntry, 'id' | 'at'> {
   const played = s.log.map((x) => `${x.title} — ${x.artist}: ${x.by >= 0 ? `${s.players[x.by]?.name ?? '?'} +${x.points}` : 'nobody'}`);
-  const skipped = s.skipped.map((x) => `Skipped (YouTube would not play it): ${x}`);
+  const skipped = s.skipped.map((x) => `Skipped (its preview would not play): ${x}`);
   return {
     game: 'song',
     title,
@@ -193,9 +199,14 @@ export function checkName(raw: string, existing: string[]): { name: string; erro
 const num = (x: unknown, min: number, max = Infinity): x is number => typeof x === 'number' && Number.isFinite(x) && x >= min && x <= max;
 const strings = (x: unknown): x is string[] => Array.isArray(x) && x.every((v) => typeof v === 'string');
 export const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
+/** The latest start a pack may set: the 10-second clip must end inside a 30-second preview. */
+export const MAX_START = 19.5;
 export const isSong = (x: unknown): x is Song => {
   const k = x as Song | null;
-  return !!k && typeof k.title === 'string' && k.title !== '' && typeof k.artist === 'string' && typeof k.youtube === 'string' && YOUTUBE_ID.test(k.youtube) && num(k.start, 0);
+  return !!k && typeof k.title === 'string' && k.title !== '' && typeof k.artist === 'string'
+    && Number.isInteger(k.apple) && k.apple > 0
+    && (k.start === undefined || num(k.start, 0, MAX_START))
+    && (k.youtube === undefined || (typeof k.youtube === 'string' && YOUTUBE_ID.test(k.youtube)));
 };
 const isPlayed = (x: unknown): x is PlayedSong => {
   const k = x as PlayedSong | null;
@@ -205,7 +216,7 @@ const isPlayed = (x: unknown): x is PlayedSong => {
 /** A saved game, or null if missing or damaged, so a bad save falls back to setup. */
 export function validGame(x: unknown): GameState | null {
   const s = x as GameState | null;
-  if (!s || typeof s !== 'object' || s.v !== 1 || !Array.isArray(s.players) || s.players.length < MIN_PLAYERS) return null;
+  if (!s || typeof s !== 'object' || s.v !== VERSION || !Array.isArray(s.players) || s.players.length < MIN_PLAYERS) return null;
   if (!s.players.every((p) => typeof p?.name === 'string' && num(p.score, 0))) return null;
   if (!['ready', 'listen', 'reveal', 'scores', 'win'].includes(s.phase)) return null;
   if (!num(s.target, 1) || !num(s.songsPlayed, 0) || !Number.isInteger(s.step) || !num(s.step, 0, CLIPS.length - 1)) return null;
@@ -226,6 +237,21 @@ export function validGame(x: unknown): GameState | null {
     skipped: strings(s.skipped) ? s.skipped : [],
     log: Array.isArray(s.log) ? s.log.filter(isPlayed) : [],
   };
+}
+
+/**
+ * A game saved by the YouTube version (format 1) cannot carry on. Its History entry, as if it
+ * had been ended early (null when nothing was played or it was already won), so no score is lost.
+ */
+export function retiredRecord(x: unknown, packs: string[]): Omit<HistoryEntry, 'id' | 'at'> | null {
+  const s = x as GameState | null;
+  if (!s || typeof s !== 'object' || (s.v as number) !== 1 || !Array.isArray(s.players) || s.players.length < MIN_PLAYERS) return null;
+  if (!s.players.every((p) => typeof p?.name === 'string' && num(p.score, 0)) || !num(s.songsPlayed, 0) || !num(s.target, 1)) return null;
+  const old: GameState = {
+    ...s, v: VERSION, phase: s.phase === 'win' ? 'win' : 'scores', song: null, upcoming: null, step: 0, outcome: null, dealt: [],
+    skipped: strings(s.skipped) ? s.skipped : [], log: Array.isArray(s.log) ? s.log.filter(isPlayed) : [],
+  };
+  return endedRecord(old, packs);
 }
 
 export interface SetupPrefs { packIds: string[] | null; target: number }
