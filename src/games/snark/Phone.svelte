@@ -85,12 +85,12 @@
     <main class="body">
       {#if s.k === 'write'}
         {#key `${view.code}:${view.round}`}
-          <PhoneWrite code={view.code} round={view.round} tasks={s.tasks} total={s.total} final={view.final} onsend={(i, text) => send({ t: 'answer', i, text })} />
+          <PhoneWrite code={view.code} round={view.round} tasks={s.tasks} total={s.total} final={view.final} onsend={(i, text) => send({ t: 'answer', r: view.round, i, text })} />
         {/key}
       {:else if s.k === 'vote'}
-        {#key `${view.round}:${s.at}`}<PhoneVote screen={s} onvote={(c) => send({ t: 'vote', c })} />{/key}
+        {#key `${view.round}:${s.at}`}<PhoneVote screen={s} onvote={(c) => send({ t: 'vote', r: view.round, at: s.at, c })} />{/key}
       {:else if s.k === 'vote3'}
-        {#key `${view.round}:${s.at}`}<PhoneVote3 screen={s} onsend={(v) => send({ t: 'votes', v })} />{/key}
+        {#key `${view.round}:${s.at}`}<PhoneVote3 screen={s} onsend={(v) => send({ t: 'votes', r: view.round, at: s.at, v })} />{/key}
       {:else}
         <div class="wait pop-in">
           {#if s.k === 'lobby'}

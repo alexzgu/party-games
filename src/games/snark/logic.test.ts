@@ -111,6 +111,33 @@ describe('voting rules', () => {
     const v = playerView(g, me, 0)!;
     expect(v.screen.k === 'vote3' && v.screen.choices.map((c) => c.id)).not.toContain(own);
   });
+  it('nobody can vote for a side with no answer', () => {
+    let g = L.startRound(room(4), draw, 0);
+    const item = g.items[0] as L.Duel;
+    for (const p of L.present(g)) for (const i of L.tasksFor(g, p.pid)) if (!(i === 0 && p.pid === item.b)) g = L.answer(g, p.pid, i, 'ok');
+    g = L.step(g, 0, draw);
+    expect([g.phase, g.at, g.items[0].answers[item.b]]).toEqual(['vote', 0, null]);
+    const voter = L.votersFor(g, g.items[0])[0];
+    expect(L.vote(g, voter, 'b')).toBe(g);
+    expect((L.vote(g, voter, 'a').items[0] as L.Duel).ballots[voter]).toBe(item.a);
+    // The phone shows that side, but as one it cannot pick.
+    const v = playerView(g, voter, 0)!.screen;
+    expect(v.k === 'vote' && v.choices.map((c) => [c.id, c.empty])).toEqual([['a', false], ['b', true]]);
+  });
+  it('final round: no votes for an answer that was never sent', () => {
+    let g = room(4, { ...SETTINGS, rounds: 2 });
+    g = L.startRound({ ...g, round: 1 }, draw, 0);
+    const item = g.items[0] as L.Finale;
+    const silent = item.authors[1];
+    for (const pid of item.authors) if (pid !== silent) g = L.answer(g, pid, 0, `by ${pid}`);
+    g = L.step(g, 0, draw);
+    const me = item.authors[0];
+    expect(L.voteFinal(g, me, { 1: 1 })).toBe(g);
+    expect(L.voteFinal(g, me, { 1: 1, 2: 1 })).toBe(g);
+    expect((L.voteFinal(g, me, { 2: 1 }).items[0] as L.Finale).ballots[me]).toEqual({ [item.authors[2]]: 1 });
+    const v = playerView(g, me, 0)!.screen;
+    expect(v.k === 'vote3' && v.choices.map((c) => c.id)).not.toContain(1);
+  });
   it('voting closes once every connected voter has voted', () => {
     let g = L.step(answerAll(L.startRound(room(4), draw, 0)), 0, draw);
     const item = g.items[g.at] as L.Duel;
@@ -253,10 +280,37 @@ describe('codes and brokers', () => {
 describe('messages from phones', () => {
   it('drops anything malformed', () => {
     expect(readToHost({ t: 'hello', pid: 'p1', name: 'Maya' })).toEqual({ t: 'hello', pid: 'p1', name: 'Maya' });
-    expect(readToHost({ t: 'vote', c: 'a' })).toEqual({ t: 'vote', c: 'a' });
-    expect(readToHost({ t: 'vote', c: 'z' })).toBeNull();
-    expect(readToHost({ t: 'answer', i: '1', text: 'x' })).toBeNull();
-    expect(readToHost({ t: 'votes', v: { 0: 2, 1: 'x' } })).toEqual({ t: 'votes', v: { 0: 2 } });
+    expect(readToHost({ t: 'vote', r: 1, at: 2, c: 'a' })).toEqual({ t: 'vote', r: 1, at: 2, c: 'a' });
+    expect(readToHost({ t: 'vote', r: 1, at: 2, c: 'z' })).toBeNull();
+    expect(readToHost({ t: 'answer', r: 1, i: '1', text: 'x' })).toBeNull();
+    expect(readToHost({ t: 'votes', r: 3, at: 0, v: { 0: 2, 1: 'x' } })).toEqual({ t: 'votes', r: 3, at: 0, v: { 0: 2 } });
     expect(readToHost('hello')).toBeNull();
+  });
+  it('drops answers and votes that do not say which round and prompt they are for', () => {
+    expect(readToHost({ t: 'vote', c: 'a' })).toBeNull();
+    expect(readToHost({ t: 'vote', r: 1, c: 'a' })).toBeNull();
+    expect(readToHost({ t: 'answer', i: 1, text: 'x' })).toBeNull();
+    expect(readToHost({ t: 'votes', r: 3, v: { 0: 2 } })).toBeNull();
+  });
+  it('a vote queued for an earlier prompt is ignored when it arrives during a later one', () => {
+    let g = L.step(answerAll(L.startRound(room(5), draw, 0)), 0, draw);
+    while (g.at < 2) g = L.step(L.step(g, 0, draw), 0, draw); // close the vote, then the reveal
+    const late = L.step(L.step(g, 0, draw), 0, draw);
+    expect([late.phase, late.at]).toEqual(['vote', 3]);
+    // A voter on prompt 3 whose phone queued a vote while prompt 2 was up: it must not land on 3.
+    const voter = L.votersFor(late, late.items[3])[0];
+    expect(L.fromPhone(late, voter, { t: 'vote', r: 1, at: 2, c: 'a' })).toBe(late);
+    expect(L.fromPhone(late, voter, { t: 'votes', r: 1, at: 2, v: { 0: 1 } })).toBe(late);
+    const now = L.fromPhone(late, voter, { t: 'vote', r: 1, at: 3, c: 'a' });
+    expect((now.items[3] as L.Duel).ballots[voter]).toBe((late.items[3] as L.Duel).a);
+  });
+  it('an answer from the previous round is ignored', () => {
+    let g = answerAll(L.startRound(room(3), draw, 0));
+    while (g.phase !== 'scores') g = L.step(g, 0, draw);
+    g = L.step(g, 0, draw);
+    expect([g.round, g.phase]).toEqual([2, 'write']);
+    const [i] = L.tasksFor(g, 'p0');
+    expect(L.fromPhone(g, 'p0', { t: 'answer', r: 1, i, text: 'old' })).toBe(g);
+    expect(L.fromPhone(g, 'p0', { t: 'answer', r: 2, i, text: 'new' }).items[i].answers.p0).toBe('new');
   });
 });

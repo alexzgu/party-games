@@ -16,6 +16,7 @@
   import { keepAwake } from '../../lib/wakelock';
   import { record } from '../../lib/history';
   import type { Song } from '../../lib/content';
+  import { stageMode } from './ui';
   import * as rules from './logic';
   import type { GameState } from './logic';
 
@@ -45,6 +46,8 @@
   let problem = $state<'' | 'offline' | 'failed'>(demo === 'ready-offline' ? 'offline' : '');
   let note = $state('');
   let clip = $state<Clip | null>(null);
+  /** The video the player holds now (the Clip itself is not reactive). */
+  let loaded = $state('');
 
   // `game` is the parent's state: after commit it reads the new value at once.
   const step = (next: GameState) => commit(next);
@@ -70,7 +73,7 @@
     }
   }
 
-  const cue = (s: Song | null, offset = 0) => { if (s && clip) clip.cue(s.youtube, s.start + offset); };
+  const cue = (s: Song | null, offset = 0) => { if (s && clip) { clip.cue(s.youtube, s.start + offset); loaded = s.youtube; } };
 
   /** After a load or reload: the player gets whatever the current screen needs next. */
   function cueForPhase() {
@@ -82,6 +85,7 @@
   function onStatus(s: ClipStatus) {
     status = s;
     // The reveal video ended (or was skipped): load the next song while the room cheers.
+    // The stage covers itself as soon as it holds a song other than this round's (stageMode).
     if (s === 'done' && game.phase === 'reveal') cue(game.upcoming);
   }
 
@@ -92,7 +96,8 @@
     dealer.drop(id);
     if (id === game.upcoming?.youtube && game.phase !== 'ready' && game.phase !== 'listen') {
       step(rules.replaceUpcoming(game, dealer.next(game.dealt)));
-      if (game.phase === 'scores') cue(game.upcoming);
+      // Reveal: it was the early-cued next song that failed, so cue its replacement.
+      if (game.phase === 'scores' || game.phase === 'reveal') cue(game.upcoming);
       return;
     }
     if (id !== game.song?.youtube || (game.phase !== 'ready' && game.phase !== 'listen')) return;
@@ -174,6 +179,7 @@
   }
 
   function watch() {
+    if (loaded !== game.song?.youtube) return;
     unlockAudio();
     clip?.payoff(PAYOFF_S);
   }
@@ -183,7 +189,7 @@
     onleave();
   }
 
-  const mode = $derived(game.phase === 'listen' ? 'covered' : game.phase === 'reveal' ? 'shown' : 'hidden');
+  const mode = $derived(stageMode(game.phase, game.song?.youtube, loaded, !!demo));
   const canPlay = $derived(!!game.song && (demo ? true : status !== 'idle' && status !== 'error' && !!clip));
 </script>
 
@@ -196,7 +202,7 @@
   {:else if game.phase === 'reveal'}
     <TapToFinish><Reveal {game} onnext={next} onundo={undo} /></TapToFinish>
   {:else if game.phase === 'scores'}
-    <TapToFinish><Scores {game} loading={!demo && !!game.upcoming && (status === 'idle' || clip?.videoId !== game.upcoming.youtube)} onnext={next} onleave={leave} /></TapToFinish>
+    <TapToFinish><Scores {game} loading={!demo && !!game.upcoming && (status === 'idle' || loaded !== game.upcoming.youtube)} onnext={next} onleave={leave} /></TapToFinish>
   {:else}
     <TapToFinish><Win {game} onrematch={rematch} onnew={leave} {onhome} /></TapToFinish>
   {/if}

@@ -1,11 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { ClipStatus } from './clip';
+  import type { StageMode } from './ui';
 
   // The YouTube player's box. It is mounted once for the whole game, because moving or
   // re-creating the iframe would reload it (and lose the iPhone's permission to play sound):
   // screens only change how it looks. Covered while guessing (a record that spins while the
-  // clip plays), shown at the reveal, parked off screen otherwise (YouTube needs 200×200).
+  // clip plays), shown at the reveal, covered again once the reveal is over and the next song is
+  // loading behind it ('over'), parked off screen otherwise (YouTube needs 200×200).
   let {
     mode,
     status,
@@ -15,7 +17,7 @@
     onskip,
     onwatch,
   }: {
-    mode: 'hidden' | 'covered' | 'shown';
+    mode: StageMode;
     status: ClipStatus;
     progress?: number;
     demo?: boolean;
@@ -59,6 +61,11 @@
         </div>
       </div>
       <p class="say" class:ad={status === 'ad'} class:tapme={status === 'blocked'}>{LABEL[status]}</p>
+    </div>
+  {:else if mode === 'over'}
+    <div class="cover" role="status">
+      <div class="deck"><div class="disc"><span class="label" aria-hidden="true"><span class="note">♪</span></span></div></div>
+      <p class="say">{status === 'idle' ? 'Loading…' : 'Next song ready'}</p>
     </div>
   {:else if mode === 'shown'}
     {#if status === 'payoff'}

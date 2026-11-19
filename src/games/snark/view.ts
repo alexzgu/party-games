@@ -9,7 +9,8 @@ export type Screen =
   | { k: 'late' }
   /** Prompts still to answer; empty when this player is done. */
   | { k: 'write'; tasks: { i: number; prompt: string }[]; total: number }
-  | { k: 'vote'; at: number; prompt: string; choices: { id: 'a' | 'b'; text: string }[]; own: boolean; voted: 'a' | 'b' | null }
+  /** `empty`: that author sent no answer, so it cannot be voted for. */
+  | { k: 'vote'; at: number; prompt: string; choices: { id: 'a' | 'b'; text: string; empty: boolean }[]; own: boolean; voted: 'a' | 'b' | null }
   | { k: 'vote3'; at: number; prompt: string; choices: { id: number; text: string }[]; own: boolean; sent: boolean }
   | { k: 'reveal'; gain: number | null }
   | { k: 'scores'; place: number }
@@ -62,7 +63,10 @@ function screenFor(g: Game, pid: string): Screen {
           k: 'vote',
           at: g.at,
           prompt: item.prompt,
-          choices: (['a', 'b'] as const).map((id) => ({ id, text: item.answers[item[id]] ?? NO_ANSWER })),
+          choices: (['a', 'b'] as const).map((id) => {
+            const text = item.answers[item[id]];
+            return { id, text: text ?? NO_ANSWER, empty: text == null };
+          }),
           own: !votersFor(g, item).includes(pid),
           voted: voted === undefined ? null : voted === item.a ? 'a' : 'b',
         };

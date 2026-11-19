@@ -1,11 +1,13 @@
 // Messages between the host screen and the phones (JSON over a WebRTC data channel).
 import type { PlayerView } from './view';
 
+// Answers and votes say what they are for (round `r`, prompt index `i` or `at`): a phone that
+// was offline re-sends them later, and the host must not apply one to a prompt that moved on.
 export type ToHost =
   | { t: 'hello'; pid: string; name: string }
-  | { t: 'answer'; i: number; text: string }
-  | { t: 'vote'; c: 'a' | 'b' }
-  | { t: 'votes'; v: Record<string, number> }
+  | { t: 'answer'; r: number; i: number; text: string }
+  | { t: 'vote'; r: number; at: number; c: 'a' | 'b' }
+  | { t: 'votes'; r: number; at: number; v: Record<string, number> }
   | { t: 'pong' };
 
 export type ToPhone =
@@ -16,6 +18,7 @@ export type ToPhone =
   | { t: 'ping' };
 
 const str = (x: unknown, max: number): x is string => typeof x === 'string' && x.length <= max;
+const int = (x: unknown): x is number => Number.isInteger(x);
 
 /** Phones are other people's devices: anything that is not a well-formed message is dropped. */
 export function readToHost(x: unknown): ToHost | null {
@@ -23,12 +26,12 @@ export function readToHost(x: unknown): ToHost | null {
   const m = x as Record<string, unknown>;
   switch (m.t) {
     case 'hello': return str(m.pid, 64) && str(m.name, 200) ? { t: 'hello', pid: m.pid, name: m.name } : null;
-    case 'answer': return Number.isInteger(m.i) && str(m.text, 1000) ? { t: 'answer', i: m.i as number, text: m.text } : null;
-    case 'vote': return m.c === 'a' || m.c === 'b' ? { t: 'vote', c: m.c } : null;
+    case 'answer': return int(m.r) && int(m.i) && str(m.text, 1000) ? { t: 'answer', r: m.r, i: m.i, text: m.text } : null;
+    case 'vote': return int(m.r) && int(m.at) && (m.c === 'a' || m.c === 'b') ? { t: 'vote', r: m.r, at: m.at, c: m.c } : null;
     case 'votes': {
-      if (!m.v || typeof m.v !== 'object') return null;
+      if (!int(m.r) || !int(m.at) || !m.v || typeof m.v !== 'object') return null;
       const v = Object.fromEntries(Object.entries(m.v as object).filter(([, n]) => Number.isInteger(n)));
-      return { t: 'votes', v };
+      return { t: 'votes', r: m.r, at: m.at, v };
     }
     case 'pong': return { t: 'pong' };
     default: return null;
