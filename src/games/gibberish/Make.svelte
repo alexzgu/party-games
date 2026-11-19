@@ -3,15 +3,18 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Triage from '../../components/Triage.svelte';
+  import PasteList from '../../components/PasteList.svelte';
+  import Segmented from '../../components/Segmented.svelte';
   import { customGibberish, isBuiltin, slugify, type GibberishCard, type GibberishPack } from '../../lib/content';
   import { hasKey } from '../../lib/claude';
   import { settings } from '../../lib/settings.svelte';
   import { go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { generateCards, THEME_CHIPS } from './generate';
-  import { answerKey } from './parse';
+  import { answerKey, parsePastedCards } from './parse';
 
-  // "Make with Claude": pick a theme, watch cards stream in, drop the duds, save as a pack.
+  // "Make a pack": paste a list, or pick a theme and watch Claude's cards stream in; drop the
+  // duds, save as a pack.
   let { onsaved, onback, demoItems = null, demoNoKey = false }: {
     onsaved: (packId: string) => void;
     onback: () => void;
@@ -37,6 +40,19 @@
   let ctrl: AbortController | null = null;
 
   const destPack = $derived(myPacks.find((p) => p.id === dest));
+
+  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: 'Ask Claude' }];
+  // svelte-ignore state_referenced_locally
+  let mode = $state<'paste' | 'claude'>(keyed ? 'claude' : 'paste');
+  let pasteText = $state('');
+  let note = $state('');
+
+  function pasted(list: GibberishCard[], skipped: string) {
+    items = list;
+    note = skipped;
+    error = '';
+    reviewing = true;
+  }
 
   async function run() {
     if (!theme.trim()) return;
@@ -67,6 +83,7 @@
     if (streaming) { ctrl?.abort(); return; }
     items = [];
     error = '';
+    note = '';
     reviewing = false;
   }
 
@@ -87,7 +104,8 @@
     } else {
       const name = packName.trim() || 'My pack';
       const id = uniqueId(name);
-      customGibberish.put({ id, name, blurb: `Made with Claude: ${theme.trim() || name}`, cards });
+      const blurb = mode === 'paste' ? 'Pasted list' : `Made with Claude: ${theme.trim() || name}`;
+      customGibberish.put({ id, name, blurb, cards });
       onsaved(id);
     }
     sfx.correct();
@@ -96,13 +114,33 @@
   onDestroy(() => ctrl?.abort());
 </script>
 
+{#snippet saveTo()}
+  {#if myPacks.length}
+    <label class="dest">
+      <span>Save to</span>
+      <select bind:value={dest}>
+        <option value="new">A new pack</option>
+        {#each myPacks as p (p.id)}<option value={p.id}>Add to “{p.name}”</option>{/each}
+      </select>
+    </label>
+  {/if}
+{/snippet}
+
 <Screen title="Make a pack" onback={() => { ctrl?.abort(); onback(); }}>
-  {#if !keyed}
-    <div class="nokey">
-      <span class="big" aria-hidden="true">🔑</span>
-      <p><b>Claude needs an API key.</b> Add an Anthropic key in Settings and you can make a pack about anything in seconds. The built-in packs work without one.</p>
-      <Button onclick={() => go('/settings')}>Open Settings</Button>
-    </div>
+  {#if !reviewing}
+    <Segmented label="How to make it" options={MODES} bind:value={mode} />
+  {/if}
+  {#if !reviewing && mode === 'paste'}
+    <PasteList label="Phrase | Answer | Category (optional)"
+      placeholder={'Eye Scream | Ice Cream | Food\nSand A Claws | Santa Claus | Holiday\nHair Eye Pot Her | Harry Potter'}
+      parse={(t) => parsePastedCards(t, destPack?.cards ?? [])} onadd={pasted} bind:text={pasteText}>
+      {@render saveTo()}
+    </PasteList>
+  {:else if !reviewing && !keyed}
+    <p class="nokey">
+      <span>Asking Claude needs an API key.</span>
+      <button type="button" class="link" onclick={() => go('/settings')}>Add one in Settings</button>
+    </p>
   {:else if !reviewing}
     <form class="theme" onsubmit={(e) => { e.preventDefault(); void run(); }}>
       <label for="theme-in"><h3>What should the cards be about?</h3></label>
@@ -112,15 +150,7 @@
           <button type="button" class="chip" class:on={theme === c} onclick={() => (theme = c)}>{c}</button>
         {/each}
       </div>
-      {#if myPacks.length}
-        <label class="dest">
-          <span>Save to</span>
-          <select bind:value={dest}>
-            <option value="new">A new pack</option>
-            {#each myPacks as p (p.id)}<option value={p.id}>Add to “{p.name}”</option>{/each}
-          </select>
-        </label>
-      {/if}
+      {@render saveTo()}
       <p class="faint small">Claude ({modelName}) writes about 24 cards. You keep the good ones.</p>
       <Button type="submit" size="lg" disabled={!theme.trim()}>✨ Make cards</Button>
     </form>
@@ -128,11 +158,12 @@
     {#if !destPack}
       <label class="name">
         <span>Pack name</span>
-        <input type="text" bind:value={packName} maxlength="40" autocomplete="off" />
+        <input type="text" bind:value={packName} placeholder="My pack" maxlength="40" autocomplete="off" />
       </label>
     {:else}
       <p class="muted">Adding to <b>{destPack.name}</b></p>
     {/if}
+    {#if note}<p class="faint small">{note}</p>{/if}
 
     {#if error}
       <div class="error" role="alert">
@@ -145,7 +176,7 @@
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Claude is writing “{theme}” cards…</p>
     {/if}
 
-    <Triage {items} keyOf={answerKey} {streaming} onsave={save} oncancel={cancel} onmore={run}>
+    <Triage {items} keyOf={answerKey} {streaming} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
       {#snippet item(c)}
         <span class="it">
           <span class="ph">{c.phrase}</span>
@@ -160,8 +191,8 @@
 <style>
   h3 { font-size: 1.3rem; }
   .small { font-size: 0.9rem; }
-  .nokey { display: flex; flex-direction: column; gap: var(--s-4); align-items: center; text-align: center; padding: var(--s-6) var(--s-2); }
-  .big { font-size: 3rem; }
+  .nokey { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s-2); color: var(--text-dim); }
+  .link { min-height: 44px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
   .theme { display: flex; flex-direction: column; gap: var(--s-3); }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
   .chip { min-height: 44px; padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1.5px solid var(--line-strong); background: var(--surface); font-weight: 600; }

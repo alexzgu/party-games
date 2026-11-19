@@ -94,7 +94,7 @@
         </li>
       {/each}
     </ul>
-    <Button variant="secondary" onclick={onmake}>✨ Make a pack with Claude</Button>
+    <Button variant="secondary" onclick={onmake}>✨ Make a pack</Button>
   </section>
 
   {#snippet actions()}

@@ -1,14 +1,16 @@
 <script lang="ts">
-  // "Make with Claude": theme → cards stream into Triage → save as a new pack or add to one
-  // of yours → optionally ask for more like these, avoiding every card already there.
+  // "Make a pack": paste a list, or give Claude a theme and watch cards stream in → review in
+  // Triage → save as a new pack or add to one of yours → add more, avoiding every card there.
   import { onDestroy } from 'svelte';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Triage from '../../components/Triage.svelte';
+  import PasteList from '../../components/PasteList.svelte';
+  import Segmented from '../../components/Segmented.svelte';
   import { hasKey } from '../../lib/claude';
   import { customSpectra, slugify, type Spectrum, type SpectrumPack } from '../../lib/content';
   import { go } from '../../lib/router.svelte';
-  import { generatePairs, THEME_CHIPS } from './generate';
+  import { generatePairs, parsePastedPairs, THEME_CHIPS } from './generate';
   import { cardId } from './state';
   import { selectPack } from './persist';
 
@@ -28,6 +30,27 @@
   let savedPack = $state<SpectrumPack | null>(null);
   let controller: AbortController | null = null;
   onDestroy(() => controller?.abort());
+
+  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: 'Ask Claude' }];
+  // svelte-ignore state_referenced_locally
+  let mode = $state<'paste' | 'claude'>(hasKey() || initial.length ? 'claude' : 'paste');
+  let pasteText = $state('');
+  let note = $state('');
+
+  function pasted(list: Spectrum[], skipped: string) {
+    theme = '';
+    items = list;
+    note = skipped;
+    error = '';
+    batch++;
+    step = 'review';
+  }
+
+  function pasteMore() {
+    pasteText = '';
+    mode = 'paste';
+    step = 'theme';
+  }
 
   const mine = $derived(step === 'save' ? customSpectra.all() : []);
 
@@ -60,7 +83,7 @@
     items = [];
     batch++;
     step = 'review';
-    void run([]);
+    void run(savedPack?.cards ?? []);
   }
 
   function more() {
@@ -69,6 +92,7 @@
 
   function moreLikeSaved() {
     if (!savedPack) return;
+    mode = 'claude';
     items = [];
     batch++;
     step = 'review';
@@ -95,7 +119,8 @@
 
   function saveNew() {
     const name = packName.trim() || 'My pack';
-    const pack: SpectrumPack = { id: `my-${slugify(name)}-${Date.now().toString(36)}`, name, blurb: `Made with Claude: ${theme || name}`, cards: kept, custom: true };
+    const blurb = mode === 'paste' ? 'Pasted list' : `Made with Claude: ${theme || name}`;
+    const pack: SpectrumPack = { id: `my-${slugify(name)}-${Date.now().toString(36)}`, name, blurb, cards: kept, custom: true };
     customSpectra.put(pack);
     finish(pack);
   }
@@ -118,16 +143,26 @@
 
 {#snippet savedActions()}
   <Button size="lg" onclick={() => savedPack && onuse(savedPack.id)}>Use it now</Button>
-  <Button variant="secondary" onclick={moreLikeSaved}>More like these</Button>
+  {#if hasKey()}
+    <Button variant="secondary" onclick={moreLikeSaved}>More like these</Button>
+  {:else}
+    <Button variant="secondary" onclick={pasteMore}>Paste more cards</Button>
+  {/if}
 {/snippet}
 
 <Screen title="Make a pack" accent="var(--c-dial)" {onback} backLabel="Back to setup" actions={step === 'saved' ? savedActions : undefined}>
-  {#if step === 'theme' && !hasKey()}
-    <div class="nokey">
-      <p class="big">✨ Claude can write fresh cards for any theme in seconds.</p>
-      <p class="muted">It needs an Anthropic API key, pasted once in Settings. The key stays on this phone. The built-in packs work without it.</p>
-      <Button onclick={() => go('/settings')}>Open Settings</Button>
-    </div>
+  {#if step === 'theme'}
+    <Segmented label="How to make it" options={MODES} bind:value={mode} />
+    {#if savedPack}<p class="muted">Adding to <b>{savedPack.name}</b></p>{/if}
+  {/if}
+  {#if step === 'theme' && mode === 'paste'}
+    <PasteList label="One per line: Left | Right" placeholder={'Cold | Hot\nUnderrated | Overrated\nCheap | Expensive'}
+      parse={(t) => parsePastedPairs(t, savedPack?.cards ?? [])} onadd={pasted} bind:text={pasteText} />
+  {:else if step === 'theme' && !hasKey()}
+    <p class="nokey">
+      <span>Asking Claude needs an API key.</span>
+      <button type="button" class="link" onclick={() => go('/settings')}>Add one in Settings</button>
+    </p>
   {:else if step === 'theme'}
     <form class="stack" onsubmit={(e) => { e.preventDefault(); startFresh(theme); }}>
       <label class="stack">
@@ -142,7 +177,12 @@
       {/each}
     </div>
   {:else if step === 'review'}
-    <p class="muted">Theme: <b>{theme || 'More like your pack'}</b>. Tap a card to drop it.</p>
+    {#if mode === 'paste'}
+      <p class="muted">Your list. Tap a card to drop it.</p>
+      {#if note}<p class="faint note">{note}</p>{/if}
+    {:else}
+      <p class="muted">Theme: <b>{theme || 'More like your pack'}</b>. Tap a card to drop it.</p>
+    {/if}
     {#if error}<p class="err" role="alert">{error}</p>{/if}
     {#if error && !streaming && items.length === 0}
       <div class="stack">
@@ -151,7 +191,7 @@
       </div>
     {:else}
     {#key batch}
-      <Triage {items} keyOf={cardId} {streaming} {onsave} oncancel={cancel} onmore={more}>
+      <Triage {items} keyOf={cardId} {streaming} {onsave} oncancel={cancel} onmore={mode === 'claude' ? more : undefined}>
         {#snippet item(c: Spectrum)}<span class="pair">{c.left} <span class="sep" aria-label="to">↔</span> {c.right}</span>{/snippet}
       </Triage>
     {/key}
@@ -182,8 +222,9 @@
 </Screen>
 
 <style>
-  .nokey { display: flex; flex-direction: column; gap: var(--s-4); padding-top: var(--s-4); }
-  .big { font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; line-height: 1.2; }
+  .nokey { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s-2); color: var(--text-dim); }
+  .link { min-height: 44px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+  .note { font-size: 0.92rem; }
   .lbl { font-weight: 700; }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
   .chip {

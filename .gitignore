@@ -3,6 +3,7 @@ dist
 .agent-cache
 .inbox
 *.local
-.claude/
+.claude/*
+!.claude/skills/
 .mcp.json
 .gitmodules

@@ -2,6 +2,8 @@
 // streamed line into a card, tolerating the list markers, quotes and odd separators models add.
 import { streamLines } from '../../lib/claude';
 import type { Spectrum } from '../../lib/content';
+import { cardId } from './state';
+import { dropNumberCells, pastedLines } from '../../lib/paste';
 
 export const BATCH = 20;
 const MAX_END = 40;
@@ -96,4 +98,31 @@ export function generatePairs(opts: GenerateOptions): Promise<void> {
       if (card) opts.onPair(card);
     },
   });
+}
+
+// A pasted list (often copied from the Claude app): one `Left | Right` card per line, read
+// with the same parser as streamed lines. Every skipped line carries its reason.
+
+
+
+
+export interface PastedPairs {
+  items: Spectrum[];
+  /** One reason per skipped line. */
+  skipped: string[];
+}
+
+export function parsePastedPairs(text: string, existing: readonly Spectrum[] = []): PastedPairs {
+  const have = new Set(existing.map(cardId));
+  const seen = new Set<string>();
+  const out: PastedPairs = { items: [], skipped: [] };
+  for (const line of pastedLines(text)) {
+    const card = parsePair(dropNumberCells(line));
+    const k = card ? cardId(card) : '';
+    if (!card) out.skipped.push("not in 'Left | Right' form");
+    else if (have.has(k)) out.skipped.push('already in the pack');
+    else if (seen.has(k)) out.skipped.push('repeated');
+    else { seen.add(k); out.items.push(card); }
+  }
+  return out;
 }

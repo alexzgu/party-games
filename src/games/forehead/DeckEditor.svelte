@@ -97,7 +97,7 @@
         {/each}
       </ul>
     {:else}
-      <p class="faint">No words yet. Add them one by one, paste a comma-separated list, or let Claude fill it.</p>
+      <p class="faint">No words yet. Add them one by one, or paste a whole list.</p>
     {/if}
   </section>
 
@@ -106,7 +106,7 @@
   {/if}
 
   {#snippet actions()}
-    <Button size="lg" variant="secondary" onclick={claude} disabled={!deck.name.trim() && !deck.words.length}>✨ Add words with Claude</Button>
+    <Button size="lg" variant="secondary" onclick={claude} disabled={!deck.name.trim() && !deck.words.length}>📋 Paste a list</Button>
   {/snippet}
 </Screen>
 

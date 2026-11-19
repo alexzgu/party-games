@@ -1,6 +1,6 @@
 <script lang="ts" generics="T extends string | number">
-  import { sfx } from '../../lib/sound';
-  import { haptic } from '../../lib/haptics';
+  import { sfx } from '../lib/sound';
+  import { haptic } from '../lib/haptics';
 
   // A row of mutually exclusive options; the chosen one is filled with the accent.
   let { value = $bindable(), options, label, onchange }: {

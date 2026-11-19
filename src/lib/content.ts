@@ -10,7 +10,8 @@ export interface GibberishPack { id: string; name: string; blurb: string; cards:
 
 const wordFiles = import.meta.glob<WordDeck>('../content/forehead/*.json', { eager: true, import: 'default' });
 const gibberishFiles = import.meta.glob<GibberishPack>('../content/gibberish/*.json', { eager: true, import: 'default' });
-const dialFiles = import.meta.glob<{ packs: SpectrumPack[] }>('../content/dial/*.json', { eager: true, import: 'default' });
+// A dial file holds one pack, or several under `packs` (the original spectra.json).
+const dialFiles = import.meta.glob<SpectrumPack | { packs: SpectrumPack[] }>('../content/dial/*.json', { eager: true, import: 'default' });
 
 const BUILTIN_DECK_ORDER = [
   'movies', 'tv', 'celebs', 'music', 'characters', 'animals', 'food', 'charades',
@@ -24,7 +25,7 @@ function ordered<T extends { id: string }>(items: T[], order: string[]): T[] {
 
 const builtinDecks = ordered(Object.values(wordFiles), BUILTIN_DECK_ORDER);
 const builtinGibberish = ordered(Object.values(gibberishFiles), ['classic', 'pop', 'sayings', 'after-dark']);
-const builtinSpectra = ordered(Object.values(dialFiles).flatMap((f) => f.packs), ['classic', 'deep', 'nerdy', 'after-dark']);
+const builtinSpectra = ordered(Object.values(dialFiles).flatMap((f) => ('packs' in f ? f.packs : [f])), ['classic', 'deep', 'nerdy', 'after-dark']);
 
 function customStore<T extends { id: string }>(key: string) {
   return {

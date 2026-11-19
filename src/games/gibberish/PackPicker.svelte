@@ -44,7 +44,7 @@
       <button class="tile make" onclick={onmake}>
         <span class="spark" aria-hidden="true">✨</span>
         <span class="name wide">Make a pack</span>
-        <span class="blurb">Any theme, written by Claude in seconds</span>
+        <span class="blurb">Paste a list or ask Claude</span>
       </button>
     </li>
   </ul>

@@ -4,20 +4,23 @@
   import Button from '../../components/Button.svelte';
   import Stepper from '../../components/Stepper.svelte';
   import Triage from '../../components/Triage.svelte';
+  import PasteList from '../../components/PasteList.svelte';
+  import Segmented from '../../components/Segmented.svelte';
   import { customDecks, dedupe, slugify } from '../../lib/content';
   import { hasKey } from '../../lib/claude';
   import { back, go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
   import { generateWords, THEME_CHIPS } from './generate';
-  import { titleCase } from './words';
+  import { parsePastedWords, titleCase } from './words';
 
-  // "Make with Claude": theme → words stream in → drop the duds → save as a new deck or
-  // add to one of mine. "More like these" asks for more, never repeating what is there.
+  // "Make a deck": paste a list, or give Claude a theme and watch words stream in → drop the
+  // duds → save as a new deck or add to one of mine. "More" asks Claude for more, never
+  // repeating what is there.
   let { into = null, demo = null }: { into?: string | null; demo?: string | null } = $props();
 
   const mine = customDecks.all();
-  const start = untrack(() => ({ into, demo: demo === 'triage' }));
+  const start = untrack(() => ({ into, demo: demo === 'triage', isDemo: demo != null }));
   let target = $state(mine.some((d) => d.id === start.into) ? start.into! : 'new');
   let theme = $state('');
   let count = $state(40);
@@ -29,6 +32,18 @@
 
   const targetDeck = $derived(mine.find((d) => d.id === target));
   const keyReady = hasKey();
+  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: 'Ask Claude' }];
+  let mode = $state<'paste' | 'claude'>(keyReady || start.isDemo ? 'claude' : 'paste');
+  let pasteText = $state('');
+  let note = $state('');
+  let deckName = $state('');
+
+  function pasted(list: string[], skipped: string) {
+    items = list;
+    note = skipped;
+    error = '';
+    phase = 'triage';
+  }
 
   async function run() {
     error = '';
@@ -56,9 +71,10 @@
     if (targetDeck) {
       customDecks.put({ ...targetDeck, words: dedupe([...targetDeck.words, ...kept]) });
     } else {
-      id = 'my-' + slugify(theme) + '-' + Date.now().toString(36);
-      const name = titleCase(theme.trim()).slice(0, 40) || 'Claude deck';
-      customDecks.put({ id, name, emoji: '✨', blurb: 'Made with Claude', words: dedupe(kept) });
+      const fromPaste = mode === 'paste';
+      const name = (fromPaste ? deckName.trim() : titleCase(theme.trim())).slice(0, 40) || (fromPaste ? 'My deck' : 'Claude deck');
+      id = 'my-' + slugify(name) + '-' + Date.now().toString(36);
+      customDecks.put({ id, name, emoji: fromPaste ? '📝' : '✨', blurb: fromPaste ? 'Pasted list' : 'Made with Claude', words: dedupe(kept) });
     }
     if (kept.length && !prefs.deckIds.includes(id)) prefs.deckIds = [id, ...prefs.deckIds];
     savePrefs();
@@ -74,6 +90,7 @@
     }
     items = [];
     error = '';
+    note = '';
     phase = 'form';
   }
 
@@ -85,50 +102,73 @@
   onDestroy(() => controller?.abort());
 </script>
 
-<Screen title="Make with Claude" accent="var(--c-forehead)">
-  {#if !keyReady && demo == null}
-    <div class="nokey pop-in">
-      <span class="big" aria-hidden="true">🔑</span>
-      <h3>Claude needs a key first</h3>
-      <p class="muted">Paste an Anthropic API key in Settings once on this phone, then come back here. All the built-in decks work without one.</p>
-      <Button onclick={() => go('/settings')}>Open Settings</Button>
-    </div>
-  {:else if phase === 'form'}
-    <form class="stack" onsubmit={(e) => { e.preventDefault(); if (theme.trim()) void run(); }}>
-      <label class="field">
-        <span class="lbl">Theme</span>
-        <!-- svelte-ignore a11y_autofocus -->
-        <input type="text" placeholder="e.g. Disney villains, our office" bind:value={theme} maxlength="80" enterkeyhint="go" autofocus />
-      </label>
-      <div class="chips" aria-label="Theme ideas">
-        {#each THEME_CHIPS as t (t)}
-          <button type="button" class="chip" class:on={theme === t} onclick={() => chip(t)}>{t}</button>
-        {/each}
-      </div>
-      <Stepper label="How many words" bind:value={count} min={20} max={80} step={10} />
-      {#if mine.length}
+{#snippet saveTo()}
+  {#if mine.length}
+    <label class="field">
+      <span class="lbl">Save to</span>
+      <select bind:value={target}>
+        <option value="new">A new deck</option>
+        {#each mine as d (d.id)}<option value={d.id}>Add to {d.emoji} {d.name}</option>{/each}
+      </select>
+    </label>
+  {/if}
+{/snippet}
+
+<Screen title="Make a deck" accent="var(--c-forehead)">
+  {#if phase === 'form'}
+    <Segmented label="How to make it" options={MODES} bind:value={mode} />
+    {#if mode === 'paste'}
+      <PasteList label="One word or phrase per line" placeholder={'Moon Landing\nTaylor Swift\nPizza Rat, Karaoke Night'}
+        parse={(t) => parsePastedWords(t, targetDeck?.words ?? [])} onadd={pasted} bind:text={pasteText}>
+        {@render saveTo()}
+      </PasteList>
+    {:else if !keyReady && demo == null}
+      <p class="nokey">
+        <span>Asking Claude needs an API key.</span>
+        <button type="button" class="link" onclick={() => go('/settings')}>Add one in Settings</button>
+      </p>
+    {:else}
+      <form class="stack" onsubmit={(e) => { e.preventDefault(); if (theme.trim()) void run(); }}>
         <label class="field">
-          <span class="lbl">Save to</span>
-          <select bind:value={target}>
-            <option value="new">A new deck</option>
-            {#each mine as d (d.id)}<option value={d.id}>Add to {d.emoji} {d.name}</option>{/each}
-          </select>
+          <span class="lbl">Theme</span>
+          <!-- svelte-ignore a11y_autofocus -->
+          <input type="text" placeholder="e.g. Disney villains, our office" bind:value={theme} maxlength="80" enterkeyhint="go" autofocus />
         </label>
-      {/if}
-      <Button type="submit" size="lg" disabled={!theme.trim()}>✨ Make {count} words</Button>
-    </form>
+        <div class="chips" aria-label="Theme ideas">
+          {#each THEME_CHIPS as t (t)}
+            <button type="button" class="chip" class:on={theme === t} onclick={() => chip(t)}>{t}</button>
+          {/each}
+        </div>
+        <Stepper label="How many words" bind:value={count} min={20} max={80} step={10} />
+        {@render saveTo()}
+        <Button type="submit" size="lg" disabled={!theme.trim()}>✨ Make {count} words</Button>
+      </form>
+    {/if}
   {:else}
     <div class="head">
-      <h3>{theme ? `“${titleCase(theme)}”` : 'New words'}</h3>
-      <p class="faint">{targetDeck ? `Adding to ${targetDeck.name}` : 'Saving as a new deck'}</p>
+      {#if mode === 'paste'}
+        {#if targetDeck}
+          <h3>Your list</h3>
+          <p class="faint">Adding to {targetDeck.name}</p>
+        {:else}
+          <label class="field">
+            <span class="lbl">Deck name</span>
+            <input type="text" placeholder="My deck" bind:value={deckName} maxlength="40" autocomplete="off" />
+          </label>
+        {/if}
+      {:else}
+        <h3>{theme ? `“${titleCase(theme)}”` : 'New words'}</h3>
+        <p class="faint">{targetDeck ? `Adding to ${targetDeck.name}` : 'Saving as a new deck'}</p>
+      {/if}
     </div>
+    {#if note}<p class="faint note">{note}</p>{/if}
     {#if error}
       <div class="error" role="alert">
         <p>{error}</p>
         <Button size="sm" variant="secondary" onclick={run}>Try again</Button>
       </div>
     {/if}
-    <Triage {items} keyOf={(s: string) => s} {streaming} onsave={save} oncancel={cancel} onmore={theme ? run : undefined}>
+    <Triage {items} keyOf={(s: string) => s} {streaming} onsave={save} oncancel={cancel} onmore={mode === 'claude' && theme ? run : undefined}>
       {#snippet item(s: string)}<span class="word">{s}</span>{/snippet}
     </Triage>
   {/if}
@@ -151,7 +191,7 @@
     display: flex; align-items: center; gap: var(--s-3); justify-content: space-between; padding: var(--s-3) var(--s-4);
     border-radius: var(--r-md); background: color-mix(in srgb, var(--c-bad) 16%, var(--surface)); color: #ffd0d8;
   }
-  .nokey { text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--s-3); padding: var(--s-6) var(--s-2); }
-  .nokey p { max-width: 34ch; }
-  .big { font-size: 3.2rem; }
+  .note { font-size: 0.92rem; }
+  .nokey { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s-2); color: var(--text-dim); }
+  .link { min-height: 44px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 </style>

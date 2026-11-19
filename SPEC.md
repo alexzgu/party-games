@@ -36,14 +36,24 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
 - `src/content/` — built-in packs as JSON (formats in `src/lib/content.ts`).
 
-## Live generation with Claude
+## Making new packs
 
-The host pastes an Anthropic API key in Settings; it stays in that phone's localStorage and
-the phone calls the API directly. `streamLines()` asks for one item per line and hands each
-line over as soon as it is complete, so results appear within seconds. Each game's "Make with
-Claude" flow: theme input + quick-pick theme chips → items stream into `Triage` → save as a
-custom pack (or add to an existing one) → optional "More like these", which sends the items
-already kept so Claude avoids repeats. Without a key the button explains where to add one.
+Three routes, in the order the owner chose to rely on them:
+
+1. **A Claude Code chat** (uses the owner's subscription): someone asks a chat for a pack; it
+   writes `src/content/<game>/<id>.json`, passes the content gate (`src/lib/content.test.ts`),
+   commits and pushes; the site rebuilds in 1–2 minutes. Steps: "Making a new pack" in
+   AGENTS.md, or `/make-pack`.
+2. **Paste a list** on the phone: each game's "Make a pack" screen takes a pasted list (one
+   item per line, in the game's format), shows it in `Triage` for review, and saves it as a
+   custom pack on that phone.
+3. **Ask Claude in the app** (later, needs an API key): the host pastes an Anthropic API key in
+   Settings; it stays in that phone's localStorage and the phone calls the API directly.
+   `streamLines()` hands each line over as soon as it is complete; items stream into `Triage`;
+   "More" sends the items already kept so Claude avoids repeats.
+
+Updates reach phones without interrupting play: a new version downloads in the background
+(checked every minute) and switches in only on the main menu (`src/lib/update.ts`).
 
 ## Game 1 — Heads Down. (`forehead`)
 

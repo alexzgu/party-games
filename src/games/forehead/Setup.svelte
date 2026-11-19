@@ -2,7 +2,7 @@
   import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
-  import Segmented from './Segmented.svelte';
+  import Segmented from '../../components/Segmented.svelte';
   import { wordDecks } from '../../lib/content';
   import { go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
@@ -71,7 +71,7 @@
         <button class="deck make" onclick={() => go('/forehead/make')}>
           <span class="emoji" aria-hidden="true">✨</span>
           <span class="name">Make a deck</span>
-          <span class="meta">any theme, with Claude</span>
+          <span class="meta">paste a list or ask Claude</span>
         </button>
       </li>
     </ul>

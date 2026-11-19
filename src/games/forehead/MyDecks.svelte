@@ -25,12 +25,12 @@
     <div class="empty pop-in">
       <span class="big" aria-hidden="true">🃏</span>
       <h3>No decks of your own yet</h3>
-      <p class="muted">Make one from any theme with Claude in seconds, or type the words in yourself. Your decks show up first on the setup screen.</p>
+      <p class="muted">Paste a list, type the words in yourself, or ask Claude. Your decks show up first on the setup screen.</p>
     </div>
   {/if}
 
   {#snippet actions()}
-    <Button size="lg" onclick={() => go('/forehead/make')}>✨ Make with Claude</Button>
+    <Button size="lg" onclick={() => go('/forehead/make')}>✨ Make a deck</Button>
     <Button variant="secondary" onclick={() => go('/forehead/deck?id=new')}>Type a deck by hand</Button>
   {/snippet}
 </Screen>
