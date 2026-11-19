@@ -3,6 +3,11 @@
 // it finds at once, so a new pack needs one fix-up pass, not one run per mistake.
 import { describe, expect, it, vi } from 'vitest';
 import { dedupe, gibberishPacks, quizBoards, slugify, spectrumPacks, wordDecks } from './content';
+import { tabooPacks } from './content';
+import { quickPacks } from './content';
+import { snarkPacks } from './content';
+import { cardId, cardProblems } from '../games/taboo/cards';
+import { songPacks } from './content';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Small words a phrase may share with its answer without giving it away. */
@@ -164,5 +169,103 @@ describe('own packs that share an id with a built-in', () => {
     expect(customDecks.isEdited(builtinId)).toBe(false);
     expect(customDecks.all().map((d) => d.id)).toEqual(['my-' + builtinId]);
     vi.unstubAllGlobals();
+  });
+});
+
+describe("Don't Say It packs", () => {
+  it('have five fair banned words per card and never repeat a word across packs', () => {
+    const problems: string[] = [];
+    const packs = tabooPacks();
+    packBasics(packs, problems);
+    const seen = new Map<string, string>();
+    for (const p of packs) {
+      if (p.cards.length < 20) problems.push(`${p.id}: only ${p.cards.length} cards (need 20+)`);
+      for (const c of p.cards) {
+        for (const why of cardProblems(c)) problems.push(`${p.id}: "${c.word}": ${why}`);
+        const prev = seen.get(cardId(c));
+        if (prev) problems.push(`${p.id}: "${c.word}" already exists in ${prev}`);
+        seen.set(cardId(c), p.id);
+      }
+    }
+    expect(packs.slice(0, 3).map((p) => p.id)).toEqual(['classic', 'pop-culture', 'after-dark']);
+    expect(problems).toEqual([]);
+  });
+});
+
+describe("Brain Freeze packs", () => {
+  it("are 2–8 word lowercase prompts with no trailing punctuation, never repeated across packs", () => {
+    const problems: string[] = [];
+    const packs = quickPacks();
+    packBasics(packs, problems);
+    const seen = new Map<string, string>();
+    for (const p of packs) {
+      if (!Array.isArray(p.prompts) || p.prompts.length < 20) { problems.push(`${p.id}: only ${p.prompts?.length ?? 0} prompts (need 20+)`); continue; }
+      for (const q of p.prompts) {
+        if (typeof q !== "string" || !q.trim()) { problems.push(`${p.id}: an empty prompt`); continue; }
+        const n = words(q);
+        if (n < 2 || n > 8) problems.push(`${p.id}: "${q}" has ${n} words (need 2–8)`);
+        if (!/^[a-z]/.test(q)) problems.push(`${p.id}: "${q}" should start with a lowercase letter (it follows "Name 3")`);
+        if (/^name\s+(3|three)\b/i.test(q)) problems.push(`${p.id}: "${q}" should not include "Name 3"`);
+        if (/[.,;:!?…]$/.test(q.trim())) problems.push(`${p.id}: "${q}" ends in punctuation`);
+        if (q !== q.trim().replace(/\s+/g, " ")) problems.push(`${p.id}: "${q}" has extra spaces`);
+        const prev = seen.get(key(q));
+        if (prev) problems.push(`${p.id}: "${q}" already exists in ${prev}`);
+        seen.set(key(q), p.id);
+      }
+    }
+    expect(packs.slice(0, 3).map((p) => p.id)).toEqual(["classic", "pop-culture", "after-dark"]);
+    expect(problems).toEqual([]);
+  });
+});
+
+describe('Snark Tank packs', () => {
+  it('are 3–14 word prompts, never repeated across packs', () => {
+    const problems: string[] = [];
+    const packs = snarkPacks();
+    packBasics(packs, problems);
+    const seen = new Map<string, string>();
+    for (const p of packs) {
+      if (!Array.isArray(p.prompts) || p.prompts.length < 20) { problems.push(`${p.id}: only ${p.prompts?.length ?? 0} prompts (need 20+)`); continue; }
+      for (const q of p.prompts) {
+        if (typeof q !== 'string' || !q.trim()) { problems.push(`${p.id}: an empty prompt`); continue; }
+        const n = words(q);
+        if (n < 3 || n > 14) problems.push(`${p.id}: "${q}" has ${n} words (need 3–14)`);
+        if (q !== q.trim().replace(/\s+/g, ' ')) problems.push(`${p.id}: "${q}" has extra spaces`);
+        const prev = seen.get(key(q));
+        if (prev) problems.push(`${p.id}: "${q}" already exists in ${prev}`);
+        seen.set(key(q), p.id);
+      }
+    }
+    expect(packs.slice(0, 2).map((p) => p.id)).toEqual(['classic', 'after-dark']);
+    expect(problems).toEqual([]);
+  });
+});
+
+describe('Earworm packs', () => {
+  it('hold real YouTube ids and start times, and never repeat a video or a song across packs', () => {
+    const problems: string[] = [];
+    const packs = songPacks();
+    packBasics(packs, problems);
+    const ids = new Map<string, string>();
+    const songs = new Map<string, string>();
+    for (const p of packs) {
+      if (!Array.isArray(p.songs) || p.songs.length < 10) { problems.push(`${p.id}: only ${p.songs?.length ?? 0} songs (need 10+)`); continue; }
+      for (const s of p.songs) {
+        const name = `"${s.title}" by ${s.artist}`;
+        if (!s.title?.trim() || !s.artist?.trim()) problems.push(`${p.id}: a song is missing its title or artist (${JSON.stringify(s)})`);
+        if (!/^[A-Za-z0-9_-]{11}$/.test(s.youtube ?? '')) problems.push(`${p.id}: ${name}: "${s.youtube}" is not an 11-character YouTube video id`);
+        if (typeof s.start !== 'number' || !Number.isInteger(s.start) || s.start < 0) problems.push(`${p.id}: ${name}: start should be a whole number of seconds, 0 or more`);
+        const prevId = ids.get(s.youtube);
+        if (prevId) problems.push(`${p.id}: ${name}: video ${s.youtube} already exists in ${prevId}`);
+        ids.set(s.youtube, p.id);
+        // Same title by the same lead artist, whoever is featured ("Timber" by Pitbull ft. Kesha).
+        const k = `${key(s.title ?? '')} | ${key((s.artist ?? '').split(/\s+(?:ft\.|feat\.|featuring|&|and|x)\s+/i)[0])}`;
+        const prevSong = songs.get(k);
+        if (prevSong) problems.push(`${p.id}: ${name} already exists in ${prevSong}`);
+        songs.set(k, p.id);
+      }
+    }
+    expect(packs.slice(0, 3).map((p) => p.id)).toEqual(['2000s-bangers', '2010s-hits', 'throwbacks']);
+    expect(problems).toEqual([]);
   });
 });

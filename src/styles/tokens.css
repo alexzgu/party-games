@@ -18,6 +18,10 @@
   --c-dial: #2fd6c3;
   --c-gibberish: #b57bff;
   --c-quiz: #ffc93c;
+  --c-taboo: #ff5c8a;
+  --c-quick: #8be04e;
+  --c-snark: #38bdf8;
+  --c-song: #e879f9;
   --c-good: #3ddc84;
   --c-pass: #ffb020;
   --c-bad: #ff4d6d;
@@ -26,6 +30,12 @@
   /* Spectrum's two rival teams: warm sunrise vs cool moonlight, apart for red-green colour blindness too. */
   --c-team-a: #ff8547;
   --c-team-b: #5b8cff;
+
+  /* Big Board's 20 team colours, neighbours far apart; each is readable as text on --bg and --surface. */
+  --team-1: #ff8547; --team-2: #5b8cff; --team-3: #3ddc84; --team-4: #b57bff; --team-5: #facc15;
+  --team-6: #f472b6; --team-7: #2dd4bf; --team-8: #f87171; --team-9: #38bdf8; --team-10: #a3e635;
+  --team-11: #e879f9; --team-12: #d6a77a; --team-13: #a5b4fc; --team-14: #6ee7b7; --team-15: #fda4af;
+  --team-16: #67e8f9; --team-17: #d8b4fe; --team-18: #c5c55a; --team-19: #fdba74; --team-20: #cbd5e1;
 
   --accent: var(--c-gibberish);
   --on-accent: #120d24;
@@ -96,12 +106,21 @@
   --c-dial: #0f766e;
   --c-gibberish: #7c3aed;
   --c-quiz: #946200;
+  --c-taboo: #be123c;
+  --c-quick: #3f7d10;
+  --c-snark: #0369a1;
+  --c-song: #a21caf;
   --c-good: #15803d;
   --c-pass: #a85207;
   --c-bad: #d1193f;
   --c-gold: #a16207;
   --c-team-a: #c2410c;
   --c-team-b: #1d4ed8;
+  /* Big Board teams: deeper versions that pass WCAG AA as text on the light page. */
+  --team-1: #c2410c; --team-2: #1d4ed8; --team-3: #15803d; --team-4: #7c3aed; --team-5: #854d0e;
+  --team-6: #be185d; --team-7: #0f766e; --team-8: #b91c1c; --team-9: #0369a1; --team-10: #3f6212;
+  --team-11: #a21caf; --team-12: #92400e; --team-13: #4338ca; --team-14: #047857; --team-15: #9f1239;
+  --team-16: #0e7490; --team-17: #6b21a8; --team-18: #5c5c0a; --team-19: #9a3412; --team-20: #475569;
 
   --on-accent: #ffffff;
 

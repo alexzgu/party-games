@@ -115,3 +115,34 @@ export function dedupe(words: string[]): string[] {
   }
   return out;
 }
+
+// Don't Say It (taboo): each card is a word to describe and the five words the describer may not say.
+export interface TabooCard { word: string; banned: string[] }
+export interface TabooPack { id: string; name: string; blurb: string; cards: TabooCard[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+const tabooFiles = import.meta.glob<TabooPack>('../content/taboo/*.json', { eager: true, import: 'default' });
+const builtinTaboo = ordered(Object.values(tabooFiles), ['classic', 'pop-culture', 'after-dark']);
+export const customTaboo = customStore<TabooPack>('custom:taboo', builtinTaboo);
+export const tabooPacks = (): TabooPack[] => merged(customTaboo.saved(), builtinTaboo);
+
+// Brain Freeze: "Name 3 …" prompts, stored without the lead-in ("things you'd find in a fridge").
+export interface QuickPack { id: string; name: string; blurb: string; prompts: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+const quickFiles = import.meta.glob<QuickPack>('../content/quick/*.json', { eager: true, import: 'default' });
+const builtinQuick = ordered(Object.values(quickFiles), ['classic', 'pop-culture', 'after-dark']);
+export const customQuick = customStore<QuickPack>('custom:quick', builtinQuick);
+export const quickPacks = (): QuickPack[] => merged(customQuick.saved(), builtinQuick);
+
+// Earworm (song): clips streamed from YouTube on the host phone; a pack holds only titles,
+// artists, YouTube video ids and the second each clip starts at (the hook).
+export interface Song { title: string; artist: string; /** 11-character YouTube video id */ youtube: string; /** Seconds into the video where the clip starts. */ start: number }
+export interface SongPack { id: string; name: string; blurb: string; songs: Song[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+const songFiles = import.meta.glob<SongPack>('../content/song/*.json', { eager: true, import: 'default' });
+const builtinSongs = ordered(Object.values(songFiles), ['2000s-bangers', '2010s-hits', 'throwbacks']);
+export const customSongs = customStore<SongPack>('custom:songs', builtinSongs);
+export const songPacks = (): SongPack[] => merged(customSongs.saved(), builtinSongs);
+
+// Snark Tank: prompts players write funny answers to ("The worst thing to hear from your pilot").
+export interface SnarkPack { id: string; name: string; blurb: string; prompts: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+const snarkFiles = import.meta.glob<SnarkPack>('../content/snark/*.json', { eager: true, import: 'default' });
+const builtinSnark = ordered(Object.values(snarkFiles), ['classic', 'after-dark']);
+export const customSnark = customStore<SnarkPack>('custom:snark', builtinSnark);
+export const snarkPacks = (): SnarkPack[] => merged(customSnark.saved(), builtinSnark);

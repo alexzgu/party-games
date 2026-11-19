@@ -10,11 +10,13 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:content": "vitest run src/lib/content.test.ts",
-    "list": "node scripts/list-content.mjs"
+    "list": "node scripts/list-content.mjs",
+    "check:songs": "node scripts/check-songs.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tsconfig/svelte": "^5.0.9",
+    "peer": "1.0.2",
     "playwright-core": "^1.65.1",
     "svelte": "^5.58.0",
     "svelte-check": "^4.7.8",
@@ -27,6 +29,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^1.10.0",
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",
-    "@fontsource-variable/inter": "^5.3.0"
+    "@fontsource-variable/inter": "^5.3.0",
+    "peerjs": "1.5.5",
+    "qrcode-generator": "2.0.4"
   }
 }

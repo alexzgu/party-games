@@ -26,7 +26,8 @@ theme is unclear; pick sensible defaults and say what you chose.
    - Big Board (`quiz/`): a team quiz board a host reads aloud. Items: categories, each a
      column of clue + answer, easiest first.
 2. **Size** if not given: Heads Down. 60 words, Spectrum 40 cards, Inn Co Hear Ant 40 cards,
-   Big Board 5 categories × 5 clues (any 3–6 × 3–5 works; every category the same length).
+   Big Board 5 categories × 5 clues (any 3–6 × 3–5 works; every category the same length; the
+   phone's own board maker allows 1–8 × 1–10, but a built-in board in the repo stays 3–6 × 3–5).
    **List what exists first**: `npm run list -- <folder>` prints every word, scale or answer
    already in that game (and, for Inn Co Hear Ant, the hint categories in use). Spectrum
    scales and Inn Co Hear Ant answers must be new across *all* packs of that game, not just
@@ -79,6 +80,82 @@ theme is unclear; pick sensible defaults and say what you chose.
    for your commit is `completed` / `success` (about 1–2 minutes), then tell the asker:
    "Live. Go back to the main menu, wait a moment, then open <game> and tick <pack name> in
    the pack list" (Big Board: "pick <board name> in the Board list"). Mention the 3 to 5 items you are least sure about.
+
+### Earworm song packs (`song/`), made only by a Claude Code chat on this laptop
+
+Earworm plays a few seconds of each song from YouTube on the host phone; a pack holds only
+titles, artists, YouTube video ids and start seconds (never audio or video files). These packs
+need `yt-dlp` and network access, so they are made by a chat on the owner's laptop, not on a
+phone. Default size 35 songs (30–40). Run `npm run list -- song` first: a video id, or the same
+title by the same lead artist, may appear in only one song pack.
+
+```json
+{"id": "pop-2020s", "name": "2020s Pop", "blurb": "The last few summers", "added": "2026-11-20", "songs": [{"title": "Levitating", "artist": "Dua Lipa", "youtube": "VIDEO_ID_11", "start": 52}]}
+```
+
+- **Songs**: ones most US 20-somethings would name from a few seconds of the hook. Title as
+  the artist releases it; `artist` the main artist, features as "A ft. B".
+- **Video id**: `yt-dlp --flat-playlist --print "%(id)s %(title)s %(channel)s" "ytsearch5:<artist> <title> official"`.
+  Prefer the artist's own channel or VEVO (official video), else the official audio ("- Topic").
+  Never lyric, live, cover, sped-up, fan or re-upload videos.
+- **Start** (`start`, whole seconds): the hook, normally the first chorus. Read the "most
+  replayed" heatmap: `yt-dlp --skip-download --print "%(heatmap)j" -- <id>` gives bins of
+  `start_time` and `value`. Ignore the first ~10% of the video (everyone starts there, so it is
+  always high) and take the start of the clearest rise to a peak after it (the chorus starts
+  where the replays jump), not the bin where the value is highest. No heatmap: estimate the
+  first chorus and say so. YouTube rate-limits metadata requests: look videos up one at a time
+  with a few seconds between them.
+- **Check**: `npm run test:content` (ids are 11 characters, starts are whole seconds, no repeats
+  across song packs), then `npm run check:songs` (asks YouTube whether every video may play
+  inside another site; replace each one it lists and rerun until none are left). Then publish
+  and confirm as in steps 6 and 7, and name the songs whose start you estimated.
+
+### Don't Say It packs (`taboo/`)
+
+Two teams; the describer gets their team to say the word without saying it or any of the five
+banned words under it. Default size 60 cards. List what exists first (`npm run list -- taboo`):
+a word must be new across *all* Don't Say It packs. Shape:
+
+```json
+{"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "added": "2026-11-20", "cards": [{"word": "Dining hall", "banned": ["Food", "Eat", "Meal plan", "Cafeteria", "Tray"]}]}
+```
+
+Quality bar: words most of the room knows, 1–3 words, Title Case for names, sentence case
+otherwise ("Road trip"); exactly 5 banned words of 1–3 words each, and they must be the
+*obvious* clues (the first five things anyone would say), so the game is hard in the fun way.
+No banned word may contain the word or sit inside it ("Pizza" cannot ban "Pizzas"); the gate
+checks this with `src/games/taboo/cards.ts`. "After Dark": cheeky, never explicit.
+
+### Brain Freeze packs (`quick/`)
+
+A player has a few seconds to name 3 things that fit a prompt. Default size 60 prompts. List
+what exists first (`npm run list -- quick`): a prompt must be new across *all* Brain Freeze
+packs. The app shows "Name 3" in front of each prompt, so store only the rest:
+
+```json
+{"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "added": "2026-11-20", "prompts": ["things in a dorm room", "excuses for missing class"]}
+```
+
+Quality bar: 2–8 words, starting lowercase (names keep their capitals inside: "songs by Taylor
+Swift"), no "Name 3", no end punctuation. Easy to start, hard to finish in 5 seconds: everyone
+knows at least three answers, but it is specific enough that people blank under pressure
+("things you put on a hot dog", not "foods"; not "Oscar-nominated editors"). "After Dark":
+cheeky, never explicit.
+
+### Snark Tank packs (`snark/`)
+
+Everyone writes a funny answer to a prompt on their own phone, then the room votes. Default
+size 80 prompts. List what exists first (`npm run list -- snark`): a prompt must be new across
+*all* Snark Tank packs. Shape:
+
+```json
+{"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "added": "2026-11-20", "prompts": ["The worst thing to hear from your RA", "A terrible name for a dorm"]}
+```
+
+Quality bar: 3–14 words, sentence case, no end punctuation, original wording (never a
+commercial game's prompts). Open-ended so there are a hundred funny answers, not one right one
+("A terrible name for a boat", "What your dog is thinking during a thunderstorm"); nothing that
+needs inside knowledge unless the pack is about the group. "After Dark": cheeky, never explicit.
 
 ## Other changes
 

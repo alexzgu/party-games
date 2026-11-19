@@ -12,6 +12,10 @@
     dial: () => import('./games/dial/Game.svelte'),
     gibberish: () => import('./games/gibberish/Game.svelte'),
     quiz: () => import('./games/quiz/Game.svelte'),
+    taboo: () => import('./games/taboo/Game.svelte'),
+    quick: () => import('./games/quick/Game.svelte'),
+    snark: () => import('./games/snark/Game.svelte'),
+    song: () => import('./games/song/Game.svelte'),
   };
 
   const segment = $derived(route.path.split('/').filter(Boolean)[0] ?? '');

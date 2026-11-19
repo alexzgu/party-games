@@ -1,0 +1,136 @@
+import { describe, expect, it } from 'vitest';
+import { endedRecord, finish, gameRecord, judge, newGame, rematch, reveal, startSteal, timeUp, undo, validGame, validSetup, winner, type GameState } from './logic';
+
+const opts = { target: 2, seconds: 5, steal: true, packIds: ['classic'] };
+const start = (steal = true) => newGame(['Ana', 'Ben', 'Cy'], { ...opts, steal });
+const scores = (s: GameState) => s.players.map((p) => p.score);
+/** One turn: reveal, run out the clock, judge. */
+const turn = (s: GameState, got: boolean, prompt = 'pizza toppings') => judge(timeUp(reveal(s, prompt)), got);
+
+describe('Brain Freeze rules', () => {
+  it('needs two players', () => {
+    expect(() => newGame(['Ana'], opts)).toThrow();
+    expect(newGame(['Ana', 'Ben'], opts).players).toHaveLength(2);
+  });
+
+  it('gives the point to whoever is up and passes the phone round the circle', () => {
+    let s = turn(start(), true);
+    expect(scores(s)).toEqual([1, 0, 0]);
+    expect(s.phase).toBe('handoff');
+    expect(s.turn).toBe(1);
+    s = turn(s, false);
+    s = judge(timeUp(startSteal(s)), false); // Cy's steal fails too
+    expect(s.turn).toBe(2);
+    expect(scores(s)).toEqual([1, 0, 0]);
+  });
+
+  it('a miss with Steal on goes to the next player, same prompt, and their point counts', () => {
+    const live = reveal(start(), 'pizza toppings');
+    const missed = judge(timeUp(live), false);
+    expect(missed.phase).toBe('steal');
+    expect(missed.actor).toBe(1);
+    const stealLive = startSteal(missed);
+    expect(stealLive.phase).toBe('live');
+    expect(stealLive.prompt).toBe('pizza toppings');
+    expect(stealLive.timeLeft).toBe(5000);
+    const stolen = judge(stealLive, true); // Ben got 3 before the buzzer
+    expect(scores(stolen)).toEqual([0, 1, 0]);
+    expect(stolen.turn).toBe(1); // Ben's own turn is next
+    expect(stolen.log).toEqual([{ prompt: 'pizza toppings', player: 0, stealer: 1, scorer: 1 }]);
+  });
+
+  it('a miss with Steal off ends the turn with no point', () => {
+    const s = turn(start(false), false);
+    expect(s.phase).toBe('handoff');
+    expect(scores(s)).toEqual([0, 0, 0]);
+    expect(s.log[0]).toEqual({ prompt: 'pizza toppings', player: 0, stealer: -1, scorer: -1 });
+  });
+
+  it('undo takes back the last judgement, point and all, from the hand-off or the steal', () => {
+    const judging = timeUp(reveal(start(), 'pizza toppings'));
+    const scored = judge(judging, true);
+    const back = undo(scored);
+    expect(back.phase).toBe('judge');
+    expect(scores(back)).toEqual([0, 0, 0]);
+    expect(back.log).toEqual([]);
+    expect(back.turn).toBe(0);
+    expect(undo(judge(judging, false)).phase).toBe('judge');
+    // Once the next prompt is up there is nothing left to undo.
+    const next = reveal(scored, 'kinds of soup');
+    expect(next.prev).toBeNull();
+    expect(undo(next)).toBe(next);
+  });
+
+  it('wins at the target, through the hand-off', () => {
+    let s = turn(start(), true); // Ana 1
+    s = turn(s, true); // Ben 1
+    s = turn(s, true); // Cy 1
+    s = turn(s, true); // Ana 2
+    expect(winner(s)).toBe(0);
+    expect(s.phase).toBe('handoff');
+    expect(reveal(s, 'kinds of soup')).toBe(s); // no more prompts once someone has won
+    const w = finish(s);
+    expect(w.phase).toBe('win');
+    expect(undo(w)).toBe(w);
+    const r = rematch(w);
+    expect(scores(r)).toEqual([0, 0, 0]);
+    expect(r.phase).toBe('handoff');
+    expect(r.log).toEqual([]);
+    expect(r.turn).toBe(1); // Ana took the last turn, so Ben starts the rematch
+  });
+
+  it('remembers dealt prompts so none comes up twice in a game', () => {
+    const s = turn(turn(start(false), true, 'Pizza  toppings'), false, 'kinds of soup');
+    expect(s.dealt).toEqual(['pizza toppings', 'kinds of soup']);
+  });
+});
+
+describe('Brain Freeze history', () => {
+  it('records a win with every score and a line per turn', () => {
+    let s = turn(start(), true, 'pizza toppings'); // Ana
+    s = judge(startSteal(judge(timeUp(reveal(s, 'kinds of soup')), false)), true); // Ben misses, Cy steals
+    s = turn(s, true, 'birds'); // Cy
+    s = finish(s);
+    const r = gameRecord(s, ['Classic']);
+    expect(r.game).toBe('quick');
+    expect(r.title).toBe('Cy won 2–1–0');
+    expect(r.finished).toBe(true);
+    expect(r.scores).toEqual([{ name: 'Cy', score: 2 }, { name: 'Ana', score: 1 }, { name: 'Ben', score: 0 }]);
+    expect(r.details).toEqual(['Name 3 pizza toppings: Ana ✓', 'Name 3 kinds of soup: Ben ✗, Cy stole it', 'Name 3 birds: Cy ✓']);
+  });
+
+  it('records a thrown-away game as ended early, and nothing when no turn was played', () => {
+    expect(endedRecord(start(), [])).toBeNull();
+    expect(endedRecord(reveal(start(), 'birds'), [])).toBeNull();
+    const s = turn(start(false), true);
+    const r = endedRecord(s, ['Classic']);
+    expect(r?.title).toBe('Ana led 1–0–0');
+    expect(r?.finished).toBe(false);
+    expect(endedRecord(finish(turn(turn(turn(s, false), false), true)), [])).toBeNull(); // already won: recorded by the win
+  });
+});
+
+describe('Brain Freeze saves', () => {
+  it('resumes a saved game, undo included, through JSON', () => {
+    const s = judge(timeUp(reveal(start(), 'pizza toppings')), false);
+    const back = validGame(JSON.parse(JSON.stringify(s)));
+    expect(back).toEqual(s);
+    expect(undo(back!).phase).toBe('judge');
+  });
+
+  it('rejects damaged saves instead of breaking the screen', () => {
+    const s = reveal(start(), 'birds');
+    expect(validGame(null)).toBeNull();
+    expect(validGame({ ...s, v: 2 })).toBeNull();
+    expect(validGame({ ...s, players: [{ name: 'Solo', score: 0 }] })).toBeNull();
+    expect(validGame({ ...s, phase: 'reveal' })).toBeNull();
+    expect(validGame({ ...s, prompt: null })).toBeNull();
+    expect(validGame({ ...s, actor: 7 })).toBeNull();
+    expect(validGame({ ...s, prev: { broken: true } })?.prev).toBeNull();
+  });
+
+  it('checks setup choices field by field', () => {
+    expect(validSetup(null)).toEqual({ packIds: null, seconds: 5, target: 7, steal: true });
+    expect(validSetup({ seconds: 7, target: 99, steal: false, packIds: ['a'] })).toEqual({ packIds: ['a'], seconds: 7, target: 7, steal: false });
+  });
+});
