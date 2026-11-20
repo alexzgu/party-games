@@ -158,6 +158,24 @@ commercial game's prompts). Open-ended so there are a hundred funny answers, not
 ("A terrible name for a boat", "What your dog is thinking during a thunderstorm"); nothing that
 needs inside knowledge unless the pack is about the group. "After Dark": cheeky, never explicit.
 
+### Word Salad packs (`salad/`)
+
+Players describe a secret by filling blanks with word choices. Run `npm run list -- salad`
+first. Answers and accepted variants must be unique across packs. The host can select built-in
+packs in settings. Classic has 64 secrets, 16 in each category, with roughly a quarter easy,
+half medium and a quarter hard. Use that mix for new packs so a room gets varied choices.
+
+```json
+{"id":"food-and-friends","name":"Food and Friends","blurb":"Familiar dishes and faces","added":"2026-11-20","secrets":[{"answer":"Taco","category":"thing","level":"easy","also":["Tacos"],"words":{"noun":["a shell","a tortilla","a handheld meal"],"adjective":["crunchy","folded","spicy"]}}]}
+```
+
+Categories are `person` (real or fictional), `place`, `thing` and `story` (film, show, book or
+game). Write 3–8 fitting choices per slot you use, including every slot in that category's
+opening frame in `src/games/salad/words.ts`. Include articles in nouns when needed, use base-form
+verbs, and write places and times as phrases like “by a river” and “after dinner.” A clue choice
+can never contain the answer or one of its words. Read your choices in the frames to hear how
+they fit, and run `npm run test:content`.
+
 ## Other changes
 
 Follow `SPEC.md`. Keep each game in `src/games/<id>/`, shared code in `src/lib/` and

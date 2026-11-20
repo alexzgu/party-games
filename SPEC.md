@@ -479,36 +479,36 @@ and drops the link on a JSON message of 16,300 bytes or more.)
 
 ## Game 9 — Word Salad (`salad`)
 
-Rules of Blather 'Round, our content. 2–8 players on their own phones plus a host screen; two
-rounds; everyone presents once per round. Individual scores (as in the original); the end screen
-also shows how many secrets the room solved (a display only, no win or loss).
+2–8 players join a host screen by code or QR using the shared room link. Two rounds, with
+one turn per player in seat order. The host chooses built-in packs in Settings.
 
-- **Pick** (20 s): each phone privately sees three secrets of its category mix, one marked
-  Easy; one reshuffle per round; time out → the first is taken. Categories: person (real or
-  fictional), place, thing, story (film, show, book, game).
-- **Prepare** (30 s, all at once): each player builds an opening sentence for their secret by
-  tapping one choice into each blank of their category's opening frame. Time out → the first
-  choice in each blank.
-- **Present** (one player at a time, in seat order; 75 s each, *house*): the host shows the
-  presenter's opening sentence. The presenter's phone offers follow-up frames, one at a time
-  with a Skip to the next; each blank offers 6 words (*house*): words that fit the secret mixed
-  with words from the shared lists. A finished sentence appears on the host at once. Comparison
-  frames ("It's like ___", "It's not like ___", "It's ___ but ___") take a guess already made
-  by the room as a blank. Everyone else types guesses as often as they like; each guess appears
-  on the host and the presenter's phone with its author. The turn ends on the first right
-  guess or the clock.
-- **Right guess**: case, punctuation, a leading "the/a/an" and one typo (two past 10 letters)
-  are forgiven; each secret lists accepted variants.
-- **Points** (*house* curve; the original confirms only "faster pays more" and double round 2):
-  presenter and first right guesser each get 1000 at the start falling evenly to 200 at the
-  buzzer; an Easy secret pays half; round 2 doubles; each wrong guess the presenter used in a
-  comparison earns its author 100 if the secret is then solved. Unsolved: the answer is shown,
-  nobody scores. Highest total wins; ties share first.
-- **Content** (`src/content/salad/*.json`): secrets `{answer, category, level: easy|medium|hard,
-  also: [variants], words: {slot: [fitting words]}}`; frames and shared word lists live in
-  `src/games/salad/words.ts`. Pilot: 64 secrets (16 per category).
-- Host controls, reconnects, pause, late joiners (guess but do not present until next round),
-  demo screens as in Snark Tank.
+- **Pick** (20 s): privately choose one of three secrets, including one Easy and a mix of
+  categories (person, place, thing, story). One reshuffle per player each round. At the
+  deadline the first choice is taken for anyone who has yet to pick.
+- **Prepare** (30 s): everyone builds an opening clue at once. Each blank offers six shuffled
+  words, up to three tailored to the secret and the rest drawn from plain shared vocabulary.
+  More words redeals the decoys for one blank. At the deadline any empty blank takes its first choice.
+- **Present** (75 s): show the opening clue, then offer follow-up frames one at a time. The
+  presenter can publish each completed sentence or skip the frame. Comparison frames use
+  previous guesses as blanks. Other phones can guess freely. Published clues and guesses
+  with their authors appear on the host and phones. The first correct guess ends the turn.
+  Matching ignores case, punctuation, spaces and a leading article. Accepted variants use
+  the same rules. One typo is allowed, or two for an answer longer than ten letters.
+- **Scoring**: the presenter and first correct guesser each earn 1,000 points at the start of
+  the turn, falling linearly toward 200, rounded to the nearest point after modifiers. Easy
+  halves that payout and round two doubles it. Each distinct wrong guess used in a published
+  comparison pays its author 100 on a solve. Unsolved turns reveal the answer and pay zero.
+  Reveal lasts 9 s and round scores last 15 s. Final standings share places on ties and show
+  the number of secrets the room solved. Results are saved to History on the host.
+- **Room controls**: pause, skip, remove a player, close the room or rematch. The host saves
+  the room; phones reconnect to their seats and scores. Late arrivals can guess immediately
+  and present starting next round. An offline presenter is skipped when their turn comes
+  up, or revealed without points after 10 s offline during their turn.
+- **Content**: `src/content/salad/*.json` holds packs of secrets with an answer, category,
+  difficulty, accepted variants and fitting words for the sentence slots in `words.ts`.
+- **Demos**: use `#/salad/host?demo=present` or `#/salad/join?demo=guess`. Both accept
+  `lobby`, `pick`, `prepare`, `present`, `reveal`, `unsolved`, `scores`, `over` and
+  `paused`. The phone also has `join`, `late`, `wait`, `comparison` and `guess` views.
 
 ## Game 10 — Doodle Brawl (`brawl`)
 
