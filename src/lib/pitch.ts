@@ -50,6 +50,12 @@ const LEARN_RATIO = 0.5;
 
 const DEG = 180 / Math.PI;
 const SLOPE_MS = 100;
+/** A gap longer than this (s) between readings (the page was hidden, the sensor stalled) restarts from gravity. */
+const MAX_GAP_S = 0.25;
+/** Steps longer than this (s) are integrated as this long: a late reading must not overshoot. */
+const MAX_STEP_S = 0.1;
+/** A different edge must point up this long before the tracker believes it. */
+const EDGE_HOLD_MS = 150;
 
 export function pitchOf(v: Vec3): number | null {
   const m = Math.hypot(v[0], v[1], v[2]);
@@ -90,8 +96,10 @@ export class PitchTracker {
   pitch = NaN;
   /** °/s: the gyroscope's pitch rate once the layout is known, else the pitch's own rate. */
   rate = 0;
-  private lastT = NaN;
+  private lastT = -Infinity;
   private edge: Edge | null = null;
+  private pendingEdge: Edge | null = null;
+  private pendingSince = 0;
   /** Recent gravity pitch, for a rate without a gyroscope. */
   private trail: { t: number; p: number }[] = [];
   private blends = GYRO_LAYOUTS.map(() => NaN);
@@ -102,26 +110,57 @@ export class PitchTracker {
   constructor(public layout: GyroLayout | null = null) {}
 
   update(s: MotionSample): boolean {
+    if (!Number.isFinite(s.t) || s.t <= this.lastT) return false; // a repeated or backwards time
     const grav = s.lin ? sub(s.g, s.lin) : s.g;
     const ref = pitchOf(grav) ?? pitchOf(s.g);
     if (ref == null) return false;
-    // The steadier gravity estimate decides the edge; the raw reading swings during a nod.
-    this.edge = edgeOf(grav, this.edge);
-    const dt = Number.isFinite(this.lastT) ? Math.min(0.1, Math.max(0, (s.t - this.lastT) / 1000)) : 0;
+    const gap = (s.t - this.lastT) / 1000;
     this.lastT = s.t;
+    // The steadier gravity estimate decides the edge; the raw reading swings during a nod.
+    this.followEdge(edgeOf(grav, this.edge), s.t);
+    if (!(gap <= MAX_GAP_S)) return this.restart(ref, s.t);
+    const dt = Math.min(MAX_STEP_S, gap);
     const rot = s.rot && s.rot.every(Number.isFinite) ? s.rot : null;
-    if (rot && this.edge) this.learn(rot, this.edge, ref, dt);
-    const prev = this.pitch;
-    if (this.layout && this.edge && rot && dt > 0 && Number.isFinite(prev)) {
-      const w = nodRate(rot, this.edge, this.layout);
+    if (rot && this.edge && this.learn(rot, this.edge, ref, dt)) {
+      this.pitch = this.blends[this.layoutIndex()]; // switching layout: continue from its own blend
+    }
+    const w = this.layout && this.edge && s.rot ? nodRate(s.rot, this.edge, this.layout) : NaN;
+    if (Number.isFinite(w) && Number.isFinite(this.pitch)) {
       const a = BLEND_S / (BLEND_S + dt);
-      this.pitch = a * (prev + w * dt) + (1 - a) * ref;
+      this.pitch = a * (this.pitch + w * dt) + (1 - a) * ref;
       this.rate = w;
     } else {
       this.pitch = ref;
       this.rate = this.slope(ref, s.t);
     }
     return true;
+  }
+
+  /** After a gap: start again from gravity, at rest, with nothing integrated across it. */
+  private restart(ref: number, t: number): boolean {
+    this.pitch = ref;
+    this.rate = 0;
+    this.trail = [{ t, p: ref }];
+    this.blends = GYRO_LAYOUTS.map(() => NaN);
+    return true;
+  }
+
+  /** Believes a new edge only once it has held for EDGE_HOLD_MS (the first one at once). */
+  private followEdge(e: Edge | null, t: number): void {
+    if (!this.edge || e === this.edge) {
+      this.edge = e;
+      this.pendingEdge = null;
+    } else if (e !== this.pendingEdge) {
+      this.pendingEdge = e;
+      this.pendingSince = t;
+    } else if (t - this.pendingSince >= EDGE_HOLD_MS) {
+      this.edge = e;
+      this.pendingEdge = null;
+    }
+  }
+
+  private layoutIndex(): number {
+    return this.layout ? GYRO_LAYOUTS.findIndex((l) => l.map === this.layout!.map && l.sign === this.layout!.sign) : -1;
   }
 
   /** Pitch rate over the last SLOPE_MS: one reading to the next jitters by ±150°/s at rest. */
@@ -132,25 +171,30 @@ export class PitchTracker {
     return t > first.t ? ((p - first.p) * 1000) / (t - first.t) : 0;
   }
 
-  /** Runs every layout's blend and keeps the one that tracks gravity best, while on a forehead. */
-  private learn(rot: Vec3, edge: Edge, ref: number, dt: number): void {
+  /**
+   * Runs every layout's blend and keeps the one that tracks gravity best, while on a forehead.
+   * Returns true when it switched to a different layout.
+   */
+  private learn(rot: Vec3, edge: Edge, ref: number, dt: number): boolean {
     const onForehead = Math.abs(ref) < 50 && edge.startsWith('x');
     const a = BLEND_S / (BLEND_S + dt);
     const keep = Math.exp(-dt / LEARN_S);
     GYRO_LAYOUTS.forEach((l, i) => {
       const prev = this.blends[i];
-      if (!onForehead || !Number.isFinite(prev) || dt === 0) { this.blends[i] = ref; return; }
+      if (!onForehead || !Number.isFinite(prev)) { this.blends[i] = ref; return; }
       this.blends[i] = a * (prev + nodRate(rot, edge, l) * dt) + (1 - a) * ref;
       this.errors[i] = keep * this.errors[i] + Math.abs(this.blends[i] - ref) * dt;
     });
-    if (!onForehead) return;
+    if (!onForehead) return false;
     this.evidence = keep * this.evidence + (Math.abs(rot[0]) + Math.abs(rot[1]) + Math.abs(rot[2])) * dt;
-    if (this.evidence < LEARN_MIN_DEG) return;
+    if (this.evidence < LEARN_MIN_DEG) return false;
     const order = GYRO_LAYOUTS.map((_, i) => i).sort((x, y) => this.errors[x] - this.errors[y]);
     const [best, second] = order;
-    const current = this.layout ? GYRO_LAYOUTS.findIndex((l) => l.map === this.layout!.map && l.sign === this.layout!.sign) : -1;
+    const current = this.layoutIndex();
     // A known layout is replaced only when another clearly beats it.
     const rival = current >= 0 ? current : second;
-    if (best !== current && this.errors[best] < LEARN_RATIO * this.errors[rival]) this.layout = GYRO_LAYOUTS[best];
+    if (best === current || !(this.errors[best] < LEARN_RATIO * this.errors[rival])) return false;
+    this.layout = GYRO_LAYOUTS[best];
+    return true;
   }
 }

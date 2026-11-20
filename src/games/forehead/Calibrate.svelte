@@ -1,19 +1,20 @@
 <script lang="ts">
   // Calibrate tilt (#/forehead/calibrate): the phone, on the player's forehead, asks out loud for
   // "Down" or "Up"; each practice tilt it catches beeps and counts. As many as the player likes,
-  // then Done saves thresholds learned from them (src/lib/calibration.ts) for this phone.
+  // then Done saves thresholds learned from them (src/lib/calibration.ts) for this phone, once
+  // there are at least ENOUGH of each; fewer leave the stored calibration untouched.
   import { onDestroy } from 'svelte';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import { back } from '../../lib/router.svelte';
   import { SteadyDetector } from '../../lib/tilt';
-  import { GestureCatcher, thresholdsFrom, type Direction, type Gesture } from '../../lib/calibration';
+  import { GestureCatcher, thresholdsFrom, tooSmall, type Direction, type Gesture } from '../../lib/calibration';
   import { keepAwake } from '../../lib/wakelock';
   import { calibration, saveCalibration, clearCalibration } from './calibration.svelte';
-  import { motion, onGravity, startMotion, stopMotion, enterPlayMode, exitPlayMode } from './sensors.svelte';
+  import { motion, onGravity, claimMotion, enterPlayMode, exitPlayMode, type MotionClaim } from './sensors.svelte';
   import { unlockVoice, say, hush, tone } from './voice';
 
-  /** Practice tilts of each kind before the phone suggests stopping (more are welcome). */
+  /** Practice tilts of each kind needed to save, and before the phone suggests stopping (more are welcome). */
   const ENOUGH = 3;
   const WORD: Record<Direction, string> = { down: 'Down', up: 'Up' };
 
@@ -24,17 +25,23 @@
   let note = $state('');
   let kept = $state<Gesture[]>([]);
   let unhook: (() => void) | null = null;
+  /** This screen's motion stream; a Start still waiting on the iOS prompt checks it is still current. */
+  let claim: MotionClaim | null = null;
 
   const downs = $derived(kept.filter((g) => g.dir === 'down').length);
   const ups = $derived(kept.filter((g) => g.dir === 'up').length);
   const th = $derived(calibration.th);
 
   async function start() {
-    const ok = startMotion(true); // first: iOS asks for motion only inside the untouched tap
+    const mine = claimMotion(true); // first: iOS asks for motion only inside the untouched tap
+    claim = mine; // an older Start still waiting on the prompt now sees it is stale
     unlockVoice();
     enterPlayMode();
     keepAwake(true);
-    if (!(await ok)) { denied = true; release(); return; }
+    denied = false;
+    const ok = await mine.ready;
+    if (claim !== mine) return; // left, cancelled or restarted while the prompt was up
+    if (!ok) { denied = motion.denied; release(); return; } // false also when another screen took motion over
     kept = [];
     onHead = false;
     ask = 'down';
@@ -54,6 +61,13 @@
   }
 
   function heard(g: Gesture) {
+    if (tooSmall(g)) {
+      if (g.dir !== ask) return; // a small move the other way is the head settling, not an attempt
+      tone('other');
+      note = `Only ${Math.round(g.amp)}°: too small to count in a round. Tilt further ${ask}.`;
+      say(`Further. ${WORD[ask]}.`);
+      return;
+    }
     if (g.dir !== ask) {
       tone('other');
       note = `That one went ${g.dir}. Try ${ask} again.`;
@@ -68,25 +82,35 @@
     say(justEnough ? `Good. Keep going, or take it off and tap Done. ${WORD[ask]}.` : WORD[ask]);
   }
 
+  /** Stops only what this screen started: a newer round's motion stream is left alone. */
   function release() {
     unhook?.();
     unhook = null;
+    if (!claim) return;
+    claim.release();
+    claim = null;
     hush();
-    stopMotion();
-    motion.live = false;
     exitPlayMode();
     keepAwake(false);
   }
 
+  /** What is still missing before Done can save, in plain words, or '' when there is enough. */
+  function missing(): string {
+    const more = (n: number, dir: Direction) => (n < ENOUGH ? [`${ENOUGH - n} more ${dir}`] : []);
+    const parts = [...more(downs, 'down'), ...more(ups, 'up')];
+    return parts.length ? `Not saved yet: needs ${parts.join(' and ')}.` : '';
+  }
+
   function done() {
-    release();
-    if (downs && ups) {
-      saveCalibration(thresholdsFrom(kept));
-      phase = 'saved';
-    } else {
-      note = 'Needs at least one tilt down and one tilt up.';
-      phase = 'intro';
+    const need = missing();
+    if (need) {
+      note = need; // keep going: the stored calibration is left as it was
+      say(`${need} ${WORD[ask]}.`);
+      return;
     }
+    release();
+    saveCalibration(thresholdsFrom(kept));
+    phase = 'saved';
   }
 
   onDestroy(release);
@@ -114,7 +138,7 @@
         <ol class="steps">
           <li>Tap Start, then hold the phone on your forehead like in a round.</li>
           <li>The phone says <b>Down</b> or <b>Up</b>: tilt that way, just as you will in the game. Each tilt beeps.</li>
-          <li>Do as many as you like (three of each is plenty), then take it off and tap <b>Done</b>.</li>
+          <li>Do at least three of each (more is fine), then take it off and tap <b>Done</b>.</li>
         </ol>
         {#if note}<p class="bad">{note}</p>{/if}
         {#if denied}<p class="bad">Motion was refused, so the phone cannot feel tilts. On iPhone: close the app fully, open it again and choose Allow.</p>{/if}

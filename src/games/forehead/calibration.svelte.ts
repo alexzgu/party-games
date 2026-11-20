@@ -2,10 +2,13 @@
 // (see src/lib/calibration.ts), or none, in which case the defaults apply.
 import { load, save, remove } from '../../lib/storage';
 import { DEFAULT_TILT, type TiltThresholds } from '../../lib/tilt';
+import { storedThresholds } from '../../lib/calibration';
 
 const KEY = 'forehead:calibration';
 
-export const calibration = $state<{ th: TiltThresholds | null }>({ th: load<TiltThresholds | null>(KEY, null) });
+// Checked on load: a stored value from an older build or a damaged one (0°, NaN, wrong shape)
+// would otherwise score with the phone at rest.
+export const calibration = $state<{ th: TiltThresholds | null }>({ th: storedThresholds(load<unknown>(KEY, null)) });
 
 export function saveCalibration(th: TiltThresholds): void {
   calibration.th = th;

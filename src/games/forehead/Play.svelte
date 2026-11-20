@@ -11,7 +11,7 @@
   import { tiltThresholds } from './calibration.svelte';
   import { finish, makeDealer, mark, openPlay, type EndReason, type Round } from './round';
   import { game, selectedDecks, setRound } from './state.svelte';
-  import { getRestPitch, motion, onGravity, stageRotation } from './sensors.svelte';
+  import { getRestPitch, motion, motionFresh, onGravity, stageRotation, startMotion } from './sensors.svelte';
   import { wakeDevice } from './flow';
 
   type Pause = 'away' | 'confirm';
@@ -40,6 +40,8 @@
   let flash = $state<Flash | null>(untrack(() => (demo?.flash != null ? { ok: demo.flash, n: 0 } : null)));
   let ending = $state<EndReason | null>(untrack(() => demo?.ending ?? null));
   let locked = $state(false);
+  /** A tilt that came in while the next word was hidden (true = got it). */
+  let queued: boolean | null = null;
   let flashN = 0;
   let timers: ReturnType<typeof setTimeout>[] = [];
   // The calibration is read once, as the round starts; tilts count from the holder's resting pitch.
@@ -93,11 +95,13 @@
 
   $effect(() =>
     onGravity((_g, t, p) => {
-      // Not fed while input is blocked: a tilt held through the lockout fires right after it
-      // instead of being swallowed.
-      if (pause || ending || locked) return;
+      // Fed every reading, so quick tilts in a row keep their timing; a tilt that lands while
+      // the next word is still hidden is scored the moment it shows.
+      if (pause || ending) return;
       const e = detector.step(p.pitch, p.rate, t);
-      if (e && tilt) score(e === 'correct');
+      if (!e || !tilt) return;
+      if (locked) queued = e === 'correct';
+      else score(e === 'correct');
     }),
   );
 
@@ -125,7 +129,12 @@
     const n = ++flashN;
     flash = { ok, n };
     locked = true;
-    later(() => (locked = false), LOCK_MS);
+    later(() => {
+      locked = false;
+      const q = queued;
+      queued = null;
+      if (q != null) score(q);
+    }, LOCK_MS);
     later(() => { if (flash?.n === n) flash = null; }, FLASH_MS);
     if (next == null) later(() => end('out'), FLASH_MS);
   }
@@ -145,6 +154,8 @@
   }
 
   function resume() {
+    // A browser that suspended motion in the background leaves `live` set: restart a silent stream.
+    if (motion.live && !motionFresh()) void startMotion(); // first: iOS asks only inside the tap
     wakeDevice();
     detector.reset();
     pause = null;

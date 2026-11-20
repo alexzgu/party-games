@@ -7,7 +7,7 @@
   import Button from './Button.svelte';
   import { motionNeedsPermission } from '../lib/motion';
   import { TiltDetector } from '../lib/tilt';
-  import { motion, onGravity, startMotion, stopMotion } from '../games/forehead/sensors.svelte';
+  import { motion, onGravity, claimMotion, type MotionClaim } from '../games/forehead/sensors.svelte';
   import { tiltThresholds } from '../games/forehead/calibration.svelte';
 
   const installed = matchMedia('(display-mode: standalone)').matches
@@ -20,12 +20,17 @@
   let lastEvent = $state('');
   let stop: (() => void) | null = null;
   let ticker: ReturnType<typeof setInterval> | undefined;
+  /** This check's motion stream; a tap still waiting on the iOS prompt checks it is still current. */
+  let claim: MotionClaim | null = null;
 
   const GYRO = { none: 'not available here (tilt uses gravity only)', learning: 'found, learning how this phone reports it: tilt a few times', learned: 'in use' };
 
   async function start() {
+    const mine = claimMotion(); // first thing in the tap: iOS asks here
+    claim = mine; // an older tap still waiting on the prompt now sees it is stale
     phase = 'asking';
-    const allowed = await startMotion(); // first thing in the tap: iOS asks here
+    const allowed = await mine.ready;
+    if (claim !== mine) return; // Settings closed (or a newer tap) while the prompt was up
     if (!allowed) { phase = 'denied'; return; }
     phase = 'running';
     const detector = new TiltDetector(tiltThresholds());
@@ -41,10 +46,12 @@
     ticker = setInterval(() => { perSecond = count; count = 0; }, 1000);
   }
 
+  // Stops only the stream this check started, also while its permission prompt is still up.
   onDestroy(() => {
     stop?.();
     clearInterval(ticker);
-    if (phase === 'running') { stopMotion(); motion.live = false; }
+    claim?.release();
+    claim = null;
   });
 </script>
 

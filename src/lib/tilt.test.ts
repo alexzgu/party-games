@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BASELINE_MAX_DEG, SteadyDetector, TiltDetector, type TiltThresholds } from './tilt';
+import { BASELINE_MAX_DEG, DEFAULT_TILT, SteadyDetector, TiltDetector, type TiltThresholds } from './tilt';
 import { UprightTracker, axisSignFromLookingAt, toScreen, uprightRotation, type Gravity } from './motion';
 
 const G = 9.81;
@@ -136,6 +136,72 @@ describe('TiltDetector follows the last two seconds', () => {
     expect(run(d, at(seq, 0))).toEqual(['correct']);
     // And the next nod still counts.
     expect(run(d, at([...ramp(0, 28, 200)], 6000))).toEqual(['pass']);
+  });
+});
+
+describe('TiltDetector: quick tilts in a row', () => {
+  /** 60 Hz pitch through keyframes [ms, deg], eased like a real nod, with its rate (°/s). */
+  function nods(keys: [number, number][]) {
+    const out: { t: number; p: number; r: number }[] = [];
+    for (let i = 1; i < keys.length; i++) {
+      const [t0, p0] = keys[i - 1];
+      const [t1, p1] = keys[i];
+      for (let t = t0; t < t1; t += 1000 / 60) {
+        const u = (t - t0) / (t1 - t0);
+        out.push({ t, p: p0 + ((p1 - p0) * (1 - Math.cos(Math.PI * u))) / 2, r: ((p1 - p0) * Math.PI * Math.sin(Math.PI * u)) / 2 / ((t1 - t0) / 1000) });
+      }
+    }
+    return out;
+  }
+  const run = (keys: [number, number][], th = DEFAULT_TILT, base = 0) => {
+    const d = new TiltDetector(th, base);
+    return nods(keys).map((s) => d.step(s.p, s.r, s.t)).filter(Boolean);
+  };
+  /** Rest, then each [peak, out ms, back ms, ms at rest]: a tilt out and back. */
+  const series = (moves: [number, number, number, number][]) => {
+    const keys: [number, number][] = [[0, 0], [500, 0]];
+    for (const [peak, out, back, rest] of moves) {
+      const t = keys[keys.length - 1][0];
+      keys.push([t + out, peak], [t + out + back, 0]);
+      if (rest) keys.push([t + out + back + rest, 0]);
+    }
+    return keys;
+  };
+
+  it('scores eight downs barely touching rest in between', () => {
+    expect(run(series(Array(8).fill([-60, 200, 233, 67])))).toEqual(Array(8).fill('correct'));
+    expect(run(series(Array(8).fill([-60, 200, 200, 0])))).toEqual(Array(8).fill('correct'));
+  });
+
+  it('scores eight ups, and alternating tilts, at the same pace', () => {
+    expect(run(series(Array(8).fill([55, 200, 200, 0])))).toEqual(Array(8).fill('pass'));
+    const alt = Array.from({ length: 8 }, (_, i) => [i % 2 ? 60 : -60, 250, 283, 67] as [number, number, number, number]);
+    expect(run(series(alt))).toEqual(Array.from({ length: 8 }, (_, i) => (i % 2 ? 'pass' : 'correct')));
+  });
+
+  it('does not count the rebound past rest after a tilt as the other way', () => {
+    expect(run([[0, 0], [500, 0], [700, -60], [900, 22], [1000, 0], [1200, -60], [1400, 0], [1900, 0]])).toEqual(['correct', 'correct']);
+    expect(run([[0, 0], [500, 0], [700, 55], [900, -24], [1000, 0], [1200, 55], [1400, 0], [1900, 0]])).toEqual(['pass', 'pass']);
+  });
+
+  it('does not score the release of a tilt held just short of the angle', () => {
+    expect(run([[0, 0], [1000, 0], [1120, -24], [3620, -24], [3740, 0], [4500, 0]])).toEqual([]);
+  });
+
+  it('does not lend the speed of the way back to a slow lean after it', () => {
+    expect(run([[0, 0], [1000, 0], [1200, -60], [4200, -60], [4350, 0], [4483, 0], [4883, 21], [5500, 21]])).toEqual(['correct']);
+  });
+
+  it('scores from any resting pose the countdown accepts', () => {
+    expect(run([[0, 34], [1000, 34], [1200, -15], [1500, 34], [3000, 34], [3200, -15], [3500, 34], [4000, 34]], DEFAULT_TILT, 34)).toEqual(['correct', 'correct']);
+  });
+
+  it('measures the way back from the deepest point of the tilt that scored', () => {
+    const d = new TiltDetector(DEFAULT_TILT);
+    const events = [d.step(0, 0, 0), d.step(0, 0, 200), d.step(-60, -600, 300)];
+    for (let t = 400; t <= 800; t += 16) events.push(d.step(-20, t === 400 ? 400 : 0, t));
+    events.push(d.step(-35, -400, 850), d.step(-50, -300, 900));
+    expect(events.filter(Boolean)).toEqual(['correct', 'correct']);
   });
 });
 

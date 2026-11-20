@@ -93,7 +93,9 @@ export function watchMotion(onSample: (s: MotionSample) => void, sign: 1 | -1 = 
     const g = vec(e.accelerationIncludingGravity, sign);
     if (!g) return;
     const r = e.rotationRate;
-    const rot: Vec3 | null = r && r.alpha != null && r.beta != null && r.gamma != null ? [r.alpha, r.beta, r.gamma] : null;
+    // A missing field becomes NaN: the tracker still uses the others where its layout needs only those.
+    const rot: Vec3 | null = r && (r.alpha != null || r.beta != null || r.gamma != null)
+      ? [r.alpha ?? NaN, r.beta ?? NaN, r.gamma ?? NaN] : null;
     onSample({ g, lin: vec(e.acceleration, sign), rot, t: e.timeStamp || performance.now() });
   };
   addEventListener('devicemotion', handler);

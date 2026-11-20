@@ -96,3 +96,45 @@ describe('edgeOf', () => {
     expect(edgeOf([-0.5, 0.3, -9.7], 'x+')).toBe('x+');
   });
 });
+
+describe('PitchTracker with broken timing or partial readings', () => {
+  const G = 9.81;
+  /** A sideways phone (right edge up) at pitch `deg`, turning at `rate` °/s on beta (Firefox layout). */
+  const at = (deg: number, t: number, rate = 0, rot?: [number, number, number]): MotionSample => {
+    const r = (deg * Math.PI) / 180;
+    return { t, g: [G * Math.cos(r), 0, G * Math.sin(r)], lin: [0, 0, 0], rot: rot ?? [0, rate, 0] };
+  };
+
+  it('starts again from gravity after a gap instead of integrating across it', () => {
+    const tr = new PitchTracker(XYZ);
+    for (let t = 0; t <= 1000; t += 16) tr.update(at(0, t));
+    tr.update(at(0, 11000, 400)); // ten seconds later, one fast gyro reading, phone still upright
+    expect(Math.abs(tr.pitch)).toBeLessThan(1);
+    expect(tr.rate).toBe(0);
+  });
+
+  it('ignores a repeated or backwards time and a missing one', () => {
+    const tr = new PitchTracker(XYZ);
+    for (let t = 0; t <= 500; t += 16) tr.update(at(0, t));
+    tr.update(at(-30, 480, -300)); // tilting: the blend lags gravity
+    const before = tr.pitch;
+    expect(tr.update(at(-60, 480))).toBe(false);
+    expect(tr.update(at(-60, 400))).toBe(false);
+    expect(tr.update(at(-60, NaN))).toBe(false);
+    expect(tr.pitch).toBe(before);
+  });
+
+  it('does not reverse the nod on one stray reading of the other edge up', () => {
+    const tr = new PitchTracker(XYZ);
+    for (let t = 0; t <= 500; t += 16) tr.update(at(0, t));
+    tr.update({ t: 516, g: [-8, 0, -5], lin: [0, 0, 0], rot: [0, -300, 0] });
+    expect(tr.rate).toBe(-300); // still read as the right edge up: a nod down
+  });
+
+  it('uses the rotation field its layout needs when another is missing', () => {
+    const tr = new PitchTracker(XYZ);
+    for (let t = 0; t <= 500; t += 16) tr.update(at(0, t));
+    tr.update(at(-5, 532, 0, [NaN, -300, 0]));
+    expect(tr.rate).toBe(-300);
+  });
+});
