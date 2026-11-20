@@ -8,8 +8,6 @@ export interface Settings {
   model: string;
   /** Heads Down.: how a scored word shows. 'edge' lights the edge on the side picked; 'screen' flashes the whole screen. */
   headsDownFeedback: 'edge' | 'screen';
-  /** Heads Down.: how far the phone must tilt to score. 'small' scores on a slight nod. */
-  tiltSensitivity: 'small' | 'medium' | 'big';
   /** Colour scheme; 'system' follows the phone. */
   theme: 'system' | 'light' | 'dark';
 }
@@ -20,7 +18,6 @@ const DEFAULTS: Settings = {
   apiKey: '',
   model: 'claude-opus-5-5',
   headsDownFeedback: 'edge',
-  tiltSensitivity: 'small',
   theme: 'dark',
 };
 

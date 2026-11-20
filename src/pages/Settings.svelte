@@ -5,6 +5,8 @@
   import { gameName } from '../app.config';
   import Button from '../components/Button.svelte';
   import TiltCheck from '../components/TiltCheck.svelte';
+  import { calibration } from '../games/forehead/calibration.svelte';
+  import { go } from '../lib/router.svelte';
   import { settings, saveSettings, applyTheme } from '../lib/settings.svelte';
   import { testKey } from '../lib/claude';
   import { sfx } from '../lib/sound';
@@ -64,13 +66,8 @@
       onchange={saveSettings}
     />
     <p class="faint">Light the edge: the edge on the side you tilted glows. Flash the screen: the whole screen turns green or amber.</p>
-    <Segmented
-      label="Tilt needed to score"
-      options={[{ value: 'small', label: 'Small nod' }, { value: 'medium', label: 'Medium' }, { value: 'big', label: 'Big tilt' }]}
-      bind:value={settings.tiltSensitivity}
-      onchange={saveSettings}
-    />
-    <p class="faint">How far the phone must tip forward (got it) or back (pass) to count, measured from how you held it when the round started. Small nod: about 20–25°, a quick dip of the head. Medium: about 30–40°. Big tilt: about 40–55°, for players whose nods score by accident.</p>
+    <p class="faint">Tilt: {calibration.th ? `calibrated on this phone (got it at ${Math.round(calibration.th.down)}°, pass at ${Math.round(calibration.th.up)}°)` : 'not calibrated yet, standard settings'}. Calibrating takes half a minute and makes tilts count reliably for whoever did it.</p>
+    <Button variant="secondary" onclick={() => go('/forehead/calibrate')}>Calibrate tilt</Button>
     <TiltCheck />
   </section>
 

@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { BASELINE_MAX_DEG, SteadyDetector, TiltDetector } from './tilt';
+import { BASELINE_MAX_DEG, DEFAULT_TILT, SteadyDetector, TiltDetector, type TiltThresholds } from './tilt';
 import { UprightTracker, axisSignFromLookingAt, toScreen, uprightRotation, type Gravity } from './motion';
 
 const G = 9.81;
+/** The three fixed sizes the detector had before calibration; the behaviour at each is unchanged. */
+const SIZE: Record<'small' | 'medium' | 'big', TiltThresholds> = {
+  small: { down: 22, up: 26, rate: DEFAULT_TILT.rate },
+  medium: { down: 32, up: 40, rate: DEFAULT_TILT.rate },
+  big: { down: 40, up: 55, rate: DEFAULT_TILT.rate },
+};
 /** Spec-convention gravity for a phone sideways (right edge up) pitched `deg` screen-up. */
 const pitched = (deg: number): Gravity => {
   const r = (deg * Math.PI) / 180;
@@ -15,19 +21,19 @@ describe('TiltDetector', () => {
   }
 
   it('ignores the first tilt until the phone has rested at neutral', () => {
-    const d = new TiltDetector('big');
+    const d = new TiltDetector(SIZE.big);
     expect(feed(d, [pitched(-70), pitched(-70)])).toEqual([]);
   });
 
   it('fires correct on tilt down and pass on tilt up, once per gesture', () => {
-    const d = new TiltDetector('big');
+    const d = new TiltDetector(SIZE.big);
     const neutral = Array(12).fill(pitched(10));
     expect(feed(d, [...neutral, pitched(-45), pitched(-60), pitched(-80)])).toEqual(['correct']);
     expect(feed(d, [...neutral, pitched(60), pitched(70)], 1000)).toEqual(['pass']);
   });
 
   it('does not fire between the neutral band and the thresholds', () => {
-    const d = new TiltDetector('big');
+    const d = new TiltDetector(SIZE.big);
     expect(feed(d, [...Array(12).fill(pitched(0)), pitched(-35), pitched(50)])).toEqual([]);
   });
 
@@ -35,35 +41,35 @@ describe('TiltDetector', () => {
 
   it('scores a small nod at small sensitivity but not at big', () => {
     const nod = [...rest(0), pitched(-25), pitched(-10), ...rest(0), pitched(28)];
-    expect(feed(new TiltDetector('small'), nod)).toEqual(['correct', 'pass']);
-    expect(feed(new TiltDetector('medium'), nod)).toEqual([]);
-    expect(feed(new TiltDetector('big'), nod)).toEqual([]);
+    expect(feed(new TiltDetector(SIZE.small), nod)).toEqual(['correct', 'pass']);
+    expect(feed(new TiltDetector(SIZE.medium), nod)).toEqual([]);
+    expect(feed(new TiltDetector(SIZE.big), nod)).toEqual([]);
   });
 
   it('measures nods from the resting pitch, not from vertical', () => {
     // Phone tipped back 15° on the forehead: a 25° nod either way lands at -10° and +40°.
-    const d = new TiltDetector('small', 15);
+    const d = new TiltDetector(SIZE.small, 15);
     expect(feed(d, [...rest(15), pitched(-10), ...rest(15), pitched(42)])).toEqual(['correct', 'pass']);
     // Measured from vertical, a brief rest at that pose (under STILL_MS) does not arm.
-    const vertical = new TiltDetector('small');
+    const vertical = new TiltDetector(SIZE.small);
     expect(feed(vertical, [...rest(15), pitched(-10)])).toEqual([]);
   });
 
   it('clamps a bad resting pitch and treats a missing one as vertical', () => {
-    const wild = new TiltDetector('small', 80);
-    const nan = new TiltDetector('small', Number.NaN);
+    const wild = new TiltDetector(SIZE.small, 80);
+    const nan = new TiltDetector(SIZE.small, Number.NaN);
     expect(feed(wild, [...rest(BASELINE_MAX_DEG), pitched(BASELINE_MAX_DEG - 25)])).toEqual(['correct']);
     expect(feed(nan, [...rest(0), pitched(-25)])).toEqual(['correct']);
   });
 
   it('does not score twice on a wobble around the threshold', () => {
-    const d = new TiltDetector('small');
+    const d = new TiltDetector(SIZE.small);
     const wobble = [pitched(-24), pitched(-18), pitched(-24), pitched(-12), pitched(-23), pitched(-20), pitched(-25)];
     expect(feed(d, [...rest(0), ...wobble, ...wobble])).toEqual(['correct']);
   });
 
   it('needs a held return to rest between scores', () => {
-    const d = new TiltDetector('small');
+    const d = new TiltDetector(SIZE.small);
     // Swinging back up through rest after a got-it is not a pass.
     expect(feed(d, [...rest(0), pitched(-25), pitched(-5), pitched(5), pitched(30), pitched(35)])).toEqual(['correct']);
     // Back at rest too briefly (under the hold time): still no score.
@@ -80,19 +86,19 @@ describe('TiltDetector re-arms on a still pose', () => {
   const rest = (deg: number, n = 20) => Array<Gravity>(n).fill(pitched(deg));
 
   it('arms and re-bases when no resting pitch was caught (tap start, reload)', () => {
-    const d = new TiltDetector('small'); // baseline 0, but the phone rests tipped back 15°
+    const d = new TiltDetector(SIZE.small); // baseline 0, but the phone rests tipped back 15°
     expect(feed(d, [...rest(15), pitched(-10)])).toEqual(['correct']);
   });
 
   it('keeps working when the player leans back mid-round', () => {
-    const d = new TiltDetector('small');
+    const d = new TiltDetector(SIZE.small);
     expect(feed(d, [...rest(0), pitched(-25)])).toEqual(['correct']);
     // Settles 12° further back than before, outside the narrow band: re-arms there.
     expect(feed(d, [...rest(12), pitched(-12)], 1000)).toEqual(['correct']);
   });
 
   it('does not re-arm while still held on the side that just scored', () => {
-    const d = new TiltDetector('small');
+    const d = new TiltDetector(SIZE.small);
     expect(feed(d, [...rest(0), pitched(-25), ...rest(-20), pitched(10)])).toEqual(['correct']);
   });
 });
@@ -109,19 +115,19 @@ describe('TiltDetector follows the last two seconds', () => {
   };
 
   it('absorbs a slow drift, then scores a nod from the new pose', () => {
-    const d = new TiltDetector('small');
+    const d = new TiltDetector(SIZE.small);
     // Leans back 18° over 4 s (4.5°/s): no score. A quick 25° nod from there counts.
     const seq = [...hold(0, 600), ...ramp(0, 18, 4000), ...hold(18, 1000), ...ramp(18, -7, 200)];
     expect(run(d, at(seq, 0))).toEqual(['correct']);
   });
 
   it('scores a quick nod but not the same angle reached slowly', () => {
-    expect(run(new TiltDetector('small'), at([...hold(0, 1000), ...ramp(0, -26, 250)], 0))).toEqual(['correct']);
-    expect(run(new TiltDetector('small'), at([...hold(0, 1000), ...ramp(0, -26, 5000)], 0))).toEqual([]);
+    expect(run(new TiltDetector(SIZE.small), at([...hold(0, 1000), ...ramp(0, -26, 250)], 0))).toEqual(['correct']);
+    expect(run(new TiltDetector(SIZE.small), at([...hold(0, 1000), ...ramp(0, -26, 5000)], 0))).toEqual([]);
   });
 
   it('never re-fires or fires the other way while a tilt is held and released', () => {
-    const d = new TiltDetector('small');
+    const d = new TiltDetector(SIZE.small);
     const seq = [...hold(0, 1000), ...ramp(0, -30, 200), ...hold(-30, 3000), ...ramp(-30, 0, 300), ...hold(0, 1000)];
     expect(run(d, at(seq, 0))).toEqual(['correct']);
     // And the next nod still counts.

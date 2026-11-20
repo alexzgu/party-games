@@ -25,7 +25,8 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
 
 - `src/lib/` — shared logic: `storage` (guarded localStorage), `router.svelte`, `settings.svelte`,
   `sound` (synthesised cues; call `unlockAudio()` in the first tap), `haptics`, `wakelock`,
-  `motion` (permission, gravity stream, sign fix, upright rotation), `tilt` (gesture detector),
+  `motion` (permission, motion stream, sign fix, upright rotation), `pitch` (forehead pitch from
+  gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `history` (finished rounds and games),
   `paste` (reading pasted lists), `update` (new versions switch in on the main menu), `random`.
@@ -105,14 +106,30 @@ shout clues; the holder tilts down for "got it", up for "pass".
 - **Results**: score headline, every word shown marked ✓/✗ and tappable to fix mis-tilts.
   Play again (same settings, next player), change decks, home. Round scores of this session
   listed so the group can compare.
+- Pitch comes from the gyroscope blended with gravity (1 s time constant, `src/lib/pitch.ts`).
+  Raw gravity alone fails: recorded nods (Tilt lab, below) start with a shove along the screen
+  normal that reads, for ~100 ms, as a big tilt the other way, so got-it nods scored as passes.
+  Browsers disagree on which `rotationRate` field holds which axis (Firefox on Android puts the
+  nod on `beta`), so each phone learns its layout from its own motion (whichever candidate
+  tracks gravity best while the phone is on a forehead) and keeps it. With no gyroscope, the
+  browser's gravity estimate (`accelerationIncludingGravity` minus `acceleration`) is used.
 - Tilt is measured from where the phone has been over the last 2 seconds (the median pitch,
   leaving out the newest quarter second, clamped to ±25°), starting from the pose held steady
   before the countdown (0 after a tap start). That reference is frozen from a score until the
-  phone settles again, so a held tilt never scores twice or counts the way back. A tilt slower
-  than about 20° a second is treated as drift and does not score. Settings "Tilt needed to score": Small nod
-  (default, 22° down / 26° up), Medium (32/40), Big tilt (40/55, the old Android app's values).
-  After a score the phone must settle near rest for 150 ms before the next one counts.
-  Constants in `src/lib/tilt.ts`.
+  phone settles again, so a held tilt never scores twice or counts the way back. A score needs
+  the angle (default 25° either way) and speed: the pitch must have turned at least 80°/s in the
+  last 0.4 s (recorded tilts: 170–840°/s; talking, laughing, looking around, leaning back: under
+  ~105°/s). After a score the phone must settle near rest for 150 ms, or hold still at least
+  halfway back from the tilt, before the next one counts. Constants in `src/lib/tilt.ts`.
+- **Calibrate tilt** (`#/forehead/calibrate`, from Setup and Settings): the phone, on the
+  forehead, says "Down" or "Up"; each practice tilt it catches beeps and counts; as many as the
+  player likes, then Done. Thresholds: 35% of the player's median tilt (12–25°) and half their
+  median speed (60–150°/s). Kept on the phone until the next calibration; Reset returns to the
+  defaults. Replaces the old Small / Medium / Big setting.
+- **Tilt lab** (`#/forehead/lab`, not linked): speaks a ~3.5-minute script of cued tilts and
+  non-tilts and records every motion reading with the cue times, for designing detection from
+  real data. The file goes to a laptop lab server when the page is served from one, else to
+  share / download.
 
 ## Game 2 — Spectrum (`dial`)
 

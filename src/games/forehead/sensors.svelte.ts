@@ -2,22 +2,29 @@
 // sign fix learned while the player is still looking at the Start screen, the upright edge for the
 // people facing the phone, and Android's fullscreen + landscape lock.
 import {
-  requestMotion, watchGravity, screenAngle, toScreen, axisSignFromLookingAt, rotationFor,
+  requestMotion, watchMotion, screenAngle, toScreen, axisSignFromLookingAt, rotationFor,
   upEdge, UprightTracker, type Gravity,
 } from '../../lib/motion';
 import { load, save } from '../../lib/storage';
+import { PitchTracker, GYRO_LAYOUTS, type GyroLayout, type MotionSample } from '../../lib/pitch';
 
-export const motion = $state({ live: false, denied: false, angle: screenAngle() as number, edge: 0 as 0 | 90 | 180 | 270 });
+export const motion = $state({
+  live: false, denied: false, angle: screenAngle() as number, edge: 0 as 0 | 90 | 180 | 270,
+  /** The rotation sensor: absent, present but its layout not yet learned, or in use. */
+  gyro: 'none' as 'none' | 'learning' | 'learned',
+});
 
 /** CSS rotation for the play screen so it reads upright for the viewers. */
 export function stageRotation(): 0 | 90 | -90 | 180 {
   return motion.live ? rotationFor(motion.edge, motion.angle) : 0;
 }
 
-type Listener = (g: Gravity, t: number) => void;
+/** The phone's pitch, read once per motion sample by every listener (see src/lib/pitch.ts). */
+export type Pitch = { pitch: number; rate: number };
+type Listener = (g: Gravity, t: number, p: Pitch) => void;
 const listeners = new Set<Listener>();
 let detach: (() => void) | null = null;
-let tracker = new UprightTracker();
+let upright = new UprightTracker();
 let last: Gravity | null = null;
 /** Bumped by every start and stop, so a start still waiting on the iOS prompt can tell it was cancelled. */
 let generation = 0;
@@ -29,6 +36,18 @@ let generation = 0;
 let sign: 1 | -1 = load<number>('forehead:axisSign', 1) === -1 ? -1 : 1;
 
 const SIGN_SAMPLE_MS = 400;
+
+/** The gyroscope layout this phone's browser was found to use; it survives reloads. */
+function savedLayout(): GyroLayout | null {
+  const l = load<GyroLayout | null>('forehead:gyroLayout', null);
+  return GYRO_LAYOUTS.find((x) => x.map === l?.map && x.sign === l?.sign) ?? null;
+}
+let tracker = new PitchTracker(savedLayout());
+
+/** The axis sign the gravity stream is multiplied by (the Tilt lab records it). */
+export function axisSign(): 1 | -1 {
+  return sign;
+}
 
 function onAngle() { motion.angle = screenAngle(); }
 
@@ -55,12 +74,15 @@ export async function startMotion(learnSign = false): Promise<boolean> {
   onAngle();
   addEventListener('orientationchange', onAngle);
   screen.orientation?.addEventListener?.('change', onAngle);
-  tracker = new UprightTracker();
+  upright = new UprightTracker();
+  tracker = new PitchTracker(tracker.layout);
   let firstAt: number | null = null;
   let deciding = learnSign;
   let n = 0;
   const sum: Gravity = [0, 0, 0];
-  detach = watchGravity((raw, t) => {
+  detach = watchMotion((s) => {
+    const raw = s.g;
+    const t = s.t;
     if (deciding) {
       firstAt ??= t;
       const p = toScreen(raw, screenAngle());
@@ -75,11 +97,18 @@ export async function startMotion(learnSign = false): Promise<boolean> {
       }
     }
     const g: Gravity = [raw[0] * sign, raw[1] * sign, raw[2] * sign];
+    const lin = s.lin && ([s.lin[0] * sign, s.lin[1] * sign, s.lin[2] * sign] as Gravity);
     last = g;
     if (!motion.live) motion.live = true;
-    const edge = tracker.update(g, t);
+    const edge = upright.update(g, t);
     if (edge !== motion.edge) motion.edge = edge;
-    for (const fn of listeners) fn(g, t);
+    const known = tracker.layout;
+    tracker.update({ ...s, g, lin } satisfies MotionSample);
+    if (tracker.layout !== known) save('forehead:gyroLayout', tracker.layout);
+    const gyro = !s.rot ? 'none' : tracker.layout ? 'learned' : 'learning';
+    if (gyro !== motion.gyro) motion.gyro = gyro;
+    const p = { pitch: tracker.pitch, rate: tracker.rate };
+    for (const fn of listeners) fn(g, t, p);
   });
   return true;
 }
@@ -112,7 +141,7 @@ export function getRestPitch(): number | null {
 export function pinUpright(): void {
   const e = last ? upEdge(last) : null;
   if (e != null) {
-    tracker.edge = e;
+    upright.edge = e;
     motion.edge = e;
   }
 }

@@ -8,6 +8,7 @@
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
   import { settings } from '../../lib/settings.svelte';
+  import { tiltThresholds } from './calibration.svelte';
   import { finish, makeDealer, mark, openPlay, type EndReason, type Round } from './round';
   import { game, selectedDecks, setRound } from './state.svelte';
   import { getRestPitch, motion, onGravity, stageRotation } from './sensors.svelte';
@@ -41,8 +42,8 @@
   let locked = $state(false);
   let flashN = 0;
   let timers: ReturnType<typeof setTimeout>[] = [];
-  // Sensitivity is read once, as the round starts; tilts count from the holder's resting pitch.
-  const detector = new TiltDetector(settings.tiltSensitivity, getRestPitch() ?? 0);
+  // The calibration is read once, as the round starts; tilts count from the holder's resting pitch.
+  const detector = new TiltDetector(tiltThresholds(), getRestPitch() ?? 0);
 
   const tilt = $derived(game.round?.tilt === true && motion.live);
   const secs = $derived(Math.ceil(remaining / 1000));
@@ -91,11 +92,11 @@
   });
 
   $effect(() =>
-    onGravity((g, t) => {
+    onGravity((_g, t, p) => {
       // Not fed while input is blocked: a tilt held through the lockout fires right after it
       // instead of being swallowed.
       if (pause || ending || locked) return;
-      const e = detector.update(g, t);
+      const e = detector.step(p.pitch, p.rate, t);
       if (e && tilt) score(e === 'correct');
     }),
   );

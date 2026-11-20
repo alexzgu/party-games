@@ -13,6 +13,7 @@
   import { prefs, savePrefs, selectedDecks, type Control } from './state.svelte';
   import { ROUND_LENGTHS } from './round';
   import { startRound } from './flow';
+  import { calibration } from './calibration.svelte';
   import { findDecks } from './find';
 
   const decks = wordDecks();
@@ -116,6 +117,11 @@
         ? 'Tilt the phone to score. Tapping works too: right hand got it, left hand pass.'
         : 'No tilting: tap with your right hand for got it, your left hand to pass.'}
     </p>
+    {#if prefs.control === 'tilt'}
+      <Button variant="secondary" onclick={() => go('/forehead/calibrate')}>
+        {calibration.th ? 'Calibrate tilt again (new player?)' : 'Calibrate tilt (half a minute)'}
+      </Button>
+    {/if}
   </section>
 
   {#snippet actions()}
