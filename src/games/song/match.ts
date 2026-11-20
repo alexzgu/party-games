@@ -1,5 +1,5 @@
-// The song matcher: turns what people paste (YouTube links, Apple Music links, "Title - Artist"
-// lines, numbered lists from a chat) into Apple Music tracks. The parsing and ranking are pure;
+// The song matcher: turns what people paste (YouTube links, Apple Music links, Spotify song
+// links, "Title - Artist" lines, numbered lists from a chat) into Apple Music tracks. The parsing and ranking are pure;
 // the network comes in through `MatchDeps`, so the app (itunes.ts) and the laptop script
 // (scripts/match-songs.mjs) share this file and the tests drive it with fixtures.
 // No runtime imports: Node runs this file directly for the script.
@@ -26,6 +26,7 @@ export interface Track {
 export type Wanted =
   | { kind: 'youtube'; id: string; line: string }
   | { kind: 'apple'; id: number; line: string }
+  | { kind: 'spotify'; id: string; line: string }
   | { kind: 'playlist'; list: string; line: string }
   | { kind: 'text'; query: string; guesses: Guess[]; line: string }
   | { kind: 'skip'; why: string; line: string };
@@ -45,6 +46,10 @@ export interface Match {
   youtube?: string;
   /** Why there is no track. */
   why?: string;
+  /** The song as the link itself names it (Spotify gives the title only, so the artist is 'N/A'). */
+  linked?: Guess;
+  /** It failed for a passing reason (Spotify did not answer): pasting the line again tries again. */
+  retry?: boolean;
 }
 
 export interface MatchDeps {
@@ -54,6 +59,11 @@ export interface MatchDeps {
   lookup(id: number): Promise<Track | null>;
   /** A YouTube video's title and channel, or null when YouTube does not know it. */
   oembed(videoId: string): Promise<{ title: string; author: string } | null>;
+  /**
+   * A Spotify track's title (Spotify's oEmbed gives no artist), or null when Spotify has no such
+   * song. Throws when Spotify does not answer; an error with `offline: true` pauses the list.
+   */
+  spotifyTitle?(trackId: string): Promise<string | null>;
 }
 
 // ---------------------------------------------------------------- iTunes results
@@ -82,7 +92,10 @@ export const art = (url: string, size: number) => url.replace(/\/\d+x\d+bb\./, `
 // ---------------------------------------------------------------- reading pasted lines
 
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
-const URL_IN_TEXT = /(?:https?:\/\/)?(?:[a-z0-9-]+\.)*(?:youtube\.com|youtu\.be|youtube-nocookie\.com|music\.apple\.com|itunes\.apple\.com)\/[^\s)\]>"']*/i;
+const URL_IN_TEXT = /(?:https?:\/\/)?(?:[a-z0-9-]+\.)*(?:youtube\.com|youtu\.be|youtube-nocookie\.com|music\.apple\.com|itunes\.apple\.com|open\.spotify\.com|play\.spotify\.com|spotify\.link|spotify\.app\.link)\/[^\s)\]>"']*/i;
+const SPOTIFY_URI = /\bspotify:[a-z]+:[A-Za-z0-9:]+/i;
+const SPOTIFY_ID = /^[A-Za-z0-9]{22}$/;
+const SPOTIFY_LISTS: Record<string, string> = { playlist: 'Spotify playlists', album: 'Spotify albums', artist: 'Spotify artist pages' };
 
 /** Strips list markers, quotes and markdown that chats wrap around items. */
 export function stripListing(raw: string): string {
@@ -121,6 +134,43 @@ export function appleFrom(raw: string): number | null {
   return song ? Number(song[1]) : 0;
 }
 
+/**
+ * A Spotify link or URI → its track id, or why it cannot be used (a playlist, album or artist,
+ * or a short link, whose redirect a web page is not allowed to read); null when it is not Spotify.
+ */
+export function spotifyFrom(raw: string): { track: string } | { skip: string } | null {
+  const t = raw.trim();
+  let kind: string | undefined;
+  let id: string | undefined;
+  if (/^spotify:/i.test(t)) {
+    // spotify:track:<id>, and the old spotify:user:<name>:playlist:<id>.
+    const parts = t.split(':');
+    const at = parts.findIndex((p, i) => i > 0 && (p === 'track' || p in SPOTIFY_LISTS));
+    [kind, id] = at > 0 ? [parts[at], parts[at + 1]] : [parts[1], parts[2]];
+  } else {
+    const url = asUrl(t);
+    if (!url) return null;
+    const host = url.hostname.toLowerCase();
+    if (host === 'spotify.link' || host === 'spotify.app.link') return { skip: 'Spotify short links can’t be read here: open that link and copy the long one' };
+    if (host !== 'open.spotify.com' && host !== 'play.spotify.com') return null;
+    const path = /^\/(?:intl-[a-z]{2}(?:-[a-z]{2})?\/)?(?:embed\/)?(?:user\/[^/]+\/)?([a-z]+)\/([^/?#]+)/i.exec(url.pathname);
+    [kind, id] = [path?.[1]?.toLowerCase(), path?.[2]];
+  }
+  if (kind === 'track' && id && SPOTIFY_ID.test(id)) return { track: id };
+  if (kind && kind in SPOTIFY_LISTS) return { skip: `${SPOTIFY_LISTS[kind]} can’t be read here: paste the songs’ links instead` };
+  return { skip: 'a Spotify link without a song in it' };
+}
+
+/** A Spotify title made fit to search: no "(feat. …)", "- Remastered 2011" or "- Radio Edit". */
+export function cleanSpotifyTitle(raw: string): string {
+  const t = raw
+    .replace(FEAT, ' ')
+    .replace(/\s+[-–—]\s+[^-–—]*\b(?:remaster(?:ed)?|version|edit|mono|stereo|from|recorded|anniversary|deluxe|single)\b.*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return t || raw.trim();
+}
+
 function asUrl(raw: string): URL | null {
   const t = raw.trim();
   try { return new URL(/^https?:\/\//i.test(t) ? t : 'https://' + t); } catch { return null; }
@@ -136,18 +186,20 @@ export function parseLine(raw: string): Wanted | null {
   if (!line || /^#{1,6}\s/.test(line) || /^(?:title|song)\s*[|,-]\s*artist$/i.test(line)) return null;
   // A markdown link: the URL if it is a music link, else its text.
   const md = /\[([^\]]+)\]\(([^)]+)\)/.exec(line);
-  const url = (md && URL_IN_TEXT.test(md[2]) ? md[2] : URL_IN_TEXT.exec(line)?.[0]) ?? '';
+  const url = (md && URL_IN_TEXT.test(md[2]) ? md[2] : URL_IN_TEXT.exec(line)?.[0]) ?? SPOTIFY_URI.exec(line)?.[0] ?? '';
   if (url) {
     const yt = youtubeFrom(url);
     if (yt?.video) return { kind: 'youtube', id: yt.video, line };
     if (yt?.list) return { kind: 'playlist', list: yt.list, line };
+    const spotify = spotifyFrom(url);
+    if (spotify) return 'track' in spotify ? { kind: 'spotify', id: spotify.track, line } : { kind: 'skip', why: spotify.skip, line };
     const apple = appleFrom(url);
     if (apple) return { kind: 'apple', id: apple, line };
     if (apple === 0) return { kind: 'skip', why: 'an Apple Music link to an album or playlist, not one song', line };
     return { kind: 'skip', why: 'a link without a song in it', line };
   }
   const text = md ? md[1] : line;
-  if (/^https?:\/\//i.test(text)) return { kind: 'skip', why: 'not a YouTube or Apple Music link', line };
+  if (/^https?:\/\//i.test(text)) return { kind: 'skip', why: 'not a YouTube, Apple Music or Spotify link', line };
   return textWanted(text, line);
 }
 
@@ -188,6 +240,7 @@ export function wantedKey(w: Wanted): string {
   switch (w.kind) {
     case 'youtube': return 'yt:' + w.id;
     case 'apple': return 'am:' + w.id;
+    case 'spotify': return 'sp:' + w.id;
     case 'playlist': return 'pl:' + w.list;
     case 'text': return 'tx:' + normalize(w.query);
     default: return 'sk:' + w.line;
@@ -338,6 +391,7 @@ export async function matchWanted(w: Wanted, deps: MatchDeps): Promise<Match> {
     if (!track) return { line: w.line, track: null, others: [], sure: false, why: 'Apple Music has no song with that link' };
     return { line: w.line, track, others: [], sure: !!track.preview, why: track.preview ? undefined : 'Apple has no preview for it' };
   }
+  if (w.kind === 'spotify') return matchSpotify(w, deps);
   let guesses: Guess[];
   let query: string;
   let youtube: string | undefined;
@@ -375,6 +429,27 @@ export async function matchWanted(w: Wanted, deps: MatchDeps): Promise<Match> {
     if (again.track) m = { ...again, sure: false };
   }
   return { ...m, youtube };
+}
+
+/**
+ * A Spotify song link: Spotify gives its title only, so Apple is searched by title and the best
+ * result is never sure; the host checks it or picks another. A failure of Spotify's alone stays
+ * on this line (marked for retry); being offline throws, which pauses the list.
+ */
+async function matchSpotify(w: Extract<Wanted, { kind: 'spotify' }>, deps: MatchDeps): Promise<Match> {
+  const miss = (why: string, retry = false): Match => ({ line: w.line, track: null, others: [], sure: false, why, ...(retry ? { retry } : {}) });
+  if (!deps.spotifyTitle) return miss('Spotify links can’t be read here');
+  let title: string | null;
+  try {
+    title = await deps.spotifyTitle(w.id);
+  } catch (e) {
+    if ((e as { offline?: boolean } | null)?.offline) throw e;
+    return miss('Spotify didn’t answer: paste the link again to retry', true);
+  }
+  if (!title) return miss('Spotify has no song with that link');
+  const clean = cleanSpotifyTitle(title);
+  const m = decide(rank(await deps.search(clean), [{ title: clean, artist: '' }]), w.line, false);
+  return { ...m, sure: false, linked: { title, artist: 'N/A' } };
 }
 
 // ---------------------------------------------------------------- tidy names for the game

@@ -408,8 +408,9 @@ Try again.
   "Auto" to let the game pick again) and an optional YouTube link for the reveal. "+ Add songs"
   opens the adding screen.
 - **Add songs** (one screen per pack; nothing is saved until "Add N songs"): Paste (one per line,
-  any mix of YouTube links in every form, Apple Music song links, "Title - Artist" or "Artist -
-  Title", numbered or bulleted lists, tables from a chat), Playlist (a YouTube playlist link: an
+  any mix of YouTube links in every form, Apple Music song links, Spotify song links
+  (`open.spotify.com/track/…`, with or without `/intl-xx/` and `?si=…`, or `spotify:track:…`),
+  "Title - Artist" or "Artist - Title", numbered or bulleted lists, tables from a chat), Playlist (a YouTube playlist link: an
   off-screen IFrame API player reads up to 200 video ids and is never played), or 🧙 Ask the
   wizard (a theme, a count and "How hard Fizzwick tries"; "Fizzwick is conjuring … songs" while
   "Title | Artist" lines stream in through `streamLines`; without the wizard the screen shows
@@ -418,7 +419,15 @@ Try again.
   lyrics, HD, remastered, featured artists, VEVO and "- Topic" channels), then searched on Apple;
   results are ranked by title and artist likeness, preferring the original studio recording over
   live, demo, karaoke, remix and cover versions; when no result is clearly right, the artist's own
-  catalogue is searched too. Results stream into a review list ("Matched 12 of 40", about how
+  catalogue is searched too. A Spotify song link's title comes from Spotify's public oEmbed (no
+  key or login; never the Spotify Web API or SDK, whose terms rule out games), three calls at a
+  time, each given up after 8 s. It gives no artist, so the line is the title with artist "N/A",
+  searched on Apple by title alone and always marked "Check this match" with the other results to
+  pick from; a kept song takes the artist of the Apple track picked. Spotify not answering stays on
+  that line (pasting it again retries); being offline pauses the list. A Spotify playlist, album or
+  artist link gets one line saying it can't be read and to paste the songs' links instead; a
+  spotify.link short link one saying to open it and copy the long link (a web page may not read
+  where it redirects). Results stream into a review list ("Matched 12 of 40", about how
   long is left): art, ▶ preview, keep or drop, "Check this match" on doubtful ones, "Wrong match?
   Pick another" listing the other results, and songs already in the pack marked. The YouTube id a
   line came from is kept for the reveal. Apple allows about 20 calls a minute, so calls go one by

@@ -36,13 +36,18 @@ export class Adder {
     this.items = restored.map((it) => (it.state === 'matching' ? { ...it, state: 'waiting' } : it));
   }
 
-  /** Adds lines (repeats of lines already in the list are ignored) and starts matching. */
+  /**
+   * Adds lines and starts matching. Repeats of lines already in the list are ignored, except a
+   * line that failed for a passing reason (Spotify did not answer), which is tried again.
+   */
   add(wanted: Wanted[]): number {
     if (!this.changed) return 0;
     const known = new Set(this.items.map((i) => i.key));
     let added = 0;
     for (const w of wanted) {
       const key = wantedKey(w);
+      const again = this.items.find((i) => i.key === key && i.state === 'done' && i.match?.retry);
+      if (again) { Object.assign(again, { state: 'waiting', match: null, keep: false, dup: false }); added++; continue; }
       if (known.has(key)) continue;
       known.add(key);
       this.items.push({ key, wanted: w, state: 'waiting', match: null, keep: false, dup: false });

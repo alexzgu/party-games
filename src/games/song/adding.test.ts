@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Adder, toSong, type AdderDeps } from './adding';
 import { parsePaste, tidy, type Track } from './match';
+import { spotifyTitle } from './spotify';
 
 const T = (id: number, title: string, artist: string, preview = `https://p/${id}.m4a`): Track =>
   ({ id, title, artist, album: title, artwork: '', preview, link: '', released: '' });
@@ -115,6 +116,46 @@ describe('Add songs review list', () => {
     await until(a);
     expect(a.error).toBe('');
     expect(a.items[0].match?.track?.id).toBe(1);
+  });
+
+  it('turns a Spotify link into its title with artist N/A, to check, and keeps the picked track’s artist', async () => {
+    const titles: Record<string, string> = { '4cOdK2wGLETKBW3PvgPWqT': 'Hey Ya!', '3n3Ppam7vgaVa1iaRUc9Lp': 'Nothing Like It' };
+    const fetch = vi.fn(async (url: string) => {
+      const id = /track%2F([A-Za-z0-9]{22})$/.exec(url)?.[1] ?? '';
+      if (id === '0000000000000000000000') return new Response('busy', { status: 503 });
+      return titles[id] ? new Response(JSON.stringify({ title: titles[id] })) : new Response('{}', { status: 404 });
+    });
+    vi.stubGlobal('fetch', fetch);
+    try {
+      const a = new Adder({ ...fakeDeps(), spotifyTitle }, [], () => {});
+      a.add(parsePaste([
+        'https://open.spotify.com/track/0000000000000000000000?si=x',
+        'https://open.spotify.com/intl-de/track/4cOdK2wGLETKBW3PvgPWqT?si=y',
+        'spotify:track:3n3Ppam7vgaVa1iaRUc9Lp',
+        'Toxic - Britney Spears',
+        'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+      ].join('\n')));
+      await until(a);
+      expect(a.error).toBe('');
+      const [failed, heyYa, unknown, toxic, playlist] = a.items;
+      // Spotify failing for one line leaves the rest going.
+      expect(failed.match).toMatchObject({ track: null, retry: true });
+      expect(heyYa.match).toMatchObject({ track: { id: 2 }, sure: false, linked: { title: 'Hey Ya!', artist: 'N/A' } });
+      expect(heyYa.keep).toBe(true);
+      expect(heyYa.match?.others.map((t) => t.id)).toContain(4);
+      expect(unknown.match).toMatchObject({ track: null, linked: { title: 'Nothing Like It', artist: 'N/A' } });
+      expect(toxic.match).toMatchObject({ track: { id: 1 }, sure: true });
+      expect(playlist.match).toMatchObject({ track: null, why: 'Spotify playlists can’t be read here: paste the songs’ links instead' });
+      a.choose(heyYa.key, library[3]);
+      expect(toSong(a.items[1], tidy)).toEqual({ title: 'Hey Ya!', artist: 'Outkast Tribute Band', apple: 4 });
+      // Pasting the failed link again tries it again; the others stay as they are.
+      expect(a.add(parsePaste('https://open.spotify.com/track/0000000000000000000000\nspotify:track:4cOdK2wGLETKBW3PvgPWqT'))).toBe(1);
+      expect(a.items[0].state).not.toBe('done');
+      await until(a);
+      expect(fetch.mock.calls.filter(([u]) => u.includes('0000000000000000000000'))).toHaveLength(2);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('restores a saved list and finishes it', async () => {

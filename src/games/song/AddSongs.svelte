@@ -9,6 +9,7 @@
   import { parsePaste, tidy, wantedKey, youtubeFrom, type Track } from './match';
   import { apple, deps } from './itunes';
   import { readPlaylist } from './youtube';
+  import { spotifyTitle } from './spotify';
   import { askClaude, COUNT_RANGE, DEFAULT_COUNT } from './generate';
   import { loadAdding, saveAdding } from './store';
   import { hasKey, NOT_HERE } from '../../lib/claude';
@@ -16,8 +17,8 @@
   import { customSongs, songPacks, type SongPack } from '../../lib/content';
   import { sfx } from '../../lib/sound';
 
-  // Adding songs to one pack: paste lines (links or "Title - Artist"), read a YouTube playlist,
-  // or ask the wizard (Claude) for a theme. Every line is matched to an Apple Music song as it
+  // Adding songs to one pack: paste lines (YouTube, Apple Music or Spotify song links, or
+  // "Title - Artist"), read a YouTube playlist, or ask the wizard (Claude) for a theme. Every line is matched to an Apple Music song as it
   // comes in and listed for review; nothing is saved to the pack until "Add N songs". The list itself is kept
   // on the phone, so a reload carries on where it was.
   let { id, onback }: { id: string; onback: () => void } = $props();
@@ -40,7 +41,7 @@
   let abort: AbortController | null = null;
 
   // svelte-ignore state_referenced_locally
-  const adder = new Adder({ ...deps, readPlaylist }, pack?.songs ?? [], changed, loadAdding<Item[]>(id, []));
+  const adder = new Adder({ ...deps, spotifyTitle, readPlaylist }, pack?.songs ?? [], changed, loadAdding<Item[]>(id, []));
 
   function changed() {
     items = adder.items.map((i) => ({ ...i }));
@@ -158,8 +159,8 @@
 
     {#if mode === 'paste'}
       <label class="field">
-        <span>One per line: YouTube or Apple Music links, or “Title - Artist”. Lists copied from a chat work too.</span>
-        <textarea bind:value={text} rows="6" placeholder={'https://youtu.be/…\nMr. Brightside - The Killers\nhttps://music.apple.com/us/album/…?i=…'} autocapitalize="off" spellcheck="false"></textarea>
+        <span>One per line: YouTube, Apple Music or Spotify song links, or “Title - Artist”. Lists copied from a chat work too.</span>
+        <textarea bind:value={text} rows="6" placeholder={'https://youtu.be/…\nMr. Brightside - The Killers\nhttps://open.spotify.com/track/…\nhttps://music.apple.com/us/album/…?i=…'} autocapitalize="off" spellcheck="false"></textarea>
       </label>
       <Button onclick={find} disabled={!text.trim()}>Find these songs</Button>
     {:else if mode === 'playlist'}

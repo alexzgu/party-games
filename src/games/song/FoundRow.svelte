@@ -20,15 +20,17 @@
 
   const m = $derived(item.match);
   const t = $derived(m?.track ?? null);
-  const names = $derived(t ? tidy(t) : null);
+  // A Spotify line Apple could not match still shows the title Spotify gave (artist 'N/A').
+  const names = $derived(t ? tidy(t) : (m?.linked ?? null));
   const playable = $derived(!!t?.preview && !item.dup);
   const label = $derived(
     item.state !== 'done' ? (item.state === 'matching' ? 'Finding it…' : 'Waiting…')
     : item.wanted.kind === 'playlist' ? `Playlist: ${m?.why?.replace(/^a playlist of /, '') ?? ''}`
+    : item.wanted.kind === 'skip' ? item.wanted.why.charAt(0).toUpperCase() + item.wanted.why.slice(1)
     : item.dup ? 'Already in this pack'
     : !t ? `Not found (${m?.why ?? 'no match'})`
     : !t.preview ? 'Apple has no preview for it'
-    : !m?.sure ? 'Check this match' : '',
+    : !m?.sure ? (m?.linked ? 'Check this match: Spotify gave only the title' : 'Check this match') : '',
   );
 </script>
 
@@ -43,7 +45,8 @@
         <b class="line">{item.wanted.line}</b>
       {/if}
       {#if label}<span class="tag">{label}</span>{/if}
-      {#if names && (!m?.sure || item.wanted.kind === 'youtube')}<span class="from">from: {item.wanted.line}</span>{/if}
+      {#if t && m?.linked}<span class="from">from Spotify: {m.linked.title} · {m.linked.artist}</span>
+      {:else if t && (!m?.sure || item.wanted.kind === 'youtube')}<span class="from">from: {item.wanted.line}</span>{/if}
     </div>
     {#if t?.preview}
       <button class="icon" class:on={playing === t.preview} onclick={() => onpreview(t.preview)} aria-label={playing === t.preview ? 'Stop the preview' : `Hear ${names?.title}`}>{playing === t.preview ? '■' : '▶'}</button>

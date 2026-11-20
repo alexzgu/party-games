@@ -72,7 +72,7 @@
         <li>First to {target} points wins.</li>
       </ol>
       <p>The clips are Apple Music’s 30-second song previews, so this game needs internet. The game picks the catchiest moment of each one by itself.</p>
-      <p>Add your own songs from a pack’s pencil: paste YouTube or Apple Music links or a list of titles, read a YouTube playlist, or ask the wizard for a theme.</p>
+      <p>Add your own songs from a pack’s pencil: paste YouTube, Apple Music or Spotify song links or a list of titles, read a YouTube playlist, or ask the wizard for a theme.</p>
     </HowTo>
   {/snippet}
 <div class="setup">
