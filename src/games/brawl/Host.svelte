@@ -23,6 +23,7 @@
   const fixed = $derived(route.params.get('demo'));
   const game = $derived(host.game);
   const v = $derived(fixed ? demo(fixed, false) : game ? view(game, host.now) : null);
+  const skipLabel = $derived(v?.phase === 'draw' || v?.phase === 'challenge' ? 'End drawing' : v?.phase === 'vote' ? 'End voting' : 'Next');
   let confirm = $state(false);
   let connection = $state(false);
   let brokerChanged = $state(0);
@@ -47,18 +48,30 @@
 </script>
 
 <svelte:window onkeydown={shortcuts} />
-<main>
-  <header>
-    <Button variant="secondary" onclick={() => fixed ? go('/brawl') : (confirm = true)}>Back</Button>
-    <h2>{gameName('brawl')}</h2>
-    <HowTo><Rules /></HowTo>
+<div class="host">
+  <header class="bar">
+    <div class="where">
+      <Button size="sm" variant="ghost" label="Back to game menu" onclick={() => fixed ? go('/brawl') : (confirm = true)}>←</Button>
+      <b>{gameName('brawl')}</b>
+      {#if v && v.phase !== 'lobby'}<span>Room {fixed ? 'BRWK' : game?.code} · Round {v.round}</span>{/if}
+    </div>
+    <div class="controls">
+      {#if v && v.phase !== 'lobby' && v.phase !== 'over'}
+        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.pause(); }}>{v.paused ? 'Resume' : 'Pause'}</Button>
+        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }}>{skipLabel}</Button>
+      {:else if v?.phase === 'over'}
+        <Button size="sm" onclick={() => { if (!fixed) host.rematch(); }}>Play again</Button>
+      {/if}
+      <HowTo><Rules /></HowTo>
+      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)}>{v.phase === 'lobby' || v.phase === 'over' ? 'Close room' : 'End game'}</Button>{/if}
+    </div>
   </header>
   {#if v}
     {#if v.phase === 'lobby'}
-      <div class="lobby">
+      <main class="lobby">
         <div class="qr">
           <h3>Join on your phone</h3>
-          <Qr text={link} label="Scan to join" size={220} />
+          <Qr text={link} label="Scan to join" size={200} />
           <strong>{fixed ? 'BRWK' : game?.code}</strong>
           <p>Scan the code or choose Join in {gameName('brawl')}.</p>
         </div>
@@ -66,9 +79,11 @@
           <h3>Players · {v.players.length} / 8</h3>
           <Stage {v} art={{}} online={fixed ? undefined : host.online} />
           {#if game && !fixed}
-            {#each active(game) as p (p.pid)}
-              <Button size="sm" variant="secondary" onclick={() => (kicking = p)}>Remove {p.name}</Button>
-            {/each}
+            <div class="kick">
+              {#each active(game) as p (p.pid)}
+                <Button size="sm" variant="secondary" onclick={() => (kicking = p)}>Remove {p.name}</Button>
+              {/each}
+            </div>
           {/if}
           {#if host.trouble && !fixed}<p role="status">{host.trouble}</p>{/if}
           <div class="controls">
@@ -77,28 +92,21 @@
             <Button variant="secondary" onclick={() => (connection = true)}>Connection</Button>
           </div>
         </section>
-      </div>
+      </main>
     {:else}
-      <div class="heading">
-        <div>
-          <p>Round {v.round} · {phaseLabel(v)}</p>
-          {#if v.title}<h3 class="title">{v.title}</h3>{/if}
+      <main class="play">
+        <div class="heading">
+          <div>
+            <p>{phaseLabel(v)}</p>
+            {#if v.title}<h3 class="title">{v.title}</h3>{/if}
+          </div>
+          <Timer left={v.left} total={v.total} paused={v.paused} size={52} />
         </div>
-        <Timer left={v.left} total={v.total} paused={v.paused} size={52} />
-      </div>
-      <TapToFinish><Stage {v} art={fixed ? demoArt : host.art} online={fixed ? undefined : host.online} /></TapToFinish>
-      <div class="controls">
-        {#if v.phase === 'over'}
-          <Button onclick={() => { if (!fixed) host.rematch(); }}>Play again</Button>
-          <Button variant="secondary" onclick={() => (confirm = true)}>Close room</Button>
-        {:else}
-          <Button variant="secondary" onclick={() => { if (!fixed) host.pause(); }}>{v.paused ? 'Resume' : 'Pause'}</Button>
-          <Button variant="secondary" onclick={() => { if (!fixed) host.skip(); }}>{v.phase === 'draw' || v.phase === 'challenge' ? 'End drawing' : v.phase === 'vote' ? 'End voting' : 'Next'}</Button>
-        {/if}
-      </div>
+        <div class="stage"><TapToFinish><Stage {v} art={fixed ? demoArt : host.art} online={fixed ? undefined : host.online} /></TapToFinish></div>
+      </main>
     {/if}
   {:else}<p>Opening room…</p>{/if}
-</main>
+</div>
 
 {#if confirm}
   <Popup title="Close the room?" onclose={() => (confirm = false)}>
@@ -119,16 +127,26 @@
 {/if}
 
 <style>
-  main { width: min(100%, 1140px); margin: auto; display: grid; gap: var(--s-3); padding: calc(var(--safe-top) + var(--s-3)) var(--s-4) calc(var(--safe-bottom) + var(--s-4)); }
-  header, .heading, .controls { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
-  header h2 { text-align: center; }
+  .host {
+    width: min(100%, 1440px); height: 100dvh; margin: 0 auto; display: flex; flex-direction: column; gap: var(--s-2);
+    padding: calc(var(--safe-top) + var(--s-2)) calc(var(--safe-right) + var(--s-4)) calc(var(--safe-bottom) + var(--s-3)) calc(var(--safe-left) + var(--s-4));
+  }
+  .bar, .where, .controls, .heading { display: flex; align-items: center; gap: var(--s-2); }
+  .bar { justify-content: space-between; flex-wrap: wrap; }
+  .where span { color: var(--text-dim); }
+  .controls { flex-wrap: wrap; justify-content: center; }
+  .bar .controls { justify-content: flex-end; }
+  main { flex: 1; min-height: 0; display: grid; }
   .heading { justify-content: center; text-align: center; }
   .heading p { color: var(--text-dim); }
-  .title { font-size: clamp(1.45rem, 5vmin, 3.5rem); overflow-wrap: anywhere; }
-  .controls { flex-wrap: wrap; justify-content: center; }
-  .lobby { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: var(--s-5); }
+  .title { font-size: clamp(1.3rem, 4.5vmin, 3rem); overflow-wrap: anywhere; }
+  .play { grid-template-rows: auto minmax(0, 1fr); gap: var(--s-2); }
+  .stage { min-height: 0; overflow: hidden; display: grid; align-content: center; width: min(100%, 960px); margin-inline: auto; }
+  .stage > :global(div) > :global(p), .stage > :global(div) > :global(h3) { text-align: center; }
+  .lobby { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: var(--s-5); }
   section, .qr { display: grid; gap: var(--s-3); }
+  .kick { display: flex; flex-wrap: wrap; gap: var(--s-2); }
   .qr { text-align: center; justify-items: center; }
-  .qr strong { color: var(--accent); font: 800 clamp(2rem, 6vw, 5rem)/1 var(--font-display); letter-spacing: 0.18em; }
-  @media (max-width: 720px) { .lobby { grid-template-columns: 1fr; } }
+  .qr strong { color: var(--accent); font: 800 clamp(2rem, 6vw, 4rem)/1 var(--font-display); letter-spacing: 0.18em; }
+  @media (max-width: 720px) { .lobby { grid-template-columns: 1fr; } .host { height: auto; min-height: 100dvh; } }
 </style>
