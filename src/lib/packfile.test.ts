@@ -13,7 +13,7 @@ const SAMPLES: Record<PackGameId, AnyPack> = {
   ] },
   quick: { id: 'kitchen', name: 'Kitchen', blurb: 'Food', prompts: ['things in a fridge', 'songs by Taylor Swift'] },
   snark: { id: 'boats', name: 'Boats', blurb: 'At sea', prompts: ['A terrible name for a boat', 'The worst thing to hear from your pilot'] },
-  song: { id: 'pop', name: 'Pop', blurb: 'Hits', songs: [{ title: 'Levitating', artist: 'Dua Lipa', youtube: 'TUVcZfQe-Kw', start: 52 }] },
+  song: { id: 'pop', name: 'Pop', blurb: 'Hits', songs: [{ title: 'Levitating', artist: 'Dua Lipa', apple: 1550000000, youtube: 'TUVcZfQe-Kw', start: 12 }] },
   taboo: { id: 'food', name: 'Food', blurb: 'Eat', cards: [{ word: 'Pizza', banned: ['Cheese', 'Slice', 'Pepperoni', 'Italian', 'Delivery'] }] },
 };
 

@@ -143,9 +143,12 @@ function snarkExtras(raw: Record<string, unknown>, prompts: string[]): Partial<S
 }
 
 function song(x: unknown, kept: Song[]): Song | null {
-  if (!isObj(x) || typeof x.title !== 'string' || typeof x.artist !== 'string' || typeof x.youtube !== 'string') return null;
-  if (typeof x.start !== 'number' || !Number.isFinite(x.start) || x.start < 0) return null;
-  return checkSong({ title: x.title, artist: x.artist, link: x.youtube, start: String(x.start) }, kept).song;
+  if (!isObj(x) || typeof x.title !== 'string' || typeof x.artist !== 'string') return null;
+  // The Apple Music track is what the room hears; a song without one cannot be played.
+  if (typeof x.apple !== 'number' || !Number.isSafeInteger(x.apple) || x.apple <= 0) return null;
+  const start = typeof x.start === 'number' && Number.isFinite(x.start) && x.start >= 0 ? x.start : null;
+  const youtube = typeof x.youtube === 'string' ? x.youtube : '';
+  return checkSong({ title: x.title, artist: x.artist, youtube, start }, { title: x.title, artist: x.artist, apple: x.apple }, kept).song;
 }
 
 function taboo(x: unknown): TabooCard | null {
