@@ -4,6 +4,7 @@
   import Segmented from '../components/Segmented.svelte';
   import { gameName } from '../app.config';
   import Button from '../components/Button.svelte';
+  import TiltCheck from '../components/TiltCheck.svelte';
   import { settings, saveSettings, applyTheme } from '../lib/settings.svelte';
   import { testKey } from '../lib/claude';
   import { sfx } from '../lib/sound';
@@ -70,6 +71,7 @@
       onchange={saveSettings}
     />
     <p class="faint">How far the phone must tip forward (got it) or back (pass) to count, measured from how you held it when the round started. Small nod: about 20–25°, a quick dip of the head. Medium: about 30–40°. Big tilt: about 40–55°, for players whose nods score by accident.</p>
+    <TiltCheck />
   </section>
 
   <section class="stack">
