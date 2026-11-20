@@ -7,7 +7,7 @@
   import Segmented from '../../components/Segmented.svelte';
   import WizardEffort from '../../components/WizardEffort.svelte';
   import { customGibberish, isBuiltin, slugify, type GibberishCard, type GibberishPack } from '../../lib/content';
-  import { hasKey } from '../../lib/claude';
+  import { hasKey, NOT_HERE } from '../../lib/claude';
   import { sfx } from '../../lib/sound';
   import { generateCards, THEME_CHIPS } from './generate';
   import { answerKey, parsePastedCards } from './parse';
@@ -135,7 +135,7 @@
       {@render saveTo()}
     </PasteList>
   {:else if !reviewing && !keyed}
-    <p class="nokey">Fizzwick isn't on this phone yet: open the invite link the host sent you.</p>
+    <p class="nokey">{NOT_HERE}</p>
   {:else if !reviewing}
     <form class="theme" onsubmit={(e) => { e.preventDefault(); void run(); }}>
       <label for="theme-in"><h3>What should the cards be about?</h3></label>

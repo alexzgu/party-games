@@ -8,7 +8,7 @@
   import PasteList from '../../components/PasteList.svelte';
   import BoardPreview from './BoardPreview.svelte';
   import type { QuizBoard } from '../../lib/content';
-  import { hasKey } from '../../lib/claude';
+  import { hasKey, NOT_HERE } from '../../lib/claude';
   import { sfx } from '../../lib/sound';
   import { blankBoard, DEFAULT_CATEGORIES, DEFAULT_LEVELS, emptyTiles, MAX_CATEGORIES, MAX_LEVELS } from './board';
   import { parsePastedBoard } from './parse';
@@ -141,7 +141,7 @@
       <p class="faint small">Up to {MAX_CATEGORIES} categories of up to {MAX_LEVELS} clues. Shorter categories get empty tiles to fill in.</p>
     {:else if !keyed}
       <div class="nokey">
-        <p>Fizzwick isn't on this phone yet: open the invite link the host sent you.</p>
+        <p>{NOT_HERE}</p>
         <p class="faint">Or ask the host for a built-in one: “a Big Board about {topic.trim() || '<topic>'}”. It shows up in the pack list once the site updates.</p>
       </div>
     {:else}
