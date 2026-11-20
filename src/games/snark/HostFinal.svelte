@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Avatar from './Avatar.svelte';
-  import Timer from './Timer.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
+  import Timer from '../../components/room/Timer.svelte';
   import Voters from './Voters.svelte';
   import { FINAL_VOTES_EACH, player, votersFor, type Finale, type Game } from './logic';
   import { FINAL_VOTE_POINTS } from './scoring';

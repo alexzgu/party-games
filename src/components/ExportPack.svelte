@@ -1,11 +1,11 @@
 <script lang="ts">
   // "Export pack" in a pack editor: the pack as it is now, in a file to keep or send to friends.
-  import type { GameId } from '../app.config';
+  import type { PackGameId } from '../app.config';
   import Button from './Button.svelte';
   import { packFile, type AnyPack } from '../lib/packfile';
   import { shareOrDownload } from '../lib/share';
 
-  let { game, pack, disabled = false }: { game: GameId; pack: AnyPack; disabled?: boolean } = $props();
+  let { game, pack, disabled = false }: { game: PackGameId; pack: AnyPack; disabled?: boolean } = $props();
   let note = $state('');
 
   async function send() {

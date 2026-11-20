@@ -4,7 +4,7 @@
 // checks every item with that game's own rules (the ones its pack editor or paste route uses),
 // drops the items that fail with a count, and saves each pack as the player's own under an id
 // nothing on the phone uses yet, so an import never overwrites a pack.
-import { APP, gameName, GAMES, type GameId } from '../app.config';
+import { APP, gameName, GAMES, type PackGameId } from '../app.config';
 import {
   customDecks, customGibberish, customQuick, customQuiz, customSnark, customSongs, customSpectra, customTaboo, slugify,
   type GibberishCard, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkPack, type Song,
@@ -29,11 +29,11 @@ export const MAX_ITEMS = 1000;
 export type AnyPack = WordDeck | SpectrumPack | GibberishPack | QuizBoard | QuickPack | SnarkPack | SongPack | TabooPack;
 type Field = 'words' | 'cards' | 'categories' | 'prompts' | 'songs';
 
-const FIELD: Record<GameId, Field> = {
+const FIELD: Record<PackGameId, Field> = {
   forehead: 'words', dial: 'cards', gibberish: 'cards', quiz: 'categories', quick: 'prompts', snark: 'prompts', song: 'songs', taboo: 'cards',
 };
 /** What the items are called on screen, plural. */
-const UNIT: Record<GameId, string> = {
+const UNIT: Record<PackGameId, string> = {
   forehead: 'words', dial: 'cards', gibberish: 'cards', quiz: 'clues', quick: 'prompts', snark: 'prompts', song: 'songs', taboo: 'cards',
 };
 
@@ -42,7 +42,7 @@ const NOT_A_PACK_FILE = `This isn't a ${APP.name} pack file.`;
 // ---- Writing
 
 /** The pack as it goes in a file: id, name, emoji (Heads Down. only), blurb and items. */
-function plain(game: GameId, p: AnyPack): Record<string, unknown> {
+function plain(game: PackGameId, p: AnyPack): Record<string, unknown> {
   const field = FIELD[game];
   return {
     id: p.id, name: p.name, ...(game === 'forehead' ? { emoji: (p as WordDeck).emoji } : {}), blurb: p.blurb,
@@ -50,19 +50,19 @@ function plain(game: GameId, p: AnyPack): Record<string, unknown> {
   };
 }
 
-export function exportFile(game: GameId, packs: readonly AnyPack[]): string {
+export function exportFile(game: PackGameId, packs: readonly AnyPack[]): string {
   return JSON.stringify({ jerkBox: FORMAT, game, packs: packs.map((p) => plain(game, p)) }, null, 2);
 }
 
 /** "heads-down-movies.jerkbox.txt", or "…-my-packs.jerkbox.txt" for every pack of one phone. */
-export const fileName = (game: GameId, packId?: string): string =>
+export const fileName = (game: PackGameId, packId?: string): string =>
   `${slugify(gameName(game))}-${packId ? slugify(packId) : 'my-packs'}.jerkbox.txt`;
 
 /**
  * The file to hand over. Plain text, because Chrome on Android shares only some file types
  * (text and media, not JSON: share_service_impl.cc), and a pack file should go straight to a chat.
  */
-export const packFile = (game: GameId, packs: readonly AnyPack[], packId?: string): File =>
+export const packFile = (game: PackGameId, packs: readonly AnyPack[], packId?: string): File =>
   new File([exportFile(game, packs)], fileName(game, packId), { type: 'text/plain' });
 
 /** What the import button accepts: these files, and JSON ones saved by hand. */
@@ -150,7 +150,7 @@ function board(raw: unknown[]): Kept<QuizCategory> & { clues: number } {
   return { items, skipped, clues };
 }
 
-function items(game: GameId, raw: unknown[]): Kept<unknown> & { usable: number } {
+function items(game: PackGameId, raw: unknown[]): Kept<unknown> & { usable: number } {
   const done = <T>(k: Kept<T>) => ({ ...k, usable: k.items.length });
   switch (game) {
     case 'forehead': return done(keep(raw, word, (w) => w.toLowerCase()));
@@ -166,7 +166,7 @@ function items(game: GameId, raw: unknown[]): Kept<unknown> & { usable: number }
 
 type ReadPack = { pack: AnyPack; skipped: number } | { problem: string };
 
-function readPack(game: GameId, raw: unknown): ReadPack {
+function readPack(game: PackGameId, raw: unknown): ReadPack {
   if (!isObj(raw)) return { problem: 'One pack in the file is damaged.' };
   const name = text(raw.name).slice(0, 40) || 'My pack';
   const list = raw[FIELD[game]];
@@ -187,7 +187,7 @@ function readPack(game: GameId, raw: unknown): ReadPack {
 export interface ReadResult { packs: AnyPack[]; /** Items dropped across all packs. */ skipped: number; /** Packs left out, and why. */ problems: string[] }
 
 /** A pack file's packs for `game`, or a plain-words reason it cannot be imported. */
-export function readFile(content: string, game: GameId): ReadResult | { error: string } {
+export function readFile(content: string, game: PackGameId): ReadResult | { error: string } {
   if (content.length > MAX_FILE_BYTES) return { error: 'That file is too big to be a pack file.' };
   let data: unknown;
   try { data = JSON.parse(content); } catch { return { error: NOT_A_PACK_FILE }; }
@@ -214,13 +214,13 @@ export function readFile(content: string, game: GameId): ReadResult | { error: s
 // ---- Saving on this phone
 
 interface PackStore { saved(): AnyPack[]; put(p: AnyPack): void; isBuiltin(id: string): boolean }
-const STORES: Record<GameId, PackStore> = {
+const STORES: Record<PackGameId, PackStore> = {
   forehead: customDecks, dial: customSpectra, gibberish: customGibberish, quiz: customQuiz,
   quick: customQuick, snark: customSnark, song: customSongs, taboo: customTaboo,
-} as Record<GameId, PackStore>;
+} as Record<PackGameId, PackStore>;
 
 /** Every pack saved on this phone for a game: the player's own and their edits of built-ins. */
-export const savedPacks = (game: GameId): AnyPack[] => STORES[game].saved();
+export const savedPacks = (game: PackGameId): AnyPack[] => STORES[game].saved();
 
 /** `id`, or `id-2`, `id-3`, … : the first that `taken` does not claim. */
 export function freshId(id: string, taken: (id: string) => boolean): string {
@@ -231,7 +231,7 @@ export function freshId(id: string, taken: (id: string) => boolean): string {
 }
 
 /** Saves the packs as the player's own, each under an id no built-in or saved pack uses. */
-export function savePacks(game: GameId, packs: readonly AnyPack[]): AnyPack[] {
+export function savePacks(game: PackGameId, packs: readonly AnyPack[]): AnyPack[] {
   const store = STORES[game];
   const taken = new Set(store.saved().map((p) => p.id));
   const out = packs.map((p) => {
@@ -247,14 +247,14 @@ export function savePacks(game: GameId, packs: readonly AnyPack[]): AnyPack[] {
 export type ImportResult = { saved: AnyPack[]; skipped: number; problems: string[] } | { error: string };
 
 /** Reads a pack file and saves what it holds. */
-export function importPacks(game: GameId, content: string): ImportResult {
+export function importPacks(game: PackGameId, content: string): ImportResult {
   const r = readFile(content, game);
   if ('error' in r) return r;
   return { saved: savePacks(game, r.packs), skipped: r.skipped, problems: r.problems };
 }
 
 /** "Imported 2 packs: Trip, Office. 12 cards skipped." */
-export function importMessage(game: GameId, r: Exclude<ImportResult, { error: string }>): string {
+export function importMessage(game: PackGameId, r: Exclude<ImportResult, { error: string }>): string {
   const n = r.saved.length;
   const unit = UNIT[game];
   const parts = [`Imported ${n} ${n === 1 ? 'pack' : 'packs'}: ${r.saved.map((p) => p.name).join(', ')}.`];

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Avatar from './Avatar.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
   import { pts } from './record';
   import { playerColor } from './look';
   import type { Shown } from './view';

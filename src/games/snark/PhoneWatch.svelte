@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Avatar from './Avatar.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
   import Voters from './Voters.svelte';
   import PhoneReveal from './PhoneReveal.svelte';
   import PhoneStandings from './PhoneStandings.svelte';

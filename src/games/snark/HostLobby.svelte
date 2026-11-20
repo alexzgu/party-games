@@ -1,11 +1,11 @@
 <script lang="ts">
   import Button from '../../components/Button.svelte';
   import Popup from '../../components/Popup.svelte';
-  import Avatar from './Avatar.svelte';
-  import Qr from './Qr.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
+  import Qr from '../../components/room/Qr.svelte';
   import { MAX_PLAYERS, MIN_PLAYERS, canStart, present, type Game } from './logic';
   import { packNames } from './host.svelte';
-  import { brokerLabel } from './broker';
+  import { brokerLabel } from '../../lib/room/broker';
 
   // The room before the game: how to join (QR, address, code), who is in, settings, Start.
   let { game, online, link, onstart, onkick, onsettings, onconnection }: {

@@ -4,8 +4,8 @@ import { scoreDuel, scoreFinal, validFinalBallot, FINAL_VOTE_POINTS } from './sc
 import * as L from './logic';
 import { gameRecord, standings } from './record';
 import { playerView } from './view';
-import { parseBroker } from './broker';
-import { cleanCode, isCode, newCode, CODE_LETTERS } from './code';
+import { parseBroker } from '../../lib/room/broker';
+import { cleanCode, isCode, newCode, CODE_LETTERS } from '../../lib/room/code';
 import { readToHost } from './protocol';
 
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `p${i}`);

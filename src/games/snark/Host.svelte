@@ -9,8 +9,8 @@
   import Popup from '../../components/Popup.svelte';
   import Button from '../../components/Button.svelte';
   import Rules from './Rules.svelte';
-  import Connection from './Connection.svelte';
-  import TapToFinish from './TapToFinish.svelte';
+  import Connection from '../../components/room/Connection.svelte';
+  import TapToFinish from '../../components/room/TapToFinish.svelte';
   import HostLobby from './HostLobby.svelte';
   import HostWrite from './HostWrite.svelte';
   import HostDuel from './HostDuel.svelte';
@@ -18,7 +18,7 @@
   import HostScores from './HostScores.svelte';
   import HostOver from './HostOver.svelte';
   import { host } from './host.svelte';
-  import { brokerSetting } from './broker';
+  import { brokerSetting } from '../../lib/room/broker';
   import { timeLeft, timerLength, type Game } from './logic';
   import { anyScored } from './record';
   import { joinLink, roundName, secs } from './look';

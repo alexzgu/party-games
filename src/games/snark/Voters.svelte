@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Avatar from './Avatar.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
   import type { Tick } from './view';
 
   // Who still has to vote (or write): a row of avatars, ticked when they are done. Names stay

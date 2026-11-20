@@ -1,7 +1,7 @@
 <script lang="ts">
   import Button from '../../components/Button.svelte';
-  import Confetti from './Confetti.svelte';
-  import Avatar from './Avatar.svelte';
+  import Confetti from '../../components/room/Confetti.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
   import type { Game } from './logic';
   import { leaders, place, pts, standings } from './record';
   import { playerColor } from './look';

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Avatar from './Avatar.svelte';
-  import Timer from './Timer.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
+  import Timer from '../../components/room/Timer.svelte';
   import { isFinalRound, present, promptCount, tasksFor, type Game } from './logic';
 
   // Everyone is typing on their phone; the room sees who is still writing.

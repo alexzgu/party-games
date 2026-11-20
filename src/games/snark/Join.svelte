@@ -4,12 +4,12 @@
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Rules from './Rules.svelte';
-  import Connection from './Connection.svelte';
+  import Connection from '../../components/room/Connection.svelte';
   import { go } from '../../lib/router.svelte';
   import { phone } from './player.svelte';
-  import { CODE_LENGTH, cleanCode } from './code';
+  import { CODE_LENGTH, cleanCode } from '../../lib/room/code';
   import { NAME_MAX, cleanName } from './logic';
-  import { brokerLabel } from './broker';
+  import { brokerLabel } from '../../lib/room/broker';
 
   // Room code (filled in from the QR link) and a name, then Join. A reason from the host or
   // the broker (wrong code, name taken, removed) shows above the form.

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Avatar from './Avatar.svelte';
-  import Timer from './Timer.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
+  import Timer from '../../components/room/Timer.svelte';
   import Voters from './Voters.svelte';
   import { NO_ANSWER, multiplier, player, votersFor, type Duel, type Game } from './logic';
   import { SWEEP_BONUS } from './scoring';

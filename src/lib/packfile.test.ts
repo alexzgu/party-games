@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { GameId } from '../app.config';
+import type { PackGameId } from '../app.config';
 import { customDecks, wordDecks } from './content';
 import { exportFile, fileName, freshId, importMessage, importPacks, readFile, type AnyPack } from './packfile';
 
-const SAMPLES: Record<GameId, AnyPack> = {
+const SAMPLES: Record<PackGameId, AnyPack> = {
   forehead: { id: 'our-trip', name: 'Our Trip', emoji: '🚗', blurb: 'Summer 2026', words: ['Road Trip', 'Gas Station', 'Taylor Swift'] },
   dial: { id: 'college', name: 'College', blurb: 'Dorms and finals', cards: [{ left: 'Easy class', right: 'Hard class' }, { left: 'Cold', right: 'Hot' }] },
   gibberish: { id: 'snacks', name: 'Snacks', blurb: 'Treats', cards: [{ phrase: 'Eye Scream', answer: 'Ice Cream', hint: 'Food' }] },
@@ -20,7 +20,7 @@ const SAMPLES: Record<GameId, AnyPack> = {
 const file = (game: string, packs: unknown[]) => JSON.stringify({ jerkBox: 1, game, packs });
 
 describe('pack files', () => {
-  it.each(Object.keys(SAMPLES) as GameId[])('%s: a pack exported and read back is the same pack', (game) => {
+  it.each(Object.keys(SAMPLES) as PackGameId[])('%s: a pack exported and read back is the same pack', (game) => {
     const stored = { ...SAMPLES[game], custom: true, added: '2026-11-20T10:00:00.000Z' };
     const r = readFile(exportFile(game, [stored]), game);
     expect(r).toEqual({ packs: [SAMPLES[game]], skipped: 0, problems: [] });

@@ -2,10 +2,11 @@
 // cloud broker. A `?peer=host:port` in the address (or `wss://host:port/path`) switches this
 // device to another one, e.g. a laptop running `npx peer --port 9000`; `?peer=cloud` switches back.
 // The choice is remembered on the device and carried in the join link and QR code.
-import { load, remove, save } from '../../lib/storage';
+import { load, remove, save } from '../storage';
 
 export interface Broker { host: string; port: number; path: string; secure: boolean }
 
+// Stored under Snark Tank's old key so a choice made before the other own-phones games carries over.
 const KEY = 'snark:broker';
 
 /** Reads "host:port", "host:port/path" or "ws(s)://host:port/path"; null when it is not one. */

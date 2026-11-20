@@ -4,7 +4,7 @@
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Rules from './Rules.svelte';
-  import Connection from './Connection.svelte';
+  import Connection from '../../components/room/Connection.svelte';
   import { go } from '../../lib/router.svelte';
   import { unlockAudio } from '../../lib/sound';
   import { host } from './host.svelte';

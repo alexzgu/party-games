@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Popup from '../../components/Popup.svelte';
-  import Button from '../../components/Button.svelte';
-  import { brokerLabel, brokerSetting, setBroker } from './broker';
+  import Popup from '../Popup.svelte';
+  import Button from '../Button.svelte';
+  import { brokerLabel, brokerSetting, setBroker } from '../../lib/room/broker';
 
   // Which matchmaking service this device uses. The backup is any PeerJS server, e.g. a laptop
   // running `npx peer --port 9000`; the host's QR code passes the choice on to the phones.

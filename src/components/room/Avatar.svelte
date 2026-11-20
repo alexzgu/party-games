@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { initial, playerColor } from './look';
+  import { initial, playerColor } from '../../lib/room/look';
   let { name, color, size = 40, dim = false }: { name: string; color: number; size?: number; dim?: boolean } = $props();
 </script>
 

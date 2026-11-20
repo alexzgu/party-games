@@ -1,6 +1,6 @@
 <script lang="ts">
   import Button from '../../components/Button.svelte';
-  import Avatar from './Avatar.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
   import { isFinalRound, type Game } from './logic';
   import { place, pts, standings } from './record';
   import { playerColor, roundName, secs } from './look';

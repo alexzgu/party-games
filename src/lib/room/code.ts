@@ -1,4 +1,4 @@
-// Room codes: four consonants, none that read as another letter or a digit (no vowels, so no
+// Room codes for the own-phones games: four consonants, none that read as another letter or a digit (no vowels, so no
 // words either; no L, which reads as I or 1). The host's peer id on the broker is built from it.
 export const CODE_LETTERS = 'BCDFGHJKMNPQRSTVWXZ';
 export const CODE_LENGTH = 4;
@@ -12,7 +12,8 @@ export const cleanCode = (raw: string) => [...raw.toUpperCase()].filter((c) => C
 
 export const isCode = (s: string) => s.length === CODE_LENGTH && cleanCode(s) === s;
 
-export const hostPeerId = (code: string) => `jerkbox-snark-${code}`;
+/** The host's id on the broker: `jerkbox-<game>-<CODE>`. */
+export const hostPeerId = (game: string, code: string) => `jerkbox-${game}-${code}`;
 
 /** A random id for this phone, kept in localStorage so a reload rejoins as the same player. */
 export const newPid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);

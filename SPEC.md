@@ -443,3 +443,100 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   `#/snark/join?demo=join|lobby|late|write|wait|vote|voted|vote-own|vote3|voted3|reveal|reveal3|scores|over`.
 - **Packs**: `src/content/snark/*.json`, `{"prompts": [...]}`, 3–14 words (Classic 200, After
   Dark 80).
+
+### Snark Tank: Quiplash 3 options (`snark`, on by setting; defaults unchanged)
+
+Settings gain **Final round**: "Everyone, 3 votes" (today's final, default) or "Three-line duels".
+Rules from Quiplash 3; amounts marked *house* are ours (the original's are not published).
+
+- **Stuck? button** (both options): in head-to-head rounds a prompt that has a stored safety answer
+  shows "Give me one"; it fills the box with that answer. Sent unchanged, the answer is marked
+  safety and every point it earns is halved (rounded down). Edited, it is a normal answer.
+- **Three-line duels** (final round when chosen): players are paired at random; each pair gets
+  one final prompt (asks for three things). Each player writes three lines (40 characters each;
+  Done needs at least one). Odd count: the player in last place (ties: random) faces the house,
+  whose three lines come with the prompt. Each duel in turn on the host: the prompt, then side
+  A's lines one at a time (1.5 s apart), then side B's; then everyone except the two duellers
+  votes for a whole set (twice the vote time). Points: vote share × 3000, +750 for a clean sweep
+  of 2+ votes (*house*, Snark's head-to-head formula × 3). Votes for the house score nothing.
+  Then the winner screen as today.
+- **Content**: a Snark pack may add `"safety": {"<prompt>": "<answer>"}` and
+  `"finals": [{"prompt": "...", "house": ["...", "...", "..."]}]`. Finals are drawn from the
+  chosen packs, falling back to Classic. Classic and After Dark get safety answers for every
+  prompt and 40 / 20 finals.
+- Demo screens add `duel-write`, `duel-reveal`, `duel-vote` on host and phone.
+
+## Shared room link (`src/lib/room/`)
+
+Every own-phones game (Snark Tank, Word Salad, Doodle Brawl) uses one link layer: room codes,
+broker choice (`?peer=`, stored under the existing `snark:broker` key so the setting carries
+over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone's outbox and the
+host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
+logic. The host's peer id is `jerkbox-<game>-<CODE>`. Any message whose JSON is 15,000 UTF-8
+bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 12,000 characters
+each) and reassembled before it is read; incomplete parts are dropped after 30 s. (PeerJS errors
+and drops the link on a JSON message of 16,300 bytes or more.)
+
+## Game 9 — Word Salad (`salad`)
+
+Rules of Blather 'Round, our content. 2–8 players on their own phones plus a host screen; two
+rounds; everyone presents once per round. Individual scores (as in the original); the end screen
+also shows how many secrets the room solved (a display only, no win or loss).
+
+- **Pick** (20 s): each phone privately sees three secrets of its category mix, one marked
+  Easy; one reshuffle per round; time out → the first is taken. Categories: person (real or
+  fictional), place, thing, story (film, show, book, game).
+- **Prepare** (30 s, all at once): each player builds an opening sentence for their secret by
+  tapping one choice into each blank of their category's opening frame. Time out → the first
+  choice in each blank.
+- **Present** (one player at a time, in seat order; 75 s each, *house*): the host shows the
+  presenter's opening sentence. The presenter's phone offers follow-up frames, one at a time
+  with a Skip to the next; each blank offers 6 words (*house*): words that fit the secret mixed
+  with words from the shared lists. A finished sentence appears on the host at once. Comparison
+  frames ("It's like ___", "It's not like ___", "It's ___ but ___") take a guess already made
+  by the room as a blank. Everyone else types guesses as often as they like; each guess appears
+  on the host and the presenter's phone with its author. The turn ends on the first right
+  guess or the clock.
+- **Right guess**: case, punctuation, a leading "the/a/an" and one typo (two past 10 letters)
+  are forgiven; each secret lists accepted variants.
+- **Points** (*house* curve; the original confirms only "faster pays more" and double round 2):
+  presenter and first right guesser each get 1000 at the start falling evenly to 200 at the
+  buzzer; an Easy secret pays half; round 2 doubles; each wrong guess the presenter used in a
+  comparison earns its author 100 if the secret is then solved. Unsolved: the answer is shown,
+  nobody scores. Highest total wins; ties share first.
+- **Content** (`src/content/salad/*.json`): secrets `{answer, category, level: easy|medium|hard,
+  also: [variants], words: {slot: [fitting words]}}`; frames and shared word lists live in
+  `src/games/salad/words.ts`. Pilot: 64 secrets (16 per category).
+- Host controls, reconnects, pause, late joiners (guess but do not present until next round),
+  demo screens as in Snark Tank.
+
+## Game 10 — Doodle Brawl (`brawl`)
+
+Rules of Champ'd Up, our titles and art. 3–8 players draw on their own phones; a host screen
+stages the bouts. Two rounds. No spectator seats; late joiners vote.
+
+- **Round, drawing pass 1** (draw time, default 90 s; 60/90/120/180): each player gets a private
+  title (ours, e.g. "World's okayest roommate") and draws a fighter for it, then names it
+  (30 characters; time out → "Nameless").
+- **Drawing pass 2**: each player is handed another player's fighter (picture and name, never
+  the title; a shuffled ring, never their own) and draws and names a challenger for it.
+- **Bouts**: for each title in turn the host reveals the title, then both fighters with their
+  names; everyone except the two artists votes (15 s). Purse 1000 (round 2: 2000, *house*) split
+  by vote share; the challenger also gets 10% of their own share (wiki, single source), so an
+  even split goes to the challenger. The side with more points wins the bout. A blank fighter
+  loses without a vote and the other side takes the whole purse; both blank: the bout is skipped.
+  No votes cast: each side gets half the purse, the challenger's bonus applies.
+- **Round 2 rematch**: straight after each round-2 bout the same two artists get a surprise
+  title. Each picks on their phone (15 s): keep their fighter, or tag in one of their own
+  fighters already shown this game. Then a vote as above, purse 2000; a player who kept their
+  fighter and wins the rematch gets +500 (*house*; the original confirms a bonus, not its size).
+- Highest total wins; ties share first. End screen: standings and each bout winner's fighter.
+- **Drawing**: square canvas, 640 × 640 units, Pointer Events, scrolling locked; 8 colours,
+  thin/thick pen, undo, clear. Stored as strokes `{c: colour, w: width, p: [x0, y0, dx1, dy1, …]}`
+  (whole units, points closer than 3 units dropped). The host keeps drawings in their own
+  store (key `brawl:art`), never in the game state; views carry drawing ids; a phone asks for a
+  drawing it lacks (`{t: 'art?', id}`) and keeps the answer. Drawings travel through the shared
+  link's parts.
+- **Content** (`src/content/brawl/*.json`): `{"titles": ["..."]}`; titles and rematch titles
+  come from one pool, never repeating within a game.
+- Reconnects, pause, demo screens as in Snark Tank; a half-finished drawing survives a reload.

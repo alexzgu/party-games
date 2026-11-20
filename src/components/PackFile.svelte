@@ -2,12 +2,12 @@
   // "Import packs" and "Export my packs" for a game's pack list. Import reads a pack file and
   // saves each pack in it as the player's own (never over a pack already here); export sends
   // every pack made or edited on this phone in one file. Text from a file is only ever shown as text.
-  import type { GameId } from '../app.config';
+  import type { PackGameId } from '../app.config';
   import Button from './Button.svelte';
   import { importMessage, importPacks, MAX_FILE_BYTES, PACK_FILE_ACCEPT, packFile, savedPacks } from '../lib/packfile';
   import { shareOrDownload } from '../lib/share';
 
-  let { game, onimported }: { game: GameId; onimported?: (ids: string[]) => void } = $props();
+  let { game, onimported }: { game: PackGameId; onimported?: (ids: string[]) => void } = $props();
 
   let input: HTMLInputElement | undefined = $state();
   // svelte-ignore state_referenced_locally

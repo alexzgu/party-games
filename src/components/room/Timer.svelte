@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { secs } from './look';
+  import { secs } from '../../lib/room/look';
 
   // Seconds left in a ring that empties. Red and pulsing for the last five seconds.
   let { left, total, paused = false, size = 72 }: { left: number | null; total: number; paused?: boolean; size?: number } = $props();
