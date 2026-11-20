@@ -191,6 +191,15 @@ verbs, and write places and times as phrases like “by a river” and “after 
 can never contain the answer or one of its words. Read your choices in the frames to hear how
 they fit, and run `npm run test:content`.
 
+### Doodle Brawl packs (`brawl/`)
+
+Original titles for fighters in a drawing contest. List existing titles with
+`npm run list -- brawl`. Put the pack in `src/content/brawl/<id>.json` as
+`{"titles": ["World's okayest roommate"]}`. Use 2–8 words in sentence case and write
+something specific and funny a player can draw. Titles must be unique across packs. A pack
+needs at least 24 titles to run a full eight-player game on its own. After Dark is cheeky.
+Run `npm run test:content`.
+
 ## Other changes
 
 Follow `SPEC.md`. Keep each game in `src/games/<id>/`, shared code in `src/lib/` and

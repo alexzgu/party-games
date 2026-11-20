@@ -1,17 +1,17 @@
 // Lists what a game's built-in packs already contain, so a new pack can avoid repeats:
-//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|song|salad
+//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|song|salad|brawl
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const game = process.argv[2];
 const dir = join(import.meta.dirname, '..', 'src', 'content', game ?? '');
-if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'song', 'salad'].includes(game)) {
-  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|song|salad');
+if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'song', 'salad', 'brawl'].includes(game)) {
+  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|song|salad|brawl');
   process.exit(1);
 }
 const packs = readdirSync(dir)
   .filter((f) => f.endsWith('.json'))
-  .flatMap((f) => { const d = JSON.parse(readFileSync(join(dir, f), 'utf8')); return d.packs ?? [d]; });
+  .flatMap((f) => { const d = JSON.parse(readFileSync(join(dir, f), 'utf8')); return d.packs ?? [d.titles ? { ...d, id: f.slice(0, -5), name: f.slice(0, -5).replaceAll('-', ' ') } : d]; });
 
 const hints = new Map();
 for (const p of packs) {
@@ -24,7 +24,7 @@ for (const p of packs) {
     }
     continue;
   }
-  const items = p.words ?? p.cards ?? p.prompts ?? p.songs ?? p.secrets;
+  const items = p.words ?? p.cards ?? p.prompts ?? p.songs ?? p.secrets ?? p.titles;
   console.log(`\n## ${p.id} — ${p.name} (${items.length})`);
   for (const it of items) {
     if (typeof it === 'string') console.log(it);
