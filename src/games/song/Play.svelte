@@ -153,7 +153,6 @@
     if (game.phase !== 'ready' && game.phase !== 'listen') return;
     step(rules.replaceSong(game, dealer.next(game.dealt), true));
     note = game.song ? 'That song wouldn’t play, so here’s another.' : 'No more songs that play here. Pick other packs.';
-    if (game.phase === 'listen') step({ ...game, phase: 'ready' });
     void loadCurrent();
   }
 
@@ -217,6 +216,7 @@
     reveal(rules.nobody(game));
   }
 
+  /** Another song, back on the ready screen: nobody is asked who named one the room has not heard. */
   function skipSong() {
     const s = dealer.next(game.dealt);
     if (!s) { note = 'No other songs in these packs.'; return; }

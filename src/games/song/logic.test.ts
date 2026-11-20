@@ -65,6 +65,17 @@ describe('Earworm rules', () => {
     expect(g.skipped).toHaveLength(2);
   });
 
+  it('a song swapped in while the room listens waits on the ready screen, so it is never revealed unheard', () => {
+    const listening = r.longer(r.listen(start()));
+    for (const g of [r.replaceSong(listening, song(2)), r.replaceSong(listening, song(2), true)]) {
+      expect(g.phase).toBe('ready');
+      expect(g.song).toEqual(song(2));
+      expect(r.nobody(g)).toBe(g);
+      expect(r.award(g, 0)).toBe(g);
+      expect(r.listen(g).phase).toBe('listen');
+    }
+  });
+
   it('wins at the target after the reveal, records history once, rematch zeroes scores', () => {
     let g = start(3);
     g = r.award(r.listen(g), 1);

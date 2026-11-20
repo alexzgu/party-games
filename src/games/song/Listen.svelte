@@ -26,17 +26,19 @@
   const loaded = $derived(status !== 'loading' && status !== 'error');
   const fresh = $derived(status === 'ready');
 
-  // Taps this soon after the screen appears are the tail of the Play tap.
+  // Taps this soon after the screen appears are the tail of the Play tap: neither names nor
+  // "Nobody got it" may reveal the song then.
   const shownAt = performance.now();
   const settled = () => performance.now() - shownAt >= 400;
   const pick = (i: number) => { if (settled()) onaward(i); };
+  const nobody = () => { if (settled()) onnobody(); };
 
   // Laptop or TV host: Space plays again, L plays longer, 1–9 award, 0 nobody.
   function key(e: KeyboardEvent) {
     if ((connection && e.target instanceof HTMLButtonElement) || e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (loaded) onagain(); }
     else if (e.key.toLowerCase() === 'l' && !last && loaded) onlonger();
-    else if (e.key === '0') onnobody();
+    else if (e.key === '0') nobody();
     else if (/^[1-9]$/.test(e.key) && game.players[Number(e.key) - 1]) pick(Number(e.key) - 1);
   }
 </script>
@@ -75,7 +77,7 @@
   </div>
 
   <div class="row">
-    <Button variant="secondary" onclick={onnobody}>Nobody got it</Button>
+    <Button variant="secondary" onclick={nobody}>Nobody got it</Button>
     <Button variant="ghost" onclick={onskip}>↻ Skip song</Button>
   </div>
 </div>

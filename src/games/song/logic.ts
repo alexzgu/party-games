@@ -116,11 +116,14 @@ export function setUpcoming(s: GameState, song: Song | null): GameState {
 
 /**
  * Swap the current song for another without a penalty: the host skipped it, or its preview
- * would not play (`broken`, kept for the history entry). Back to the shortest clip.
+ * would not play (`broken`, kept for the history entry). Back to the shortest clip, and from the
+ * listen screen back to the ready screen: who named it (and so the reveal) is only ever asked
+ * about a song whose clip the room has heard.
  */
 export function replaceSong(s: GameState, song: Song | null, broken = false): GameState {
   const skipped = broken && s.song ? [...s.skipped, `${s.song.title} — ${s.song.artist}`] : s.skipped;
-  return { ...s, song, step: 0, skipped, dealt: withDealt(s.dealt, song) };
+  const phase = s.phase === 'listen' ? 'ready' : s.phase;
+  return { ...s, phase, song, step: 0, skipped, dealt: withDealt(s.dealt, song) };
 }
 
 /** The upcoming song could not load: pick another before the room gets to it. */

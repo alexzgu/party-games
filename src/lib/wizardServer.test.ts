@@ -1,7 +1,7 @@
 // The magic-words route end to end without the network: the real SDK in claude.ts talks to the
 // real worker (worker/src/index.ts) through a stubbed fetch, and the worker's own call to the
 // API gets a fake streamed answer. Fake key and phrases only.
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import worker from '../../worker/src/index';
 import { fakeCtx, fakeEnv, fakeStream, FAKE_KEY } from '../../worker/src/testing';
 import { LIMITS } from '../../worker/src/limits';
@@ -90,11 +90,15 @@ describe('the magic words, phone to server to API', () => {
   });
 
   it('says when the words were said too often from one address today', async () => {
+    // The wait runs to the next UTC midnight: pin the clock so the wording is known.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-20T12:00:00Z'));
+    onTestFinished(() => { vi.useRealTimers(); });
     wire(fakeEnv());
     for (let i = 0; i < LIMITS.redeemsPerAddressPerDay; i++) await redeemPhrase('test phrase one', SERVER);
     const r = await redeemPhrase('test phrase one', SERVER);
     expect(r.ok === false && r.reason).toBe('too-often');
-    expect(redeemMessage(r)).toMatch(/^Fizzwick has heard the magic words from here too often today\. Try again in about \d+ hours?\.$/);
+    expect(redeemMessage(r)).toMatch(/^Fizzwick has heard the magic words from here too often today\. Try again in about 12 hours\.$/);
   });
 
   it('forgets the pass and asks for the new words once the phrase is removed', async () => {

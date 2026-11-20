@@ -381,9 +381,11 @@ Try again.
 - **Round**: ready screen ("Song N", one big Play button) → Play plays the 2-second clip → listen
   screen: a record spins while the clip plays, with a ring for its progress; "Again" replays,
   "Longer" replays from the start at 5 s then 10 s. Naming it is worth 3 / 2 / 1 points at
-  2 / 5 / 10 s. Tap the player who got it, or "Nobody got it"; "Skip song" swaps in another with
-  no penalty. Keys on a laptop: Space again, L longer, 1–9 award, 0 nobody. If the browser will
-  not start sound, the record says "Tap to start the sound".
+  2 / 5 / 10 s. Tap the player who got it, or "Nobody got it" (both ignore taps in the first
+  0.4 s, the tail of the Play tap); "Skip song" swaps in another with no penalty and goes back to
+  the ready screen, so nobody is ever asked about, or shown, a song the room has not heard.
+  Keys on a laptop: Space again, L longer, 1–9 award, 0 nobody. If the browser will not start
+  sound, the record says "Tap to start the sound".
 - **Clip start** (`pick.ts`): a pack's `start` (seconds into the preview) wins; otherwise the game
   picks the moment itself and remembers it per track: loudness every 50 ms and onset strength,
   Apple's fade-in and fade-out (first and last 1.5 s) ignored, the start in 1.5–20 s that best
@@ -394,8 +396,11 @@ Try again.
   clip's start for 10 s ("Stop the music" / "Hear it again"), and "Listen on Apple Music" (opens
   the song's Apple Music page in a new tab). A song with a YouTube id shows the video instead of
   the big art, uncovered, at least 200×200, with YouTube's own controls; starting it stops the
-  preview. "Wrong name? Undo" returns to the same clip. Then the scoreboard → "Next song" →
-  ready. First to the target wins (win screen, confetti, rematch). History gets one entry per
+  preview. "Wrong name? Undo" returns to the same clip. Nothing names a song before its reveal:
+  no screen before it renders the title, artist, art or video; the clips play through Web Audio
+  (no media element, so the lock screen, notification shade and car displays get no song
+  details); the page title stays the app's; the YouTube player is created only on the reveal.
+  Then the scoreboard → "Next song" → ready. First to the target wins (win screen, confetti, rematch). History gets one entry per
   finished game, `finished: false` when a game with something scored is thrown away; songs
   whose preview would not play are listed in its details.
 - **Pack editor**: every song with its art; tap one to change its title and artist, the clip
@@ -405,9 +410,10 @@ Try again.
 - **Add songs** (one screen per pack; nothing is saved until "Add N songs"): Paste (one per line,
   any mix of YouTube links in every form, Apple Music song links, "Title - Artist" or "Artist -
   Title", numbered or bulleted lists, tables from a chat), Playlist (a YouTube playlist link: an
-  off-screen IFrame API player reads up to 200 video ids and is never played), or Ask Claude
-  (with an API key: a theme and a count; "Title | Artist" lines stream in; without a key the
-  screen says how to ask any Claude chat and paste the answer). Every line goes through the
+  off-screen IFrame API player reads up to 200 video ids and is never played), or 🧙 Ask the
+  wizard (a theme, a count and "How hard Fizzwick tries"; "Fizzwick is conjuring … songs" while
+  "Title | Artist" lines stream in through `streamLines`; without the wizard the screen shows
+  `NOT_HERE` and how to ask any chatbot app and paste the answer). Every line goes through the
   matcher (`match.ts`): a YouTube link's title comes from oEmbed and is cleaned (official video,
   lyrics, HD, remastered, featured artists, VEVO and "- Topic" channels), then searched on Apple;
   results are ranked by title and artist likeness, preferring the original studio recording over

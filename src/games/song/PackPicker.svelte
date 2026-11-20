@@ -64,7 +64,7 @@
       <button class="tile make" onclick={onnew}>
         <span class="spark" aria-hidden="true">＋</span>
         <span class="name wide">New pack</span>
-        <span class="blurb">From links, a list, a playlist or Claude</span>
+        <span class="blurb">From links, a list, a playlist or the wizard</span>
       </button>
     </li>
   </ul>

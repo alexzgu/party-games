@@ -11,13 +11,14 @@
   import { readPlaylist } from './youtube';
   import { askClaude, COUNT_RANGE, DEFAULT_COUNT } from './generate';
   import { loadAdding, saveAdding } from './store';
-  import { hasKey } from '../../lib/claude';
+  import { hasKey, NOT_HERE } from '../../lib/claude';
+  import WizardEffort from '../../components/WizardEffort.svelte';
   import { customSongs, songPacks, type SongPack } from '../../lib/content';
   import { sfx } from '../../lib/sound';
 
   // Adding songs to one pack: paste lines (links or "Title - Artist"), read a YouTube playlist,
-  // or ask Claude for a theme. Every line is matched to an Apple Music song as it comes in and
-  // listed for review; nothing is saved to the pack until "Add N songs". The list itself is kept
+  // or ask the wizard (Claude) for a theme. Every line is matched to an Apple Music song as it
+  // comes in and listed for review; nothing is saved to the pack until "Add N songs". The list itself is kept
   // on the phone, so a reload carries on where it was.
   let { id, onback }: { id: string; onback: () => void } = $props();
 
@@ -82,8 +83,11 @@
     asking = true;
     abort = new AbortController();
     const avoid = [...(pack?.songs ?? []).map((s) => `${s.title} | ${s.artist}`), ...adder.kept().map((i) => i.wanted.line)];
+    const signal = abort.signal;
+    let heard = 0;
     try {
-      await askClaude({ theme, count, avoid, signal: abort.signal, onSong: (w) => adder.add([w]) });
+      await askClaude({ theme, count, avoid, signal, onSong: (w) => { heard++; adder.add([w]); } });
+      if (!heard && !signal.aborted) problem = 'Fizzwick came back empty-handed. Try again, or reword the theme.';
     } catch (e) {
       problem = (e as Error).message;
     } finally {
@@ -138,7 +142,7 @@
   const MODES = [
     { value: 'paste' as const, label: 'Paste' },
     { value: 'playlist' as const, label: 'Playlist' },
-    { value: 'claude' as const, label: 'Ask Claude' },
+    { value: 'claude' as const, label: '🧙 Ask the wizard' },
   ];
 </script>
 
@@ -170,14 +174,16 @@
         <input type="text" bind:value={theme} maxlength="120" placeholder="songs everyone screams at a wedding" autocomplete="off" />
       </label>
       <Stepper label="How many" bind:value={count} min={COUNT_RANGE[0]} max={COUNT_RANGE[1]} step={5} />
+      <WizardEffort />
       {#if asking}
-        <Button variant="secondary" onclick={() => abort?.abort()}>Stop Claude</Button>
+        <p class="waiting" role="status"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme.trim()}” songs…</p>
+        <Button variant="secondary" onclick={() => abort?.abort()}>Stop</Button>
       {:else}
-        <Button onclick={claude} disabled={!theme.trim()}>Ask Claude</Button>
+        <Button onclick={claude} disabled={!theme.trim()}>✨ Conjure songs</Button>
       {/if}
     {:else}
       <div class="nokey">
-        <p><b>No Claude API key on this phone.</b> Add one in Settings, or ask any Claude chat:</p>
+        <p><b>{NOT_HERE}</b> Or ask any chatbot app:</p>
         <p class="quote">“List 30 songs everyone screams at a wedding, one per line as Title - Artist.”</p>
         <p>Then copy its answer, come back and paste it under <b>Paste</b>.</p>
         <Button variant="secondary" onclick={() => (mode = 'paste')}>Go to Paste</Button>
@@ -223,6 +229,7 @@
   .nokey { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-4); border-radius: var(--r-md); background: var(--surface); }
   .nokey p { margin: 0; color: var(--text-dim); }
   .quote { font-style: italic; color: var(--text) !important; }
+  .waiting { margin: 0; color: var(--text-dim); font-weight: 600; }
   .found { display: flex; flex-direction: column; align-items: stretch; gap: var(--s-2); min-width: 0; }
   .status { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); position: sticky; top: 0; z-index: 2; padding: var(--s-2) 0; background: var(--bg); }
   .status p { margin: 0; color: var(--text-dim); }

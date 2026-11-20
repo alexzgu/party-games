@@ -128,7 +128,7 @@
         {/snippet}
       </ListTools>
       {#if query && !shown.length}<p class="none">No songs match “{query.trim()}”</p>{/if}
-      {#if !pack.songs.length}<p class="none">No songs yet. Add some: paste links or a list, read a YouTube playlist, or ask Claude.</p>{/if}
+      {#if !pack.songs.length}<p class="none">No songs yet. Add some: paste links or a list, read a YouTube playlist, or ask the wizard.</p>{/if}
       <ul class="songs" bind:this={list}>
         {#each shown as { s, i } (i)}
           {@const t = tracks.get(s.apple)}
