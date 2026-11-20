@@ -146,3 +146,26 @@ const snarkFiles = import.meta.glob<SnarkPack>('../content/snark/*.json', { eage
 const builtinSnark = ordered(Object.values(snarkFiles), ['classic', 'after-dark']);
 export const customSnark = customStore<SnarkPack>('custom:snark', builtinSnark);
 export const snarkPacks = (): SnarkPack[] => merged(customSnark.saved(), builtinSnark);
+
+// Drop-in games share the pack metadata and keep their cards in separate stores.
+export interface WarmCard { answer: string; clues: string[] }
+export type RoomCard =
+  | { type: 'side'; a: string; b: string }
+  | { type: 'proof' | 'together'; text: string }
+  | { type: 'foley'; lines: string[] };
+export interface DropInPack<T> {
+  id: string;
+  name: string;
+  blurb: string;
+  added?: string;
+  custom?: boolean;
+  cards: T[];
+}
+const warmFiles = import.meta.glob<DropInPack<WarmCard>>('../content/warm/*.json', { eager: true, import: 'default' });
+const roomFiles = import.meta.glob<DropInPack<RoomCard>>('../content/room/*.json', { eager: true, import: 'default' });
+const builtinWarm = ordered(Object.values(warmFiles), ['everyday-things', 'pop-culture', 'food-drink']);
+const builtinRoom = ordered(Object.values(roomFiles), ['house-party', 'after-dark', 'deep-cuts']);
+export const customWarm = customStore('custom:warm', builtinWarm);
+export const customRoom = customStore('custom:room', builtinRoom);
+export const warmPacks = () => merged(customWarm.saved(), builtinWarm);
+export const roomPacks = () => merged(customRoom.saved(), builtinRoom);
