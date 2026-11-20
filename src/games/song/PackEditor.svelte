@@ -114,6 +114,10 @@
       <input type="text" bind:value={name} onchange={rename} maxlength="40" autocomplete="off" enterkeyhint="done" />
     </label>
 
+    {#if pack.legacySongs?.length}
+      <p class="muted">Some saved songs need an Apple Music match. Open Add songs to rematch them.</p>
+    {/if}
+
     <section class="list" aria-label="Songs">
       <ListTools key="song:songs" bind:query bind:sort placeholder="Search titles and artists" shown={shown.length} total={pack.songs.length}>
         {#snippet title()}

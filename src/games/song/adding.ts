@@ -1,7 +1,7 @@
 // The "Add songs" review list: lines go in (pasted, from a playlist, or from Claude), are
 // matched one at a time through the rate-limited matcher, and stream into the list for the
 // host to keep, drop or re-pick. Knows nothing about screens, so the tests drive it with fakes.
-import type { Song } from '../../lib/content';
+import type { LegacySong, Song } from '../../lib/content';
 import { matchWanted, wantedKey, type Match, type MatchDeps, type Track, type Wanted } from './match';
 
 export interface Item {
@@ -29,7 +29,7 @@ export class Adder {
   constructor(
     private deps: AdderDeps,
     private existing: Pick<Song, 'apple' | 'title' | 'artist'>[],
-    private changed: () => void,
+    private changed: (() => void) | null,
     restored: Item[] = [],
   ) {
     // A list saved mid-match carries on from where it was.
@@ -38,6 +38,7 @@ export class Adder {
 
   /** Adds lines (repeats of lines already in the list are ignored) and starts matching. */
   add(wanted: Wanted[]): number {
+    if (!this.changed) return 0;
     const known = new Set(this.items.map((i) => i.key));
     let added = 0;
     for (const w of wanted) {
@@ -47,7 +48,7 @@ export class Adder {
       this.items.push({ key, wanted: w, state: 'waiting', match: null, keep: false, dup: false });
       added++;
     }
-    this.changed();
+    this.changed?.();
     this.resume();
     return added;
   }
@@ -60,6 +61,7 @@ export class Adder {
 
   /** Starts (or restarts after stop() or a network error) working through the waiting lines. */
   resume(): void {
+    if (!this.changed) return;
     this.stopped = false;
     this.error = '';
     if (!this.running) void this.pump();
@@ -70,11 +72,17 @@ export class Adder {
     this.stopped = true;
   }
 
+  /** Ends this importer session and detaches its draft writer. */
+  close(): void {
+    this.stop();
+    this.changed = null;
+  }
+
   toggle(key: string): void {
     const it = this.items.find((i) => i.key === key);
     if (!it?.match?.track?.preview) return;
     it.keep = !it.keep;
-    this.changed();
+    this.changed?.();
   }
 
   /** "Wrong match? Pick another": the chosen track replaces the match, which joins the others. */
@@ -86,7 +94,7 @@ export class Adder {
     it.match = { ...it.match, track, others, sure: true, why: undefined };
     it.dup = this.isDup(track, it);
     it.keep = !!track.preview && !it.dup;
-    this.changed();
+    this.changed?.();
   }
 
   /** The songs to save: kept, playable and new to the pack. */
@@ -105,7 +113,7 @@ export class Adder {
         const it = this.items.find((i) => i.state === 'waiting');
         if (!it) break;
         it.state = 'matching';
-        this.changed();
+        this.changed?.();
         try {
           if (it.wanted.kind === 'playlist') await this.expand(it);
           else this.settle(it, await matchWanted(it.wanted, this.deps));
@@ -115,11 +123,11 @@ export class Adder {
           this.error = navigator.onLine === false ? 'No internet. Connect, then try again.' : 'Couldn’t reach Apple Music or YouTube. Try again in a moment.';
           break;
         }
-        this.changed();
+        this.changed?.();
       }
     } finally {
       this.running = false;
-      this.changed();
+      this.changed?.();
     }
   }
 
@@ -134,7 +142,7 @@ export class Adder {
   /** A playlist line becomes one line per video in it. */
   private async expand(it: Item) {
     if (it.wanted.kind !== 'playlist') return;
-    const ids = await this.deps.readPlaylist(it.wanted.list);
+    const ids = [...new Set(await this.deps.readPlaylist(it.wanted.list))];
     it.state = 'done';
     it.match = { line: it.wanted.line, track: null, others: [], sure: false, why: `a playlist of ${ids.length} videos` };
     const at = this.items.indexOf(it);
@@ -145,6 +153,10 @@ export class Adder {
       .map((w) => ({ key: wantedKey(w), wanted: w, state: 'waiting', match: null, keep: false, dup: false }));
     this.items.splice(at + 1, 0, ...fresh);
   }
+}
+
+export function rematchWanted({ title, artist }: LegacySong): Wanted {
+  return { kind: 'text', query: `${title} ${artist}`, guesses: [{ title, artist }], line: `${title} - ${artist}` };
 }
 
 /** A kept line as a pack song: Apple's id, tidied names, and the YouTube video it came from. */

@@ -143,11 +143,26 @@ export interface Song {
   /** 11-character YouTube video id, shown (never hidden) at the reveal only. */
   youtube?: string;
 }
-export interface SongPack { id: string; name: string; blurb: string; songs: Song[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+/** A saved YouTube-era song that still needs an Apple Music match. */
+export type LegacySong = Pick<Song, 'title' | 'artist'>;
+export interface SongPack { id: string; name: string; blurb: string; songs: Song[]; legacySongs?: LegacySong[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 const songFiles = import.meta.glob<SongPack>('../content/song/*.json', { eager: true, import: 'default' });
 const builtinSongs = ordered(Object.values(songFiles), ['2000s-bangers', '2010s-hits', 'throwbacks']);
 export const customSongs = customStore<SongPack>('custom:songs', builtinSongs);
-export const songPacks = (): SongPack[] => merged(customSongs.saved(), builtinSongs);
+export function songPacks(): SongPack[] {
+  const saved = customSongs.saved().map((pack) => {
+    const songs: Song[] = [];
+    const legacySongs = [...(pack.legacySongs ?? [])];
+    for (const song of pack.songs) {
+      if (Number.isSafeInteger(song.apple) && song.apple > 0) songs.push(song);
+      else legacySongs.push({ title: song.title, artist: song.artist });
+    }
+    if (!legacySongs.length) return pack;
+    // A YouTube-only edit must not hide the shipped Apple Music songs.
+    return { ...pack, songs: songs.length ? songs : customSongs.original(pack.id)?.songs ?? [], legacySongs };
+  });
+  return merged(saved, builtinSongs);
+}
 
 // Snark Tank: prompts players write funny answers to ("The worst thing to hear from your pilot").
 export interface SnarkPack { id: string; name: string; blurb: string; prompts: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }

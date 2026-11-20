@@ -6,7 +6,7 @@
   import type { GameState } from './logic';
 
   // Between songs: the standings, and the next song loading behind them.
-  let { game, loading, onnext, onleave }: { game: GameState; loading: boolean; onnext: () => void; onleave: () => void } = $props();
+  let { game, loading, retry = false, onretry, onnext, onleave }: { game: GameState; loading: boolean; retry?: boolean; onretry?: () => void; onnext: () => void; onleave: () => void } = $props();
   const flash = $derived(game.outcome?.kind === 'point' ? game.outcome.scorer : -1);
   const gained = $derived(game.outcome?.kind === 'point' ? game.outcome.points : 0);
 </script>
@@ -20,7 +20,12 @@
 
   {#snippet actions()}
     <Button size="lg" onclick={onnext}>Next song →</Button>
-    {#if loading}<p class="loading" role="status">Loading the next song…</p>{/if}
+    {#if retry}
+      <p class="loading" role="alert">Couldn’t load the next song. Check your connection.</p>
+      <Button variant="secondary" onclick={onretry}>Retry</Button>
+    {:else if loading}
+      <p class="loading" role="status">Loading the next song…</p>
+    {/if}
   {/snippet}
 </Screen>
 

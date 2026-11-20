@@ -8,8 +8,9 @@
   import Win from './Win.svelte';
   import TapToFinish from './TapToFinish.svelte';
   import { makeDealer, packNames } from './deal';
-  import { ClipPlayer, prepare, unlockMusic, type Prepared } from './audio';
+  import { ClipPlayer, unlockMusic, type Prepared } from './audio';
   import { lookupMany, NetError } from './itunes';
+  import { pendingPreview, preparePreview } from './previews';
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
   import { keepAwake } from '../../lib/wakelock';
@@ -51,8 +52,8 @@
   // svelte-ignore state_referenced_locally
   let payoff = $state(demo === 'reveal');
   const tracks = new Map<number, Track | null>();
-  const preps = new Map<number, Promise<Prepared>>();
-  let failures = 0;
+  const preps = new Map<number, Promise<Prepared | null>>();
+  let preloadFailed = $state(false);
   /** The upcoming song whose preview is loaded and ready. */
   let readyNext = $state(0);
 
@@ -75,12 +76,15 @@
         if (!t?.preview) dealer.drop(String(id));
       }
       net = 'ok';
-      failures = 0;
       if (!game.song && game.phase === 'ready') step(rules.replaceSong(game, dealer.next(game.dealt)));
       await loadForPhase();
     } catch (e) {
-      net = e instanceof NetError && e.offline ? 'offline' : navigator.onLine ? 'failed' : 'offline';
+      net = connectionProblem(e);
     }
+  }
+
+  function connectionProblem(error: unknown) {
+    return (error instanceof NetError && error.offline) || !navigator.onLine ? 'offline' : 'failed';
   }
 
   /** After a load or reload: whatever the current screen needs next. */
@@ -96,28 +100,12 @@
     return t;
   }
 
-  class NoPreview extends Error {}
-
-  /** A song's preview, downloaded and decoded once; a dead preview link is looked up afresh once. */
-  function prep(song: Song): Promise<Prepared> {
-    const hit = preps.get(song.apple);
-    if (hit) return hit;
-    const p = (async () => {
-      const track = await trackFor(song);
-      if (!track?.preview) throw new NoPreview();
-      try {
-        return await prepare(song, track);
-      } catch (e) {
-        if (!navigator.onLine) throw new NetError('offline', true);
-        const again = (await lookupMany([song.apple], true)).get(song.apple) ?? null;
-        tracks.set(song.apple, again);
-        if (!again?.preview || again.preview === track.preview) throw e instanceof Error && /decode/i.test(e.message) ? new NoPreview() : e;
-        return prepare(song, again);
-      }
-    })();
-    preps.set(song.apple, p);
-    p.catch(() => preps.delete(song.apple));
-    return p;
+  function prep(song: Song): Promise<Prepared | null> {
+    return pendingPreview(preps, song.apple, () => preparePreview(song, trackFor, async () => {
+      const track = (await lookupMany([song.apple], true)).get(song.apple) ?? null;
+      tracks.set(song.apple, track);
+      return track;
+    }));
   }
 
   async function loadCurrent() {
@@ -127,15 +115,14 @@
     try {
       const p = await prep(song);
       if (game.song?.apple !== song.apple) return;
+      if (!p) { unplayable(song); return; }
       current = p;
-      failures = 0;
+      net = 'ok';
       if (status === 'loading' || status === 'error') status = 'ready';
     } catch (e) {
       if (game.song?.apple !== song.apple) return;
-      if (e instanceof NoPreview || ++failures < 2) { unplayable(song); return; }
-      // Two songs in a row would not load: the network, not the songs.
       status = 'error';
-      net = navigator.onLine ? 'failed' : 'offline';
+      net = connectionProblem(e);
     }
   }
 
@@ -143,14 +130,19 @@
   async function preload() {
     const song = game.upcoming;
     if (!song) return;
+    preloadFailed = false;
     try {
-      await prep(song);
-      readyNext = song.apple;
-    } catch {
+      const prepared = await prep(song);
       if (game.upcoming?.apple !== song.apple) return;
-      dealer.drop(rules.songKey(song));
-      step(rules.replaceUpcoming(game, dealer.next(game.dealt)));
-      void preload();
+      if (prepared) {
+        readyNext = song.apple;
+      } else {
+        dealer.drop(rules.songKey(song));
+        step(rules.replaceUpcoming(game, dealer.next(game.dealt)));
+        void preload();
+      }
+    } catch {
+      if (game.upcoming?.apple === song.apple) preloadFailed = true;
     }
   }
 
@@ -271,7 +263,8 @@
 
   const shownTrack = $derived(demo ? demoTrack : current?.apple === game.song?.apple ? current?.track ?? null : (game.song ? tracks.get(game.song.apple) ?? null : null));
   const canPlay = $derived(!!game.song && (demo ? true : net === 'ok' && !!current && current.apple === game.song.apple));
-  const problem = $derived(net === 'offline' || net === 'failed' ? net : game.song || net === 'looking' ? '' : 'empty');
+  const connection = $derived(net === 'offline' || net === 'failed' ? net : '');
+  const problem = $derived(connection || (game.song || net === 'looking' ? '' : 'empty'));
   const upcomingReady = $derived(demo || !game.upcoming || readyNext === game.upcoming.apple);
 </script>
 
@@ -279,12 +272,12 @@
   {#if game.phase === 'ready'}
     <Ready {game} {canPlay} {problem} looking={net === 'looking'} {note} onplay={play} onretry={connect} onleave={leave} />
   {:else if game.phase === 'listen'}
-    <Stage {status} {progress} onunblock={unblock} />
-    <Listen {game} {status} {note} onagain={again} onlonger={longer} onaward={award} onnobody={nobody} onskip={skipSong} onleave={leave} />
+    <Stage status={connection ? 'error' : status} {progress} onunblock={unblock} />
+    <Listen {game} status={connection ? 'error' : status} {note} {connection} onretry={connect} onagain={again} onlonger={longer} onaward={award} onnobody={nobody} onskip={skipSong} onleave={leave} />
   {:else if game.phase === 'reveal'}
     <TapToFinish><Reveal {game} track={shownTrack} playing={payoff} demo={!!demo} onhear={hearIt} onstop={stopMusic} onnext={next} onundo={undo} /></TapToFinish>
   {:else if game.phase === 'scores'}
-    <TapToFinish><Scores {game} loading={!upcomingReady} onnext={next} onleave={leave} /></TapToFinish>
+    <TapToFinish><Scores {game} loading={!upcomingReady && !preloadFailed} retry={preloadFailed} onretry={preload} onnext={next} onleave={leave} /></TapToFinish>
   {:else}
     <TapToFinish><Win {game} onrematch={rematch} onnew={leave} {onhome} /></TapToFinish>
   {/if}

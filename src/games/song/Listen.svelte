@@ -6,10 +6,12 @@
 
   // The host's screen while the room listens: replay or lengthen the clip, then tap who named
   // it. The spinning record (Stage) sits between the header and these controls.
-  let { game, status, note = '', onagain, onlonger, onaward, onnobody, onskip, onleave }: {
+  let { game, status, note = '', connection = '', onretry, onagain, onlonger, onaward, onnobody, onskip, onleave }: {
     game: GameState;
     status: ClipStatus;
     note?: string;
+    connection?: '' | 'offline' | 'failed';
+    onretry?: () => void;
     onagain: () => void;
     onlonger: () => void;
     onaward: (player: number) => void;
@@ -31,7 +33,7 @@
 
   // Laptop or TV host: Space plays again, L plays longer, 1–9 award, 0 nobody.
   function key(e: KeyboardEvent) {
-    if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || e.altKey) return;
+    if ((connection && e.target instanceof HTMLButtonElement) || e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (loaded) onagain(); }
     else if (e.key.toLowerCase() === 'l' && !last && loaded) onlonger();
     else if (e.key === '0') onnobody();
@@ -51,6 +53,10 @@
 
 <div class="controls">
   {#if note}<p class="note" role="status">{note}</p>{/if}
+  {#if connection}
+    <p class="note" role="alert">{connection === 'offline' ? 'No internet. Reconnect to play this song.' : 'Can’t reach Apple Music. Check your connection.'}</p>
+    <Button onclick={onretry}>Retry</Button>
+  {/if}
   <div class="row">
     <Button variant={fresh ? 'primary' : 'secondary'} onclick={onagain} disabled={!loaded}>{fresh ? '▶ Play' : '↺ Again'}</Button>
     <Button variant="secondary" onclick={onlonger} disabled={last || !loaded}>

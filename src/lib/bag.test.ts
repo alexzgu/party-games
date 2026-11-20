@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { makeBag } from './bag';
 
 describe('makeBag', () => {
@@ -17,6 +17,25 @@ describe('makeBag', () => {
     const lastThree = firstPass.slice(-3);
     const refill = [bag.next()!, bag.next()!, bag.next()!];
     expect(refill.some((x) => lastThree.includes(x))).toBe(false);
+  });
+
+  it('deals a one-item pool repeatedly and after reloading its saved history', () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+    });
+    try {
+      const open = () => makeBag('single', [{ id: 'only' }], (item) => item.id);
+      const bag = open();
+      expect(bag.next()).toEqual({ id: 'only' });
+      expect(bag.next()).toEqual({ id: 'only' });
+      const reloaded = open();
+      expect(reloaded.remaining).toBe(0);
+      expect(reloaded.next()).toEqual({ id: 'only' });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('returns undefined for an empty pool', () => {

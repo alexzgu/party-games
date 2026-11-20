@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Adder, toSong, type AdderDeps } from './adding';
 import { parsePaste, tidy, type Track } from './match';
 
@@ -44,6 +44,49 @@ describe('Add songs review list', () => {
       { title: 'Timber', artist: 'Pitbull ft. Ke$ha', apple: 3, youtube: 'vvvvvvvvvv1' },
       { title: 'Hey Ya!', artist: 'Outkast', apple: 2, youtube: 'vvvvvvvvvv2' },
     ]);
+  });
+
+  it('creates one row per unique playlist video in first-seen order', async () => {
+    const deps = fakeDeps({ readPlaylist: async () => ['vvvvvvvvvv1', 'vvvvvvvvvv1', 'vvvvvvvvvv2'] });
+    const a = new Adder(deps, [], () => {});
+    a.add(parsePaste('https://www.youtube.com/playlist?list=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG'));
+    await until(a);
+    expect(a.items.slice(1).map((item) => item.key)).toEqual(['yt:vvvvvvvvvv1', 'yt:vvvvvvvvvv2']);
+  });
+
+  it('offers retry while only a playlist is waiting', async () => {
+    const readPlaylist = vi.fn<AdderDeps['readPlaylist']>()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(['vvvvvvvvvv1']);
+    const a = new Adder(fakeDeps({ readPlaylist }), [], () => {});
+    a.add(parsePaste('https://www.youtube.com/playlist?list=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG'));
+    await settle();
+    expect(a.busy).toBe(false);
+    expect(a.error).toContain('Try again');
+    expect(a.waiting).toBe(1);
+    expect(a.total).toBe(0);
+    a.resume();
+    await until(a);
+    expect(a.waiting).toBe(0);
+    expect(a.kept()).toHaveLength(1);
+  });
+
+  it.each(['saving', 'leaving'])('detaches the draft writer when %s during a lookup', async (action) => {
+    let finish!: (track: Track) => void;
+    const pending = new Promise<Track>((resolve) => { finish = resolve; });
+    const persist = vi.fn();
+    const a = new Adder(fakeDeps({ lookup: (id) => id === 1 ? Promise.resolve(library[0]) : pending }), [], persist);
+    a.add(parsePaste('https://music.apple.com/us/album/toxic/78?i=1\nhttps://music.apple.com/us/album/hey-ya/79?i=2'));
+    await settle();
+    expect(a.kept()).toHaveLength(1);
+    expect(a.busy).toBe(true);
+    a.close();
+    if (action === 'saving') persist(null);
+    const writes = persist.mock.calls.length;
+    finish(library[1]);
+    await settle();
+    expect(a.busy).toBe(false);
+    expect(persist).toHaveBeenCalledTimes(writes);
   });
 
   it('lets the host drop a match or pick another result', async () => {

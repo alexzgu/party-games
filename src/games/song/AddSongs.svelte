@@ -5,8 +5,8 @@
   import Segmented from '../../components/Segmented.svelte';
   import Stepper from '../../components/Stepper.svelte';
   import FoundRow from './FoundRow.svelte';
-  import { Adder, toSong, type Item } from './adding';
-  import { parsePaste, tidy, youtubeFrom, type Track } from './match';
+  import { Adder, rematchWanted, toSong, type Item } from './adding';
+  import { parsePaste, tidy, wantedKey, youtubeFrom, type Track } from './match';
   import { apple, deps } from './itunes';
   import { readPlaylist } from './youtube';
   import { askClaude, COUNT_RANGE, DEFAULT_COUNT } from './generate';
@@ -32,6 +32,7 @@
   let asking = $state(false);
   let items = $state<Item[]>([]);
   let busy = $state(false);
+  let waiting = $state(0);
   let error = $state('');
   let playing = $state('');
   let audio: HTMLAudioElement | null = null;
@@ -43,6 +44,7 @@
   function changed() {
     items = adder.items.map((i) => ({ ...i }));
     busy = adder.busy;
+    waiting = adder.waiting;
     error = adder.error;
     saveAdding(id, adder.items.length ? adder.items : null);
   }
@@ -50,7 +52,7 @@
   onMount(() => {
     changed();
     if (adder.waiting) adder.resume();
-    return () => { adder.stop(); abort?.abort(); audio?.pause(); };
+    return close;
   });
 
   const done = $derived(items.filter((i) => i.state === 'done' && i.wanted.kind !== 'playlist').length);
@@ -99,13 +101,29 @@
     audio.play().catch(() => (playing = ''));
   }
 
+  const legacy = (pack?.legacySongs ?? []).map(rematchWanted);
+
+  function close() {
+    adder.close();
+    abort?.abort();
+    audio?.pause();
+  }
+
+  function leave() {
+    close();
+    onback();
+  }
+
   function save() {
     if (!pack) return;
-    const fresh = adder.kept().map((i) => toSong(i, tidy)).filter((s) => !!s);
+    const kept = adder.kept();
+    const fresh = kept.map((i) => toSong(i, tidy)).filter((s) => !!s);
+    const matched = new Set(kept.map((i) => i.key));
+    const remaining = pack.legacySongs?.filter((song) => !matched.has(wantedKey(rematchWanted(song))));
     const { custom: _, ...plain } = pack;
-    customSongs.put({ ...plain, songs: [...fresh, ...pack.songs] });
+    customSongs.put({ ...plain, songs: [...fresh, ...pack.songs], legacySongs: remaining });
     sfx.correct();
-    adder.stop();
+    close();
     saveAdding(id, null);
     onback();
   }
@@ -124,11 +142,14 @@
   ];
 </script>
 
-<Screen title="Add songs" {onback}>
+<Screen title="Add songs" onback={leave}>
   {#if !pack}
     <p class="muted">This pack is no longer on this phone.</p>
   {:else}
     <p class="to">To “{pack.name}” · {pack.songs.length} songs now</p>
+    {#if legacy.length}
+      <Button variant="secondary" onclick={() => adder.add(legacy)}>Rematch saved songs ({legacy.length})</Button>
+    {/if}
     <Segmented bind:value={mode} options={MODES} label="How to add songs" onchange={() => (problem = '')} />
 
     {#if mode === 'paste'}
@@ -174,7 +195,7 @@
           </p>
           {#if busy}
             <button class="link" onclick={() => adder.stop()}>Pause</button>
-          {:else if total > done}
+          {:else if waiting}
             <button class="link" onclick={() => adder.resume()}>{error ? 'Try again' : 'Carry on'}</button>
           {/if}
         </div>

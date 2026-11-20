@@ -16,7 +16,8 @@ export function makeBag<T>(poolKey: string, items: readonly T[], idOf: (t: T) =>
   function refill() {
     let fresh = items.filter((t) => !seen.has(idOf(t)));
     if (fresh.length === 0) {
-      const keep = [...seen].slice(-Math.min(Math.floor(items.length / 2), 60));
+      const holdback = Math.min(Math.floor(items.length / 2), 60);
+      const keep = holdback ? [...seen].slice(-holdback) : [];
       seen.clear();
       keep.forEach((id) => seen.add(id));
       fresh = items.filter((t) => !seen.has(idOf(t)));
