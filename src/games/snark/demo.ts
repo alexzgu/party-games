@@ -124,6 +124,18 @@ export function demoPhone(screen: string): { view: PlayerView | null; link: Link
       return as(g, (g.items[0] as L.Duel).a);
     }
     case 'vote3': return as(finalVote());
+    case 'voted3': {
+      const g = finalVote();
+      const item = g.items[0] as L.Finale;
+      return as(L.voteFinal(g, 'd0', { [item.authors.indexOf(L.votableFinal(item, 'd0')[0])]: 2, [item.authors.indexOf(L.votableFinal(item, 'd0')[1])]: 1 }));
+    }
+    case 'reveal3': return as(L.step(castAll(finalVote()), NOW - 2000, draw), 'd1');
+    case 'late': {
+      let g = L.startRound(lobby(), draw, NOW - 20000, seq(3));
+      g = L.join(g, 'd5', 'Alex', new Set()).game;
+      for (const i of L.tasksFor(g, 'd2')) g = L.answer(g, 'd2', i, 'x');
+      return as(g, 'd5');
+    }
     case 'reveal': {
       const g = L.step(castAll(votingDuel()), NOW - 2000, draw);
       return as(g, (g.items[0] as L.Duel).a);

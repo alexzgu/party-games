@@ -13,7 +13,7 @@
 
   const item = $derived(game.items[game.at] as Duel);
   const reveal = $derived(game.phase === 'reveal' && !!item.result);
-  const voters = $derived(votersFor(game, item).map((pid) => player(game, pid)!).filter(Boolean));
+  const voters = $derived(votersFor(game, item).map((pid) => { const p = player(game, pid)!; return { name: p.name, color: p.color, done: pid in item.ballots, away: !online.has(pid) }; }));
   const sides = $derived((['a', 'b'] as const).map((side) => {
     const pid = item[side];
     const text = item.answers[pid];
@@ -63,7 +63,7 @@
     {#if game.phase === 'vote'}
       <div class="voting">
         <p class="call">Vote on your phone!</p>
-        <Voters {voters} {online} voted={(pid) => pid in item.ballots} />
+        <Voters people={voters} />
       </div>
       <Timer {left} {total} paused={game.paused !== null} size={88} />
     {:else if reveal && totalVotes === 0}

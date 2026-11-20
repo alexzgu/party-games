@@ -323,7 +323,13 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   backup broker." on both sides, retrying in the background.
 - **Host is authoritative** (`logic.ts`, pure): it holds the whole game, saves it after every
   change (`hr:snark:host`), and sends each phone only its own view (`view.ts`: its prompts, the
-  two anonymous answers, its score); authors are never sent before the reveal. Pings every 2.5 s;
+  two anonymous answers, its score); authors are never sent before the reveal. A phone with
+  nothing to do also shows what the host screen shows, so a group can play from phones alone:
+  the players in the lobby; who is still writing once it is done (or joined late); who has voted
+  once it has voted or the prompt is its own (its answer marked "Yours"); every final answer once
+  its votes are sent; the reveal (each answer's author, voters, votes and points, final answers
+  ranked); the scoreboard with this round's gains and the next round's countdown; the final
+  standings. A phone busy writing or voting is not sent any of this. Pings every 2.5 s;
   a link silent for 9 s is dropped on both sides and the phone redials (1, 2, 4, then every 8 s,
   at once when the phone is unlocked). The room lives at module level, so the host can open
   settings or a pack and come back without dropping anyone; only End game / Close the room ends it.
@@ -356,6 +362,6 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   writing / End voting / Next; ignores a second tap within 0.8 s), end game, rules. Wake Lock
   on the host and on phones while in a room.
 - Demo screens: `#/snark/host?demo=lobby|lobby-empty|write|vote|reveal|vote3|reveal3|scores|over|paused`,
-  `#/snark/join?demo=join|lobby|write|wait|vote|voted|vote-own|vote3|reveal|scores|over`.
+  `#/snark/join?demo=join|lobby|late|write|wait|vote|voted|vote-own|vote3|voted3|reveal|reveal3|scores|over`.
 - **Packs**: `src/content/snark/*.json`, `{"prompts": [...]}`, 3–14 words (Classic 200, After
   Dark 80).

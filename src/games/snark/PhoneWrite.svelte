@@ -1,16 +1,20 @@
 <script lang="ts">
   import Button from '../../components/Button.svelte';
+  import Voters from './Voters.svelte';
+  import type { Tick } from './view';
   import { ANSWER_MAX, cleanAnswer } from './logic';
   import { loadDraft, saveDraft } from './store';
 
   // One prompt at a time: type, Done, next. A sent answer leaves the screen at once (the host
-  // confirms by dropping it from the list); half-typed answers survive a reload.
-  let { code, round, tasks, total, final, onsend }: {
+  // confirms by dropping it from the list); half-typed answers survive a reload. Once done:
+  // who is still writing.
+  let { code, round, tasks, total, final, writers, onsend }: {
     code: string;
     round: number;
     tasks: { i: number; prompt: string }[];
     total: number;
     final: boolean;
+    writers?: Tick[];
     onsend: (i: number, text: string) => void;
   } = $props();
 
@@ -61,7 +65,12 @@
   <div class="wait pop-in">
     <p class="emoji" aria-hidden="true">✅</p>
     <p class="big">All done!</p>
-    <p class="muted">Look at the host screen while the others finish.</p>
+    {#if writers?.length}
+      <p class="muted">{writers.filter((w) => w.done).length} of {writers.length} done. Waiting for the others.</p>
+      <Voters people={writers} label="Who is done" size={28} />
+    {:else}
+      <p class="muted">Waiting for the others to finish.</p>
+    {/if}
   </div>
 {/if}
 

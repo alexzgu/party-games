@@ -1,17 +1,17 @@
 <script lang="ts">
   import Avatar from './Avatar.svelte';
-  import type { Player } from './logic';
+  import type { Tick } from './view';
 
-  // Who still has to vote: a row of avatars, ticked when their vote is in. Names stay readable.
-  let { voters, voted, online }: { voters: Player[]; voted: (pid: string) => boolean; online: ReadonlySet<string> } = $props();
+  // Who still has to vote (or write): a row of avatars, ticked when they are done. Names stay
+  // readable. `away`: their phone is off (the host screen knows; phones are not told).
+  let { people, label = 'Votes in', size = 36 }: { people: (Tick & { away?: boolean })[]; label?: string; size?: number } = $props();
 </script>
 
-<ul class="voters" aria-label="Votes in">
-  {#each voters as p (p.pid)}
-    {@const done = voted(p.pid)}
-    <li class:done title={p.name}>
-      <Avatar name={p.name} color={p.color} size={36} dim={!done && !online.has(p.pid)} />
-      <span>{done ? '✓ ' : ''}{p.name}</span>
+<ul class="voters" aria-label={label}>
+  {#each people as p (p.name)}
+    <li class:done={p.done}>
+      <Avatar name={p.name} color={p.color} {size} dim={!p.done && !!p.away} />
+      <span>{p.done ? '✓ ' : ''}{p.name}</span>
     </li>
   {/each}
 </ul>

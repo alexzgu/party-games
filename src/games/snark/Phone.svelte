@@ -1,6 +1,7 @@
 <script lang="ts">
   // A player's phone: the join form, then whatever the host screen says this player needs now
-  // (answer, vote, wait). The link reconnects by itself; a banner says when it is doing so.
+  // (answer, vote), and in between what the host screen shows, so nobody needs to see it.
+  // The link reconnects by itself; a banner says when it is doing so.
   import { onMount } from 'svelte';
   import { route, go } from '../../lib/router.svelte';
   import { keepAwake } from '../../lib/wakelock';
@@ -16,9 +17,10 @@
   import PhoneWrite from './PhoneWrite.svelte';
   import PhoneVote from './PhoneVote.svelte';
   import PhoneVote3 from './PhoneVote3.svelte';
+  import PhoneWatch from './PhoneWatch.svelte';
   import { phone } from './player.svelte';
   import { cleanCode } from './code';
-  import { ordinal, playerColor, roundName } from './look';
+  import { playerColor, roundName } from './look';
   import { pts } from './record';
   import { demoPhone } from './demo';
   import type { ToHost } from './protocol';
@@ -77,7 +79,7 @@
     <header class="bar">
       <Avatar name={view.me.name} color={view.me.color} size={40} />
       <span class="who"><b>{view.me.name}</b><small>{pts(view.me.score)} pts · {view.round ? roundName(view.round, view.rounds) : `Room ${view.code}`}</small></span>
-      {#if s.k === 'write' || s.k === 'vote' || s.k === 'vote3'}<Timer {left} total={view.span} paused={view.paused} size={52} />{/if}
+      {#if s.k === 'write' || s.k === 'late' || s.k === 'vote' || s.k === 'vote3'}<Timer {left} total={view.span} paused={view.paused} size={52} />{/if}
       <HowTo><Rules /></HowTo>
     </header>
     {#if link === 'lost'}<p class="lost" role="status">Reconnecting… stay on this screen</p>{/if}
@@ -85,38 +87,14 @@
     <main class="body">
       {#if s.k === 'write'}
         {#key `${view.code}:${view.round}`}
-          <PhoneWrite code={view.code} round={view.round} tasks={s.tasks} total={s.total} final={view.final} onsend={(i, text) => send({ t: 'answer', r: view.round, i, text })} />
+          <PhoneWrite code={view.code} round={view.round} tasks={s.tasks} total={s.total} final={view.final} writers={s.writers} onsend={(i, text) => send({ t: 'answer', r: view.round, i, text })} />
         {/key}
       {:else if s.k === 'vote'}
         {#key `${view.round}:${s.at}`}<PhoneVote screen={s} onvote={(c) => send({ t: 'vote', r: view.round, at: s.at, c })} />{/key}
       {:else if s.k === 'vote3'}
         {#key `${view.round}:${s.at}`}<PhoneVote3 screen={s} onsend={(v) => send({ t: 'votes', r: view.round, at: s.at, v })} />{/key}
       {:else}
-        <div class="wait pop-in">
-          {#if s.k === 'lobby'}
-            <p class="emoji" aria-hidden="true">🦈</p>
-            <p class="big">You're in!</p>
-            <p class="muted">{s.players} {s.players === 1 ? 'player' : 'players'} so far. The game starts from the host screen.</p>
-          {:else if s.k === 'late'}
-            <p class="emoji" aria-hidden="true">🍿</p>
-            <p class="big">You're in from the next round</p>
-            <p class="muted">Watch the host screen until then.</p>
-          {:else if s.k === 'reveal'}
-            <p class="emoji" aria-hidden="true">👀</p>
-            <p class="big">Eyes on the host screen</p>
-            {#if s.gain !== null}<p class="gain" class:zero={s.gain === 0}>{s.gain ? `+${pts(s.gain)} for you` : 'No votes for you this time'}</p>{/if}
-          {:else if s.k === 'scores'}
-            <p class="emoji" aria-hidden="true">📊</p>
-            <p class="big">You're {ordinal(s.place)}</p>
-            <p class="muted">with {pts(view.me.score)} points. Next round starts soon.</p>
-          {:else if s.k === 'over'}
-            <p class="emoji" aria-hidden="true">{s.place === 1 ? '🏆' : '🎉'}</p>
-            <p class="big">{s.winners.length === 1 ? `${s.winners[0]} wins!` : s.winners.length ? `Tie: ${s.winners.join(' & ')}` : 'Game over'}</p>
-            <p class="muted">You finished {ordinal(s.place)} with {pts(view.me.score)} points.</p>
-          {:else if s.k === 'kicked'}
-            <p class="big">The host removed you from this game.</p>
-          {/if}
-        </div>
+        <PhoneWatch {view} {left} />
       {/if}
     </main>
 
@@ -140,10 +118,7 @@
     background: color-mix(in srgb, var(--c-pass) 16%, var(--surface)); color: var(--text); }
   .body { flex: 1; display: flex; flex-direction: column; padding-top: var(--s-4); }
   .wait { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-3); text-align: center; padding: var(--s-5) 0; }
-  .emoji { font-size: 4rem; line-height: 1; }
   .big { font-family: var(--font-display); font-weight: 800; font-size: 1.8rem; line-height: 1.15; }
-  .gain { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; color: var(--c-good); }
-  .gain.zero { color: var(--text-dim); }
   .trouble { color: var(--bad-ink); font-weight: 600; max-width: 30ch; }
   .spinner { width: 48px; height: 48px; border-radius: 50%; border: 4px solid var(--overlay-strong); border-top-color: var(--accent); animation: spin 0.9s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }

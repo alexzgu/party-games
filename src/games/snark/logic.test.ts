@@ -263,6 +263,78 @@ describe('a whole game', () => {
   });
 });
 
+describe('what a phone with nothing to do sees', () => {
+  const screen = (g: L.Game, pid: string) => playerView(g, pid, 0)!.screen;
+  it('who is still writing, only once this phone is done', () => {
+    let g = L.startRound(room(4), draw, 0);
+    const busy = screen(g, 'p0');
+    expect(busy.k === 'write' && busy.writers).toBeUndefined();
+    for (const i of L.tasksFor(g, 'p0')) g = L.answer(g, 'p0', i, 'done');
+    const done = screen(g, 'p0');
+    expect(done.k === 'write' && done.writers!.map((w) => [w.name, w.done])).toEqual([['Name p0', true], ['Name p1', false], ['Name p2', false], ['Name p3', false]]);
+  });
+  it('who has voted, once this phone has voted or the prompt is its own', () => {
+    let g = L.step(answerAll(L.startRound(room(4), draw, 0)), 0, draw);
+    const item = g.items[g.at] as L.Duel;
+    const [voter, other] = L.votersFor(g, item);
+    const before = screen(g, voter);
+    expect(before.k === 'vote' && [before.voters, before.mine]).toEqual([undefined, undefined]);
+    g = L.vote(g, voter, 'a');
+    const after = screen(g, voter);
+    expect(after.k === 'vote' && after.voters!.map((v) => [v.name, v.done])).toEqual([[`Name ${voter}`, true], [`Name ${other}`, false]]);
+    const own = screen(g, item.b);
+    expect(own.k === 'vote' && [own.mine, own.voters!.length]).toEqual(['b', 2]);
+  });
+  it('never who wrote which answer before the reveal, even on a watching phone', () => {
+    let g = L.step(answerAll(L.startRound(room(5), draw, 0)), 0, draw);
+    const item = g.items[g.at] as L.Duel;
+    for (const pid of L.votersFor(g, item)) g = L.vote(g, pid, 'b');
+    for (const viewer of ids(5)) {
+      const json = JSON.stringify(playerView(g, viewer, 0));
+      for (const author of [item.a, item.b].filter((a) => a !== viewer)) expect(json).not.toContain(`"Name ${author}"`);
+    }
+  });
+  it('the reveal: each answer with its author, its voters and its points', () => {
+    let g = L.step(answerAll(L.startRound(room(5), draw, 0)), 0, draw);
+    const item = g.items[g.at] as L.Duel;
+    const [x, y, z] = L.votersFor(g, item);
+    g = L.vote(L.vote(L.vote(g, x, 'a'), y, 'a'), z, 'b');
+    g = L.step(g, 0, draw);
+    const s = screen(g, x);
+    if (s.k !== 'reveal' || s.show?.kind !== 'duel') throw new Error('no duel reveal');
+    expect(s.show.sides.map((d) => [d.by.name, d.votes, d.points, d.backers.map((b) => b.name)])).toEqual([
+      [`Name ${item.a}`, 2, 667, [`Name ${x}`, `Name ${y}`]],
+      [`Name ${item.b}`, 1, 333, [`Name ${z}`]],
+    ]);
+  });
+  it('the final: every answer once votes are sent, then ranked by votes at the reveal', () => {
+    let g = L.startRound({ ...room(4, { ...SETTINGS, rounds: 2 }), round: 1 }, draw, 0);
+    g = L.step(answerAll(g), 0, draw);
+    const item = g.items[0] as L.Finale;
+    const [me, fav] = item.authors;
+    expect((screen(g, me) as { answers?: string[] }).answers).toBeUndefined();
+    g = L.voteFinal(g, me, { [item.authors.indexOf(fav)]: 3 });
+    const sent = screen(g, me);
+    expect(sent.k === 'vote3' && [sent.answers, sent.mine, sent.voters!.filter((v) => v.done).length])
+      .toEqual([item.authors.map((a) => `answer by ${a}`), 0, 1]);
+    g = L.step(g, 0, draw);
+    const r = screen(g, me);
+    expect(r.k === 'reveal' && r.show?.kind === 'final' && r.show.cards.map((c) => [c.by.name, c.votes])[0]).toEqual([`Name ${fav}`, 3]);
+  });
+  it('the scores: highest first, shared places, and what this round added', () => {
+    let g = L.step(answerAll(L.startRound(room(3), draw, 0)), 0, draw);
+    const item = g.items[0] as L.Duel;
+    g = L.vote(g, L.votersFor(g, item)[0], 'a');
+    while (g.phase !== 'scores') g = L.step(g, 0, draw);
+    g = { ...g, players: g.players.map((p) => ({ ...p, score: { p0: 500, p1: 900, p2: 500 }[p.pid]! })) };
+    const s = screen(g, 'p2');
+    const gain = (pid: string) => (pid === item.a ? 1000 : 0);
+    expect(s.k === 'scores' && s.rows!.map((r) => [r.name, r.place, r.score, r.gain])).toEqual([
+      ['Name p1', 1, 900, gain('p1')], ['Name p0', 2, 500, gain('p0')], ['Name p2', 2, 500, gain('p2')],
+    ]);
+  });
+});
+
 describe('codes and brokers', () => {
   it('makes 4-letter codes from unambiguous letters and cleans typed ones', () => {
     for (let i = 0; i < 100; i++) expect(isCode(newCode())).toBe(true);
