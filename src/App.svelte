@@ -16,6 +16,8 @@
     quick: () => import('./games/quick/Game.svelte'),
     snark: () => import('./games/snark/Game.svelte'),
     song: () => import('./games/song/Game.svelte'),
+    warm: () => import('./games/warm/Game.svelte'),
+    room: () => import('./games/room/Game.svelte'),
   };
 
   const segment = $derived(route.path.split('/').filter(Boolean)[0] ?? '');

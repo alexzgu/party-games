@@ -381,3 +381,23 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   `#/snark/join?demo=join|lobby|write|wait|vote|voted|vote-own|vote3|reveal|scores|over`.
 - **Packs**: `src/content/snark/*.json`, `{"prompts": [...]}`, 3–14 words (Classic 200, After
   Dark 80).
+
+## Game 9 — Getting Warmer (`warm`)
+
+- **Setup**: select packs and automatic clues (Off, every 8 seconds, or every 15 seconds). Start deals the first clue. A saved card can be resumed from setup or by reloading the play screen.
+- **Clues**: the newest clue fills the card, with the earlier clues above it. Anyone can call out a guess. Tap the card or Next clue to advance. A thin bar shows time until the next automatic clue. Leaving play or hiding the app pauses it. Automatic clues stop at the last clue.
+- **Reveal**: show the answer with a chime and leave the clues visible. Next one deals a fresh card.
+- **Packs**: Everyday Things (60), Pop Culture (50), Food & Drink (40). View, edit, paste, or restore original packs. Paste format is `Answer: clue; clue; clue; clue`.
+- **Demo**: `#/warm?demo=warm`, `#/warm?demo=warm-reveal`, and `#/warm?demo=setup`.
+
+## Game 10 — Room Service (`room`)
+
+- **Setup**: choose packs and card types. All four types are enabled initially. Start deals an eligible card. Resume picks up at the same card, line or countdown.
+- **Pick a side**: two choices fill the stage. A three-second countdown ends with Point! and a cue to explain why. Tap to deal again.
+- **Show proof**: look for something visible or carried. After a 30-second ring timer, or on a tap, everyone shows what they found. Tap again for another card.
+- **Make sounds**: read the scene aloud while everyone performs the highlighted sounds. Tap for each line and then for another card.
+- **Say it together**: think of an answer during a three-second countdown, shout it on Say it!, then see who matched.
+- **Packs**: House Party (120), After Dark (60), Deep Cuts (40, all Pick a side). To paste cards, start each line with `side:`, `proof:`, `foley:` or `together:`. Separate choices with `|` and scene lines with `/`.
+- **Demo**: `#/room?demo=side`, `proof`, `foley`, `together` or `setup`. Add `-reveal` to side, proof or together to preview the cue.
+
+Both games deal without repeating eligible cards before the deck runs out, remember seen cards across sessions, save each step on the host device, and have no players, scores, turns or History entries.
