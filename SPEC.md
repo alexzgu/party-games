@@ -387,7 +387,7 @@ parsing), `node scripts/shot.mjs <url> <png>` for phone-size screenshots of a ru
 
 ## Game 7 — Snark Tank (`snark`)
 
-Write-funny-answers-and-vote genre, the only game where every player uses their own phone. One
+Write-funny-answers-and-vote genre, the first game where every player uses their own phone. One
 **host screen** (a laptop on the TV, or a phone in the middle of the table) shows the room code,
 prompts, answers and scores; 3–8 players join from their phones at the same site.
 
@@ -473,7 +473,7 @@ broker choice (`?peer=`, stored under the existing `snark:broker` key so the set
 over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone's outbox and the
 host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
 logic. The host's peer id is `jerkbox-<game>-<CODE>`. Any message whose JSON is 15,000 UTF-8
-bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 12,000 characters
+bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 5,000 characters
 each) and reassembled before it is read; incomplete parts are dropped after 30 s. (PeerJS errors
 and drops the link on a JSON message of 16,300 bytes or more.)
 
@@ -517,7 +517,7 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
 
 - **Round, drawing pass 1** (draw time, default 90 s; 60/90/120/180): each player gets a private
   title (ours, e.g. "World's okayest roommate") and draws a fighter for it, then names it
-  (30 characters; time out → "Nameless").
+  (30 characters; an empty name becomes “Nameless”).
 - **Drawing pass 2**: each player is handed another player's fighter (picture and name, never
   the title; a shuffled ring, never their own) and draws and names a challenger for it.
 - **Bouts**: for each title in turn the host reveals the title, then both fighters with their
@@ -539,4 +539,14 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
   link's parts.
 - **Content** (`src/content/brawl/*.json`): `{"titles": ["..."]}`; titles and rematch titles
   come from one pool, never repeating within a game.
-- Reconnects, pause, demo screens as in Snark Tank; a half-finished drawing survives a reload.
+- The drawing timer applies to each pass. Submit early or let the phone send your drawing at
+  the buzzer. A half-finished drawing survives a phone reload. Drawings over 200 KB
+  or 6,000 points are rejected. The host removes stored art when the room closes.
+- The title gets 3 s on its own. Results stay up for 8 s and the round scoreboard for 15 s.
+  When both round-two fighters are blank, the first bout is skipped and the rematch runs if
+  either artist has a previously shown fighter available. The host can pause, advance or close
+  the room. The lobby supports removing players, choosing packs and changing brokers. Reconnects
+  and History work as in Snark Tank. Classic has 120 titles and After Dark has 60.
+- Demos at `#/brawl/host?demo=` and `#/brawl/join?demo=` with
+  `lobby|lobby-empty|draw|challenge|title|vote|payout|tag|rematch|scores|over|paused`.
+  Phone demos also have `join|wait|late|voted|watching|tagged`.

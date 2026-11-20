@@ -158,6 +158,15 @@ commercial game's prompts). Open-ended so there are a hundred funny answers, not
 ("A terrible name for a boat", "What your dog is thinking during a thunderstorm"); nothing that
 needs inside knowledge unless the pack is about the group. "After Dark": cheeky, never explicit.
 
+### Doodle Brawl packs (`brawl/`)
+
+Original titles for fighters in a drawing contest. List existing titles with
+`npm run list -- brawl`. Put the pack in `src/content/brawl/<id>.json` as
+`{"titles": ["World's okayest roommate"]}`. Use 2–8 words in sentence case and write
+something specific and funny a player can draw. Titles must be unique across packs. A pack
+needs at least 24 titles to run a full eight-player game on its own. After Dark is cheeky.
+Run `npm run test:content`.
+
 ## Other changes
 
 Follow `SPEC.md`. Keep each game in `src/games/<id>/`, shared code in `src/lib/` and

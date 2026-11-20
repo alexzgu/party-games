@@ -146,3 +146,11 @@ const snarkFiles = import.meta.glob<SnarkPack>('../content/snark/*.json', { eage
 const builtinSnark = ordered(Object.values(snarkFiles), ['classic', 'after-dark']);
 export const customSnark = customStore<SnarkPack>('custom:snark', builtinSnark);
 export const snarkPacks = (): SnarkPack[] => merged(customSnark.saved(), builtinSnark);
+
+export interface BrawlPack { id: string; name: string; titles: string[] }
+const brawlFiles = import.meta.glob<{ titles: string[] }>('../content/brawl/*.json', { eager: true, import: 'default' });
+export const brawlPacks = (): BrawlPack[] => ordered(Object.entries(brawlFiles).map(([file, pack]) => {
+  const id = file.split('/').at(-1)!.replace(/\.json$/, '');
+  const name = id === 'after-dark' ? 'After Dark' : id.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
+  return { ...pack, id, name };
+}), ['classic', 'after-dark']);

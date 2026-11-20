@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { dedupe, gibberishPacks, quizBoards, slugify, spectrumPacks, wordDecks } from './content';
 import { tabooPacks } from './content';
 import { quickPacks } from './content';
-import { snarkPacks } from './content';
+import { snarkPacks, brawlPacks } from './content';
 import { cardId, cardProblems } from '../games/taboo/cards';
 import { songPacks } from './content';
 
@@ -267,5 +267,29 @@ describe('Earworm packs', () => {
     }
     expect(packs.slice(0, 3).map((p) => p.id)).toEqual(['2000s-bangers', '2010s-hits', 'throwbacks']);
     expect(problems).toEqual([]);
+  });
+});
+
+describe('Doodle Brawl packs', () => {
+  it('has short, unique titles across packs', () => {
+    const seen = new Set<string>();
+    const problems: string[] = [];
+    for (const pack of brawlPacks()) {
+      if (pack.titles.length < 24) problems.push(`${pack.id} needs at least 24 titles for a full room`);
+      for (const title of pack.titles) {
+        const key = title.trim().toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ');
+        const count = key.split(' ').length;
+        if (count < 2 || count > 8 || !/^[A-Z]/.test(title) || /[.!?]$/.test(title)) problems.push(`Invalid title: ${title}`);
+        if (seen.has(key)) problems.push(`Repeated title: ${title}`);
+        seen.add(key);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('ships complete Classic and After Dark packs', () => {
+    const packs = brawlPacks();
+    expect(packs.find((p) => p.id === 'classic')?.titles).toHaveLength(120);
+    expect(packs.find((p) => p.id === 'after-dark')?.titles).toHaveLength(60);
   });
 });
