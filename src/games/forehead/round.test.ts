@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { finish, makeDealer, mark, newRound, openPlay, score, toggle, type Round } from './round';
+import { accepts, finish, makeDealer, mark, newRound, openPlay, score, toggle, type Round } from './round';
 import { cleanLine } from './words';
 
 describe('round results', () => {
@@ -51,5 +51,22 @@ describe('cleanLine', () => {
     expect(cleanLine('Here are some great party words for you:')).toBeNull();
     expect(cleanLine('Movies: Titanic')).toBeNull();
     expect(cleanLine('A Very Long Item With Too Many Words')).toBeNull();
+  });
+});
+
+describe('accepts', () => {
+  it('takes only the input the players chose', () => {
+    expect(accepts(newRound(['x'], 60, true, false), true)).toEqual({ tilt: true, tap: false });
+    expect(accepts(newRound(['x'], 60, false, true), true)).toEqual({ tilt: false, tap: true });
+    expect(accepts(newRound(['x'], 60, true, true), true)).toEqual({ tilt: true, tap: true });
+  });
+
+  it('takes taps in a tilt-only round when the phone cannot feel tilts', () => {
+    expect(accepts(newRound(['x'], 60, true, false), false)).toEqual({ tilt: false, tap: true });
+  });
+
+  it('keeps taps for a round saved before the choice existed', () => {
+    const { tap: _, ...old } = newRound(['x'], 60, true);
+    expect(accepts(old, true)).toEqual({ tilt: true, tap: true });
   });
 });

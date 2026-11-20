@@ -9,7 +9,7 @@
   import { haptic } from '../../lib/haptics';
   import { settings } from '../../lib/settings.svelte';
   import { tiltThresholds } from './calibration.svelte';
-  import { finish, makeDealer, mark, openPlay, type EndReason, type Round } from './round';
+  import { accepts, finish, makeDealer, mark, openPlay, type EndReason, type Round } from './round';
   import { game, selectedDecks, setRound } from './state.svelte';
   import { getRestPitch, motion, motionFresh, onGravity, stageRotation, startMotion } from './sensors.svelte';
   import { wakeDevice } from './flow';
@@ -47,7 +47,9 @@
   // The calibration is read once, as the round starts; tilts count from the holder's resting pitch.
   const detector = new TiltDetector(tiltThresholds(), getRestPitch() ?? 0);
 
-  const tilt = $derived(game.round?.tilt === true && motion.live);
+  // What scores this round: the player chose tilt, tap or both (see accepts for the fallback).
+  const accept = $derived(game.round ? accepts(game.round, motion.live) : { tilt: false, tap: true });
+  const tilt = $derived(accept.tilt);
   const secs = $derived(Math.ceil(remaining / 1000));
   const clock = $derived(`${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`);
   const hot = $derived(secs <= 10 && secs > 0);
@@ -163,17 +165,18 @@
 
   function zone(ok: boolean) {
     return {
-      onpointerdown: (e: PointerEvent) => { if (e.isPrimary) score(ok); },
+      onpointerdown: (e: PointerEvent) => { if (e.isPrimary && accept.tap) score(ok); },
       // Keyboard activation (Enter/Space) arrives as a click with no pointer.
-      onclick: (e: MouseEvent) => { if (e.detail === 0) score(ok); },
+      onclick: (e: MouseEvent) => { if (e.detail === 0 && accept.tap) score(ok); },
     };
   }
 
   function key(e: KeyboardEvent) {
     if (pause || ending) return;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') score(true);
+    if (e.key === 'Escape') pause = 'confirm';
+    else if (!accept.tap) return; // tilt only: keys count as taps
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') score(true);
     else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') score(false);
-    else if (e.key === 'Escape') pause = 'confirm';
     else return;
     e.preventDefault();
   }
@@ -185,12 +188,14 @@
 
 <Stage rotation={rotation ?? stageRotation()}>
   <div class="play" class:hot>
-    {#each [false, true] as isRight (isRight)}
-      {@const ok = isRight !== mirrored}
-      <button class="zone {isRight ? 'right' : 'left'} {ok ? 'good' : 'pass'}" aria-label={ok ? 'Got it' : 'Pass'} {...zone(ok)}>
-        <span class="edge-label">{ok ? 'Got it' : 'Pass'}</span>
-      </button>
-    {/each}
+    {#if accept.tap}
+      {#each [false, true] as isRight (isRight)}
+        {@const ok = isRight !== mirrored}
+        <button class="zone {isRight ? 'right' : 'left'} {ok ? 'good' : 'pass'}" aria-label={ok ? 'Got it' : 'Pass'} {...zone(ok)}>
+          <span class="edge-label">{ok ? 'Got it' : 'Pass'}</span>
+        </button>
+      {/each}
+    {/if}
 
     <div class="hud">
       {#key hot ? secs : -1}

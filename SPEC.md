@@ -12,7 +12,8 @@ the home screen, and works offline once loaded. Names shown to players live in
   action per screen, big type, plain words.
 - **Robust**: never loses a game in progress (state saved to localStorage, resumes after a
   reload), never crashes mid-round, degrades quietly when a feature is missing (no motion →
-  tap controls, no vibration → sound only, no key → built-in packs only).
+  tap controls, no vibration → sound only, no key → built-in packs only). Chrome on Android
+  never vibrates while the phone is on silent; Settings says so under Vibration.
 - **Readable at arm's length in a dim room**: large type, high contrast, colour never the only
   signal (✓/✗ icons and words alongside green/red).
 - **Accessible**: every control reachable and labelled, 44 px minimum targets (56 px default),
@@ -88,7 +89,11 @@ Heads Up-style. One player holds the phone on their forehead, screen facing out;
 shout clues; the holder tilts down for "got it", up for "pass".
 
 - **Setup**: grid of decks (emoji, name, word count); tap to select one or several (mixed).
-  Round length 30/60/90/120 s (default 60). Controls: Tilt (default when motion works) or Tap.
+  Round length 30/60/90/120 s (default 60). Controls: Tilt, Tap or Both (default Both on phones
+  and tablets, Tap on a laptop; the old saved "Tilt", which always took taps, carries over as
+  Both). Only the chosen input scores: in a Tilt round the tap zones are gone and the arrow keys
+  do nothing; in a Tap round tilting does nothing. A Tilt round on a phone that cannot feel
+  motion takes taps instead, so it can always be played (`accepts` in `round.ts`).
   "Edit decks" opens the deck list: open any deck to see, edit or restore its words.
 - **Start tap**: `unlockAudio()`, `requestMotion()` (iOS prompt), sample gravity for the sign fix
   (`axisSignFromLookingAt`), `keepAwake(true)`, and on Android try fullscreen + landscape lock

@@ -1,6 +1,7 @@
 import { settings } from './settings.svelte';
 
-// Android: Vibration API. iPhone: no Vibration API; Safari 18+ gives a light tick when a
+// Android: Vibration API, which Chrome skips while the phone's ringer is on silent (its
+// VibrationManagerAndroid checks the ringer mode; nothing a page can change). iPhone: no Vibration API; Safari 18+ gives a light tick when a
 // native switch toggles, so we toggle a hidden one. Silent no-op everywhere else.
 let iosSwitch: HTMLLabelElement | null = null;
 

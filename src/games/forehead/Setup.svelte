@@ -10,7 +10,7 @@
   import { go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
-  import { prefs, savePrefs, selectedDecks, type Control } from './state.svelte';
+  import { prefs, savePrefs, selectedDecks, type Input } from './state.svelte';
   import { ROUND_LENGTHS } from './round';
   import { startRound } from './flow';
   import { calibration } from './calibration.svelte';
@@ -29,10 +29,16 @@
   const wordCount = $derived(chosen.reduce((n, d) => n + d.words.length, 0));
 
   const lengths = ROUND_LENGTHS.map((s) => ({ value: s as number, label: s < 120 ? `${s}s` : '2 min' }));
-  const controls: { value: Control; label: string }[] = [
+  const inputs: { value: Input; label: string }[] = [
     { value: 'tilt', label: '📱 Tilt' },
     { value: 'tap', label: '👆 Tap' },
+    { value: 'both', label: 'Both' },
   ];
+  const inputHelp: Record<Input, string> = {
+    tilt: 'Tilt only: down for got it, up to pass. Taps do nothing (unless this phone cannot feel tilts).',
+    tap: 'Tap only: right hand got it, left hand pass. Tilting does nothing.',
+    both: 'Tilt or tap, whichever is handy: down or right hand for got it, up or left hand to pass.',
+  };
 
   function toggleDeck(id: string) {
     const on = prefs.deckIds.includes(id);
@@ -43,7 +49,7 @@
   }
 
   function start() {
-    startRound($state.snapshot(prefs.deckIds), prefs.seconds, prefs.control);
+    startRound($state.snapshot(prefs.deckIds), prefs.seconds, prefs.input);
   }
 
   const startLabel = $derived(
@@ -111,13 +117,9 @@
 
   <section class="stack">
     <h3>Controls</h3>
-    <Segmented label="Controls" options={controls} bind:value={prefs.control} onchange={savePrefs} />
-    <p class="faint small">
-      {prefs.control === 'tilt'
-        ? 'Tilt the phone to score. Tapping works too: right hand got it, left hand pass.'
-        : 'No tilting: tap with your right hand for got it, your left hand to pass.'}
-    </p>
-    {#if prefs.control === 'tilt'}
+    <Segmented label="Controls" options={inputs} bind:value={prefs.input} onchange={savePrefs} />
+    <p class="faint small">{inputHelp[prefs.input]}</p>
+    {#if prefs.input !== 'tap'}
       <Button variant="secondary" onclick={() => go('/forehead/calibrate')}>
         {calibration.th ? 'Calibrate tilt again (new player?)' : 'Calibrate tilt (half a minute)'}
       </Button>

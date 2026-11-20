@@ -44,7 +44,7 @@
   <section class="stack">
     <h3>Feel</h3>
     <Toggle label="Sound" bind:checked={settings.sound} onchange={saveSettings} hint="Plays even with the iPhone silent switch on" />
-    <Toggle label="Vibration" bind:checked={settings.haptics} onchange={saveSettings} hint="Android buzzes; recent iPhones give a light tick" />
+    <Toggle label="Vibration" bind:checked={settings.haptics} onchange={saveSettings} hint="Android buzzes only when the phone is not on silent (Chrome skips it then; vibrate mode works). Recent iPhones give a light tick." />
   </section>
 
   <section class="stack">
