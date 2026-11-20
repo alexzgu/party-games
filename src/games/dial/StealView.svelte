@@ -24,6 +24,10 @@
     <Dial value={round.guess} label="Locked guess" />
     <ScaleCard card={round.card} />
   </div>
+  {#snippet info()}
+    <p><b>{game.teams[thief].name}</b>: steal a point. Is the target <b>left</b> or <b>right</b> of the needle?</p>
+    <p>Call the right side and your team gets 1 point. Then everyone sees where the target was.</p>
+  {/snippet}
   {#snippet actions()}
     <div class="pick" style:--accent={teamColor(thief)}>
       <Button size="lg" onclick={() => oncall('left')}>◀ Left</Button>

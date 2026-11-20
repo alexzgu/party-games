@@ -23,27 +23,32 @@
   .board { display: flex; align-items: stretch; gap: var(--s-1); }
   .team {
     flex: 1 1 0; min-width: 0;
-    display: flex; align-items: center; justify-content: space-between; gap: var(--s-2);
-    min-height: 50px; padding: var(--s-1) var(--s-3);
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-1);
+    min-height: 50px; padding: var(--s-1) var(--s-2) var(--s-1) var(--s-3);
     border-radius: var(--r-md) var(--s-1) var(--s-1) var(--r-md);
     background: color-mix(in srgb, var(--team) 10%, var(--surface));
     border: 2px solid color-mix(in srgb, var(--team) 30%, transparent);
     transition: opacity var(--dur) ease, border-color var(--dur) ease, box-shadow var(--dur) ease;
   }
-  .t1 { flex-direction: row-reverse; border-radius: var(--s-1) var(--r-md) var(--r-md) var(--s-1); }
+  .t1 { flex-direction: row-reverse; border-radius: var(--s-1) var(--r-md) var(--r-md) var(--s-1); padding: var(--s-1) var(--s-3) var(--s-1) var(--s-2); }
   .team.on {
     border-color: var(--team);
     background: color-mix(in srgb, var(--team) 22%, var(--surface));
     box-shadow: 0 0 22px color-mix(in srgb, var(--team) calc(40% * var(--glow)), transparent);
   }
   .team.off { opacity: 0.7; }
-  .name { font-weight: 800; font-size: 0.92rem; color: var(--team); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* A name too long for one line takes a second one (narrow phones), then ends in "…". */
+  .name {
+    font-weight: 800; font-size: 0.88rem; line-height: 1.1; color: var(--team); overflow: hidden; overflow-wrap: break-word;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+  }
+  .t1 .name { text-align: right; }
   .score {
     font-family: var(--font-display); font-weight: 800; font-size: 1.7rem; line-height: 1;
     font-variant-numeric: tabular-nums; display: inline-block; color: var(--text);
   }
   .vs {
-    flex: none; width: 38px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: none; width: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center;
     line-height: 1; gap: 3px;
   }
   .vs b { font-family: var(--font-display); font-weight: 800; font-size: 0.95rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.02em; }

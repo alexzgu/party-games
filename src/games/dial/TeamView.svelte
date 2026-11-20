@@ -45,7 +45,11 @@
     <Dial bind:value interactive label="Your guess" valuetext={lean} onrelease={onguess} />
     <ScaleCard card={round.card} />
   </div>
-  <p class="hint faint">Drag the needle anywhere on the dial. Reader, no more hints!</p>
+  {#snippet info()}
+    <p>Listen to your reader's clue.</p>
+    <p>Drag the needle anywhere on the dial. Reader, no more hints!</p>
+    <p>When your team agrees, tap <b>Lock it in</b>. The closer to the hidden target, the more points.</p>
+  {/snippet}
   {#snippet actions()}
     <Button size="lg" onclick={() => onlock(value)}>Lock it in</Button>
   {/snippet}
@@ -63,5 +67,4 @@
   q { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.6rem, 8vw, 2.4rem); line-height: 1.05; overflow-wrap: anywhere; }
   .spoken { font-family: var(--font-display); font-weight: 700; font-size: 1.35rem; color: var(--text-dim); }
   .tuner { display: flex; flex-direction: column; gap: var(--s-3); }
-  .hint { text-align: center; font-size: 0.95rem; }
 </style>

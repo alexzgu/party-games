@@ -202,7 +202,13 @@
     --band-4: var(--c-gold);
     --sweep: 1200ms;
     position: relative;
+    /* Full width and the drawing's shape, but a short screen may take height away (down to a
+       floor): the drawing then scales down inside the box, so the page never has to scroll. */
     width: 100%;
+    aspect-ratio: 400 / 222;
+    flex: 0 1 auto; min-height: 120px;
+    container-type: size;
+    display: grid; place-items: center;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
@@ -212,7 +218,7 @@
   .interactive { cursor: grab; }
   .dragging { cursor: grabbing; }
   .dial:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
-  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg { display: block; width: min(100cqw, 100cqh * 400 / 222); height: auto; overflow: visible; }
 
   .tick { stroke: var(--text-faint); stroke-width: 2; stroke-linecap: round; }
   .tick.major { stroke: var(--text-dim); stroke-width: 3; }
