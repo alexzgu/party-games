@@ -5,8 +5,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { dedupe, gibberishPacks, quizBoards, slugify, spectrumPacks, wordDecks } from './content';
 import { tabooPacks } from './content';
 import { quickPacks } from './content';
-import { snarkPacks } from './content';
+import { saladPacks, snarkPacks } from './content';
 import { cardId, cardProblems } from '../games/taboo/cards';
+import { normalise } from '../games/salad/match';
+import { categories, followups, leaksAnswer, levels, opening, shared, type Secret } from '../games/salad/words';
 import { songPacks } from './content';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -299,5 +301,95 @@ describe('Earworm packs', () => {
     }
     expect(packs.slice(0, 3).map((p) => p.id)).toEqual(['2000s-bangers', '2010s-hits', 'throwbacks']);
     expect(problems).toEqual([]);
+  });
+});
+
+const nonemptyText = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
+const textList = (value: unknown): value is string[] => Array.isArray(value) && value.every(nonemptyText);
+
+function checkSaladWords(problems: string[], label: string, secret: Secret): void {
+  const bank = secret.words;
+  if (!bank || typeof bank !== 'object' || Array.isArray(bank)) {
+    problems.push(`${label}: needs a word bank`);
+    return;
+  }
+  for (const [slot, choices] of Object.entries(bank)) {
+    if (!Object.prototype.hasOwnProperty.call(shared, slot)) problems.push(`${label}: unknown slot "${slot}"`);
+    if (!textList(choices) || choices.length < 3 || choices.length > 8) {
+      problems.push(`${label}: "${slot}" needs 3–8 nonempty choices`);
+      continue;
+    }
+    if (new Set(choices.map(key)).size !== choices.length) problems.push(`${label}: "${slot}" has repeated choices`);
+    for (const choice of choices) {
+      if (leaksAnswer(choice, secret.answer)) problems.push(`${label}: "${choice}" contains an answer word`);
+    }
+  }
+  if (!categories.includes(secret.category)) return;
+  for (const slot of opening[secret.category].slots) {
+    const choices = slot === 'guess' ? undefined : bank[slot];
+    if (!textList(choices) || new Set(choices.map(key)).size < 3) {
+      problems.push(`${label}: opening frame needs at least three distinct "${slot}" choices`);
+    }
+  }
+}
+
+describe('Word Salad packs', () => {
+  it('have complete word banks and never repeat an answer across secrets', () => {
+    const packs = saladPacks();
+    const problems: string[] = [];
+    const seen = new Map<string, string>();
+    packBasics(packs, problems);
+    for (const p of packs) {
+      if (!Array.isArray(p.secrets) || !p.secrets.length) {
+        problems.push(`${p.id}: needs a list of secrets`);
+        continue;
+      }
+      for (const [index, secret] of p.secrets.entries()) {
+        if (!nonemptyText(secret?.answer) || !normalise(secret.answer)) {
+          problems.push(`${p.id}: secret ${index + 1} needs an answer`);
+          continue;
+        }
+        const label = `${p.id}: "${secret.answer}"`;
+        if (!categories.includes(secret.category)) problems.push(`${label}: unknown category`);
+        if (!levels.includes(secret.level)) problems.push(`${label}: unknown difficulty`);
+        if (!textList(secret.also)) problems.push(`${label}: "also" must be a list of accepted variants`);
+        const aliases = textList(secret.also) ? secret.also : [];
+        const names = new Set([secret.answer, ...aliases].map(normalise));
+        for (const name of names) {
+          if (!name) problems.push(`${label}: an accepted variant is missing a word`);
+          const previous = seen.get(name);
+          if (previous) problems.push(`${label}: "${name}" also identifies ${previous}`);
+          seen.set(name, label);
+        }
+        checkSaladWords(problems, label, secret);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('has 16 Classic secrets per category with a 4/8/4 difficulty mix', () => {
+    const classic = saladPacks().find((p) => p.id === 'classic');
+    expect(classic?.secrets).toHaveLength(64);
+    for (const category of categories) {
+      const secrets = classic!.secrets.filter((s) => s.category === category);
+      expect(levels.map((level) => secrets.filter((s) => s.level === level).length)).toEqual([4, 8, 4]);
+    }
+  });
+
+  it('has valid frames, comparison slots and enough different words to redeal', () => {
+    for (const bank of Object.values(shared)) {
+      expect(new Set(bank.map(key)).size).toBe(bank.length);
+      expect(bank.length).toBeGreaterThanOrEqual(60);
+      expect(bank.length).toBeLessThanOrEqual(150);
+    }
+    for (const category of categories) {
+      expect(followups[category].length).toBeGreaterThanOrEqual(10);
+      expect(followups[category].length).toBeLessThanOrEqual(16);
+      expect(followups[category].filter((f) => f.slots.includes('guess'))).toHaveLength(3);
+      for (const f of [opening[category], ...followups[category]]) {
+        expect(f.text.split('___')).toHaveLength(f.slots.length + 1);
+        expect(f.slots.every((slot) => slot === 'guess' || Object.hasOwn(shared, slot))).toBe(true);
+      }
+    }
   });
 });

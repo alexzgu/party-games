@@ -1,6 +1,7 @@
 // Built-in packs (bundled JSON, precached for offline play) merged with packs players
 // make or edit on the phone (saved in localStorage). An edit of a built-in replaces it in place.
 import { load, save } from './storage';
+import type { Secret } from '../games/salad/words';
 
 export interface WordDeck { id: string; name: string; emoji: string; blurb: string; words: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 export interface Spectrum { left: string; right: string }
@@ -154,3 +155,9 @@ const snarkFiles = import.meta.glob<SnarkPack>('../content/snark/*.json', { eage
 const builtinSnark = ordered(Object.values(snarkFiles), ['classic', 'after-dark']);
 export const customSnark = customStore<SnarkPack>('custom:snark', builtinSnark);
 export const snarkPacks = (): SnarkPack[] => merged(customSnark.saved(), builtinSnark);
+
+/** Word Salad packs are bundled with the game and selected in host settings. */
+export interface SaladPack { id: string; name: string; blurb: string; secrets: Secret[]; added?: string }
+const saladFiles = import.meta.glob<SaladPack>('../content/salad/*.json', { eager: true, import: 'default' });
+const builtinSalad = ordered(Object.values(saladFiles), ['classic']);
+export const saladPacks = (): SaladPack[] => builtinSalad.slice();
