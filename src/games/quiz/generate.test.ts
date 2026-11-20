@@ -57,7 +57,7 @@ describe('Ask Claude for a board', () => {
     ]);
   });
   it('says what went wrong without a key', async () => {
-    await expect(generateBoard({ topic: 'x', cats: 1, levels: 1, onBoard: () => {} })).rejects.toThrow(/invite link/);
+    await expect(generateBoard({ topic: 'x', cats: 1, levels: 1, onBoard: () => {} })).rejects.toThrow(/isn't on this phone yet/);
   });
 });
 

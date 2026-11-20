@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inviteLink, keyFromInvite } from './invite';
+import { inviteLink, keyFromInvite, keyFromTyped } from './invite';
 
 const KEY = 'sk-ant-api03-abcDEF_123-xyz';
 
@@ -26,5 +26,16 @@ describe('invite links', () => {
     const link = inviteLink(KEY, 'https://example.org/party-games/');
     expect(link).toBe(`https://example.org/party-games/#/join/${KEY}`);
     expect(keyFromInvite(link.split('#')[1])).toBe(KEY);
+  });
+});
+
+describe('keyFromTyped', () => {
+  const key = 'sk-ant-test-0123456789abcdefXYZ';
+  it('takes a whole invite link or a bare key, and nothing else', () => {
+    expect(keyFromTyped(`https://example.com/party-games/#/join/${key}`)).toBe(key);
+    expect(keyFromTyped(`  ${key} `)).toBe(key);
+    expect(keyFromTyped('lantern otter velvet')).toBeNull();
+    expect(keyFromTyped('https://example.com/#/join/not-a-key')).toBeNull();
+    expect(keyFromTyped('sk-ant-short')).toBeNull();
   });
 });

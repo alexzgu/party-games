@@ -19,8 +19,8 @@ export function hasKey(): boolean {
 
 /** What a make page says when the wizard is not on this phone. */
 export const NOT_HERE = WIZARD_SERVER
-  ? "Fizzwick isn't on this phone yet: open the invite link the host sent you, or say the magic words in Settings."
-  : "Fizzwick isn't on this phone yet: open the invite link the host sent you.";
+  ? "Fizzwick isn't on this phone yet: say the magic words in Settings."
+  : "Fizzwick isn't on this phone yet. Ask the host.";
 
 /** `pass` is the magic-words pass to send to the wizard server, or '' for the phone's own key. */
 async function client(pass: string) {
@@ -39,7 +39,7 @@ export function statusMessage(status: number | undefined, pass: boolean, reason:
   if (pass && status === 401) return 'The magic words have changed. Ask the host for the new ones.';
   if (pass && status === 429 && reason === 'phone') return 'Fizzwick needs a nap: this phone has had its share of magic today. Try again tomorrow.';
   if (pass && status === 429) return "Fizzwick needs a nap: the party's wizard allowance is used up for now. Try again later.";
-  if (status === 401) return "Fizzwick's magic stopped working on this phone. Ask the host for a fresh invite link.";
+  if (status === 401) return "Fizzwick's magic stopped working on this phone. In Settings, send him away, then say the magic words again.";
   if (status === 429) return 'Fizzwick is swamped. Give him a moment, then try again.';
   if (status === 529 || (status && status >= 500)) return "Fizzwick's crystal ball is overloaded. Try again shortly.";
   return null;

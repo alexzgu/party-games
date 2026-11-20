@@ -21,3 +21,13 @@ export function keyFromInvite(path: string): string | null {
 export function inviteLink(key: string, base: string): string {
   return `${base.replace(/#.*$/, '')}#/join/${key}`;
 }
+
+/**
+ * A key from what someone typed into the magic-words box: a whole invite link or a bare key
+ * (for the host's own testing; players are only told about the magic words), else null.
+ */
+export function keyFromTyped(text: string): string | null {
+  const t = text.trim();
+  if (t.startsWith('sk-ant-')) return keyFromInvite(`/join/${t}`);
+  return t.includes('#/join/') ? keyFromInvite(t.replace(/^[^#]*#/, '')) : null;
+}

@@ -156,7 +156,7 @@ describe('wizard messages', () => {
     expect(statusMessage(429, true, 'phone')).toMatch(/this phone has had its share/);
     expect(statusMessage(429, false, 'phone')).toMatch(/swamped/);
     expect(statusMessage(429, true)).toBe("Fizzwick needs a nap: the party's wizard allowance is used up for now. Try again later.");
-    expect(statusMessage(401, false)).toMatch(/fresh invite link/);
+    expect(statusMessage(401, false)).toMatch(/say the magic words again/);
     expect(statusMessage(429, false)).toMatch(/swamped/);
     expect(statusMessage(502, true)).toMatch(/overloaded/);
     expect(statusMessage(400, true)).toBeNull();

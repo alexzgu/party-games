@@ -52,7 +52,8 @@ Three routes, in the order the owner chose to rely on them:
 2. **Paste a list** on the phone: each game's "Make a pack" screen takes a pasted list (one
    item per line, in the game's format), shows it in `Triage` for review, and saves it as a
    custom pack on that phone.
-3. **Ask the wizard in the app** (needs the host's invite link): players see live generation as
+3. **Ask the wizard in the app**, first way in, the host's own testing route (no screen mentions
+   invite links; players are told only about the magic words, route 4): players see live generation as
    "Fizzwick the Wizard" 🧙; no screen names Claude, Anthropic or an API key. The host (the owner,
    who pays for usage) sends friends a link `<site>#/join/<key>` carrying an Anthropic key; the
    key is never in the repo or the bundle. Opening it (`src/lib/join.ts`, `invite.ts`) stores
@@ -63,8 +64,8 @@ Three routes, in the order the owner chose to rely on them:
    Each make page shows "How hard Fizzwick tries" (`WizardEffort`) next to the theme and the
    make button, when the phone has a key: 🥱 Half-asleep (Haiku 5.5), ☕ Had his coffee (Sonnet
    5.5), 🔮 Full beard power (Opus 5.5, the default), kept in `settings.model`; an unknown stored
-   id uses Opus. Without a key the make page says to open the host's invite link (and, when
-   the wizard server is set, to say the magic words in Settings).
+   id uses Opus. Without a key or pass the make page says "Fizzwick isn't on this phone yet: say
+   the magic words in Settings." (`NOT_HERE` in claude.ts).
    `streamLines()` hands each line over as soon as it is complete; items stream into `Triage`;
    "More" sends the items already kept so the wizard avoids repeats.
 4. **The magic words** (second way in, kept apart from invite links): a small Cloudflare Worker
@@ -114,16 +115,15 @@ another game says which game to open; anything else says it isn't a pack file.
 - **Home** shows every game in `GAMES` (name, emoji, player count), History and Settings. No blurbs.
 - **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours), Heads Down. (scored-word feedback,
   "Calibrate tilt" with the calibration note under it, "Check tilt" with its notes under it),
-  The wizard, Cards (reset card history). The wizard: with a key, "Fizzwick the Wizard lives on
-  this phone", "Copy invite link" (clipboard; if that fails, the link in a selectable field),
-  "Send it privately: anyone with the link can use the wizard." and "Remove from this phone";
-  without one, a line saying to open the host's invite link, and a box to paste that link with
-  "Let him in" (an iPhone Home Screen app keeps its own storage, apart from Safari where links
-  open); when the wizard server is set, also "Say the magic words" (a hidden field with Show,
-  no autofill, and "Say them"), answered "Fizzwick heard you. He's yours on this phone.",
-  "Fizzwick doesn't know those words." or, after too many guesses, how long to wait. With a pass
-  from the magic words: "Fizzwick came because of the magic words", "Forget the magic words"
-  and the invite paste box (a pasted key is used instead of the pass); no invite link to copy. No key field and no model list. Descriptions are --text-dim, weight 600.
+  The wizard, Cards (reset card history). The wizard never mentions invite links. Without a key
+  or pass: "Fizzwick the Wizard is not on this phone yet. Say the magic words the host told
+  you:", a hidden field with Show (no autofill) and "Say them", answered "Fizzwick heard you.
+  He's yours on this phone.", "Fizzwick doesn't know those words." or, after too many guesses,
+  how long to wait. A whole invite link or a bare key typed there is stored as the phone's key
+  (`keyFromTyped`, for the host's testing; an iPhone Home Screen app keeps its own storage, so a
+  tapped link may not reach it). With either: "Fizzwick the Wizard lives on this phone" and
+  "Send Fizzwick away" (clears both). No key field and no model list. Descriptions are
+  --text-dim, weight 600.
   Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
 - **Rules** live in each game's "?" popup, not on its screens.
 - **History** (`#/history`): one entry per Heads Down. round (rewritten if a word is fixed
@@ -301,7 +301,7 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   counted), or 🧙 Wizard (topic, categories × levels, how hard Fizzwick tries; the model streams one line
   per clue, "Category | level | clue | answer", easiest row first, under the AGENTS.md quality
   bar, and a live preview fills tile by tile; "Stop" opens what came). Without a key it says to
-  open the host's invite link, or to ask the host for a built-in pack ("a Big Board about
+  say the magic words in Settings (`NOT_HERE`), or to ask the host for a built-in pack ("a Big Board about
   <topic>", which the owner's Claude Code chat makes). Every route opens the new
   pack in the editor, kept in storage (`quiz:new-board`) until "Save pack" (or "Save as a
   draft" with empty tiles), which picks it on setup.
