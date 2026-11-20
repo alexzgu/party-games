@@ -11,7 +11,7 @@
   import { tiltThresholds } from '../calibration.svelte';
   import { keepAwake } from '../../../lib/wakelock';
   import { startMotion, stopMotion, axisSign, onGravity, enterPlayMode, exitPlayMode } from '../sensors.svelte';
-  import { labScript, type Step } from './protocol';
+  import { labScript, speedScript, type Step } from './protocol';
   import { unlockVoice, say, hush, tone } from '../voice';
 
   type Cue = { t: number; spokenAt?: number; kind: string; block: string; text: string };
@@ -65,7 +65,10 @@
     timer = setTimeout(() => run(steps, i + 1), s.ms);
   }
 
-  async function start() {
+  let script = 'full';
+
+  async function start(which: 'full' | 'speed') {
+    script = which;
     // Motion first: iOS asks for permission only inside the untouched tap.
     const ok = startMotion(true);
     unlockVoice();
@@ -101,7 +104,7 @@
         if (e) detectorRows.push([r(t, 10)!, e]);
       }),
     ];
-    const steps = labScript();
+    const steps = script === 'speed' ? speedScript() : labScript();
     total = steps.length;
     phase = 'running';
     run(steps, 0);
@@ -123,6 +126,7 @@
     const data = {
       version: 2,
       label: label.trim(),
+      script,
       startedAt,
       userAgent: navigator.userAgent,
       installed,
@@ -139,7 +143,7 @@
       cues,
       detector: detectorRows,
     };
-    fileName = `tilt-${startedAt.replace(/[:.]/g, '-')}${label.trim() ? '-' + label.trim().replace(/\W+/g, '_') : ''}.json`;
+    fileName = `tilt-${script === 'speed' ? 'speed-' : ''}${startedAt.replace(/[:.]/g, '-')}${label.trim() ? '-' + label.trim().replace(/\W+/g, '_') : ''}.json`;
     file = new Blob([JSON.stringify(data)], { type: 'application/json' });
     counts = { motion: motionRows.length, cues: cues.length };
     phase = 'done';
@@ -195,7 +199,8 @@
           <span class="faint">Who is holding it, and anything worth noting (optional)</span>
           <input bind:value={label} placeholder="Alex, sitting, couch" />
         </label>
-        <Button size="lg" onclick={start}>Start recording</Button>
+        <Button size="lg" onclick={() => start('full')}>Full session (3½ min)</Button>
+        <Button variant="secondary" size="lg" onclick={() => start('speed')}>Speed run (2 min): quick tilts in a row</Button>
       </div>
     {:else}
       <div class="stack">

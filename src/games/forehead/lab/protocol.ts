@@ -2,7 +2,7 @@
 // logged with its time, so the recording carries its own labels ("down" asked at t, "talk and
 // look around, no tilting" from t to t + 20 s).
 
-export type CueKind = 'say' | 'still' | 'down' | 'up' | 'hold-down' | 'hold-up' | 'back' | 'noise';
+export type CueKind = 'say' | 'still' | 'down' | 'up' | 'hold-down' | 'hold-up' | 'back' | 'noise' | 'free-down' | 'free-up';
 
 export interface Step {
   kind: CueKind;
@@ -25,6 +25,10 @@ function shuffled<T>(xs: T[], rnd: () => number): T[] {
 
 function tilts(block: string, downs: number, ups: number, gapMs: number, jitterMs: number, rnd: () => number): Step[] {
   const kinds = shuffled([...Array(downs).fill('down'), ...Array(ups).fill('up')] as ('down' | 'up')[], rnd);
+  return cues(block, kinds, gapMs, jitterMs, rnd);
+}
+
+function cues(block: string, kinds: ('down' | 'up')[], gapMs: number, jitterMs: number, rnd: () => number): Step[] {
   return kinds.map((kind) => ({
     kind, block, text: kind === 'down' ? 'Down' : 'Up', ms: gapMs + Math.round(rnd() * jitterMs),
   }));
@@ -56,5 +60,31 @@ export function labScript(rnd: () => number = Math.random): Step[] {
     say('hold', 'Tilt up and hold it.', 4000, 'hold-up'),
     say('hold', 'Back to the middle.', 3000, 'back'),
     say('end', 'Done. Take the phone off.', 1500),
+  ];
+}
+
+const repeat = (kind: 'down' | 'up', n: number) => Array<'down' | 'up'>(n).fill(kind);
+const alternate = (n: number) => Array.from({ length: n }, (_, i) => (i % 2 ? 'up' : 'down') as 'down' | 'up');
+
+/** About two minutes of quick tilts in a row: how fast real repeated tilts come. */
+export function speedScript(rnd: () => number = Math.random): Step[] {
+  return [
+    say('intro', 'Speed run. Put the phone on your forehead, like in the game.', 6000),
+    say('rest', 'Hold still.', 3000, 'still'),
+    say('say', 'Down each time I say it. Keep up.', 2500),
+    ...cues('down-900', repeat('down', 10), 900, 0, rnd),
+    say('say', 'Now up each time.', 2000),
+    ...cues('up-900', repeat('up', 10), 900, 0, rnd),
+    say('say', 'Now alternate.', 2000),
+    ...cues('alt-900', alternate(12), 900, 0, rnd),
+    say('say', 'Faster.', 1500),
+    ...cues('alt-700', alternate(12), 700, 0, rnd),
+    say('say', 'All down, faster.', 1500),
+    ...cues('down-650', repeat('down', 10), 650, 0, rnd),
+    say('say', 'Random.', 1500),
+    ...tilts('mix-800', 7, 7, 800, 0, rnd),
+    say('free', 'Now down as fast as you can, until I say stop.', 8000, 'free-down'),
+    say('free', 'Stop. Now up as fast as you can, until I say stop.', 8000, 'free-up'),
+    say('end', 'Stop. Done. Take the phone off.', 1500),
   ];
 }
