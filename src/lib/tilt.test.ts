@@ -97,6 +97,38 @@ describe('TiltDetector re-arms on a still pose', () => {
   });
 });
 
+describe('TiltDetector follows the last two seconds', () => {
+  const at = (samples: number[], start: number, step = 20) => samples.map((deg, i) => ({ g: pitched(deg), t: start + i * step }));
+  function run(d: TiltDetector, seq: { g: Gravity; t: number }[]) {
+    return seq.map(({ g, t }) => d.update(g, t)).filter(Boolean);
+  }
+  const hold = (deg: number, ms: number) => Array<number>(Math.round(ms / 20)).fill(deg);
+  const ramp = (from: number, to: number, ms: number) => {
+    const n = Math.round(ms / 20);
+    return Array.from({ length: n }, (_, i) => from + ((to - from) * (i + 1)) / n);
+  };
+
+  it('absorbs a slow drift, then scores a nod from the new pose', () => {
+    const d = new TiltDetector('small');
+    // Leans back 18° over 4 s (4.5°/s): no score. A quick 25° nod from there counts.
+    const seq = [...hold(0, 600), ...ramp(0, 18, 4000), ...hold(18, 1000), ...ramp(18, -7, 200)];
+    expect(run(d, at(seq, 0))).toEqual(['correct']);
+  });
+
+  it('scores a quick nod but not the same angle reached slowly', () => {
+    expect(run(new TiltDetector('small'), at([...hold(0, 1000), ...ramp(0, -26, 250)], 0))).toEqual(['correct']);
+    expect(run(new TiltDetector('small'), at([...hold(0, 1000), ...ramp(0, -26, 5000)], 0))).toEqual([]);
+  });
+
+  it('never re-fires or fires the other way while a tilt is held and released', () => {
+    const d = new TiltDetector('small');
+    const seq = [...hold(0, 1000), ...ramp(0, -30, 200), ...hold(-30, 3000), ...ramp(-30, 0, 300), ...hold(0, 1000)];
+    expect(run(d, at(seq, 0))).toEqual(['correct']);
+    // And the next nod still counts.
+    expect(run(d, at([...ramp(0, 28, 200)], 6000))).toEqual(['pass']);
+  });
+});
+
 describe('SteadyDetector', () => {
   it('fires after a sideways, near-vertical hold and restarts on wobble', () => {
     const d = new SteadyDetector();
