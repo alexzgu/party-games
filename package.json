@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --host",
     "check": "svelte-check --tsconfig ./tsconfig.json",
+    "worker:check": "tsc -p worker/tsconfig.json",
     "test": "vitest run",
     "test:content": "vitest run src/lib/content.test.ts",
     "list": "node scripts/list-content.mjs",

@@ -5,10 +5,9 @@
   import Triage from '../../components/Triage.svelte';
   import PasteList from '../../components/PasteList.svelte';
   import Segmented from '../../components/Segmented.svelte';
+  import WizardEffort from '../../components/WizardEffort.svelte';
   import { customGibberish, isBuiltin, slugify, type GibberishCard, type GibberishPack } from '../../lib/content';
-  import { hasKey } from '../../lib/claude';
-  import { settings } from '../../lib/settings.svelte';
-  import { go } from '../../lib/router.svelte';
+  import { hasKey, NOT_HERE } from '../../lib/claude';
   import { sfx } from '../../lib/sound';
   import { generateCards, THEME_CHIPS } from './generate';
   import { answerKey, parsePastedCards } from './parse';
@@ -24,7 +23,6 @@
 
   const myPacks: GibberishPack[] = customGibberish.all();
   const keyed = $derived(!demoNoKey && (hasKey() || !!demoItems));
-  const modelName = settings.model.replace(/^claude-/, '').replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/^\w/, (c) => c.toUpperCase());
 
   // svelte-ignore state_referenced_locally
   let items = $state<GibberishCard[]>(demoItems ?? []);
@@ -41,7 +39,7 @@
 
   const destPack = $derived(myPacks.find((p) => p.id === dest));
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: 'Ask Claude' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
   // svelte-ignore state_referenced_locally
   let mode = $state<'paste' | 'claude'>(keyed ? 'claude' : 'paste');
   let pasteText = $state('');
@@ -104,7 +102,7 @@
     } else {
       const name = packName.trim() || 'My pack';
       const id = uniqueId(name);
-      const blurb = mode === 'paste' ? 'Pasted list' : `Made with Claude: ${theme.trim() || name}`;
+      const blurb = mode === 'paste' ? 'Pasted list' : `Conjured by Fizzwick: ${theme.trim() || name}`;
       customGibberish.put({ id, name, blurb, cards });
       onsaved(id);
     }
@@ -137,10 +135,7 @@
       {@render saveTo()}
     </PasteList>
   {:else if !reviewing && !keyed}
-    <p class="nokey">
-      <span>Asking Claude needs an API key.</span>
-      <button type="button" class="link" onclick={() => go('/settings')}>Add one in Settings</button>
-    </p>
+    <p class="nokey">{NOT_HERE}</p>
   {:else if !reviewing}
     <form class="theme" onsubmit={(e) => { e.preventDefault(); void run(); }}>
       <label for="theme-in"><h3>What should the cards be about?</h3></label>
@@ -151,7 +146,8 @@
         {/each}
       </div>
       {@render saveTo()}
-      <p class="faint small">Claude ({modelName}) writes about 24 cards. You keep the good ones.</p>
+      <WizardEffort />
+      <p class="faint small">Fizzwick writes about 24 cards. You keep the good ones.</p>
       <Button type="submit" size="lg" disabled={!theme.trim()}>✨ Make cards</Button>
     </form>
   {:else}
@@ -173,7 +169,7 @@
     {/if}
 
     {#if items.length === 0 && streaming}
-      <p class="waiting"><span class="dot" aria-hidden="true"></span> Claude is writing “{theme}” cards…</p>
+      <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” cards…</p>
     {/if}
 
     <Triage {items} keyOf={answerKey} {streaming} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
@@ -191,8 +187,7 @@
 <style>
   h3 { font-size: 1.3rem; }
   .small { font-size: 0.9rem; }
-  .nokey { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s-2); color: var(--text-dim); }
-  .link { min-height: 44px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+  .nokey { color: var(--text-dim); }
   .theme { display: flex; flex-direction: column; gap: var(--s-3); }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
   .chip { min-height: 44px; padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1.5px solid var(--line-strong); background: var(--surface); font-weight: 600; }

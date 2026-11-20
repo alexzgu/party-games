@@ -7,7 +7,9 @@ import { emptyTiles, sizeProblem } from './board';
 
 /** One team is a solo player; 20 fills a big room. */
 export const MIN_TEAMS = 1;
-export const MAX_TEAMS = 20;
+export const MAX_TEAMS = 10;
+/** Games saved when up to 20 teams were allowed still load as they were. */
+const SAVED_MAX_TEAMS = 20;
 export const BASE_STEP = 100;
 
 /** board: tiles · clue: host reads the clue · answer: answer shown, host picks who got it · win: game over */
@@ -257,7 +259,7 @@ function validBoard(b: unknown): b is Game['board'] {
 export function validGame(x: unknown): Game | null {
   const g = x as Game | null;
   if (!g || typeof g !== 'object' || g.v !== 1) return null;
-  if (!Array.isArray(g.teams) || g.teams.length < MIN_TEAMS || g.teams.length > MAX_TEAMS || !g.teams.every(str)) return null;
+  if (!Array.isArray(g.teams) || g.teams.length < MIN_TEAMS || g.teams.length > SAVED_MAX_TEAMS || !g.teams.every(str)) return null;
   if (!validBoard(g.board)) return null;
   const n = g.board.categories[0].clues.length;
   if (!Array.isArray(g.values) || g.values.length !== n || !g.values.every((v) => Number.isFinite(v))) return null;

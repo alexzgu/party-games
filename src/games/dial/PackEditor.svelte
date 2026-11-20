@@ -4,6 +4,7 @@
   // own packs can be deleted.
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
+  import ExportPack from '../../components/ExportPack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import { customSpectra, spectrumPacks, type Spectrum, type SpectrumPack } from '../../lib/content';
@@ -124,6 +125,7 @@
       <span>{pack.cards.length} {pack.cards.length === 1 ? "card" : "cards"}</span>
       {#if !builtin}<span class="tag">yours</span>{:else if edited}<span class="tag hot">edited</span>{:else}<span class="tag">built-in</span>{/if}
     </p>
+    <ExportPack game="dial" {pack} />
 
     <form class="add" onsubmit={add}>
       <div class="pair">

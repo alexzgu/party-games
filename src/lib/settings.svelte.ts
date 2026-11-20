@@ -1,15 +1,17 @@
 import { load, save } from './storage';
+import { DEFAULT_MODEL } from './wizard';
 
 export interface Settings {
   sound: boolean;
   haptics: boolean;
-  /** Anthropic API key for live generation. Stays on this device only. */
+  /** Anthropic API key for live generation, stored by the host's invite link. Stays on this device only. */
   apiKey: string;
+  /** Session token from the wizard server after the magic words (wizardServer.ts). Never an API key; never in an invite link. */
+  wizardPass: string;
+  /** The model behind the wizard's effort choice (one of `EFFORTS` in wizard.ts). */
   model: string;
   /** Heads Down.: how a scored word shows. 'edge' lights the edge on the side picked; 'screen' flashes the whole screen. */
   headsDownFeedback: 'edge' | 'screen';
-  /** Heads Down.: how far the phone must tilt to score. 'small' scores on a slight nod. */
-  tiltSensitivity: 'small' | 'medium' | 'big';
   /** Colour scheme; 'system' follows the phone. */
   theme: 'system' | 'light' | 'dark';
 }
@@ -18,9 +20,9 @@ const DEFAULTS: Settings = {
   sound: true,
   haptics: true,
   apiKey: '',
-  model: 'claude-opus-5-5',
+  wizardPass: '',
+  model: DEFAULT_MODEL,
   headsDownFeedback: 'edge',
-  tiltSensitivity: 'small',
   theme: 'dark',
 };
 

@@ -89,7 +89,7 @@ export function parsePastedBoard(text: string, name = ''): PastedBoard {
     name: c.name,
     clues: Array.from({ length: len }, (_, r) => c.clues[r] ?? { clue: '', answer: '' }),
   }));
-  return { board: { id: '', name: name.trim() || 'Pasted board', blurb: 'Pasted on this phone', categories }, skipped };
+  return { board: { id: '', name: name.trim() || 'Pasted pack', blurb: 'Pasted on this phone', categories }, skipped };
 }
 
 export interface StreamClue { category: string; /** 1 = easiest (top row). */ level: number; clue: string; answer: string }

@@ -10,9 +10,10 @@
   import { go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
-  import { prefs, savePrefs, selectedDecks, type Control } from './state.svelte';
+  import { prefs, savePrefs, selectedDecks, type Input } from './state.svelte';
   import { ROUND_LENGTHS } from './round';
   import { startRound } from './flow';
+  import { calibration } from './calibration.svelte';
   import { findDecks } from './find';
 
   const decks = wordDecks();
@@ -28,10 +29,16 @@
   const wordCount = $derived(chosen.reduce((n, d) => n + d.words.length, 0));
 
   const lengths = ROUND_LENGTHS.map((s) => ({ value: s as number, label: s < 120 ? `${s}s` : '2 min' }));
-  const controls: { value: Control; label: string }[] = [
+  const inputs: { value: Input; label: string }[] = [
     { value: 'tilt', label: '📱 Tilt' },
     { value: 'tap', label: '👆 Tap' },
+    { value: 'both', label: 'Both' },
   ];
+  const inputHelp: Record<Input, string> = {
+    tilt: 'Tilt only: down for got it, up to pass. Taps do nothing (unless this phone cannot feel tilts).',
+    tap: 'Tap only: right hand got it, left hand pass. Tilting does nothing.',
+    both: 'Tilt or tap, whichever is handy: down or right hand for got it, up or left hand to pass.',
+  };
 
   function toggleDeck(id: string) {
     const on = prefs.deckIds.includes(id);
@@ -42,11 +49,11 @@
   }
 
   function start() {
-    startRound($state.snapshot(prefs.deckIds), prefs.seconds, prefs.control);
+    startRound($state.snapshot(prefs.deckIds), prefs.seconds, prefs.input);
   }
 
   const startLabel = $derived(
-    chosen.length === 0 ? 'Pick a deck' : wordCount === 0 ? 'Those decks have no words yet' : chosen.length === 1 ? `Start · ${chosen[0].name}` : `Start · ${chosen.length} decks mixed`,
+    chosen.length === 0 ? 'Pick a pack' : wordCount === 0 ? 'Those packs have no words yet' : chosen.length === 1 ? `Start · ${chosen[0].name}` : `Start · ${chosen.length} packs mixed`,
   );
 </script>
 
@@ -66,13 +73,15 @@
   {/snippet}
 
   <section>
-    <ListTools key="forehead:setup" bind:query bind:sort placeholder="Search decks or words" shown={shown.length} total={decks.length}>
+    <ListTools key="forehead:setup" bind:query bind:sort placeholder="Search packs or words" shown={shown.length} total={decks.length}>
       {#snippet title()}
-        <h3>Decks</h3>
-        <p class="faint count">{chosen.length ? `${chosen.length} picked · ${wordCount} words` : 'pick one or more'}</p>
-      {/snippet}
-      {#snippet extra()}
-        <button class="link" onclick={() => go('/forehead/decks')}>Edit decks</button>
+        <div class="packs-head">
+          <div class="packs-title">
+            <h3>Packs</h3>
+            <p class="faint count">{chosen.length ? `${chosen.length} picked · ${wordCount} words` : 'pick one or more'}</p>
+          </div>
+          <button class="link" onclick={() => go('/forehead/decks')} aria-label="Edit packs">Edit</button>
+        </div>
       {/snippet}
     </ListTools>
     <ul class="grid">
@@ -94,13 +103,13 @@
         <li>
           <button class="deck make" onclick={() => go('/forehead/make')}>
             <span class="emoji" aria-hidden="true">✨</span>
-            <span class="name">Make a deck</span>
-            <span class="meta">paste a list or ask Claude</span>
+            <span class="name">Make a pack</span>
+            <span class="meta">paste a list or ask the wizard</span>
           </button>
         </li>
       {/if}
     </ul>
-    {#if !shown.length && query.trim()}<p class="faint none">No decks match “{query.trim()}”</p>{/if}
+    {#if !shown.length && query.trim()}<p class="faint none">No packs match “{query.trim()}”</p>{/if}
   </section>
 
   <section class="stack">
@@ -110,12 +119,13 @@
 
   <section class="stack">
     <h3>Controls</h3>
-    <Segmented label="Controls" options={controls} bind:value={prefs.control} onchange={savePrefs} />
-    <p class="faint small">
-      {prefs.control === 'tilt'
-        ? 'Tilt the phone to score. Tapping works too: right hand got it, left hand pass.'
-        : 'No tilting: tap with your right hand for got it, your left hand to pass.'}
-    </p>
+    <Segmented label="Controls" options={inputs} bind:value={prefs.input} onchange={savePrefs} />
+    <p class="faint small">{inputHelp[prefs.input]}</p>
+    {#if prefs.input !== 'tap'}
+      <Button variant="secondary" onclick={() => go('/forehead/calibrate')}>
+        {calibration.th ? 'Calibrate tilt again (new player?)' : 'Calibrate tilt (half a minute)'}
+      </Button>
+    {/if}
   </section>
 
   {#snippet actions()}
@@ -124,8 +134,11 @@
 </Screen>
 
 <style>
+  /* Title and count on the left, Edit just before the search and sort toggles at the right end. */
+  .packs-head { display: flex; align-items: center; gap: var(--s-2); }
+  .packs-title { flex: 1; min-width: 0; }
   .count { font-size: 0.85rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .link { border: 0; background: transparent; color: var(--accent); font-weight: 700; min-height: 44px; padding: 0 var(--s-2); }
+  .link { flex: none; border: 0; background: transparent; color: var(--accent); font-weight: 700; min-height: 44px; min-width: 44px; padding: 0 var(--s-2); }
   .small { font-size: 0.9rem; }
   .grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-2); }
   .deck {

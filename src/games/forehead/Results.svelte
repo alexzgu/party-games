@@ -32,7 +32,7 @@
   }
 </script>
 
-<Screen title="Round over" accent="var(--c-forehead)" onback={ondecks} backLabel="Change decks">
+<Screen title="Round over" accent="var(--c-forehead)" onback={ondecks} backLabel="Change packs">
   <div class="hero pop-in">
     <span class="big" aria-hidden="true">{points}</span>
     <div class="hero-txt">
@@ -79,7 +79,7 @@
   {#snippet actions()}
     <Button size="lg" onclick={onagain}>Next player · Play again</Button>
     <div class="row2">
-      <Button variant="secondary" onclick={ondecks}>Change decks</Button>
+      <Button variant="secondary" onclick={ondecks}>Change packs</Button>
       <Button variant="ghost" onclick={onhome}>Home</Button>
     </div>
   {/snippet}

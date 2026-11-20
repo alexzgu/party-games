@@ -7,9 +7,9 @@
   import Triage from '../../components/Triage.svelte';
   import PasteList from '../../components/PasteList.svelte';
   import Segmented from '../../components/Segmented.svelte';
-  import { hasKey } from '../../lib/claude';
+  import WizardEffort from '../../components/WizardEffort.svelte';
+  import { hasKey, NOT_HERE } from '../../lib/claude';
   import { customSpectra, slugify, type Spectrum, type SpectrumPack } from '../../lib/content';
-  import { go } from '../../lib/router.svelte';
   import { generatePairs, parsePastedPairs, THEME_CHIPS } from './generate';
   import { cardId } from './state';
   import { selectPack } from './persist';
@@ -31,7 +31,7 @@
   let controller: AbortController | null = null;
   onDestroy(() => controller?.abort());
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: 'Ask Claude' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
   // svelte-ignore state_referenced_locally
   let mode = $state<'paste' | 'claude'>(hasKey() || initial.length ? 'claude' : 'paste');
   let pasteText = $state('');
@@ -119,7 +119,7 @@
 
   function saveNew() {
     const name = packName.trim() || 'My pack';
-    const blurb = mode === 'paste' ? 'Pasted list' : `Made with Claude: ${theme || name}`;
+    const blurb = mode === 'paste' ? 'Pasted list' : `Conjured by Fizzwick: ${theme || name}`;
     const pack: SpectrumPack = { id: `my-${slugify(name)}-${Date.now().toString(36)}`, name, blurb, cards: kept, custom: true };
     customSpectra.put(pack);
     finish(pack);
@@ -159,16 +159,14 @@
     <PasteList label="One per line: Left | Right" placeholder={'Cold | Hot\nUnderrated | Overrated\nCheap | Expensive'}
       parse={(t) => parsePastedPairs(t, savedPack?.cards ?? [])} onadd={pasted} bind:text={pasteText} />
   {:else if step === 'theme' && !hasKey()}
-    <p class="nokey">
-      <span>Asking Claude needs an API key.</span>
-      <button type="button" class="link" onclick={() => go('/settings')}>Add one in Settings</button>
-    </p>
+    <p class="nokey">{NOT_HERE}</p>
   {:else if step === 'theme'}
     <form class="stack" onsubmit={(e) => { e.preventDefault(); startFresh(theme); }}>
       <label class="stack">
         <span class="lbl">What should the cards be about?</span>
         <input type="text" maxlength="80" placeholder="e.g. 90s cartoons, our office, wine" bind:value={theme} enterkeyhint="go" />
       </label>
+      <WizardEffort />
       <Button type="submit" size="lg">Make 20 cards</Button>
     </form>
     <div class="chips" aria-label="Quick themes">
@@ -222,8 +220,7 @@
 </Screen>
 
 <style>
-  .nokey { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s-2); color: var(--text-dim); }
-  .link { min-height: 44px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+  .nokey { color: var(--text-dim); }
   .note { font-size: 0.92rem; }
   .lbl { font-weight: 700; }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }

@@ -24,9 +24,10 @@
   } = $props();
 
   const prefs = loadSetup();
-  const boards = quizBoards();
+  let boards = $state.raw(quizBoards());
   let names = $state(prefs.names);
   let count = $state(prefs.count);
+  // svelte-ignore state_referenced_locally
   let boardId = $state(boards.some((b) => b.id === prefs.boardId) ? prefs.boardId : (boards[0]?.id ?? null));
   let scale = $state<'x1' | 'x2'>(prefs.double ? 'x2' : 'x1');
   let penalty = $state(prefs.penalty);
@@ -40,7 +41,7 @@
   const inProgress = $derived(saved && saved.phase !== 'win' ? saved : null);
   // A board with empty tiles is kept as a draft: it can be edited but not played yet.
   const gaps = $derived(board ? emptyTiles(board).length : 0);
-  const blocked = $derived(!board ? 'Pick a board' : gaps ? `Fill ${gaps} empty ${gaps === 1 ? 'tile' : 'tiles'} first` : '');
+  const blocked = $derived(!board ? 'Pick a pack' : gaps ? `Fill ${gaps} empty ${gaps === 1 ? 'tile' : 'tiles'} first` : '');
 
   // With a game saved, starting over takes a second tap so nobody wipes the scores by accident.
   let confirming = $state(false);
@@ -79,7 +80,7 @@
   {/if}
 
   <Teams bind:names bind:count />
-  <BoardPicker {boards} bind:selected={boardId} {onedit} {onmake} />
+  <BoardPicker {boards} bind:selected={boardId} {onedit} {onmake} onimported={() => (boards = quizBoards())} />
   {#if board && gaps}
     <div class="gaps" role="status">
       <p><b>{board.name}</b> is a draft: {gaps === 1 ? 'one tile is' : `${gaps} tiles are`} empty ({describeEmpty(board, rowValues(rows, scale === 'x2'))}).</p>

@@ -1,9 +1,10 @@
 <script lang="ts">
   // In-game page: scoreboard on top, content, primary action pinned above the home bar,
-  // and a small menu to pause or end the game.
+  // an "i" that opens the screen's how-to text (`info`), and a small menu to pause or end the game.
   import type { Snippet } from 'svelte';
   import Scoreboard from './Scoreboard.svelte';
   import Button from '../../components/Button.svelte';
+  import Popup from '../../components/Popup.svelte';
   import type { Game, TeamIndex } from './state';
   import { scoresBefore } from './state';
   import { teamColor } from './look';
@@ -15,6 +16,7 @@
     onhome,
     onend,
     actions,
+    info,
     children,
   }: {
     game: Game;
@@ -22,11 +24,14 @@
     onhome: () => void;
     onend: () => void;
     actions?: Snippet;
+    /** How-to text for this screen, shown in a popup behind the "i" button. */
+    info?: Snippet;
     children: Snippet;
   } = $props();
 
   let menu = $state(false);
   let confirmEnd = $state(false);
+  let help = $state(false);
   const close = () => { menu = false; confirmEnd = false; };
 </script>
 
@@ -34,6 +39,11 @@
   style:--accent={active !== null ? teamColor(active) : undefined}>
   <header>
     <div class="grow"><Scoreboard teams={game.teams} scores={scoresBefore(game)} goal={game.goal} {active} /></div>
+    {#if info}
+      <button class="menu info" aria-label="How this works" onclick={() => (help = true)}>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="7.6" r="1.5" fill="currentColor"/><path d="M12 11v6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      </button>
+    {/if}
     <button class="menu" aria-label="Game menu" aria-expanded={menu} onclick={() => (menu = true)}>
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>
     </button>
@@ -42,6 +52,9 @@
   {#if actions}<footer>{@render actions()}</footer>{/if}
 </div>
 
+{#if help && info}
+  <Popup title="How this works" onclose={() => (help = false)}><div class="how">{@render info()}</div></Popup>
+{/if}
 {#if menu}
   <div class="scrim fade-in" role="presentation" onclick={close}></div>
   <div class="sheet pop-in" role="dialog" aria-modal="true" aria-label="Game menu">
@@ -62,7 +75,7 @@
 
 <style>
   .frame {
-    min-height: 100dvh; max-width: 640px; margin: 0 auto;
+    height: 100dvh; max-width: 640px; margin: 0 auto;
     display: flex; flex-direction: column;
     padding: calc(var(--safe-top) + var(--s-3)) calc(var(--safe-right) + var(--s-4)) 0 calc(var(--safe-left) + var(--s-4));
     position: relative; isolation: isolate;
@@ -73,12 +86,21 @@
     background: radial-gradient(80% 40% at 15% -5%, color-mix(in srgb, var(--team) 20%, transparent), transparent 70%), var(--bg);
   }
   .lit.t1::before { background: radial-gradient(80% 40% at 85% -5%, color-mix(in srgb, var(--team) 20%, transparent), transparent 70%), var(--bg); }
-  header { display: flex; align-items: center; gap: var(--s-2); }
+  header { display: flex; align-items: center; gap: var(--s-1); }
+  .grow { min-width: 0; }
   .menu {
-    flex: none; width: 48px; height: 48px; border-radius: var(--r-pill); border: 0;
+    flex: none; width: 44px; height: 44px; border-radius: var(--r-pill); border: 0;
     background: var(--surface); color: var(--text-dim); display: grid; place-items: center;
   }
-  main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: var(--s-4); padding: var(--s-5) 0 var(--s-4); }
+  .info { color: var(--accent); }
+  main { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: var(--s-3); padding: var(--s-3) 0; }
+  /* The dial is the one part that gives up height when a screen is short (see Dial). */
+  main > :global(*) { flex-shrink: 0; }
+  main > :global(.tuner) { flex: 0 1 auto; min-height: 0; }
+  /* Landscape phones are too short for that: the page scrolls instead. */
+  @media (max-height: 500px) { .frame { height: auto; min-height: 100dvh; } main { flex: 1 0 auto; } }
+  .how :global(p) { margin: 0 0 var(--s-3); }
+  .how :global(p:last-child) { margin-bottom: 0; }
   footer {
     position: sticky; bottom: 0; display: flex; flex-direction: column; gap: var(--s-2);
     padding: var(--s-3) 0 calc(var(--safe-bottom) + var(--s-4));

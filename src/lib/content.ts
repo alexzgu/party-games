@@ -1,6 +1,7 @@
 // Built-in packs (bundled JSON, precached for offline play) merged with packs players
 // make or edit on the phone (saved in localStorage). An edit of a built-in replaces it in place.
 import { load, save } from './storage';
+import type { Secret } from '../games/salad/words';
 
 export interface WordDeck { id: string; name: string; emoji: string; blurb: string; words: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 export interface Spectrum { left: string; right: string }
@@ -165,31 +166,30 @@ export function songPacks(): SongPack[] {
 }
 
 // Snark Tank: prompts players write funny answers to ("The worst thing to hear from your pilot").
-export interface SnarkPack { id: string; name: string; blurb: string; prompts: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+/** A final for three-line duels: a prompt that asks for three things, and the house's own three lines. */
+export interface SnarkFinal { prompt: string; house: [string, string, string] }
+export interface SnarkPack {
+  id: string; name: string; blurb: string; prompts: string[];
+  /** Prompt → a stock answer for "Give me one" (sent untouched, it earns half points). */
+  safety?: Record<string, string>;
+  /** Finals for three-line duels. */
+  finals?: SnarkFinal[];
+  custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 const snarkFiles = import.meta.glob<SnarkPack>('../content/snark/*.json', { eager: true, import: 'default' });
 const builtinSnark = ordered(Object.values(snarkFiles), ['classic', 'after-dark']);
 export const customSnark = customStore<SnarkPack>('custom:snark', builtinSnark);
 export const snarkPacks = (): SnarkPack[] => merged(customSnark.saved(), builtinSnark);
 
-// Drop-in games share the pack metadata and keep their cards in separate stores.
-export interface WarmCard { answer: string; clues: string[] }
-export type RoomCard =
-  | { type: 'side'; a: string; b: string }
-  | { type: 'proof' | 'together'; text: string }
-  | { type: 'foley'; lines: string[] };
-export interface DropInPack<T> {
-  id: string;
-  name: string;
-  blurb: string;
-  added?: string;
-  custom?: boolean;
-  cards: T[];
-}
-const warmFiles = import.meta.glob<DropInPack<WarmCard>>('../content/warm/*.json', { eager: true, import: 'default' });
-const roomFiles = import.meta.glob<DropInPack<RoomCard>>('../content/room/*.json', { eager: true, import: 'default' });
-const builtinWarm = ordered(Object.values(warmFiles), ['everyday-things', 'pop-culture', 'food-drink']);
-const builtinRoom = ordered(Object.values(roomFiles), ['house-party', 'after-dark', 'deep-cuts']);
-export const customWarm = customStore('custom:warm', builtinWarm);
-export const customRoom = customStore('custom:room', builtinRoom);
-export const warmPacks = () => merged(customWarm.saved(), builtinWarm);
-export const roomPacks = () => merged(customRoom.saved(), builtinRoom);
+/** Word Salad packs are bundled with the game and selected in host settings. */
+export interface SaladPack { id: string; name: string; blurb: string; secrets: Secret[]; added?: string }
+const saladFiles = import.meta.glob<SaladPack>('../content/salad/*.json', { eager: true, import: 'default' });
+const builtinSalad = ordered(Object.values(saladFiles), ['classic']);
+export const saladPacks = (): SaladPack[] => builtinSalad.slice();
+
+export interface BrawlPack { id: string; name: string; titles: string[] }
+const brawlFiles = import.meta.glob<{ titles: string[] }>('../content/brawl/*.json', { eager: true, import: 'default' });
+export const brawlPacks = (): BrawlPack[] => ordered(Object.entries(brawlFiles).map(([file, pack]) => {
+  const id = file.split('/').at(-1)!.replace(/\.json$/, '');
+  const name = id === 'after-dark' ? 'After Dark' : id.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
+  return { ...pack, id, name };
+}), ['classic', 'after-dark']);

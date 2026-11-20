@@ -147,6 +147,12 @@
     {/if}
   </div>
 
+  {#snippet info()}
+    <p>Everybody look! Tap <b>Reveal the target</b> to open the dial; tap anywhere to skip the animation.</p>
+    <p>The gold middle wedge scores <b>4</b>, the wedges beside it <b>3</b>, the outer ones <b>2</b>; anywhere else scores nothing.</p>
+    {#if game.steal}<p>If the other team called the right side of the needle, they get <b>1</b>.</p>{/if}
+    <p>First team to {game.goal} wins.</p>
+  {/snippet}
   {#snippet actions()}
     {#if stage === 'ready'}
       <Button size="lg" onclick={reveal}>Reveal the target</Button>

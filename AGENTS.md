@@ -10,8 +10,9 @@ Content only: `npm run test:content`; list a game's existing items: `npm run lis
 ## Making a new pack (the main live-content route)
 
 The owner, or a friend at the party, asks a chat for a pack, e.g. "make a Spectrum pack about
-our college", "Heads Down. deck: 2000s cartoons, 60 words" or "a Big Board about Marvel"
-(a Big Board pack is a whole quiz board made from a topic). You write it as a built-in pack,
+our college", "Heads Down. pack: 2000s cartoons, 60 words" or "a Big Board about Marvel"
+(a Big Board pack is a whole quiz board made from a topic; a request for a Heads Down. "deck"
+or a Big Board "board" means a pack). You write it as a built-in pack,
 check it, and publish it. Phones get it within a minute of the site rebuilding, the next time
 they are on the main menu. Do the whole thing without asking questions unless the game or
 theme is unclear; pick sensible defaults and say what you chose.
@@ -27,12 +28,12 @@ theme is unclear; pick sensible defaults and say what you chose.
      column of clue + answer, easiest first.
 2. **Size** if not given: Heads Down. 60 words, Spectrum 40 cards, Inn Co Hear Ant 40 cards,
    Big Board 5 categories × 5 clues (any 3–6 × 3–5 works; every category the same length; the
-   phone's own board maker allows 1–8 × 1–10, but a built-in board in the repo stays 3–6 × 3–5).
+   phone's own pack maker allows 1–8 × 1–10, but a built-in Big Board pack in the repo stays 3–6 × 3–5).
    **List what exists first**: `npm run list -- <folder>` prints every word, scale or answer
    already in that game (and, for Inn Co Hear Ant, the hint categories in use). Spectrum
    scales and Inn Co Hear Ant answers must be new across *all* packs of that game, not just
-   similar ones; Heads Down. words only need to be new within the deck. Big Board clues must be
-   new within the board; avoid reusing another board's answers.
+   similar ones; Heads Down. words only need to be new within the pack. Big Board clues must be
+   new within the pack; avoid reusing another Big Board pack's answers.
 3. **Write** `src/content/<folder>/<id>.json`. `id` is a new lowercase slug (`college-life`),
    never an existing file's id. Exact shapes:
 
@@ -68,8 +69,8 @@ theme is unclear; pick sensible defaults and say what you chose.
      changed recently. Write ~1.5× the clues and keep the best.
    - "After Dark" style requests: cheeky, never explicit.
 5. **Check**: `npm run test:content` (the content gate in `src/lib/content.test.ts` rejects
-   bad shapes, repeats within a deck, any Spectrum scale or Inn Co Hear Ant answer that already
-   exists in another pack, phrases containing the answer's words, and Big Boards with the wrong
+   bad shapes, repeats within a pack, any Spectrum scale or Inn Co Hear Ant answer that already
+   exists in another pack, phrases containing the answer's words, and Big Board packs with the wrong
    number of categories or clues, uneven categories, empty answers or a repeated clue; it lists
    every problem in one run). Fix them all and rerun until it passes. A pack-only change needs nothing else.
 6. **Publish**: `git add src/content && git commit -m "Add <game> pack: <name>"` then `git push`.
@@ -79,7 +80,7 @@ theme is unclear; pick sensible defaults and say what you chose.
    `curl -s https://api.github.com/repos/alexzgu/party-games/actions/runs` until the newest run
    for your commit is `completed` / `success` (about 1–2 minutes), then tell the asker:
    "Live. Go back to the main menu, wait a moment, then open <game> and tick <pack name> in
-   the pack list" (Big Board: "pick <board name> in the Board list"). Mention the 3 to 5 items you are least sure about.
+   the pack list" (Big Board: "pick <pack name> in the Pack list"). Mention the 3 to 5 items you are least sure about.
 
 ### Earworm song packs (`song/`), made by a Claude Code chat on this laptop
 
@@ -159,30 +160,54 @@ commercial game's prompts). Open-ended so there are a hundred funny answers, not
 ("A terrible name for a boat", "What your dog is thinking during a thunderstorm"); nothing that
 needs inside knowledge unless the pack is about the group. "After Dark": cheeky, never explicit.
 
-### Getting Warmer packs (`warm/`)
+Two optional fields (write both for a new pack unless asked not to; the game works without them):
 
-Default size 50 cards. Run `npm run list -- warm` before writing. Answers must be
-unique across the game. Each card has an `answer` and a `clues` array of 4–6 strings
-(aim for five). Put the pack in `src/content/warm/<id>.json` with the usual
-`id`, `name`, `blurb`, `added` and `cards` fields. Pick answers the room might
-recognise. Start with a vague but true clue, then narrow it down with different
-facts until the last clue nearly gives it away. Keep clues short enough to read
-aloud. Keep the words in the answer out of all clues.
+```json
+"safety": {"A terrible name for a dorm": "The Mold Hilton"},
+"finals": [{"prompt": "Three things you should never say to your RA", "house": ["I live here now", "Smell that?", "Define fire hazard"]}]
+```
 
-### Room Service packs (`room/`)
+- `safety`: a stock answer per prompt, keyed by the prompt exactly as written; players tap "Give
+  me one" when stuck (half points if sent as is). Decent and mildly funny, never the best answer
+  in the room; 1–8 words, sentence case, no end punctuation (80 characters at most).
+- `finals`: prompts for the three-line duel final, each asking for three things ("Three …"),
+  3–14 words, new across *all* Snark packs (the list shows existing finals) and never one of the
+  regular prompts; `house` is exactly three lines the game plays against an odd player out, 1–6
+  words each (40 characters at most), genuinely funny. About one final per five prompts.
 
-Default size 60 cards. Run `npm run list -- room` before writing. Prompts must
-be unique across the game. Put the pack in `src/content/room/<id>.json` with
-`id`, `name`, `blurb`, `added` and `cards`. A card is one of:
+### Word Salad packs (`salad/`)
 
-- `{"type":"side","a":"First choice","b":"Second choice"}`. Give each side a case worth making.
-- `{"type":"proof","text":"Something with a price sticker still on it"}`. Use ordinary things guests can carry or see. Keep clothing on and private phone content private.
-- `{"type":"foley","lines":["The floor gives way [CRACK]","The goose protests [HONK]"]}`. Write 2–4 short lines and bracket the sounds.
-- `{"type":"together","text":"Something everyone forgets on a weekend trip"}`. Use prompts likely to produce a few matches and a few surprises.
+Players describe a secret by filling blanks with word choices. Run `npm run list -- salad`
+first. Answers and accepted variants must be unique across packs. The host can select built-in
+packs in settings. Classic has 64 secrets, 16 in each category, with roughly a quarter easy,
+half medium and a quarter hard. Use that mix for new packs so a room gets varied choices.
 
-Keep debates friendly and After Dark cheeky. Mix types unless the theme calls for one.
+```json
+{"id":"food-and-friends","name":"Food and Friends","blurb":"Familiar dishes and faces","added":"2026-11-20","secrets":[{"answer":"Taco","category":"thing","level":"easy","also":["Tacos"],"words":{"noun":["a shell","a tortilla","a handheld meal"],"adjective":["crunchy","folded","spicy"]}}]}
+```
+
+Categories are `person` (real or fictional), `place`, `thing` and `story` (film, show, book or
+game). Write 3–8 fitting choices per slot you use, including every slot in that category's
+opening frame in `src/games/salad/words.ts`. Include articles in nouns when needed, use base-form
+verbs, and write places and times as phrases like “by a river” and “after dinner.” A clue choice
+can never contain the answer or one of its words. Read your choices in the frames to hear how
+they fit, and run `npm run test:content`.
+
+### Doodle Brawl packs (`brawl/`)
+
+Original titles for fighters in a drawing contest. List existing titles with
+`npm run list -- brawl`. Put the pack in `src/content/brawl/<id>.json` as
+`{"titles": ["World's okayest roommate"]}`. Use 2–8 words in sentence case and write
+something specific and funny a player can draw. Titles must be unique across packs. A pack
+needs at least 24 titles to run a full eight-player game on its own. After Dark is cheeky.
+Run `npm run test:content`.
 
 ## Other changes
+
+`worker/` is the wizard server for the magic words (Cloudflare Worker; `worker/README.md`). It
+holds no secrets: the real phrases and its Anthropic key live only in Cloudflare, entered by the
+owner. Never ask for them or put real ones anywhere; tests use obvious fakes. Check it with
+`npm run worker:check` and `npm test`; the owner deploys it.
 
 Follow `SPEC.md`. Keep each game in `src/games/<id>/`, shared code in `src/lib/` and
 `src/components/`, colours and sizes in `src/styles/tokens.css`. Run all three checks before

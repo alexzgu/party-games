@@ -2,13 +2,15 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import PackFile from '../../components/PackFile.svelte';
   import { customDecks, wordDecks, type WordDeck } from '../../lib/content';
   import type { SortKey } from '../../lib/listing';
   import { go } from '../../lib/router.svelte';
   import { findDecks, type DeckHit } from './find';
+  import { prefs, savePrefs } from './state.svelte';
 
   // Every deck on this phone, the player's own first: open one to see all its words and edit it.
-  const mine = customDecks.all();
+  let mine = $state.raw(customDecks.all());
   const builtins = wordDecks().filter((d) => customDecks.isBuiltin(d.id));
   const open = (d: WordDeck) => go('/forehead/deck?id=' + encodeURIComponent(d.id));
 
@@ -18,6 +20,13 @@
   const searching = $derived(!!query.trim());
   const myHits = $derived(findDecks(mine, query, sort));
   const builtinHits = $derived(findDecks(builtins, query, sort));
+
+  /** Imported packs are picked for the next round, like a pack just made. */
+  function imported(ids: string[]) {
+    mine = customDecks.all();
+    prefs.deckIds = [...ids.filter((id) => !prefs.deckIds.includes(id)), ...prefs.deckIds];
+    savePrefs();
+  }
 </script>
 
 {#snippet row({ deck: d, via }: DeckHit, i: number)}
@@ -34,10 +43,10 @@
   </li>
 {/snippet}
 
-<Screen title="Decks" accent="var(--c-forehead)">
+<Screen title="Packs" accent="var(--c-forehead)">
   <div class="tools">
-    <ListTools key="forehead:decks" bind:query bind:sort placeholder="Search decks or words" shown={myHits.length + builtinHits.length} total={mine.length + builtins.length}>
-      {#snippet title()}<p class="faint intro">Open a deck to see every word, add your own or remove some.</p>{/snippet}
+    <ListTools key="forehead:decks" bind:query bind:sort placeholder="Search packs or words" shown={myHits.length + builtinHits.length} total={mine.length + builtins.length}>
+      {#snippet title()}<p class="faint intro">Open a pack to see every word, add your own or remove some.</p>{/snippet}
     </ListTools>
   </div>
   {#if !searching || myHits.length}
@@ -46,7 +55,7 @@
       {#if myHits.length}
         <ul class="list">{#each myHits as h, i (h.deck.id)}{@render row(h, i)}{/each}</ul>
       {:else}
-        <p class="faint">None yet. Paste a list, type the words in yourself, or ask Claude.</p>
+        <p class="faint">None yet. Paste a list, type the words in yourself, or ask the wizard.</p>
       {/if}
     </section>
   {/if}
@@ -57,12 +66,13 @@
     </section>
   {/if}
   {#if searching && !myHits.length && !builtinHits.length}
-    <p class="faint none">No decks match “{query.trim()}”</p>
+    <p class="faint none">No packs match “{query.trim()}”</p>
   {/if}
+  <PackFile game="forehead" onimported={imported} />
 
   {#snippet actions()}
-    <Button size="lg" onclick={() => go('/forehead/make')}>✨ Make a deck</Button>
-    <Button variant="secondary" onclick={() => go('/forehead/deck?id=new')}>Type a deck by hand</Button>
+    <Button size="lg" onclick={() => go('/forehead/make')}>✨ Make a pack</Button>
+    <Button variant="secondary" onclick={() => go('/forehead/deck?id=new')}>Type a pack by hand</Button>
   {/snippet}
 </Screen>
 

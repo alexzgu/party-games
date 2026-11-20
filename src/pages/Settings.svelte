@@ -4,44 +4,94 @@
   import Segmented from '../components/Segmented.svelte';
   import { gameName } from '../app.config';
   import Button from '../components/Button.svelte';
+  import TiltCheck from '../components/TiltCheck.svelte';
+  import { calibration } from '../games/forehead/calibration.svelte';
+  import { go } from '../lib/router.svelte';
   import { settings, saveSettings, applyTheme } from '../lib/settings.svelte';
-  import { testKey } from '../lib/claude';
-  import { sfx } from '../lib/sound';
+  import { keyFromTyped } from '../lib/invite';
+  import { WIZARD_SERVER, redeemPhrase, redeemMessage } from '../lib/wizardServer';
+  import { sfx, unlockAudio } from '../lib/sound';
+  import { haptic } from '../lib/haptics';
 
-  const MODELS = [
-    { id: 'claude-opus-5-5', name: 'Opus 5.5', note: 'best ideas' },
-    { id: 'claude-sonnet-5-5', name: 'Sonnet 5.5', note: 'faster' },
-    { id: 'claude-haiku-5-5', name: 'Haiku 5.5', note: 'fastest, cheapest' },
-  ];
+  let cleared = $state(false);
 
-  let showKey = $state(false);
-  let status = $state<{ kind: 'idle' | 'busy' | 'ok' | 'err'; text: string }>({ kind: 'idle', text: '' });
-
-  async function test() {
+  // Switching Sound or Vibration on plays a sample, so anyone can tell at once whether this phone does it.
+  function soundChanged() {
     saveSettings();
-    status = { kind: 'busy', text: 'Checking…' };
-    try {
-      await testKey();
-      status = { kind: 'ok', text: 'Connected. Live generation is ready.' };
-      sfx.correct();
-    } catch (e) {
-      status = { kind: 'err', text: (e as Error).message };
+    if (!settings.sound) return;
+    unlockAudio();
+    sfx.correct();
+  }
+
+  function hapticsChanged() {
+    saveSettings();
+    if (settings.haptics) haptic.pass();
+  }
+
+  // The magic words: sent once to the wizard server, which answers with a pass kept on this phone
+  // (never the words themselves, never in a URL). Players are only told about the magic words;
+  // an invite link or bare key typed here still works, for the host's own testing.
+  let words = $state('');
+  let showWords = $state(false);
+  let saying = $state(false);
+  let wordsNote = $state('');
+  let wordsOk = $state(false);
+  const hasWizard = $derived(settings.apiKey.trim().length > 0 || (!!WIZARD_SERVER && settings.wizardPass.trim().length > 0));
+  function arrived() {
+    words = '';
+    showWords = false;
+    wordsOk = true;
+    wordsNote = "Fizzwick heard you. He's yours on this phone.";
+    sfx.correct();
+  }
+  async function sayWords() {
+    if (!words.trim() || saying) return;
+    wordsNote = '';
+    const key = keyFromTyped(words);
+    if (key) {
+      settings.apiKey = key;
+      saveSettings();
+      return arrived();
     }
+    if (!WIZARD_SERVER) {
+      wordsOk = false;
+      wordsNote = "Fizzwick doesn't know those words.";
+      return;
+    }
+    saying = true;
+    const r = await redeemPhrase(words);
+    saying = false;
+    wordsOk = r.ok;
+    wordsNote = redeemMessage(r);
+    if (!r.ok) return;
+    settings.wizardPass = r.token;
+    saveSettings();
+    words = '';
+    showWords = false;
+    sfx.correct();
+  }
+
+  /** Sends Fizzwick away from this phone, however he came. */
+  function forgetWords() {
+    settings.wizardPass = '';
+    settings.apiKey = '';
+    saveSettings();
+    wordsNote = '';
   }
 
   function clearSeen() {
     try {
       for (const k of Object.keys(localStorage)) if (k.startsWith('hr:seen:')) localStorage.removeItem(k);
     } catch { /* ignore */ }
-    status = { kind: 'ok', text: 'Card history cleared. Every card can come up again.' };
+    cleared = true;
   }
 </script>
 
 <Screen title="Settings" accent="var(--c-gibberish)">
   <section class="stack">
     <h3>Feel</h3>
-    <Toggle label="Sound" bind:checked={settings.sound} onchange={saveSettings} hint="Plays even with the iPhone silent switch on" />
-    <Toggle label="Vibration" bind:checked={settings.haptics} onchange={saveSettings} hint="Android buzzes; recent iPhones give a light tick" />
+    <Toggle label="Sound" bind:checked={settings.sound} onchange={soundChanged} hint="Plays even with the iPhone silent switch on" />
+    <Toggle label="Vibration" bind:checked={settings.haptics} onchange={hapticsChanged} hint="Android buzzes only when the phone is not on silent (Chrome skips it then; vibrate mode works). Recent iPhones give a light tick." />
   </section>
 
   <section class="stack">
@@ -63,64 +113,46 @@
       onchange={saveSettings}
     />
     <p class="faint">Light the edge: the edge on the side you tilted glows. Flash the screen: the whole screen turns green or amber.</p>
-    <Segmented
-      label="Tilt needed to score"
-      options={[{ value: 'small', label: 'Small nod' }, { value: 'medium', label: 'Medium' }, { value: 'big', label: 'Big tilt' }]}
-      bind:value={settings.tiltSensitivity}
-      onchange={saveSettings}
-    />
-    <p class="faint">How far the phone must tip forward (got it) or back (pass) to count, measured from how you held it when the round started. Small nod: about 20–25°, a quick dip of the head. Medium: about 30–40°. Big tilt: about 40–55°, for players whose nods score by accident.</p>
+    <Button variant="secondary" onclick={() => go('/forehead/calibrate')}>Calibrate tilt</Button>
+    <p class="faint">Tilt: {calibration.th ? `calibrated on this phone (got it at ${Math.round(calibration.th.down)}°, pass at ${Math.round(calibration.th.up)}°)` : 'not calibrated yet, standard settings'}. Calibrating takes half a minute and makes tilts count reliably for whoever did it.</p>
+    <TiltCheck />
   </section>
 
   <section class="stack">
-    <h3>Claude (live packs)</h3>
-    <p class="muted small">Paste an Anthropic API key to make new packs on the spot from any theme. The key is stored only on this phone and sent only to Anthropic. Built-in packs work without it.</p>
-    <div class="key">
-      <input
-        type={showKey ? 'text' : 'password'}
-        placeholder="sk-ant-…"
-        autocomplete="off" autocapitalize="off" spellcheck="false"
-        bind:value={settings.apiKey}
-        onchange={saveSettings}
-        aria-label="Anthropic API key"
-      />
-      <button class="eye" onclick={() => (showKey = !showKey)} aria-label={showKey ? 'Hide key' : 'Show key'}>{showKey ? '🙈' : '👁️'}</button>
-    </div>
-    <div class="models" role="radiogroup" aria-label="Model">
-      {#each MODELS as m (m.id)}
-        <label class="model" class:on={settings.model === m.id}>
-          <input type="radio" name="model" value={m.id} bind:group={settings.model} onchange={saveSettings} />
-          <span class="mname">{m.name}</span><span class="mnote">{m.note}</span>
-        </label>
-      {/each}
-    </div>
-    <Button variant="secondary" onclick={test} disabled={!settings.apiKey.trim() || status.kind === 'busy'}>Test key</Button>
-    {#if status.text}
-      <p class="status {status.kind}" role="status">{status.text}</p>
+    <h3>The wizard</h3>
+    {#if hasWizard}
+      <p class="muted small">🧙 Fizzwick the Wizard lives on this phone: he can make packs from any theme.</p>
+      <button type="button" class="remove" onclick={forgetWords}>Send Fizzwick away</button>
+    {:else}
+      <p class="muted small">🧙 Fizzwick the Wizard is not on this phone yet. Say the magic words the host told you:</p>
+      <div class="words">
+        <input type={showWords ? 'text' : 'password'} placeholder="The magic words" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"
+          maxlength="400" bind:value={words} oninput={() => (wordsNote = '')} onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void sayWords(); } }} aria-label="Magic words" />
+        <button type="button" class="show" onclick={() => (showWords = !showWords)} aria-pressed={showWords}>{showWords ? 'Hide' : 'Show'}</button>
+      </div>
+      <Button variant="secondary" onclick={sayWords} disabled={!words.trim() || saying}>{saying ? 'Listening…' : 'Say them'}</Button>
     {/if}
+    {#if wordsNote}<p class="status" class:ok={wordsOk} class:err={!wordsOk} role="status">{wordsNote}</p>{/if}
   </section>
 
   <section class="stack">
     <h3>Cards</h3>
     <p class="muted small">Cards you have already seen are held back until a pack runs out, so rounds rarely repeat.</p>
     <Button variant="secondary" onclick={clearSeen}>Reset card history</Button>
+    {#if cleared}<p class="status ok" role="status">Card history cleared. Every card can come up again.</p>{/if}
   </section>
 </Screen>
 
 <style>
   section { margin-bottom: var(--s-4); }
+  /* Descriptions, here and in the switches and tilt check: brighter, bolder, a touch larger. */
+  section :global(:is(.faint, .muted, .hint)) { color: var(--text-dim); font-weight: 600; font-size: 0.98rem; }
   h3 { color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700; }
   .small { font-size: 0.92rem; }
-  .key { position: relative; }
-  .key input { padding-right: 56px; font-family: ui-monospace, monospace; }
-  .eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border: 0; background: transparent; font-size: 1.2rem; }
-  .models { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
-  .model { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: var(--s-3) var(--s-2);
-    border-radius: var(--r-md); background: var(--surface); border: 1.5px solid transparent; cursor: pointer; min-height: 72px; }
-  .model.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
-  .model input { position: absolute; opacity: 0; }
-  .mname { font-weight: 700; }
-  .mnote { color: var(--text-faint); font-size: 0.8rem; }
+  .words { display: flex; gap: var(--s-2); }
+  .words input { flex: 1; min-width: 0; }
+  .show { min-height: var(--tap); padding: 0 var(--s-3); border: 1.5px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface); color: var(--text-dim); font-weight: 600; }
+  .remove { align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; color: var(--text-dim); font-size: 0.92rem; text-decoration: underline; text-underline-offset: 3px; }
   .status { padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--surface); }
   .status.ok { color: var(--c-good); }
   .status.err { color: color-mix(in srgb, var(--c-bad) 55%, var(--text)); }

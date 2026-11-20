@@ -8,9 +8,10 @@
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
   import { settings } from '../../lib/settings.svelte';
-  import { finish, makeDealer, mark, openPlay, type EndReason, type Round } from './round';
+  import { tiltThresholds } from './calibration.svelte';
+  import { accepts, finish, makeDealer, mark, openPlay, type EndReason, type Round } from './round';
   import { game, selectedDecks, setRound } from './state.svelte';
-  import { getRestPitch, motion, onGravity, stageRotation } from './sensors.svelte';
+  import { getRestPitch, motion, motionFresh, onGravity, stageRotation, startMotion } from './sensors.svelte';
   import { wakeDevice } from './flow';
 
   type Pause = 'away' | 'confirm';
@@ -39,12 +40,16 @@
   let flash = $state<Flash | null>(untrack(() => (demo?.flash != null ? { ok: demo.flash, n: 0 } : null)));
   let ending = $state<EndReason | null>(untrack(() => demo?.ending ?? null));
   let locked = $state(false);
+  /** A tilt that came in while the next word was hidden (true = got it). */
+  let queued: boolean | null = null;
   let flashN = 0;
   let timers: ReturnType<typeof setTimeout>[] = [];
-  // Sensitivity is read once, as the round starts; tilts count from the holder's resting pitch.
-  const detector = new TiltDetector(settings.tiltSensitivity, getRestPitch() ?? 0);
+  // The calibration is read once, as the round starts; tilts count from the holder's resting pitch.
+  const detector = new TiltDetector(tiltThresholds(), getRestPitch() ?? 0);
 
-  const tilt = $derived(game.round?.tilt === true && motion.live);
+  // What scores this round: the player chose tilt, tap or both (see accepts for the fallback).
+  const accept = $derived(game.round ? accepts(game.round, motion.live) : { tilt: false, tap: true });
+  const tilt = $derived(accept.tilt);
   const secs = $derived(Math.ceil(remaining / 1000));
   const clock = $derived(`${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`);
   const hot = $derived(secs <= 10 && secs > 0);
@@ -91,12 +96,14 @@
   });
 
   $effect(() =>
-    onGravity((g, t) => {
-      // Not fed while input is blocked: a tilt held through the lockout fires right after it
-      // instead of being swallowed.
-      if (pause || ending || locked) return;
-      const e = detector.update(g, t);
-      if (e && tilt) score(e === 'correct');
+    onGravity((_g, t, p) => {
+      // Fed every reading, so quick tilts in a row keep their timing; a tilt that lands while
+      // the next word is still hidden is scored the moment it shows.
+      if (pause || ending) return;
+      const e = detector.step(p.pitch, p.rate, t);
+      if (!e || !tilt) return;
+      if (locked) queued = e === 'correct';
+      else score(e === 'correct');
     }),
   );
 
@@ -124,7 +131,12 @@
     const n = ++flashN;
     flash = { ok, n };
     locked = true;
-    later(() => (locked = false), LOCK_MS);
+    later(() => {
+      locked = false;
+      const q = queued;
+      queued = null;
+      if (q != null) score(q);
+    }, LOCK_MS);
     later(() => { if (flash?.n === n) flash = null; }, FLASH_MS);
     if (next == null) later(() => end('out'), FLASH_MS);
   }
@@ -144,6 +156,8 @@
   }
 
   function resume() {
+    // A browser that suspended motion in the background leaves `live` set: restart a silent stream.
+    if (motion.live && !motionFresh()) void startMotion(); // first: iOS asks only inside the tap
     wakeDevice();
     detector.reset();
     pause = null;
@@ -151,17 +165,18 @@
 
   function zone(ok: boolean) {
     return {
-      onpointerdown: (e: PointerEvent) => { if (e.isPrimary) score(ok); },
+      onpointerdown: (e: PointerEvent) => { if (e.isPrimary && accept.tap) score(ok); },
       // Keyboard activation (Enter/Space) arrives as a click with no pointer.
-      onclick: (e: MouseEvent) => { if (e.detail === 0) score(ok); },
+      onclick: (e: MouseEvent) => { if (e.detail === 0 && accept.tap) score(ok); },
     };
   }
 
   function key(e: KeyboardEvent) {
     if (pause || ending) return;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') score(true);
+    if (e.key === 'Escape') pause = 'confirm';
+    else if (!accept.tap) return; // tilt only: keys count as taps
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') score(true);
     else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') score(false);
-    else if (e.key === 'Escape') pause = 'confirm';
     else return;
     e.preventDefault();
   }
@@ -173,12 +188,14 @@
 
 <Stage rotation={rotation ?? stageRotation()}>
   <div class="play" class:hot>
-    {#each [false, true] as isRight (isRight)}
-      {@const ok = isRight !== mirrored}
-      <button class="zone {isRight ? 'right' : 'left'} {ok ? 'good' : 'pass'}" aria-label={ok ? 'Got it' : 'Pass'} {...zone(ok)}>
-        <span class="edge-label">{ok ? 'Got it' : 'Pass'}</span>
-      </button>
-    {/each}
+    {#if accept.tap}
+      {#each [false, true] as isRight (isRight)}
+        {@const ok = isRight !== mirrored}
+        <button class="zone {isRight ? 'right' : 'left'} {ok ? 'good' : 'pass'}" aria-label={ok ? 'Got it' : 'Pass'} {...zone(ok)}>
+          <span class="edge-label">{ok ? 'Got it' : 'Pass'}</span>
+        </button>
+      {/each}
+    {/if}
 
     <div class="hud">
       {#key hot ? secs : -1}

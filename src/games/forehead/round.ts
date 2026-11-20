@@ -10,7 +10,10 @@ export interface Round {
   id: string;
   deckIds: string[];
   seconds: number;
+  /** Tilting scores. */
   tilt: boolean;
+  /** Tapping scores; missing in rounds saved before the choice existed, which allowed taps. */
+  tap?: boolean;
   shown: Shown[];
   /** The word on screen right now (not yet in `shown`). */
   current: string | null;
@@ -23,11 +26,20 @@ export interface Round {
 
 export const ROUND_LENGTHS = [30, 60, 90, 120] as const;
 
-export function newRound(deckIds: string[], seconds: number, tilt: boolean): Round {
+export function newRound(deckIds: string[], seconds: number, tilt: boolean, tap = true): Round {
   return {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    deckIds, seconds, tilt, shown: [], current: null, remainingMs: seconds * 1000, phase: 'ready',
+    deckIds, seconds, tilt, tap, shown: [], current: null, remainingMs: seconds * 1000, phase: 'ready',
   };
+}
+
+/**
+ * What scores in this round right now. A tilt-only round on a phone that cannot sense motion
+ * (refused, or a browser that never sends it) takes taps instead, so it can still be played.
+ */
+export function accepts(r: Pick<Round, 'tilt' | 'tap'>, motionLive: boolean): { tilt: boolean; tap: boolean } {
+  const tilt = r.tilt && motionLive;
+  return { tilt, tap: r.tap !== false || !tilt };
 }
 
 export const score = (shown: readonly Shown[]): number => shown.filter((s) => s.ok).length;

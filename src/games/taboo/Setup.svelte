@@ -7,6 +7,7 @@
   import Stepper from '../../components/Stepper.svelte';
   import Toggle from '../../components/Toggle.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import PackFile from '../../components/PackFile.svelte';
   import { tabooPacks, customTaboo, packAge, type TabooCard, type TabooPack } from '../../lib/content';
   import { matches, sorted, type SortKey } from '../../lib/listing';
   import { go } from '../../lib/router.svelte';
@@ -16,7 +17,7 @@
 
   let { config, onstart }: { config: Config; onstart: (c: Config) => void } = $props();
 
-  const packs: TabooPack[] = tabooPacks();
+  let packs = $state.raw<TabooPack[]>(tabooPacks());
   // svelte-ignore state_referenced_locally
   let cfg = $state<Config>({ ...config, names: [...config.names], packIds: config.packIds.filter((id) => packs.some((p) => p.id === id)) });
 
@@ -36,6 +37,12 @@
   const hits = $derived(sorted(packs.map(hit).filter((h) => h !== null), sort, (h) => h.pack.name, (h) => packAge(h.pack)));
 
   $effect(() => saveConfig($state.snapshot(cfg) as Config));
+
+  /** Imported packs are ticked, like a pack just made. */
+  function imported(ids: string[]) {
+    packs = tabooPacks();
+    cfg.packIds = [...ids.filter((id) => !cfg.packIds.includes(id)), ...cfg.packIds];
+  }
 
   function togglePack(id: string) {
     cfg.packIds = selected.has(id) ? cfg.packIds.filter((x) => x !== id) : [...cfg.packIds, id];
@@ -115,6 +122,7 @@
       {#if hits.length === 0}<p class="faint none">No packs match “{query.trim()}”</p>{/if}
     </div>
     <Button variant="secondary" onclick={() => go('/taboo/new')}>+ Make a pack</Button>
+    <PackFile game="taboo" onimported={imported} />
   </section>
 
   {#snippet actions()}

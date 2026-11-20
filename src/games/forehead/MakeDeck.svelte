@@ -6,9 +6,10 @@
   import Triage from '../../components/Triage.svelte';
   import PasteList from '../../components/PasteList.svelte';
   import Segmented from '../../components/Segmented.svelte';
+  import WizardEffort from '../../components/WizardEffort.svelte';
   import { customDecks, dedupe, slugify, wordDecks } from '../../lib/content';
-  import { hasKey } from '../../lib/claude';
-  import { back, go } from '../../lib/router.svelte';
+  import { hasKey, NOT_HERE } from '../../lib/claude';
+  import { back } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
   import { generateWords, THEME_CHIPS } from './generate';
@@ -33,7 +34,7 @@
 
   const targetDeck = $derived(mine.find((d) => d.id === target));
   const keyReady = hasKey();
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: 'Ask Claude' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
   let mode = $state<'paste' | 'claude'>(keyReady || start.isDemo ? 'claude' : 'paste');
   let pasteText = $state('');
   let note = $state('');
@@ -59,7 +60,7 @@
         avoid: [...(targetDeck?.words ?? []), ...items],
         onItem: (w) => items.push(w),
       });
-      if (!ctl.signal.aborted && items.length === before) error = 'Claude sent nothing usable that time. Try again, or reword the theme.';
+      if (!ctl.signal.aborted && items.length === before) error = 'Fizzwick came back empty-handed. Try again, or reword the theme.';
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -74,9 +75,9 @@
       customDecks.put({ ...targetDeck, words: dedupe([...kept, ...targetDeck.words]) });
     } else {
       const fromPaste = mode === 'paste';
-      const name = (fromPaste ? deckName.trim() : titleCase(theme.trim())).slice(0, 40) || (fromPaste ? 'My deck' : 'Claude deck');
+      const name = (fromPaste ? deckName.trim() : titleCase(theme.trim())).slice(0, 40) || (fromPaste ? 'My pack' : 'Wizard pack');
       id = 'my-' + slugify(name) + '-' + Date.now().toString(36);
-      customDecks.put({ id, name, emoji: fromPaste ? '📝' : '✨', blurb: fromPaste ? 'Pasted list' : 'Made with Claude', words: dedupe(kept) });
+      customDecks.put({ id, name, emoji: fromPaste ? '📝' : '✨', blurb: fromPaste ? 'Pasted list' : 'Conjured by Fizzwick', words: dedupe(kept) });
     }
     if (kept.length && !prefs.deckIds.includes(id)) prefs.deckIds = [id, ...prefs.deckIds];
     savePrefs();
@@ -109,14 +110,14 @@
     <label class="field">
       <span class="lbl">Save to</span>
       <select bind:value={target}>
-        <option value="new">A new deck</option>
+        <option value="new">A new pack</option>
         {#each mine as d (d.id)}<option value={d.id}>Add to {d.emoji} {d.name}</option>{/each}
       </select>
     </label>
   {/if}
 {/snippet}
 
-<Screen title="Make a deck" accent="var(--c-forehead)">
+<Screen title="Make a pack" accent="var(--c-forehead)">
   {#if phase === 'form'}
     <Segmented label="How to make it" options={MODES} bind:value={mode} />
     {#if mode === 'paste'}
@@ -125,10 +126,7 @@
         {@render saveTo()}
       </PasteList>
     {:else if !keyReady && demo == null}
-      <p class="nokey">
-        <span>Asking Claude needs an API key.</span>
-        <button type="button" class="link" onclick={() => go('/settings')}>Add one in Settings</button>
-      </p>
+      <p class="nokey">{NOT_HERE}</p>
     {:else}
       <form class="stack" onsubmit={(e) => { e.preventDefault(); if (theme.trim()) void run(); }}>
         <label class="field">
@@ -143,6 +141,7 @@
         </div>
         <Stepper label="How many words" bind:value={count} min={20} max={80} step={10} />
         {@render saveTo()}
+        <WizardEffort />
         <Button type="submit" size="lg" disabled={!theme.trim()}>✨ Make {count} words</Button>
       </form>
     {/if}
@@ -154,13 +153,13 @@
           <p class="faint">Adding to {targetDeck.name}</p>
         {:else}
           <label class="field">
-            <span class="lbl">Deck name</span>
-            <input type="text" placeholder="My deck" bind:value={deckName} maxlength="40" autocomplete="off" />
+            <span class="lbl">Pack name</span>
+            <input type="text" placeholder="My pack" bind:value={deckName} maxlength="40" autocomplete="off" />
           </label>
         {/if}
       {:else}
         <h3>{theme ? `“${titleCase(theme)}”` : 'New words'}</h3>
-        <p class="faint">{targetDeck ? `Adding to ${targetDeck.name}` : 'Saving as a new deck'}</p>
+        <p class="faint">{targetDeck ? `Adding to ${targetDeck.name}` : 'Saving as a new pack'}</p>
       {/if}
     </div>
     {#if note}<p class="faint note">{note}</p>{/if}
@@ -194,6 +193,5 @@
     border-radius: var(--r-md); background: color-mix(in srgb, var(--c-bad) 16%, var(--surface)); color: var(--on-danger);
   }
   .note { font-size: 0.92rem; }
-  .nokey { display: flex; flex-wrap: wrap; align-items: center; column-gap: var(--s-2); color: var(--text-dim); }
-  .link { min-height: 44px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+  .nokey { color: var(--text-dim); }
 </style>

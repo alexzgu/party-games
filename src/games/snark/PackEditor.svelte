@@ -1,6 +1,7 @@
 <script lang="ts">
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
+  import ExportPack from '../../components/ExportPack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import { customSnark, snarkPacks, type SnarkPack } from '../../lib/content';
@@ -94,6 +95,7 @@
         <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
       {/if}
     </div>
+    <ExportPack game="snark" {pack} />
     <label class="name">
       <span>Pack name</span>
       <input type="text" bind:value={name} onchange={rename} maxlength="40" autocomplete="off" enterkeyhint="done" />

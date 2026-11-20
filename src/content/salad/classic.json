@@ -1,0 +1,584 @@
+{
+  "id": "classic",
+  "name": "Classic",
+  "blurb": "Familiar faces, places, things and stories",
+  "added": "2026-11-20T09:54",
+  "secrets": [
+    {"answer": "Taylor Swift", "category": "person", "level": "easy", "also": ["T Swift", "Swift"],
+      "words": {
+        "noun": ["a pop star", "a songwriter", "a stadium singer", "a performer"],
+        "verb": ["sing", "write lyrics", "play guitar", "fill arenas"],
+        "adjective": ["famous", "blonde", "heartbroken", "glittery"],
+        "place": ["on tour", "on a stage", "in a stadium"],
+        "time": ["during a concert", "after a breakup", "at midnight"]
+      }
+    },
+    {"answer": "Spider-Man", "category": "person", "level": "easy", "also": ["Spiderman", "Peter Parker", "Spidey"],
+      "words": {
+        "noun": ["a masked hero", "a photographer", "a teenager", "a crime fighter"],
+        "verb": ["swing", "climb walls", "catch thieves", "shoot webs"],
+        "adjective": ["nimble", "masked", "nerdy", "heroic"],
+        "place": ["above traffic", "on a rooftop", "in Manhattan"],
+        "time": ["after school", "after a bite", "during a chase"]
+      }
+    },
+    {"answer": "Shrek", "category": "person", "level": "easy", "also": ["Shrek the Ogre"],
+      "words": {
+        "noun": ["an ogre", "a recluse", "a fairy-tale hero", "a swamp dweller"],
+        "verb": ["roar", "rescue a princess", "eat onions", "scare villagers"],
+        "adjective": ["green", "grumpy", "smelly", "lonely"],
+        "place": ["in a swamp", "in a muddy hut", "by a castle"],
+        "time": ["at dinnertime", "during a rescue", "on a long trip"]
+      }
+    },
+    {"answer": "Barbie", "category": "person", "level": "easy", "also": ["Barbara Millicent Roberts", "Barbie Doll"],
+      "words": {
+        "noun": ["a fashion doll", "a toy", "a model", "a driver"],
+        "verb": ["change outfits", "drive a convertible", "try new jobs", "pose"],
+        "adjective": ["pink", "plastic", "glamorous", "blonde"],
+        "place": ["in a dream house", "in a toy aisle", "in a convertible"],
+        "time": ["at playtime", "at a sleepover", "during a makeover"]
+      }
+    },
+    {"answer": "Beyoncé", "category": "person", "level": "medium", "also": ["Beyonce", "Beyoncé Knowles", "Queen Bey"],
+      "words": {
+        "noun": ["a pop singer", "a performer", "a dancer", "a vocalist"],
+        "verb": ["sing", "dance", "headline festivals", "lead a girl group"],
+        "adjective": ["polished", "powerful", "glamorous", "commanding"],
+        "place": ["on a big stage", "in a stadium", "under a spotlight"],
+        "time": ["during a world tour", "during a halftime show", "on a night out"]
+      }
+    },
+    {"answer": "Darth Vader", "category": "person", "level": "medium", "also": ["Vader", "Anakin Skywalker"],
+      "words": {
+        "noun": ["a masked villain", "a father", "a commander", "a fallen knight"],
+        "verb": ["breathe loudly", "choke people", "command troops", "fight with a sword"],
+        "adjective": ["stern", "masked", "menacing", "powerful"],
+        "place": ["on a spaceship", "in space", "in a command room"],
+        "time": ["during a battle", "after a betrayal", "before a duel"]
+      }
+    },
+    {"answer": "Gordon Ramsay", "category": "person", "level": "medium", "also": ["Chef Ramsay", "Ramsay", "Gordon Ramsey"],
+      "words": {
+        "noun": ["a chef", "a restaurant host", "a judge", "a critic"],
+        "verb": ["shout", "cook", "send food back", "scold cooks"],
+        "adjective": ["blunt", "loud", "impatient", "strict"],
+        "place": ["in a kitchen", "in a restaurant", "by an oven"],
+        "time": ["during dinner service", "during a competition", "after a mistake"]
+      }
+    },
+    {"answer": "Mario", "category": "person", "level": "medium", "also": ["Super Mario", "Mario Mario"],
+      "words": {
+        "noun": ["a plumber", "a driver", "a hero", "a brother"],
+        "verb": ["jump", "collect coins", "stomp turtles", "drive go-karts"],
+        "adjective": ["short", "mustached", "bouncy", "cheerful"],
+        "place": ["in a pipe", "by a castle", "on a racetrack"],
+        "time": ["during a race", "after a power-up", "during a rescue"]
+      }
+    },
+    {"answer": "Michael Jordan", "category": "person", "level": "medium", "also": ["Air Jordan", "Michael Jeffrey Jordan"],
+      "words": {
+        "noun": ["a basketball player", "a champion", "a teammate", "a sneaker icon"],
+        "verb": ["dunk", "shoot", "leap", "play baseball"],
+        "adjective": ["competitive", "tall", "airborne", "determined"],
+        "place": ["on a court", "in an arena", "under a hoop"],
+        "time": ["during a championship", "at the buzzer", "during practice"]
+      }
+    },
+    {"answer": "Hermione Granger", "category": "person", "level": "medium", "also": ["Hermione", "Hermione Jean Granger"],
+      "words": {
+        "noun": ["a witch", "a student", "a bookworm", "a young wizard"],
+        "verb": ["read", "cast spells", "study", "correct pronunciation"],
+        "adjective": ["studious", "brave", "clever", "prepared"],
+        "place": ["in a library", "in a castle school", "on a train"],
+        "time": ["before an exam", "during class", "after curfew"]
+      }
+    },
+    {"answer": "SpongeBob SquarePants", "category": "person", "level": "medium", "also": ["SpongeBob", "Spongebob Square Pants"],
+      "words": {
+        "noun": ["a fry cook", "a sea sponge", "a neighbor", "a cartoon character"],
+        "verb": ["cook burgers", "catch jellyfish", "blow bubbles", "laugh"],
+        "adjective": ["yellow", "square", "cheerful", "porous"],
+        "place": ["underwater", "in a pineapple", "by a grill"],
+        "time": ["during a shift", "on a day off", "during a boating lesson"]
+      }
+    },
+    {"answer": "Mr. Bean", "category": "person", "level": "medium", "also": ["Mister Bean", "Mr Bean"],
+      "words": {
+        "noun": ["a comedian", "a driver", "a silent guy", "a troublemaker"],
+        "verb": ["mime", "drive a tiny car", "make a mess", "confuse strangers"],
+        "adjective": ["awkward", "quiet", "childish", "clumsy"],
+        "place": ["in a tiny car", "in a hotel", "in a shop"],
+        "time": ["during a mix-up", "at a holiday dinner", "on a trip"]
+      }
+    },
+    {"answer": "Bob Ross", "category": "person", "level": "hard", "also": ["Robert Ross", "Robert Norman Ross"],
+      "words": {
+        "noun": ["a painter", "an art teacher", "a TV host", "an artist"],
+        "verb": ["paint", "teach", "blend colors", "draw trees"],
+        "adjective": ["calm", "curly", "soft-spoken", "patient"],
+        "place": ["in a studio", "beside an easel", "on public television"],
+        "time": ["during a painting lesson", "on a quiet afternoon", "on a rerun"]
+      }
+    },
+    {"answer": "Amelia Earhart", "category": "person", "level": "hard", "also": ["Amelia Mary Earhart", "Earhart"],
+      "words": {
+        "noun": ["a pilot", "an explorer", "an aviator", "a record breaker"],
+        "verb": ["fly", "navigate", "cross an ocean", "disappear"],
+        "adjective": ["daring", "famous", "missing", "adventurous"],
+        "place": ["in a cockpit", "over an ocean", "on an airstrip"],
+        "time": ["before a long flight", "in the 1930s", "after takeoff"]
+      }
+    },
+    {"answer": "Serena Williams", "category": "person", "level": "hard", "also": ["Serena", "Serena Jameka Williams"],
+      "words": {
+        "noun": ["a tennis player", "a champion", "a sister", "an athlete"],
+        "verb": ["serve", "return shots", "hit a ball", "win matches"],
+        "adjective": ["powerful", "confident", "fast", "competitive"],
+        "place": ["on a court", "on grass", "beside a net"],
+        "time": ["during a tournament", "on match point", "after a serve"]
+      }
+    },
+    {"answer": "Frida Kahlo", "category": "person", "level": "hard", "also": ["Frida", "Magdalena Carmen Frida Kahlo"],
+      "words": {
+        "noun": ["a painter", "an artist", "a self-portraitist", "a survivor"],
+        "verb": ["paint", "pose", "wear flowers", "make portraits"],
+        "adjective": ["bold", "colorful", "expressive", "defiant"],
+        "place": ["in a blue house", "in Mexico", "by a canvas"],
+        "time": ["after an accident", "in the early twentieth century", "during a recovery"]
+      }
+    },
+    {"answer": "The Moon", "category": "place", "level": "easy", "also": ["Moon", "Luna", "Earth's Moon"],
+      "words": {
+        "noun": ["a crater", "a dusty rock", "a landing site", "a giant ball"],
+        "verb": ["bounce", "walk in a suit", "plant a flag", "leave footprints"],
+        "adjective": ["dusty", "gray", "airless", "rocky"],
+        "place": ["in space", "above us", "beside a landing craft"],
+        "time": ["after sunset", "during an eclipse", "on a clear night"]
+      }
+    },
+    {"answer": "Disneyland", "category": "place", "level": "easy", "also": ["Disney Land", "Disneyland Park"],
+      "words": {
+        "noun": ["a theme park", "a castle", "a parade", "a mouse mascot"],
+        "verb": ["ride rides", "watch fireworks", "meet mascots", "wait in line"],
+        "adjective": ["crowded", "bright", "cheerful", "expensive"],
+        "place": ["in California", "at an amusement park", "near Anaheim"],
+        "time": ["on vacation", "during a parade", "at closing time"]
+      }
+    },
+    {"answer": "New York City", "category": "place", "level": "easy", "also": ["NYC", "New York", "The Big Apple"],
+      "words": {
+        "noun": ["a skyscraper", "a subway", "a borough", "a taxi"],
+        "verb": ["hail a cab", "ride the subway", "catch a show", "walk fast"],
+        "adjective": ["crowded", "noisy", "tall", "busy"],
+        "place": ["on an island", "by a harbor", "in Manhattan"],
+        "time": ["at rush hour", "on a rainy day", "around midnight"]
+      }
+    },
+    {"answer": "Eiffel Tower", "category": "place", "level": "easy", "also": ["Tour Eiffel", "The Eiffel Tower"],
+      "words": {
+        "noun": ["an iron landmark", "a tall monument", "an observation deck", "a metal frame"],
+        "verb": ["take photos", "go up", "watch it sparkle", "look down"],
+        "adjective": ["metallic", "tall", "skeletal", "sparkly"],
+        "place": ["in Paris", "in France", "by a river"],
+        "time": ["after dark", "on vacation", "at sunset"]
+      }
+    },
+    {"answer": "Las Vegas", "category": "place", "level": "medium", "also": ["Vegas", "Sin City"],
+      "words": {
+        "noun": ["a casino", "a neon sign", "a hotel", "a slot machine"],
+        "verb": ["gamble", "watch a show", "lose money", "get married"],
+        "adjective": ["bright", "dry", "flashy", "loud"],
+        "place": ["in Nevada", "in a desert", "on a strip"],
+        "time": ["after dark", "on a weekend", "before sunrise"]
+      }
+    },
+    {"answer": "Grand Canyon", "category": "place", "level": "medium", "also": ["The Grand Canyon", "Grand Canyon National Park"],
+      "words": {
+        "noun": ["a gorge", "a cliff", "a river", "a layered valley"],
+        "verb": ["hike", "look down", "raft", "take photos"],
+        "adjective": ["deep", "wide", "rocky", "striped"],
+        "place": ["in Arizona", "in a desert", "by a river"],
+        "time": ["at sunset", "on a road trip", "before the heat"]
+      }
+    },
+    {"answer": "Antarctica", "category": "place", "level": "medium", "also": ["Antarctic Continent", "The Antarctic", "Antartica"],
+      "words": {
+        "noun": ["an ice sheet", "a penguin", "a science station", "a continent"],
+        "verb": ["freeze", "study ice", "camp", "watch penguins"],
+        "adjective": ["icy", "remote", "white", "windy"],
+        "place": ["in the far south", "on a glacier", "by icy water"],
+        "time": ["during polar winter", "in a blizzard", "on a long expedition"]
+      }
+    },
+    {"answer": "Mount Everest", "category": "place", "level": "medium", "also": ["Mt Everest", "Everest", "Chomolungma"],
+      "words": {
+        "noun": ["a peak", "a summit", "a rope", "a base camp"],
+        "verb": ["climb", "carry oxygen", "trek", "put on crampons"],
+        "adjective": ["high", "steep", "snowy", "bitterly cold"],
+        "place": ["in the Himalayas", "above the clouds", "on a border"],
+        "time": ["at altitude", "at sunrise", "during climbing season"]
+      }
+    },
+    {"answer": "Statue of Liberty", "category": "place", "level": "medium", "also": ["Lady Liberty", "Liberty Enlightening the World"],
+      "words": {
+        "noun": ["a torch", "a crown", "a monument", "a giant figure"],
+        "verb": ["take a ferry", "look up", "climb stairs", "take pictures"],
+        "adjective": ["green", "copper", "tall", "weathered"],
+        "place": ["in a harbor", "on an island", "near Manhattan"],
+        "time": ["on a school trip", "at sunset", "on arrival"]
+      }
+    },
+    {"answer": "Hogwarts", "category": "place", "level": "medium", "also": ["Hogwarts School", "Hogwarts School of Witchcraft and Wizardry"],
+      "words": {
+        "noun": ["a castle", "a magic school", "a sorting hat", "a moving staircase"],
+        "verb": ["study magic", "cast spells", "play on broomsticks", "attend class"],
+        "adjective": ["magical", "old", "drafty", "hidden"],
+        "place": ["in a castle", "in Scotland", "by a lake"],
+        "time": ["during a school term", "after curfew", "during a feast"]
+      }
+    },
+    {"answer": "Times Square", "category": "place", "level": "medium", "also": ["Time Square", "Crossroads of the World"],
+      "words": {
+        "noun": ["a giant billboard", "a busy intersection", "a crowd", "a costumed performer"],
+        "verb": ["watch a ball drop", "take selfies", "weave through tourists", "look up"],
+        "adjective": ["bright", "chaotic", "packed", "glowing"],
+        "place": ["in Manhattan", "on Broadway", "by a theater"],
+        "time": ["at midnight", "on New Year's Eve", "after dark"]
+      }
+    },
+    {"answer": "North Pole", "category": "place", "level": "medium", "also": ["The North Pole", "Geographic North Pole"],
+      "words": {
+        "noun": ["an ice floe", "a snowy plain", "a workshop", "a point on a map"],
+        "verb": ["freeze", "search for a workshop", "follow a compass", "look for bears"],
+        "adjective": ["icy", "remote", "white", "windy"],
+        "place": ["on sea ice", "above the Arctic Circle", "on top of a globe"],
+        "time": ["during polar night", "in winter", "around Christmas"]
+      }
+    },
+    {"answer": "Area 51", "category": "place", "level": "hard", "also": ["Area Fifty-One", "Groom Lake"],
+      "words": {
+        "noun": ["a secret base", "a hangar", "a fence", "a runway"],
+        "verb": ["test aircraft", "keep secrets", "watch the sky", "turn visitors away"],
+        "adjective": ["restricted", "secretive", "dry", "isolated"],
+        "place": ["in Nevada", "in a desert", "behind a fence"],
+        "time": ["during a test flight", "late at night", "on a road trip"]
+      }
+    },
+    {"answer": "Mariana Trench", "category": "place", "level": "hard", "also": ["Marianas Trench", "The Mariana Trench"],
+      "words": {
+        "noun": ["a deep groove", "an ocean floor", "a drop-off", "a dark pit"],
+        "verb": ["dive", "descend", "explore in a submarine", "measure depth"],
+        "adjective": ["deep", "dark", "cold", "remote"],
+        "place": ["under the Pacific", "far below water", "near a chain of islands"],
+        "time": ["during an expedition", "on a research trip", "after a long descent"]
+      }
+    },
+    {"answer": "Alcatraz", "category": "place", "level": "hard", "also": ["Alcatraz Island", "The Rock"],
+      "words": {
+        "noun": ["a prison", "an island", "a cell block", "a lighthouse"],
+        "verb": ["take a ferry", "escape", "serve time", "tour cells"],
+        "adjective": ["isolated", "windy", "fortified", "cold"],
+        "place": ["in a bay", "on an island", "near San Francisco"],
+        "time": ["during a prison break", "on a ferry trip", "during a tour"]
+      }
+    },
+    {"answer": "Machu Picchu", "category": "place", "level": "hard", "also": ["Machupicchu", "Machu Pikchu"],
+      "words": {
+        "noun": ["a ruin", "a stone city", "a mountain terrace", "an ancient settlement"],
+        "verb": ["hike", "climb steps", "explore ruins", "look over a valley"],
+        "adjective": ["steep", "misty", "ancient", "remote"],
+        "place": ["in Peru", "in the Andes", "above a valley"],
+        "time": ["during a trek", "at dawn", "during the dry season"]
+      }
+    },
+    {"answer": "Pizza", "category": "thing", "level": "easy", "also": ["Pizza Pie", "Slice of Pizza"],
+      "words": {
+        "noun": ["a flatbread", "a slice", "a pie", "a cheesy dinner"],
+        "verb": ["bake", "order", "slice", "fold"],
+        "adjective": ["cheesy", "round", "greasy", "hot"],
+        "place": ["in a cardboard box", "in an oven", "at a party"],
+        "time": ["around dinnertime", "late at night", "after a long day"]
+      }
+    },
+    {"answer": "Toothbrush", "category": "thing", "level": "easy", "also": ["Tooth Brush", "Toothbrushes"],
+      "words": {
+        "noun": ["a brush", "a handle", "a bundle of bristles", "a bathroom tool"],
+        "verb": ["scrub", "rinse", "clean", "polish"],
+        "adjective": ["bristly", "small", "plastic", "wet"],
+        "place": ["in a bathroom", "by a sink", "in a travel bag"],
+        "time": ["before bed", "in the morning", "after breakfast"]
+      }
+    },
+    {"answer": "Snowman", "category": "thing", "level": "easy", "also": ["Snow Man", "Snowmen"],
+      "words": {
+        "noun": ["a stack of balls", "a winter figure", "a lumpy statue", "a frozen friend"],
+        "verb": ["build", "melt", "stack", "wear a scarf"],
+        "adjective": ["cold", "white", "lumpy", "temporary"],
+        "place": ["in a yard", "by a sidewalk", "in the snow"],
+        "time": ["after a snowfall", "on a cold day", "before a thaw"]
+      }
+    },
+    {"answer": "Skateboard", "category": "thing", "level": "easy", "also": ["Skate Board", "Skate Deck"],
+      "words": {
+        "noun": ["a plank", "a wheeled board", "a deck", "a stunt toy"],
+        "verb": ["roll", "ride", "grind", "jump"],
+        "adjective": ["flat", "wheeled", "scratched", "wobbly"],
+        "place": ["at a skate park", "on a ramp", "on a sidewalk"],
+        "time": ["after school", "during a trick", "on a dry day"]
+      }
+    },
+    {"answer": "Disco Ball", "category": "thing", "level": "medium", "also": ["Mirror Ball", "Glitter Ball"],
+      "words": {
+        "noun": ["a shiny sphere", "a mirror-covered ornament", "a party light", "a hanging globe"],
+        "verb": ["spin", "reflect", "sparkle", "dance"],
+        "adjective": ["shiny", "round", "silver", "glittery"],
+        "place": ["above a dance floor", "in a club", "on a ceiling"],
+        "time": ["at a party", "after dark", "during a dance"]
+      }
+    },
+    {"answer": "Lava Lamp", "category": "thing", "level": "medium", "also": ["Lava Light", "Astro Lamp"],
+      "words": {
+        "noun": ["a glowing tube", "a glass bottle", "a night light", "a blob machine"],
+        "verb": ["glow", "bubble", "float", "warm up"],
+        "adjective": ["glowy", "blobby", "warm", "colorful"],
+        "place": ["on a bedside table", "in a bedroom", "on a shelf"],
+        "time": ["after dark", "on a quiet night", "after warming up"]
+      }
+    },
+    {"answer": "Shopping Cart", "category": "thing", "level": "medium", "also": ["Grocery Cart", "Shopping Trolley"],
+      "words": {
+        "noun": ["a metal basket", "a trolley", "a buggy", "a wheeled cage"],
+        "verb": ["push", "roll", "load", "steer"],
+        "adjective": ["metallic", "squeaky", "roomy", "wobbly"],
+        "place": ["in a grocery store", "in a parking lot", "near a checkout"],
+        "time": ["on a grocery run", "before checkout", "after picking up food"]
+      }
+    },
+    {"answer": "Rubber Duck", "category": "thing", "level": "medium", "also": ["Rubber Ducky", "Bath Duck"],
+      "words": {
+        "noun": ["a bath toy", "a yellow bird", "a floaty toy", "a squeaky bird"],
+        "verb": ["float", "squeak", "splash", "squeeze"],
+        "adjective": ["yellow", "bouncy", "small", "waterproof"],
+        "place": ["in a bathtub", "by a sink", "on water"],
+        "time": ["at bath time", "after getting dirty", "during a soak"]
+      }
+    },
+    {"answer": "Cactus", "category": "thing", "level": "medium", "also": ["Cacti", "Cactuses"],
+      "words": {
+        "noun": ["a desert plant", "a succulent", "a spiky houseplant", "a prickly stem"],
+        "verb": ["grow", "poke", "survive drought", "store water"],
+        "adjective": ["spiky", "dry", "green", "prickly"],
+        "place": ["in a desert", "on a windowsill", "in a clay pot"],
+        "time": ["in summer", "during a dry spell", "after rain"]
+      }
+    },
+    {"answer": "Claw Machine", "category": "thing", "level": "medium", "also": ["Crane Game", "Claw Crane"],
+      "words": {
+        "noun": ["an arcade game", "a prize cabinet", "a grabber", "a glass box"],
+        "verb": ["grab", "drop", "miss", "win a toy"],
+        "adjective": ["flashy", "frustrating", "boxy", "lit up"],
+        "place": ["at an arcade", "in a lobby", "by a checkout"],
+        "time": ["on a night out", "after feeding in coins", "during a last try"]
+      }
+    },
+    {"answer": "Whoopee Cushion", "category": "thing", "level": "medium", "also": ["Whoopie Cushion", "Fart Cushion"],
+      "words": {
+        "noun": ["a prank toy", "an inflatable pad", "a squeaky bag", "a flat balloon"],
+        "verb": ["sit", "squash", "inflate", "make a rude noise"],
+        "adjective": ["noisy", "squishy", "flat", "sneaky"],
+        "place": ["on a chair", "under a seat cover", "at a party"],
+        "time": ["during a prank", "when someone sits", "after a dare"]
+      }
+    },
+    {"answer": "Popcorn", "category": "thing", "level": "medium", "also": ["Pop Corn", "Movie Popcorn"],
+      "words": {
+        "noun": ["a movie snack", "a bowl of kernels", "a fluffy snack", "a salty treat"],
+        "verb": ["pop", "crunch", "share", "spill"],
+        "adjective": ["salty", "buttery", "fluffy", "crunchy"],
+        "place": ["in a cinema", "in a microwave", "in a paper bucket"],
+        "time": ["before a movie", "during previews", "on a movie night"]
+      }
+    },
+    {"answer": "Kaleidoscope", "category": "thing", "level": "hard", "also": ["Kaleidoscopes"],
+      "words": {
+        "noun": ["a viewing tube", "a toy telescope", "a mirror toy", "a tube of patterns"],
+        "verb": ["twist", "peer in", "reflect", "make patterns"],
+        "adjective": ["colorful", "geometric", "shiny", "symmetrical"],
+        "place": ["at a toy store", "by a window", "near a light"],
+        "time": ["on a sunny day", "after turning it", "during playtime"]
+      }
+    },
+    {"answer": "Metronome", "category": "thing", "level": "hard", "also": ["Metronomes"],
+      "words": {
+        "noun": ["a ticking tool", "a pendulum", "a beat keeper", "a practice aid"],
+        "verb": ["tick", "swing", "click", "set a tempo"],
+        "adjective": ["steady", "regular", "loud", "mechanical"],
+        "place": ["by a piano", "on a music stand", "in a studio"],
+        "time": ["during music practice", "before a recital", "while learning a song"]
+      }
+    },
+    {"answer": "Cheese Grater", "category": "thing", "level": "hard", "also": ["Grater", "Box Grater", "Kitchen Grater"],
+      "words": {
+        "noun": ["a kitchen tool", "a shredder", "a metal box", "a rough surface"],
+        "verb": ["shred", "scrape", "grind", "make flakes"],
+        "adjective": ["sharp", "rough", "metallic", "holey"],
+        "place": ["in a kitchen", "over a bowl", "by a cutting board"],
+        "time": ["while cooking", "before dinner", "during meal prep"]
+      }
+    },
+    {"answer": "Film Projector", "category": "thing", "level": "hard", "also": ["Movie Projector", "Cinema Projector"],
+      "words": {
+        "noun": ["a light box", "a movie machine", "a lens", "a spinning reel"],
+        "verb": ["shine", "spin", "focus", "screen a movie"],
+        "adjective": ["bright", "noisy", "boxy", "mechanical"],
+        "place": ["in a booth", "behind the audience", "at a cinema"],
+        "time": ["during previews", "after the lights go down", "on movie night"]
+      }
+    },
+    {"answer": "Frozen", "category": "story", "level": "easy", "also": ["Disney's Frozen", "Frozen 2013"],
+      "words": {
+        "noun": ["a snow queen", "a sister", "a talking snowman", "a mountain traveler"],
+        "verb": ["control ice", "bring back summer", "rescue a sister", "build a snowman"],
+        "adjective": ["icy", "magical", "snowy", "singable"],
+        "place": ["in an ice castle", "on a mountain", "in a kingdom"],
+        "time": ["in winter", "during a coronation", "after a storm"]
+      }
+    },
+    {"answer": "Titanic", "category": "story", "level": "easy", "also": ["Titanic 1997", "James Cameron's Titanic"],
+      "words": {
+        "noun": ["a passenger", "a couple", "a wealthy traveler", "a young artist"],
+        "verb": ["stay afloat", "fall in love", "escape a sinking ship", "board a lifeboat"],
+        "adjective": ["tragic", "icy", "romantic", "crowded"],
+        "place": ["on a ship", "in the Atlantic", "by an iceberg"],
+        "time": ["during a voyage", "late at night", "after a collision"]
+      }
+    },
+    {"answer": "Minecraft", "category": "story", "level": "easy", "also": ["Mine Craft"],
+      "words": {
+        "noun": ["a builder", "a miner", "a survivor", "a blocky character"],
+        "verb": ["build", "dig", "craft", "survive monsters"],
+        "adjective": ["blocky", "pixelated", "open", "chunky"],
+        "place": ["in a cave", "in a cube world", "under a mountain"],
+        "time": ["after dark", "at sunrise", "during a thunderstorm"]
+      }
+    },
+    {"answer": "The Lion King", "category": "story", "level": "easy", "also": ["Lion King", "Disney's Lion King"],
+      "words": {
+        "noun": ["a cub", "an heir", "a worried father", "a young prince"],
+        "verb": ["grow up", "return home", "take back a throne", "run away"],
+        "adjective": ["wild", "musical", "sad", "sunny"],
+        "place": ["on a savanna", "on a rock", "in a dry grassland"],
+        "time": ["after a stampede", "at sunrise", "during a childhood"]
+      }
+    },
+    {"answer": "Ratatouille", "category": "story", "level": "medium", "also": ["Disney's Ratatouille", "Pixar's Ratatouille"],
+      "words": {
+        "noun": ["a rat", "a cook", "a food critic", "a kitchen worker"],
+        "verb": ["cook", "hide under a hat", "impress a critic", "run a kitchen"],
+        "adjective": ["sneaky", "cozy", "delicious", "chaotic"],
+        "place": ["in Paris", "in a restaurant", "in a pantry"],
+        "time": ["during dinner service", "after closing time", "when a critic visits"]
+      }
+    },
+    {"answer": "Jurassic Park", "category": "story", "level": "medium", "also": ["Jurassic Park 1993"],
+      "words": {
+        "noun": ["a scientist", "an island visitor", "a kid", "a tour guide"],
+        "verb": ["escape", "run from dinosaurs", "hide", "restore power"],
+        "adjective": ["scary", "loud", "stormy", "wild"],
+        "place": ["on an island", "by an electric fence", "in a visitor center"],
+        "time": ["during a storm", "after a power cut", "on a tour"]
+      }
+    },
+    {"answer": "The Hunger Games", "category": "story", "level": "medium", "also": ["Hunger Games", "THG"],
+      "words": {
+        "noun": ["an archer", "a contestant", "a survivor", "a young woman"],
+        "verb": ["survive", "win a contest", "protect a sister", "shoot arrows"],
+        "adjective": ["dangerous", "grim", "tense", "televised"],
+        "place": ["in an arena", "in a forest", "in a wealthy capital"],
+        "time": ["during a tournament", "after a drawing", "near nightfall"]
+      }
+    },
+    {"answer": "Mean Girls", "category": "story", "level": "medium", "also": ["Mean Girls 2004"],
+      "words": {
+        "noun": ["a new student", "a popular clique", "a transfer student", "a rival"],
+        "verb": ["fit in", "spread rumors", "make friends", "ruin a reputation"],
+        "adjective": ["petty", "pink", "awkward", "cliquey"],
+        "place": ["at a school", "in a cafeteria", "at a house party"],
+        "time": ["on a Wednesday", "after school", "during a talent show"]
+      }
+    },
+    {"answer": "Finding Nemo", "category": "story", "level": "medium", "also": ["Nemo", "Disney's Finding Nemo"],
+      "words": {
+        "noun": ["a clownfish", "a worried parent", "a forgetful friend", "a little fish"],
+        "verb": ["find a child", "cross an ocean", "escape a tank", "keep swimming"],
+        "adjective": ["colorful", "underwater", "funny", "adventurous"],
+        "place": ["in a reef", "in a fish tank", "in the ocean"],
+        "time": ["after a field trip", "during a rescue", "on a long trip"]
+      }
+    },
+    {"answer": "Toy Story", "category": "story", "level": "medium", "also": ["Toy Story 1", "Toy Story One", "Disney's Toy Story"],
+      "words": {
+        "noun": ["a cowboy", "an astronaut", "a collection of playthings", "a jealous friend"],
+        "verb": ["come alive", "get back home", "make friends", "find a missing buddy"],
+        "adjective": ["playful", "jealous", "chaotic", "colorful"],
+        "place": ["in a bedroom", "in a moving truck", "at an arcade"],
+        "time": ["during a move", "at a birthday party", "when nobody is looking"]
+      }
+    },
+    {"answer": "Home Alone", "category": "story", "level": "medium", "also": ["Home Alone 1", "Home Alone One", "Home Alone 1990"],
+      "words": {
+        "noun": ["a kid", "a burglar", "a forgetful family", "a young prankster"],
+        "verb": ["set traps", "stop burglars", "survive Christmas", "defend a house"],
+        "adjective": ["chaotic", "slapstick", "festive", "sneaky"],
+        "place": ["in a suburban house", "by a stairway", "near a snowy street"],
+        "time": ["around Christmas", "after a flight leaves", "during a break-in"]
+      }
+    },
+    {"answer": "The Last of Us", "category": "story", "level": "medium", "also": ["Last of Us", "TLOU"],
+      "words": {
+        "noun": ["a smuggler", "a teenager", "a survivor", "a traveler"],
+        "verb": ["survive", "escape infection", "travel across a country", "protect a child"],
+        "adjective": ["bleak", "tense", "violent", "overgrown"],
+        "place": ["in abandoned streets", "in a quarantine zone", "in a ruined city"],
+        "time": ["after an outbreak", "during a long journey", "before winter"]
+      }
+    },
+    {"answer": "Spirited Away", "category": "story", "level": "hard", "also": ["Sen and Chihiro", "Sen to Chihiro no Kamikakushi"],
+      "words": {
+        "noun": ["a girl", "a worker", "a witch", "a dragon"],
+        "verb": ["rescue her parents", "work in a bathhouse", "get back home", "remember a name"],
+        "adjective": ["strange", "magical", "dreamlike", "ghostly"],
+        "place": ["in a bathhouse", "by an empty town", "on a train"],
+        "time": ["after dark", "after a wrong turn", "during a move"]
+      }
+    },
+    {"answer": "The Truman Show", "category": "story", "level": "hard", "also": ["Truman Show", "The Truman Show 1998"],
+      "words": {
+        "noun": ["a man", "a neighbor", "an actor", "a small-town husband"],
+        "verb": ["escape", "look for answers", "sail away", "question reality"],
+        "adjective": ["sunny", "staged", "watched", "unreal"],
+        "place": ["on a set", "in a seaside town", "on a boat"],
+        "time": ["during a broadcast", "after a light falls", "before a storm"]
+      }
+    },
+    {"answer": "Stardew Valley", "category": "story", "level": "hard", "also": ["Stardew", "Star Dew Valley", "SDV"],
+      "words": {
+        "noun": ["a farmer", "a newcomer", "a grandchild", "a gardener"],
+        "verb": ["grow crops", "make friends", "fix a farm", "go fishing"],
+        "adjective": ["cozy", "rural", "pixelated", "relaxing"],
+        "place": ["on a farm", "in a small town", "in a mine"],
+        "time": ["in planting season", "at a festival", "during a harvest"]
+      }
+    },
+    {"answer": "The Princess Bride", "category": "story", "level": "hard", "also": ["Princess Bride", "The Princess Bride 1987"],
+      "words": {
+        "noun": ["a farmhand", "a swordsman", "a giant", "a masked pirate"],
+        "verb": ["rescue a woman", "find true love", "duel", "avenge a father"],
+        "adjective": ["romantic", "swashbuckling", "silly", "magical"],
+        "place": ["in a swamp", "on a cliff", "in a castle"],
+        "time": ["during a duel", "at story time", "before a wedding"]
+      }
+    }
+  ]
+}

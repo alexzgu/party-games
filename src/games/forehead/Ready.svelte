@@ -39,8 +39,8 @@
   });
 
   $effect(() =>
-    onGravity((g, t) => {
-      if (count == null && steady.update(g, t) && performance.now() - shownAt > MIN_SHOWN_MS) {
+    onGravity((g, t, p) => {
+      if (count == null && steady.update(g, t, p.pitch) && performance.now() - shownAt > MIN_SHOWN_MS) {
         pinUpright();
         setRestPitch(steady.baseline());
         begin();

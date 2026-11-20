@@ -1,17 +1,26 @@
 <script lang="ts">
   import ListTools from '../../components/ListTools.svelte';
+  import PackFile from '../../components/PackFile.svelte';
   import { customSnark, type SnarkPack } from '../../lib/content';
   import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
   import { findPacks } from './find';
 
   // Multi-select pack tiles; the pencil opens a pack to see or edit its prompts.
-  let { packs, selected = $bindable(), onmake, onedit }: {
+  let { packs, selected = $bindable(), onmake, onedit, onimported }: {
     packs: SnarkPack[];
     selected: string[];
     onmake: () => void;
     onedit: (packId: string) => void;
+    /** After an import: the parent reloads `packs`. */
+    onimported: () => void;
   } = $props();
+
+  /** Imported packs are ticked, like a pack just made. */
+  function imported(ids: string[]) {
+    selected = [...ids.filter((id) => !selected.includes(id)), ...selected];
+    onimported();
+  }
 
   function toggle(id: string) {
     selected = selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id];
@@ -53,6 +62,7 @@
       </button>
     </li>
   </ul>
+  <PackFile game="snark" onimported={imported} />
 </section>
 
 <style>

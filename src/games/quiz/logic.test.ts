@@ -65,30 +65,35 @@ describe('playing tiles', () => {
 
 describe('team counts', () => {
   const teams = (n: number) => Array.from({ length: n }, (_, i) => `T${i + 1}`);
-  it('plays with 1 to 20 teams and refuses 0 or 21', () => {
+  it('plays with 1 to 10 teams and refuses 0 or 11', () => {
     expect(q.MIN_TEAMS).toBe(1);
-    expect(q.MAX_TEAMS).toBe(20);
+    expect(q.MAX_TEAMS).toBe(10);
     expect(q.newGame({ teams: teams(1), board, double: false, penalty: false }).teams).toHaveLength(1);
-    expect(q.newGame({ teams: teams(20), board, double: false, penalty: false }).teams).toHaveLength(20);
+    expect(q.newGame({ teams: teams(10), board, double: false, penalty: false }).teams).toHaveLength(10);
     expect(() => q.newGame({ teams: [], board, double: false, penalty: false })).toThrow();
-    expect(() => q.newGame({ teams: teams(21), board, double: false, penalty: false })).toThrow();
+    expect(() => q.newGame({ teams: teams(11), board, double: false, penalty: false })).toThrow();
+  });
+  it('still loads a game saved with up to 20 teams, when that was the limit', () => {
+    const g = { ...q.newGame({ teams: teams(10), board, double: false, penalty: false }), teams: teams(20) };
+    expect(q.validGame(JSON.parse(JSON.stringify(g)))).toEqual(g);
+    expect(q.validGame(JSON.parse(JSON.stringify({ ...g, teams: teams(21) })))).toBeNull();
   });
   it('refuses a board with empty tiles', () => {
     const draft = { ...board, categories: board.categories.map((c, i) => (i ? c : { ...c, clues: [{ clue: '', answer: '' }, ...c.clues.slice(1)] })) };
     expect(() => q.newGame({ teams: teams(2), board: draft, double: false, penalty: false })).toThrow(/empty/);
   });
-  it('scores, marks wrong and records with 20 teams', () => {
-    let g = q.newGame({ teams: teams(20), board, double: false, penalty: true });
-    g = play(g, 0, 19, [0, 10, 18]);
-    g = play(g, 1, 12);
+  it('scores, marks wrong and records with 10 teams', () => {
+    let g = q.newGame({ teams: teams(10), board, double: false, penalty: true });
+    g = play(g, 0, 9, [0, 5, 8]);
+    g = play(g, 1, 6);
     const s = q.scores(g);
-    expect(s[19]).toBe(100);
-    expect(s[12]).toBe(200);
-    expect([s[0], s[10], s[18]]).toEqual([-100, -100, -100]);
-    expect(q.award(q.showAnswer(q.openTile(g, 2)), 20)).toEqual(q.showAnswer(q.openTile(g, 2)));
+    expect(s[9]).toBe(100);
+    expect(s[6]).toBe(200);
+    expect([s[0], s[5], s[8]]).toEqual([-100, -100, -100]);
+    expect(q.award(q.showAnswer(q.openTile(g, 2)), 10)).toEqual(q.showAnswer(q.openTile(g, 2)));
     const r = q.gameRecord(q.finish(g, true));
-    expect(r.title).toBe('T13 led 200 · 20 teams');
-    expect(r.scores).toHaveLength(20);
+    expect(r.title).toBe('T7 led 200 · 10 teams');
+    expect(r.scores).toHaveLength(10);
     expect(q.validGame(JSON.parse(JSON.stringify(g)))).toEqual(g);
   });
   it('solo: "Got it" scores, "Missed" scores nothing, or costs the tile with the penalty on', () => {
@@ -208,7 +213,8 @@ describe('saving and resuming', () => {
       .toEqual({ names: ['Us', ...DEFAULT_SETUP.names.slice(1)], count: 3, boardId: 'x', double: true, penalty: false });
     expect(validSetup({ count: 0 }).count).toBe(3);
     expect(validSetup({ count: 1 }).count).toBe(1);
-    expect(validSetup({ count: 20 }).count).toBe(20);
+    expect(validSetup({ count: 10 }).count).toBe(10);
+    expect(validSetup({ count: 20 }).count).toBe(3);
   });
   it('loads a setup saved when there were four seats, keeping its names and filling the rest', async () => {
     const { validSetup, DEFAULT_SETUP } = await import('./store');

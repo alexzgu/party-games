@@ -15,7 +15,7 @@
     display: flex; align-items: center; gap: var(--s-2);
     min-height: 64px; padding: var(--s-2) var(--s-3);
     background: var(--surface); border-radius: var(--r-md);
-    font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; line-height: 1.08; letter-spacing: -0.01em;
+    font-family: var(--font-display); font-weight: 800; font-size: clamp(1.1rem, 5vw, 1.3rem); line-height: 1.08; letter-spacing: -0.01em;
   }
   .right { justify-content: flex-end; text-align: right; }
   .word { overflow-wrap: anywhere; hyphens: auto; }

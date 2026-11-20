@@ -23,7 +23,7 @@
 
   const prefs = loadSetup();
   const allPacks = gibberishPacks();
-  const packs = allPacks;
+  let packs = $state.raw(allPacks);
   let names = $state(loadPlayers());
   let seconds = $state(prefs.seconds);
   let target = $state(prefs.target);
@@ -87,7 +87,7 @@
   {/if}
 
   <Players bind:names />
-  <PackPicker {packs} bind:selected {onmake} {onedit} />
+  <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = gibberishPacks())} />
 
   <section class="opts" aria-labelledby="opts-h">
     <h3 id="opts-h">Rules</h3>

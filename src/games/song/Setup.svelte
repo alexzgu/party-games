@@ -23,10 +23,11 @@
   } = $props();
 
   const prefs = loadSetup();
-  const packs = songPacks();
+  let packs = $state.raw(songPacks());
   let names = $state(loadPlayers());
   let target = $state(prefs.target);
   // First visit: every built-in pack.
+  // svelte-ignore state_referenced_locally
   let selected = $state((prefs.packIds ?? packs.filter((p) => !p.custom).map((p) => p.id)).filter((id) => packs.some((p) => p.id === id)));
 
   $effect(() => savePlayers($state.snapshot(names)));
@@ -85,7 +86,7 @@
   {/if}
 
   <Players bind:names />
-  <PackPicker {packs} bind:selected {onnew} {onedit} />
+  <PackPicker {packs} bind:selected {onnew} {onedit} onimported={() => (packs = songPacks())} />
 
   <section class="opts" aria-labelledby="opts-h">
     <h3 id="opts-h">Rules</h3>

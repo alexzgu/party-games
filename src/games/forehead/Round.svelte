@@ -41,7 +41,7 @@
 
   function again() {
     const last = game.round!;
-    startRound(last.deckIds, last.seconds, prefs.control, true);
+    startRound(last.deckIds, last.seconds, prefs.input, true);
   }
 
   const demoPlay = $derived.by(() => {

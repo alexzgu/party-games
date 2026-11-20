@@ -1,5 +1,6 @@
 <script lang="ts">
   import ListTools from '../../components/ListTools.svelte';
+  import PackFile from '../../components/PackFile.svelte';
   import { customQuiz, type QuizBoard } from '../../lib/content';
   import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
@@ -7,12 +8,14 @@
   import { emptyTiles } from './board';
 
   // Pick one board. Search and sort only change what is shown; the pick stays even when hidden.
-  // The pencil on a row opens that board in the editor; "Make a board" sits at the end.
-  let { boards, selected = $bindable(), onedit, onmake }: {
+  // The pencil on a row opens that board in the editor; "Make a pack" sits at the end.
+  let { boards, selected = $bindable(), onedit, onmake, onimported }: {
     boards: QuizBoard[];
     selected: string | null;
     onedit: (id: string) => void;
     onmake: () => void;
+    /** After an import: the parent reloads `boards`. */
+    onimported: () => void;
   } = $props();
 
   let query = $state('');
@@ -21,6 +24,12 @@
   const tag = (b: QuizBoard) => (b.custom ? ' · Mine' : customQuiz.isEdited(b.id) ? ' · Edited' : '');
   const empty = (b: QuizBoard) => emptyTiles(b).length;
 
+  /** The first imported pack is picked, like a pack just made. */
+  function imported(ids: string[]) {
+    if (ids[0]) selected = ids[0];
+    onimported();
+  }
+
   function pick(id: string) {
     selected = id;
     sfx.tap();
@@ -28,10 +37,10 @@
 </script>
 
 <section class="boards" aria-labelledby="boards-h">
-  <ListTools key="quiz:boards" bind:query bind:sort placeholder="Search boards and clues" shown={shown.length} total={boards.length}>
-    {#snippet title()}<h3 id="boards-h">Board</h3>{/snippet}
+  <ListTools key="quiz:boards" bind:query bind:sort placeholder="Search packs and clues" shown={shown.length} total={boards.length}>
+    {#snippet title()}<h3 id="boards-h">Pack</h3>{/snippet}
   </ListTools>
-  {#if query && !shown.length}<p class="none">No boards match “{query.trim()}”</p>{/if}
+  {#if query && !shown.length}<p class="none">No packs match “{query.trim()}”</p>{/if}
   <ul role="radiogroup" aria-labelledby="boards-h">
     {#each shown as { b, hit } (b.id)}
       {@const on = selected === b.id}
@@ -56,12 +65,13 @@
       <button class="row make" onclick={onmake}>
         <span class="spark" aria-hidden="true">✨</span>
         <span class="txt">
-          <span class="name">Make a board</span>
-          <span class="blurb">Start blank, paste one, or ask Claude</span>
+          <span class="name">Make a pack</span>
+          <span class="blurb">Start blank, paste one, or ask the wizard</span>
         </span>
       </button>
     </li>
   </ul>
+  <PackFile game="quiz" onimported={imported} />
 </section>
 
 <style>

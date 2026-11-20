@@ -4,7 +4,7 @@
   // #/snark/pack?id=<pack> (see and edit a pack), #/snark/make (paste a new pack).
   // ?peer=host:port on any of them switches this device to another matchmaking broker.
   import { route, go, back } from '../../lib/router.svelte';
-  import { brokerFromAddress } from './broker';
+  import { brokerFromAddress } from '../../lib/room/broker';
   import Start from './Start.svelte';
   import Host from './Host.svelte';
   import Phone from './Phone.svelte';

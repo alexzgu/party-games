@@ -12,7 +12,8 @@ the home screen, and works offline once loaded. Names shown to players live in
   action per screen, big type, plain words.
 - **Robust**: never loses a game in progress (state saved to localStorage, resumes after a
   reload), never crashes mid-round, degrades quietly when a feature is missing (no motion →
-  tap controls, no vibration → sound only, no key → built-in packs only).
+  tap controls, no vibration → sound only, no key → built-in packs only). Chrome on Android
+  never vibrates while the phone is on silent; Settings says so under Vibration.
 - **Readable at arm's length in a dim room**: large type, high contrast, colour never the only
   signal (✓/✗ icons and words alongside green/red).
 - **Accessible**: every control reachable and labelled, 44 px minimum targets (56 px default),
@@ -21,18 +22,20 @@ the home screen, and works offline once loaded. Names shown to players live in
 ## Stack and layout
 
 Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Hash routing
-(`#/forehead`, `#/dial`, `#/gibberish`, `#/quiz`, `#/settings`) so any static host works.
+(`#/forehead`, `#/dial`, `#/gibberish`, `#/quiz`, `#/settings`, `#/join/<key>`) so any static host works.
 
 - `src/lib/` — shared logic: `storage` (guarded localStorage), `router.svelte`, `settings.svelte`,
   `sound` (synthesised cues; call `unlockAudio()` in the first tap), `haptics`, `wakelock`,
-  `motion` (permission, gravity stream, sign fix, upright rotation), `tilt` (gesture detector),
+  `motion` (permission, motion stream, sign fix, upright rotation), `pitch` (forehead pitch from
+  gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
-  `claude` (live generation, streamed line by line), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `update` (new versions switch in on the main menu), `random`.
+  `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
 - `src/components/` — `Screen` (page frame: back button, title, sticky actions), `Popup`,
   `HowTo` (the "?" header button that opens a game's rules), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
-  items while they stream in).
+  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (Import packs, Export my packs),
+  `ExportPack` (Export pack).
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
   to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
@@ -49,18 +52,79 @@ Three routes, in the order the owner chose to rely on them:
 2. **Paste a list** on the phone: each game's "Make a pack" screen takes a pasted list (one
    item per line, in the game's format), shows it in `Triage` for review, and saves it as a
    custom pack on that phone.
-3. **Ask Claude in the app** (later, needs an API key): the host pastes an Anthropic API key in
-   Settings; it stays in that phone's localStorage and the phone calls the API directly.
+3. **Ask the wizard in the app**, first way in, the host's own testing route (no screen mentions
+   invite links; players are told only about the magic words, route 4): players see live generation as
+   "Fizzwick the Wizard" 🧙; no screen names Claude, Anthropic or an API key. The host (the owner,
+   who pays for usage) sends friends a link `<site>#/join/<key>` carrying an Anthropic key; the
+   key is never in the repo or the bundle. Opening it (`src/lib/join.ts`, `invite.ts`) stores
+   the key in `settings.apiKey` (that phone's localStorage), wipes it from the address bar and
+   history at once (`replaceState` to `#/`), and says "Fizzwick the Wizard has moved in on this
+   phone."; a link whose key does not look like an Anthropic key (`sk-ant-`, 20–300 of
+   `[A-Za-z0-9_-]`) says it is broken and stores nothing. The phone calls the API directly.
+   Each make page shows "How hard Fizzwick tries" (`WizardEffort`) next to the theme and the
+   make button, when the phone has a key: 🥱 Half-asleep (Haiku 5.5), ☕ Had his coffee (Sonnet
+   5.5), 🔮 Full beard power (Opus 5.5, the default), kept in `settings.model`; an unknown stored
+   id uses Opus. Without a key or pass the make page says "Fizzwick isn't on this phone yet: say
+   the magic words in Settings." (`NOT_HERE` in claude.ts).
    `streamLines()` hands each line over as soon as it is complete; items stream into `Triage`;
-   "More" sends the items already kept so Claude avoids repeats.
+   "More" sends the items already kept so the wizard avoids repeats.
+4. **The magic words** (second way in, kept apart from invite links): a small Cloudflare Worker
+   in `worker/` (setup in `worker/README.md`) holds its own, spend-capped Anthropic key and a few
+   shared party phrases as secrets the owner enters in Cloudflare. A friend types a phrase in
+   Settings; the server checks it (case, punctuation and spacing ignored; wrong guesses limited
+   to 10 per address per 15 minutes and 300 overall per hour; right ones to 20 per address per
+   day) and returns a 30-day pass, kept in `settings.wizardPass`, never in a URL or an invite
+   link. The phone then uses the server as its API address with the pass in place of a key and
+   without model fallback; the server allows only the app's own requests (models from
+   `wizard.ts`, plain text, no fallback or betas, capped tokens and size), counts them against a
+   daily allowance (300 for everyone, the real cap; 60 per pass, a soft cap since the words can
+   be said again), and forwards them with its key. A phone with its own key uses that instead,
+   with fallback as before. Removing a phrase ends its passes ("The magic words have changed.
+   Ask the host for the new ones."); an old pass says "Fizzwick's pass expired. Say the magic
+   words again."; either way the pass is forgotten, unless a newer one was saved meanwhile. The
+   allowance running out says "Fizzwick needs a nap", naming this phone's share or the party's.
+   `WIZARD_SERVER` in `src/lib/wizardServer.ts` holds the server's address; empty hides the
+   magic words everywhere.
 
 **Every pack can be opened and edited**, built-in or the player's own. Editing a built-in saves
 an edit under the same id that replaces it everywhere on that phone, marked "Edited", until
 "Restore original". Only the player's own packs can be deleted.
 
+**Packs are called packs in every game** (a Heads Down. pack is a list of words, a Big Board
+pack is one whole board). Code, routes and storage keys keep their older names (`decks`, `board`).
+
+**Import and export** (`src/lib/packfile.ts`, buttons in `PackFile` and `ExportPack`): a pack file
+is JSON, `{"jerkBox": 1, "game": "<game id>", "packs": [...]}`, each pack as stored (id, name,
+emoji for Heads Down., blurb, items) without `custom` and `added`; named
+`<game>-<pack id or my-packs>.jerkbox.txt` (JSON inside, plain-text type so Chrome on Android
+can share it; import also takes `.json`). "Export pack" sits in every pack editor (built-ins
+included); "Import packs" and "Export my packs" (every pack made or edited on this phone; hidden
+when there are none) sit under every pack list: Heads Down.'s "Packs" screen (Edit on setup),
+Spectrum and Don't Say It setup under "Make a pack", the pack tiles of Inn Co Hear Ant, Brain
+Freeze and Earworm setup, Big Board's pack list, and Snark Tank's game settings. Export uses the
+share sheet when the browser can share the file, else a download. Import reads a file of at most
+1 MB and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
+pack editor's or the paste route's; Big Board: 1–8 categories × 1–10 clues, cut and padded like a
+pasted board); drops what fails and says how many; leaves out a pack with nothing usable; and
+saves each pack as the player's own, ticked (Big Board: picked), under a fresh id (`-2`, `-3`, …)
+when a built-in or a pack on the phone already has its id, so nothing is overwritten. A file of
+another game says which game to open; anything else says it isn't a pack file.
+
 ## Shared behaviour
 
 - **Home** shows every game in `GAMES` (name, emoji, player count), History and Settings. No blurbs.
+- **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours), Heads Down. (scored-word feedback,
+  "Calibrate tilt" with the calibration note under it, "Check tilt" with its notes under it),
+  The wizard, Cards (reset card history). The wizard never mentions invite links. Without a key
+  or pass: "Fizzwick the Wizard is not on this phone yet. Say the magic words the host told
+  you:", a hidden field with Show (no autofill) and "Say them", answered "Fizzwick heard you.
+  He's yours on this phone.", "Fizzwick doesn't know those words." or, after too many guesses,
+  how long to wait. A whole invite link or a bare key typed there is stored as the phone's key
+  (`keyFromTyped`, for the host's testing; an iPhone Home Screen app keeps its own storage, so a
+  tapped link may not reach it). With either: "Fizzwick the Wizard lives on this phone" and
+  "Send Fizzwick away" (clears both). No key field and no model list. Descriptions are
+  --text-dim, weight 600.
+  Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
 - **Rules** live in each game's "?" popup, not on its screens.
 - **History** (`#/history`): one entry per Heads Down. round (rewritten if a word is fixed
   afterwards) and per finished Spectrum or Inn Co Hear Ant game: title, scores, packs and
@@ -86,9 +150,13 @@ Updates reach phones without interrupting play: a new version downloads in the b
 Heads Up-style. One player holds the phone on their forehead, screen facing out; the others
 shout clues; the holder tilts down for "got it", up for "pass".
 
-- **Setup**: grid of decks (emoji, name, word count); tap to select one or several (mixed).
-  Round length 30/60/90/120 s (default 60). Controls: Tilt (default when motion works) or Tap.
-  "Edit decks" opens the deck list: open any deck to see, edit or restore its words.
+- **Setup**: grid of packs (emoji, name, word count); tap to select one or several (mixed).
+  Round length 30/60/90/120 s (default 60). Controls: Tilt, Tap or Both (default Both on phones
+  and tablets, Tap on a laptop; the old saved "Tilt", which always took taps, carries over as
+  Both). Only the chosen input scores: in a Tilt round the tap zones are gone and the arrow keys
+  do nothing; in a Tap round tilting does nothing. A Tilt round on a phone that cannot feel
+  motion takes taps instead, so it can always be played (`accepts` in `round.ts`).
+  "Edit" (in the packs header, before the search and sort toggles) opens the pack list: open any pack to see, edit or restore its words.
 - **Start tap**: `unlockAudio()`, `requestMotion()` (iOS prompt), sample gravity for the sign fix
   (`axisSignFromLookingAt`), `keepAwake(true)`, and on Android try fullscreen + landscape lock
   (guarded; iOS has neither).
@@ -101,18 +169,49 @@ shout clues; the holder tilts down for "got it", up for "pass".
   Feedback (Settings): by default the screen edge on the side of the matching tap zone glows
   green or amber; "Flash the screen" flashes the whole screen instead. Tap fallback always on: right half correct, left half pass. Last 10 s:
   tick each second and a red pulsing timer. Leaving the app pauses; returning shows a Resume
-  overlay. A small ✕ ends the round after confirmation. Deck exhausted → round ends early.
+  overlay. A small ✕ ends the round after confirmation. Packs used up → round ends early.
 - **Results**: score headline, every word shown marked ✓/✗ and tappable to fix mis-tilts.
-  Play again (same settings, next player), change decks, home. Round scores of this session
+  Play again (same settings, next player), change packs, home. Round scores of this session
   listed so the group can compare.
-- Tilt is measured from where the phone has been over the last 2 seconds (the median pitch,
-  leaving out the newest quarter second, clamped to ±25°), starting from the pose held steady
-  before the countdown (0 after a tap start). That reference is frozen from a score until the
-  phone settles again, so a held tilt never scores twice or counts the way back. A tilt slower
-  than about 20° a second is treated as drift and does not score. Settings "Tilt needed to score": Small nod
-  (default, 22° down / 26° up), Medium (32/40), Big tilt (40/55, the old Android app's values).
-  After a score the phone must settle near rest for 150 ms before the next one counts.
-  Constants in `src/lib/tilt.ts`.
+- Pitch comes from the gyroscope blended with gravity (1 s time constant, `src/lib/pitch.ts`).
+  Raw gravity alone fails: recorded nods (Tilt lab, below) start with a shove along the screen
+  normal that reads, for ~100 ms, as a big tilt the other way, so got-it nods scored as passes.
+  Browsers disagree on which `rotationRate` field holds which axis (Firefox on Android puts the
+  nod on `beta`), so each phone learns its layout from its own motion (whichever candidate
+  tracks gravity best while the phone is on a forehead) and keeps it; Firefox on Android starts
+  from its recorded layout. A gap of over 0.25 s between readings restarts from gravity, and a
+  different edge must point up for 150 ms before the nod's sign follows it. With no gyroscope, the
+  browser's gravity estimate (`accelerationIncludingGravity` minus `acceleration`) is used.
+- Tilt is measured from where the phone rests: the median over the last 2 seconds of the
+  readings near the current rest (leaving out the newest quarter second, moving at most 10°/s,
+  clamped to ±35° like the countdown's steady check), starting from the pose held steady before
+  the countdown (0 after a tap start). Tilts, slow or missed ones and fast spamming included,
+  never pull it along. It is frozen from a score until the phone settles again, so a held tilt
+  never scores twice or counts the way back. A score needs the angle and speed: the pitch must
+  have turned briskly toward that side in the last 0.4 s, since that direction was armed (so
+  the way back from one tilt never lends its speed to the next). Until a player calibrates:
+  25° down, 25° up, 150°/s: the owner's calibration from 64 recorded tilts (they turned at
+  175–1100°/s; talking, laughing, looking around, leaning back stayed under ~105°/s), with up
+  raised from 20° because a ~21° wind-up before a fast nod down scored as a pass.
+- Quick tilts in a row: the same direction counts again as soon as the phone is back near rest
+  (and 150 ms after the last score), with no pause there. On the way back the head bounces past
+  rest by up to ~28°, so right after a score the other direction needs 15° more than the larger
+  of its angle and 25° (40° by default). Once the phone settles (150 ms near rest, or held still
+  at least halfway back from the tilt) both directions count at their plain angles. Tuned on
+  three Tilt lab recordings, a speed run among them. Constants in `src/lib/tilt.ts`.
+- **Calibrate tilt** (`#/forehead/calibrate`, from Setup and Settings): the phone, on the
+  forehead, says "Down" or "Up"; each practice tilt it catches beeps and counts (the way back
+  from a tilt never counts: the next one starts only once the phone is halfway back and still).
+  A tilt under 12° (too small ever to score) is not kept; the phone says "Further". Done saves
+  once there are at least 3 of each; with fewer it says how many more and keeps the old
+  calibration. Thresholds: 45% of the player's median tilt (12–25°; not lower, so a wind-up before a nod the other way never scores) and half their median speed
+  (60–150°/s). Kept on the phone until the next calibration (a damaged stored value is clamped
+  into those limits or ignored); Reset returns to the defaults. Replaces the old Small / Medium /
+  Big setting.
+- **Tilt lab** (`#/forehead/lab`, not linked): speaks a ~3.5-minute script of cued tilts and
+  non-tilts and records every motion reading with the cue times, for designing detection from
+  real data. The file goes to a laptop lab server when the page is served from one, else to
+  share / download.
 
 ## Game 2 — Spectrum (`dial`)
 
@@ -122,7 +221,7 @@ team sets a dial to where they think the target is.
 
 - **Setup**: two team names (editable), points to win (default 10), packs (multi-select),
   optional "steal" rule: the other team then guesses whether the target is left or right of
-  the needle for 1 point. Entry to "Make a pack" (paste a list or ask Claude). Each pack row
+  the needle for 1 point. Entry to "Make a pack" (paste a list or ask the wizard). Each pack row
   has a separate › that opens the pack editor.
 - **Teams**: Early Birds (`--c-team-a`, warm orange) vs Night Owls (`--c-team-b`, blue), on the
   dark theme: team colour as glow, border and name, never a full bright fill. The scoreboard
@@ -143,7 +242,7 @@ Mad Gab / Incoherent-genre. Each card is a phrase of real but unrelated words th
 aloud, sounds like something well known ("Eye Scream" → Ice Cream).
 
 - **Setup**: player names (3+; add/remove; remembered), packs (multi-select), seconds per card
-  (off/20/30/45/60, default 30), points to win (default 5). Entry to "Make a pack" (paste a list or ask Claude).
+  (off/20/30/45/60, default 30), points to win (default 5). Entry to "Make a pack" (paste a list or ask the wizard).
   A pencil on each pack tile opens the pack editor (giveaway check applies to edits).
 - **Card**: the reader rotates each card. Hand-off screen ("X reads — everyone else, eyes off the
   phone") → reader view: the phrase huge, a "Show category" button the reader may read out,
@@ -154,15 +253,15 @@ aloud, sounds like something well known ("Eye Scream" → Ice Cream).
 
 ## Game 4 — Big Board (`quiz`)
 
-A team quiz board for a host who reads aloud, on a phone or a laptop on the TV. A board has
-categories across and clues down, easiest at the top. Built-in boards (`src/content/quiz/*.json`)
-are 3–6 categories × 3–5 clues; boards made or edited on the phone may be 1–8 × 1–10.
+A team quiz board for a host who reads aloud, on a phone or a laptop on the TV. Each pack is one
+board: categories across and clues down, easiest at the top. Built-in packs (`src/content/quiz/*.json`)
+are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1–8 × 1–10.
 
-- **Setup**: 1–20 teams (stepper, default 3; a team may be one person), names editable and
+- **Setup**: 1–10 teams (stepper, default 3; a team may be one person), names editable and
   remembered for all twenty seats, each with its own colour (`--team-1` … `--team-20` in
-  tokens.css, one set per scheme, readable as text and under a number badge). One board
-  (search/sort list; a pencil per row opens the editor; "Make a board" at the end), points
-  100, 200, … per level or doubled, "Wrong answers lose points" (default off). A board with an
+  tokens.css, one set per scheme, readable as text and under a number badge). One pack
+  (search/sort list; a pencil per row opens the editor; "Make a pack" at the end), points
+  100, 200, … per level or doubled, "Wrong answers lose points" (default off). A pack with an
   empty clue or answer is a draft: setup names the empty tiles and will not start it.
 - **Board**: fills the screen; categories across, values down; a played tile goes dim with a dot
   in the winning team's colour. Header: back to setup (game saved), Undo, full screen (wide
@@ -190,20 +289,21 @@ are 3–6 categories × 3–5 clues; boards made or edited on the phone may be 1
   early; more than 4 teams: the title gives the top score and the team count); End with nothing
   scored just closes the board. State saved after every step; a reload resumes on the same
   screen. Saves and setups from the 2–4 team version load unchanged.
-- **Board editor** (`#/quiz/board?id=<id>`): name, short description, levels stepper (adds or
+- **Pack editor** (`#/quiz/board?id=<id>`): name, short description, levels stepper (adds or
   removes the bottom level on every category; removing one with clues asks first), category
   tabs (add up to 8, rename, move left/right, remove), and every clue and answer inline, empty
   ones highlighted. Every change saves at once; a built-in saves this phone's copy under the
-  same id (Edited tag, "Restore original"); own boards can be deleted.
-- **Make a board** (`#/quiz/make`): Blank (name, categories 1–8 × levels 1–10, default 5 × 5),
+  same id (Edited tag, "Restore original"); own packs can be deleted.
+- **Make a pack** (`#/quiz/make`): Blank (name, categories 1–8 × levels 1–10, default 5 × 5),
   Paste (a "# Category" line then "clue | answer" lines, easiest first; tolerant of other
   headings, list markers, tables, "Q:/A:", value columns and "Category | level | clue | answer"
   lines; short categories get empty tiles; past 8 × 10 is cut off and the skipped lines are
-  counted), or Ask Claude with an API key (topic, categories × levels; Claude streams one line
+  counted), or 🧙 Wizard (topic, categories × levels, how hard Fizzwick tries; the model streams one line
   per clue, "Category | level | clue | answer", easiest row first, under the AGENTS.md quality
-  bar, and a live preview fills tile by tile; "Stop" opens what came). Without a key it points to
-  Settings or to a Claude Code chat ("a Big Board about <topic>"). Every route opens the new
-  board in the editor, kept in storage (`quiz:new-board`) until "Save board" (or "Save as a
+  bar, and a live preview fills tile by tile; "Stop" opens what came). Without a key it says to
+  say the magic words in Settings (`NOT_HERE`), or to ask the host for a built-in pack ("a Big Board about
+  <topic>", which the owner's Claude Code chat makes). Every route opens the new
+  pack in the editor, kept in storage (`quiz:new-board`) until "Save pack" (or "Save as a
   draft" with empty tiles), which picks it on setup.
 
 ## Game 5 — Don't Say It (`taboo`)
@@ -243,7 +343,7 @@ few seconds to name three things that fit it out loud; the room judges.
 
 - **Setup**: player names (2+; add/remove; remembered, and a first visit borrows Inn Co Hear
   Ant's list), packs (search/sort; a pencil on each opens its editor; "Make a pack": paste a
-  list or ask Claude), seconds on the clock 5/7/10 (default 5), points to win (default 7, 3–15),
+  list or ask the wizard), seconds on the clock 5/7/10 (default 5), points to win (default 7, 3–15),
   Steal (default on).
 - **Turn**: hand-off ("Pass the phone to Maya"; the last turn's result and a scoreboard strip in
   seating order above it) → "I'm Maya, show my prompt" reveals "Name 3 …" huge (`FitText`) and
@@ -334,7 +434,7 @@ parsing), `node scripts/shot.mjs <url> <png>` for phone-size screenshots of a ru
 
 ## Game 7 — Snark Tank (`snark`)
 
-Write-funny-answers-and-vote genre, the only game where every player uses their own phone. One
+Write-funny-answers-and-vote genre, the first game where every player uses their own phone. One
 **host screen** (a laptop on the TV, or a phone in the middle of the table) shows the room code,
 prompts, answers and scores; 3–8 players join from their phones at the same site.
 
@@ -348,7 +448,13 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   backup broker." on both sides, retrying in the background.
 - **Host is authoritative** (`logic.ts`, pure): it holds the whole game, saves it after every
   change (`hr:snark:host`), and sends each phone only its own view (`view.ts`: its prompts, the
-  two anonymous answers, its score); authors are never sent before the reveal. Pings every 2.5 s;
+  two anonymous answers, its score); authors are never sent before the reveal. A phone with
+  nothing to do also shows what the host screen shows, so a group can play from phones alone:
+  the players in the lobby; who is still writing once it is done (or joined late); who has voted
+  once it has voted or the prompt is its own (its answer marked "Yours"); every final answer once
+  its votes are sent; the reveal (each answer's author, voters, votes and points, final answers
+  ranked); the scoreboard with this round's gains and the next round's countdown; the final
+  standings. A phone busy writing or voting is not sent any of this. Pings every 2.5 s;
   a link silent for 9 s is dropped on both sides and the phone redials (1, 2, 4, then every 8 s,
   at once when the phone is unlocked). The room lives at module level, so the host can open
   settings or a pack and come back without dropping anyone; only End game / Close the room ends it.
@@ -380,27 +486,128 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
 - **Host controls**: pause/resume (Space; the timer stops on every phone too), skip (End
   writing / End voting / Next; ignores a second tap within 0.8 s), end game, rules. Wake Lock
   on the host and on phones while in a room.
-- Demo screens: `#/snark/host?demo=lobby|lobby-empty|write|vote|reveal|vote3|reveal3|scores|over|paused`,
-  `#/snark/join?demo=join|lobby|write|wait|vote|voted|vote-own|vote3|reveal|scores|over`.
+- Demo screens: `#/snark/host?demo=lobby|lobby-empty|write|vote|reveal|vote3|reveal3|scores|over|paused|duel-write|duel-vote|duel-reveal`,
+  `#/snark/join?demo=join|lobby|late|write|wait|vote|voted|vote-own|vote3|voted3|reveal|reveal3|scores|over|duel-write|duel-vote|duel-reveal`.
 - **Packs**: `src/content/snark/*.json`, `{"prompts": [...]}`, 3–14 words (Classic 200, After
-  Dark 80).
+  Dark 80); optional `safety` and `finals`, below.
 
-## Game 9 — Getting Warmer (`warm`)
+### Snark Tank: Quiplash 3 options (`snark`, on by setting; defaults unchanged)
 
-- **Setup**: select packs and automatic clues (Off, every 8 seconds, or every 15 seconds). Start deals the first clue. A saved card can be resumed from setup or by reloading the play screen.
-- **Clues**: the newest clue fills the card, with the earlier clues above it. Anyone can call out a guess. Tap the card or Next clue to advance. A thin bar shows time until the next automatic clue. Leaving play or hiding the app pauses it. Automatic clues stop at the last clue.
-- **Reveal**: show the answer with a chime and leave the clues visible. Next one deals a fresh card.
-- **Packs**: Everyday Things (60), Pop Culture (50), Food & Drink (40). View, edit, paste, or restore original packs. Paste format is `Answer: clue; clue; clue; clue`.
-- **Demo**: `#/warm?demo=warm`, `#/warm?demo=warm-reveal`, and `#/warm?demo=setup`.
+Settings gain **Final round**: "Everyone, 3 votes" (today's final, default; also what settings and
+games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amounts marked
+*house* are ours (the original's are not published).
 
-## Game 10 — Room Service (`room`)
+- **Give me one** (both options): in head-to-head rounds a prompt whose pack has a stock (safety)
+  answer for it sends that answer with the prompt; the phone shows "Give me one", which fills the
+  box. The host compares each sent answer (cleaned) with its own copy, never trusting the phone:
+  an exact match earns half of every point (rounded down, sweep bonus included); an edited one is
+  a normal answer. The reveal tags it "Safety" on the host and the phones.
+- **Three-line duels** (the final, when chosen and the game has 3+ players and some finals):
+  players are paired at random, each pair with its own final prompt (asks for three things). With
+  an odd count the player in last place (ties: random) faces **the house**, whose three lines come
+  with the prompt. Each player writes up to three lines of 40 characters (Done needs one; blank
+  lines dropped; drafts survive a reload). Each duel in turn: a showing step (`show` phase, timed,
+  pausable, skippable with "Start voting"), where the prompt and then side A's lines appear one at
+  a time 1.5 s apart, then side B's (reduced motion: all at once; the steps are counted from the
+  timer, so a pause holds them and a reloaded host or reconnecting phone lands in step); then
+  everyone except the two duellers votes for a whole side (twice the vote time; late joiners too).
+  Authors (and which side is the house) stay hidden until the reveal. Points: vote share × 3000,
+  +750 for a clean sweep of 2+ votes (*house*: the head-to-head formula × 3); votes for the house
+  score nothing. Phones with nothing to do follow the showing and the reveal like the host. Then
+  the winner screen as today; History gets one line per duel.
+- **Fallbacks**: no finals in the chosen packs → Classic's; none at all, or fewer than 3 players
+  left → the 3-vote final.
+- **Content**: a Snark pack may add `"safety": {"<prompt>": "<answer>"}` and
+  `"finals": [{"prompt": "...", "house": ["...", "...", "..."]}]`. Finals are dealt from the
+  chosen packs, never repeating until they run out (like prompts). The content gate checks
+  shapes only: safety keys are the pack's own prompts and answers 1–80 characters; final prompts
+  are unique across Snark packs and never a regular prompt; exactly 3 house lines of 1–40
+  characters. Pack files carry both fields when present (broken entries dropped). Classic and
+  After Dark have a safety answer for every prompt and 40 / 20 finals.
+- Demo screens add `duel-write`, `duel-vote`, `duel-reveal` on host and phone (the head-to-head
+  demos carry stock answers; `reveal` shows one sent untouched).
 
-- **Setup**: choose packs and card types. All four types are enabled initially. Start deals an eligible card. Resume picks up at the same card, line or countdown.
-- **Pick a side**: two choices fill the stage. A three-second countdown ends with Point! and a cue to explain why. Tap to deal again.
-- **Show proof**: look for something visible or carried. After a 30-second ring timer, or on a tap, everyone shows what they found. Tap again for another card.
-- **Make sounds**: read the scene aloud while everyone performs the highlighted sounds. Tap for each line and then for another card.
-- **Say it together**: think of an answer during a three-second countdown, shout it on Say it!, then see who matched.
-- **Packs**: House Party (120), After Dark (60), Deep Cuts (40, all Pick a side). To paste cards, start each line with `side:`, `proof:`, `foley:` or `together:`. Separate choices with `|` and scene lines with `/`.
-- **Demo**: `#/room?demo=side`, `proof`, `foley`, `together` or `setup`. Add `-reveal` to side, proof or together to preview the cue.
+## Shared room link (`src/lib/room/`)
 
-Both games deal without repeating eligible cards before the deck runs out, remember seen cards across sessions, save each step on the host device, and have no players, scores, turns or History entries.
+Every own-phones game (Snark Tank, Word Salad, Doodle Brawl) uses one link layer: room codes,
+broker choice (`?peer=`, stored under the existing `snark:broker` key so the setting carries
+over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone's outbox and the
+host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
+logic. The host's peer id is `jerkbox-<game>-<CODE>`. Any message whose JSON is 15,000 UTF-8
+bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 5,000 characters
+each) and reassembled before it is read; incomplete parts are dropped after 30 s. (PeerJS errors
+and drops the link on a JSON message of 16,300 bytes or more.)
+
+## Game 9 — Word Salad (`salad`)
+
+2–8 players join a host screen by code or QR using the shared room link. Two rounds, with
+one turn per player in seat order. The host chooses built-in packs in Settings.
+
+- **Pick** (20 s): privately choose one of three secrets, including one Easy and a mix of
+  categories (person, place, thing, story). One reshuffle per player each round. At the
+  deadline the first choice is taken for anyone who has yet to pick.
+- **Prepare** (30 s): everyone builds an opening clue at once. Each blank offers six shuffled
+  words, up to three tailored to the secret and the rest drawn from plain shared vocabulary.
+  More words redeals the decoys for one blank. At the deadline any empty blank takes its first choice.
+- **Present** (75 s): show the opening clue, then offer follow-up frames one at a time. The
+  presenter can publish each completed sentence or skip the frame. Comparison frames use
+  previous guesses as blanks. Other phones can guess freely. Published clues and guesses
+  with their authors appear on the host and phones. The first correct guess ends the turn.
+  Matching ignores case, punctuation, spaces and a leading article. Accepted variants use
+  the same rules. One typo is allowed, or two for an answer longer than ten letters.
+- **Scoring**: the presenter and first correct guesser each earn 1,000 points at the start of
+  the turn, falling linearly toward 200, rounded to the nearest point after modifiers. Easy
+  halves that payout and round two doubles it. Each distinct wrong guess used in a published
+  comparison pays its author 100 on a solve. Unsolved turns reveal the answer and pay zero.
+  Reveal lasts 9 s and round scores last 15 s. Final standings share places on ties and show
+  the number of secrets the room solved. Results are saved to History on the host.
+- **Room controls**: pause, skip, remove a player, close the room or rematch. The host saves
+  the room; phones reconnect to their seats and scores. Late arrivals can guess immediately
+  and present starting next round. An offline presenter is skipped when their turn comes
+  up, or revealed without points after 10 s offline during their turn.
+- **Content**: `src/content/salad/*.json` holds packs of secrets with an answer, category,
+  difficulty, accepted variants and fitting words for the sentence slots in `words.ts`.
+- **Demos**: use `#/salad/host?demo=present` or `#/salad/join?demo=guess`. Both accept
+  `lobby`, `pick`, `prepare`, `present`, `reveal`, `unsolved`, `scores`, `over` and
+  `paused`. The phone also has `join`, `late`, `wait`, `comparison` and `guess` views.
+
+## Game 10 — Doodle Brawl (`brawl`)
+
+Rules of Champ'd Up, our titles and art. 3–8 players draw on their own phones; a host screen
+stages the bouts. Two rounds. No spectator seats; late joiners vote.
+
+- **Round, drawing pass 1** (draw time, default 90 s; 60/90/120/180): each player gets a private
+  title (ours, e.g. "World's okayest roommate") and draws a fighter for it, then names it
+  (30 characters; an empty name becomes “Nameless”).
+- **Drawing pass 2**: each player is handed another player's fighter (picture and name, never
+  the title; a shuffled ring, never their own) and draws and names a challenger for it.
+- **Bouts**: for each title in turn the host reveals the title, then both fighters with their
+  names; everyone except the two artists votes (15 s). Purse 1000 (round 2: 2000, *house*) split
+  by vote share; the challenger also gets 10% of their own share (wiki, single source), so an
+  even split goes to the challenger. The side with more points wins the bout. A blank fighter
+  loses without a vote and the other side takes the whole purse; both blank: the bout is skipped.
+  No votes cast: each side gets half the purse, the challenger's bonus applies.
+- **Round 2 rematch**: straight after each round-2 bout the same two artists get a surprise
+  title. Each picks on their phone (15 s): keep their fighter, or tag in one of their own
+  fighters already shown this game. Then a vote as above, purse 2000; a player who kept their
+  fighter and wins the rematch gets +500 (*house*; the original confirms a bonus, not its size).
+- Highest total wins; ties share first. End screen: standings and each bout winner's fighter.
+- **Drawing**: square canvas, 640 × 640 units, Pointer Events, scrolling locked; 8 colours,
+  thin/thick pen, undo, clear. Stored as strokes `{c: colour, w: width, p: [x0, y0, dx1, dy1, …]}`
+  (whole units, points closer than 3 units dropped). The host keeps drawings in their own
+  store (key `brawl:art`), never in the game state; views carry drawing ids; a phone asks for a
+  drawing it lacks (`{t: 'art?', id}`) and keeps the answer. Drawings travel through the shared
+  link's parts.
+- **Content** (`src/content/brawl/*.json`): `{"titles": ["..."]}`; titles and rematch titles
+  come from one pool, never repeating within a game.
+- The drawing timer applies to each pass. Submit early or let the phone send your drawing at
+  the buzzer. A half-finished drawing survives a phone reload. Drawings over 200 KB
+  or 6,000 points are rejected. The host removes stored art when the room closes.
+- The title gets 3 s on its own. Results stay up for 8 s and the round scoreboard for 15 s.
+  When both round-two fighters are blank, the first bout is skipped and the rematch runs if
+  either artist has a previously shown fighter available. The host can pause, advance or close
+  the room. The lobby supports removing players, choosing packs and changing brokers. Reconnects
+  and History work as in Snark Tank. Classic has 120 titles and After Dark has 60.
+- Demos at `#/brawl/host?demo=` and `#/brawl/join?demo=` with
+  `lobby|lobby-empty|draw|challenge|title|vote|payout|tag|rematch|scores|over|paused`.
+  Phone demos also have `join|wait|late|voted|watching|tagged`.

@@ -72,9 +72,9 @@ export function placeClue(b: QuizBoard, s: StreamClue, cats: number, levels: num
 
 /** An empty board of the asked size, named for the topic, for the stream to fill. */
 export function emptyBoardFor(topic: string, cats: number, levels: number): QuizBoard {
-  const name = topic.trim().replace(/\s+/g, ' ').replace(/^\w/, (c) => c.toUpperCase()).slice(0, 40) || 'My board';
+  const name = topic.trim().replace(/\s+/g, ' ').replace(/^\w/, (c) => c.toUpperCase()).slice(0, 40) || 'My pack';
   return {
-    id: '', name, blurb: `Made with Claude: ${topic.trim() || name}`,
+    id: '', name, blurb: `Conjured by Fizzwick: ${topic.trim() || name}`,
     categories: Array.from({ length: cats }, (_, i) => ({ name: `Category ${i + 1}`, clues: Array.from({ length: levels }, () => ({ clue: '', answer: '' })) })),
   };
 }

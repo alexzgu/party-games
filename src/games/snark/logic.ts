@@ -1,14 +1,22 @@
 // Snark Tank's rules as pure functions over the host's game state. The host screen is the only
 // place this runs; phones only see what view.ts derives for them. Every function returns a new
 // state (or the same object when nothing changed) so the host can save and send after each step.
-import { assignPrompts } from './assign';
-import { FINAL_VOTES_EACH, scoreDuel, scoreFinal, validFinalBallot, type Result } from './scoring';
+import { assignPrompts, pairDuels } from './assign';
+import { FINAL_VOTES_EACH, halve, scoreDuel, scoreFinal, scoreLines, validFinalBallot, type Result } from './scoring';
 import { shuffle } from '../../lib/random';
 import type { ToHost } from './protocol';
 
 export const MIN_PLAYERS = 3;
 export const MAX_PLAYERS = 8;
 export const ANSWER_MAX = 80;
+/** Three-line duels: lines per player and characters per line. */
+export const LINES_EACH = 3;
+export const LINE_MAX = 40;
+/** A three-line duel's lines appear one at a time this far apart before its vote opens. */
+export const LINE_STEP_MS = 1500;
+/** The player id of the house, the game's own side in a three-line duel (never a phone's id). */
+export const HOUSE = '~house';
+export const HOUSE_NAME = 'The house';
 export const NAME_MAX = 14;
 export const NO_ANSWER = '(no answer)';
 export const REVEAL_MS = 9000;
@@ -18,6 +26,8 @@ export const SCORES_MS = 15000;
 export const RELOAD_GRACE_MS = 12000;
 export const ANSWER_CHOICES = [45, 75, 90, 120] as const;
 export const VOTE_CHOICES = [10, 15, 20, 30] as const;
+/** The final round: one prompt for everyone with 3 votes each, or three-line duels. */
+export type FinalStyle = 'everyone' | 'duels';
 
 export interface Settings {
   /** 2: one head-to-head round, then the final. 3: two head-to-head rounds (the second doubled), then the final. */
@@ -25,9 +35,11 @@ export interface Settings {
   answerSecs: number;
   voteSecs: number;
   packIds: string[];
+  /** Missing in games and settings saved before it existed: 'everyone'. */
+  final?: FinalStyle;
 }
 
-export const DEFAULT_SETTINGS: Settings = { rounds: 3, answerSecs: 75, voteSecs: 15, packIds: ['classic'] };
+export const DEFAULT_SETTINGS: Settings = { rounds: 3, answerSecs: 75, voteSecs: 15, packIds: ['classic'], final: 'everyone' };
 
 export interface Player {
   pid: string;
@@ -51,6 +63,22 @@ export interface Duel {
   /** Voter → the author they picked. */
   ballots: Record<string, string>;
   result?: Result;
+  /** The pack's stock answer for this prompt (cleaned); an answer sent exactly as it is earns half points. */
+  safety?: string;
+}
+
+/** A three-line duel in the final: two players, or a player and the house, write up to three lines each. */
+export interface Lines {
+  kind: 'lines';
+  prompt: string;
+  a: string;
+  /** May be HOUSE, whose lines are filled in when the round starts. */
+  b: string;
+  /** Author → their lines (1–3); null once writing closed without any. Missing while still writing. */
+  answers: Record<string, string[] | null>;
+  /** Voter → the author they picked. */
+  ballots: Record<string, string>;
+  result?: Result;
 }
 
 /** The final prompt: everyone answers, everyone spreads three votes over the others' answers. */
@@ -65,8 +93,9 @@ export interface Finale {
   result?: Result;
 }
 
-export type Item = Duel | Finale;
-export type Phase = 'lobby' | 'write' | 'vote' | 'reveal' | 'scores' | 'over';
+export type Item = Duel | Finale | Lines;
+/** 'show': a three-line duel's lines appear on screen one at a time before its vote opens. */
+export type Phase = 'lobby' | 'write' | 'show' | 'vote' | 'reveal' | 'scores' | 'over';
 
 export interface Game {
   code: string;
@@ -92,7 +121,12 @@ export interface Game {
   nextColor: number;
 }
 
-export type Draw = (count: number) => string[];
+/** A dealt prompt: its text, or with its pack's stock answer, or (a final for three-line duels) the house's three lines. */
+export type Dealt = string | { prompt: string; safety?: string; house?: readonly string[] };
+/** Deals `count` prompts; `kind` 'lines' asks for finals for three-line duels (none when no pack has any). */
+export type Draw = (count: number, kind?: 'lines') => Dealt[];
+
+const dealtText = (d: Dealt) => (typeof d === 'string' ? d : d.prompt);
 
 export function newGame(code: string, settings: Settings): Game {
   return { code, settings, players: [], phase: 'lobby', round: 0, items: [], at: 0, deadline: null, paused: null, log: [], recorded: false, nextColor: 0 };
@@ -102,13 +136,17 @@ export const isFinalRound = (g: Game, round = g.round) => round >= g.settings.ro
 export const multiplier = (g: Game) => (isFinalRound(g) ? 3 : g.round);
 export const present = (g: Game) => g.players.filter((p) => !p.kicked);
 export const player = (g: Game, pid: string) => g.players.find((p) => p.pid === pid);
-export const currentItem = (g: Game): Item | undefined => (g.phase === 'vote' || g.phase === 'reveal' ? g.items[g.at] : undefined);
-export const authorsOf = (item: Item) => (item.kind === 'duel' ? [item.a, item.b] : item.authors);
+export const currentItem = (g: Game): Item | undefined => (g.phase === 'show' || g.phase === 'vote' || g.phase === 'reveal' ? g.items[g.at] : undefined);
+export const authorsOf = (item: Item) => (item.kind === 'final' ? item.authors : [item.a, item.b]);
+/** The answer sent is the prompt's stock answer, untouched (decided here, never by the phone). */
+export const isSafety = (item: Item, pid: string) => item.kind === 'duel' && item.safety !== undefined && item.answers[pid] === item.safety;
 
 /** Trims and collapses spaces; empty when nothing usable was typed. */
 export const cleanName = (raw: string) => raw.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
 export const cleanAnswer = (raw: string) => raw.trim().replace(/\s+/g, ' ').slice(0, ANSWER_MAX);
-
+export const cleanLine = (raw: string) => raw.trim().replace(/\s+/g, ' ').slice(0, LINE_MAX);
+/** Up to three lines, blanks dropped. */
+export const cleanLines = (raw: readonly string[]) => raw.slice(0, LINES_EACH).map(cleanLine).filter(Boolean);
 export type JoinResult = { game: Game; pid: string; error?: undefined } | { game: Game; pid?: undefined; error: string };
 
 /**
@@ -117,6 +155,7 @@ export type JoinResult = { game: Game; pid: string; error?: undefined } | { game
  * storage); a name in use by an online phone is refused. Joining mid-game watches until the next round.
  */
 export function join(g: Game, pid: string, rawName: string, online: ReadonlySet<string>): JoinResult {
+  if (pid === HOUSE) return { game: g, error: 'This phone cannot join. Reload the page and try again.' };
   const known = player(g, pid);
   if (known?.kicked) return { game: g, error: 'The host removed you from this game.' };
   if (known) return { game: g, pid };
@@ -147,11 +186,44 @@ export function startRound(g: Game, draw: Draw, now: number, rand: () => number 
   const pids = players.filter((p) => p.active).map((p) => p.pid);
   const final = isFinalRound(g, round);
   if (pids.length < (final ? 2 : MIN_PLAYERS)) return finish({ ...g, players });
-  const prompts = draw(final ? 1 : pids.length);
-  const items: Item[] = final
-    ? [{ kind: 'final', prompt: prompts[0], authors: shuffle(pids, rand), answers: {}, ballots: {} }]
-    : assignPrompts(pids, prompts, rand).map((x) => ({ kind: 'duel', ...x, answers: {}, ballots: {} }));
+  const items = final ? finalItems({ ...g, players }, pids, draw, rand) : duels(pids, draw(pids.length), rand);
   return { ...g, players, round, items, at: 0, phase: 'write', deadline: now + g.settings.answerSecs * 1000, paused: null };
+}
+
+function duels(pids: string[], dealt: Dealt[], rand: () => number): Duel[] {
+  const safety = new Map(dealt.flatMap((d) => (typeof d !== 'string' && d.safety && cleanAnswer(d.safety) ? [[d.prompt, cleanAnswer(d.safety)]] : [])));
+  return assignPrompts(pids, dealt.map(dealtText), rand).map((x) => {
+    const stock = safety.get(x.prompt);
+    return { kind: 'duel', ...x, answers: {}, ballots: {}, ...(stock ? { safety: stock } : {}) };
+  });
+}
+
+/** The final's items: three-line duels when chosen and possible, otherwise one prompt for everyone. */
+function finalItems(g: Game, pids: string[], draw: Draw, rand: () => number): Item[] {
+  const lines = g.settings.final === 'duels' ? lineDuels(g, pids, draw, rand) : null;
+  return lines ?? [{ kind: 'final', prompt: dealtText(draw(1)[0]), authors: shuffle(pids, rand), answers: {}, ballots: {} }];
+}
+
+/**
+ * Random pairs, each with its own final prompt; an odd one out (last place) faces the house.
+ * Null when there are no finals to deal, or fewer than 3 players (nobody would be left to vote).
+ */
+function lineDuels(g: Game, pids: string[], draw: Draw, rand: () => number): Lines[] | null {
+  if (pids.length < MIN_PLAYERS) return null;
+  const { pairs, alone } = pairDuels(pids, (pid) => player(g, pid)?.score ?? 0, rand);
+  const finals = draw(pairs.length + (alone ? 1 : 0), 'lines').flatMap((d) => {
+    const house = typeof d === 'string' ? [] : cleanLines(d.house ?? []);
+    return house.length ? [{ prompt: dealtText(d), house }] : [];
+  });
+  if (!finals.length) return null;
+  const pick = (i: number) => finals[i % finals.length];
+  const items: Lines[] = pairs.map(([a, b], i) => ({ kind: 'lines', prompt: pick(i).prompt, a, b, answers: {}, ballots: {} }));
+  if (alone) {
+    const f = pick(pairs.length);
+    const [a, b] = shuffle([alone, HOUSE], rand);
+    items.push({ kind: 'lines', prompt: f.prompt, a, b, answers: { [HOUSE]: f.house }, ballots: {} });
+  }
+  return shuffle(items, rand);
 }
 
 /** The prompts a player still has to answer this round (indices into items). */
@@ -165,9 +237,18 @@ export const promptCount = (g: Game, pid: string) => g.items.filter((item) => au
 export function answer(g: Game, pid: string, index: number, raw: string): Game {
   const item = g.items[index];
   const text = cleanAnswer(raw);
-  if (g.phase !== 'write' || !item || !text || !authorsOf(item).includes(pid) || pid in item.answers) return g;
+  if (g.phase !== 'write' || !item || item.kind === 'lines' || !text || !authorsOf(item).includes(pid) || pid in item.answers) return g;
   if (player(g, pid)?.kicked) return g;
-  return { ...g, items: g.items.map((x, i) => (i === index ? { ...x, answers: { ...x.answers, [pid]: text } } : x)) };
+  return { ...g, items: g.items.map((x, i) => (i === index ? ({ ...x, answers: { ...x.answers, [pid]: text } } as Item) : x)) };
+}
+
+/** A player's lines for their three-line duel: at least one non-blank line. */
+export function answerLines(g: Game, pid: string, index: number, raw: readonly string[]): Game {
+  const item = g.items[index];
+  const lines = cleanLines(raw);
+  if (g.phase !== 'write' || item?.kind !== 'lines' || !lines.length || !authorsOf(item).includes(pid) || pid in item.answers) return g;
+  if (player(g, pid)?.kicked) return g;
+  return { ...g, items: g.items.map((x, i) => (i === index ? { ...item, answers: { ...item.answers, [pid]: lines } } : x)) };
 }
 
 /** Everyone still in the game who has a prompt has answered it. */
@@ -179,17 +260,17 @@ export function writingDone(g: Game): boolean {
 /** Who may vote on an item: everyone present except its authors (final: everyone with someone else's answer to pick). */
 export function votersFor(g: Game, item: Item): string[] {
   const pids = present(g).map((p) => p.pid);
-  if (item.kind === 'duel') return pids.filter((pid) => pid !== item.a && pid !== item.b);
+  if (item.kind !== 'final') return pids.filter((pid) => pid !== item.a && pid !== item.b);
   return pids.filter((pid) => votableFinal(item, pid).length > 0);
 }
 
 /** Final-round answers a player may vote for: real answers that are not their own. */
 export const votableFinal = (item: Finale, pid: string) => item.authors.filter((a) => a !== pid && item.answers[a] != null);
 
-/** A vote for one side of the current head-to-head; never for a side with no answer. */
+/** A vote for one side of the current head-to-head or three-line duel; never for a side with no answer. */
 export function vote(g: Game, pid: string, choice: 'a' | 'b'): Game {
   const item = currentItem(g);
-  if (g.phase !== 'vote' || item?.kind !== 'duel' || pid in item.ballots || !votersFor(g, item).includes(pid)) return g;
+  if (g.phase !== 'vote' || !item || item.kind === 'final' || pid in item.ballots || !votersFor(g, item).includes(pid)) return g;
   if (item.answers[item[choice]] == null) return g;
   return withItem(g, { ...item, ballots: { ...item.ballots, [pid]: item[choice] } });
 }
@@ -210,9 +291,10 @@ export function voteFinal(g: Game, pid: string, byPosition: Record<string, numbe
 
 /** An answer or vote from a phone, applied only if it is for the round and prompt now in play. */
 export function fromPhone(g: Game, pid: string, msg: ToHost): Game {
-  if (msg.t !== 'answer' && msg.t !== 'vote' && msg.t !== 'votes') return g;
+  if (msg.t !== 'answer' && msg.t !== 'lines' && msg.t !== 'vote' && msg.t !== 'votes') return g;
   if (msg.r !== g.round) return g;
   if (msg.t === 'answer') return answer(g, pid, msg.i, msg.text);
+  if (msg.t === 'lines') return answerLines(g, pid, msg.i, msg.lines);
   if (msg.at !== g.at) return g;
   return msg.t === 'vote' ? vote(g, pid, msg.c) : voteFinal(g, pid, msg.v);
 }
@@ -237,7 +319,7 @@ export function tick(g: Game, now: number, online: ReadonlySet<string>, draw: Dr
   const done =
     (g.phase === 'write' && writingDone(g)) ||
     (g.phase === 'vote' && votingDone(g, online)) ||
-    ((g.phase === 'write' || g.phase === 'vote' || g.phase === 'reveal' || g.phase === 'scores') && timeUp(g, now));
+    ((g.phase === 'write' || g.phase === 'show' || g.phase === 'vote' || g.phase === 'reveal' || g.phase === 'scores') && timeUp(g, now));
   return done ? step(g, now, draw) : g;
 }
 
@@ -246,6 +328,7 @@ export function step(g: Game, now: number, draw: Draw): Game {
   const live = g.paused !== null ? { ...g, paused: null } : g;
   switch (live.phase) {
     case 'write': return openVote(closeWriting(live), 0, now);
+    case 'show': return { ...live, phase: 'vote', deadline: now + voteLength(live, live.items[live.at]) };
     case 'vote': return closeVote(live, now);
     case 'reveal':
       if (live.at + 1 < live.items.length) return openVote(live, live.at + 1, now);
@@ -260,24 +343,49 @@ function closeWriting(g: Game): Game {
   const items = g.items.map((item) => {
     const answers = { ...item.answers };
     for (const pid of authorsOf(item)) if (!(pid in answers)) answers[pid] = null;
-    return { ...item, answers };
+    return { ...item, answers } as Item;
   });
   return { ...g, items };
 }
 
-/** Shows prompt `at` for voting; a prompt nobody can vote on goes straight to its reveal. */
+/**
+ * Shows prompt `at` for voting (a three-line duel first shows its lines one at a time); a prompt
+ * nobody can vote on goes straight to its reveal.
+ */
 function openVote(g: Game, at: number, now: number): Game {
   const item = g.items[at];
   const real = authorsOf(item).filter((pid) => item.answers[pid] != null);
   const next = { ...g, at, phase: 'vote' as const, paused: null };
   if (real.length === 0 || votersFor(g, item).length === 0) return closeVote(next, now);
-  const secs = item.kind === 'final' ? g.settings.voteSecs * 2 : g.settings.voteSecs;
-  return { ...next, deadline: now + secs * 1000 };
+  if (item.kind === 'lines') return { ...next, phase: 'show', deadline: now + showLength(item) };
+  return { ...next, deadline: now + voteLength(g, item) };
+}
+
+/** Head-to-head votes get the set time; the final's (either kind) twice that. */
+const voteLength = (g: Game, item: Item | undefined) => g.settings.voteSecs * 1000 * (item?.kind === 'duel' ? 1 : 2);
+
+/** How many lines (or "(no answer)" placeholders) each side shows. */
+export const sideSizes = (item: Lines): [number, number] => [item.a, item.b].map((pid) => Math.max(1, item.answers[pid]?.length ?? 0)) as [number, number];
+
+/** The line-by-line showing: a step for the prompt, one per line, one to read the last line. */
+export const showLength = (item: Lines) => (sideSizes(item)[0] + sideSizes(item)[1] + 2) * LINE_STEP_MS;
+
+/** How many lines of each side are on screen `elapsed` ms into the showing: side A's first, then B's. */
+export function linesShown(sizes: readonly [number, number], elapsed: number): [number, number] {
+  const n = Math.max(0, Math.floor(elapsed / LINE_STEP_MS));
+  return [Math.min(n, sizes[0]), Math.min(Math.max(0, n - sizes[0]), sizes[1])];
+}
+
+function scoreItem(g: Game, item: Item): Result {
+  if (item.kind === 'final') return scoreFinal(item.authors, item.ballots);
+  if (item.kind === 'lines') return scoreLines(item.a, item.b, item.ballots, HOUSE);
+  const r = scoreDuel(item.a, item.b, item.ballots, multiplier(g));
+  return halve(r, [item.a, item.b].filter((pid) => isSafety(item, pid)));
 }
 
 function closeVote(g: Game, now: number): Game {
   const item = g.items[g.at];
-  const result = item.kind === 'duel' ? scoreDuel(item.a, item.b, item.ballots, multiplier(g)) : scoreFinal(item.authors, item.ballots);
+  const result = scoreItem(g, item);
   const players = g.players.map((p) => ({ ...p, score: p.score + (result.points[p.pid] ?? 0) }));
   const next = withItem({ ...g, players }, { ...item, result } as Item);
   const ms = item.kind === 'final' ? FINAL_REVEAL_MS : REVEAL_MS;
@@ -289,8 +397,16 @@ function logLine(g: Game, item: Item, result: Result): string {
     .filter((pid) => item.answers[pid] != null)
     .sort((x, y) => result.votes[y] - result.votes[x])[0];
   if (!best) return `${item.prompt} → nobody answered`;
-  return `${item.prompt} → “${item.answers[best]}” (${player(g, best)?.name ?? '?'}, ${result.votes[best]} ${result.votes[best] === 1 ? 'vote' : 'votes'})`;
+  return `${item.prompt} → “${answerText(item, best)}” (${nameOf(g, best)}, ${result.votes[best]} ${result.votes[best] === 1 ? 'vote' : 'votes'})`;
 }
+
+/** An answer as one line of text (three-line answers joined with slashes); NO_ANSWER when none. */
+export function answerText(item: Item, pid: string): string {
+  const got = item.answers[pid];
+  return got == null ? NO_ANSWER : Array.isArray(got) ? got.join(' / ') : got;
+}
+
+export const nameOf = (g: Game, pid: string) => (pid === HOUSE ? HOUSE_NAME : player(g, pid)?.name ?? '?');
 
 const withItem = (g: Game, item: Item): Game => ({ ...g, items: g.items.map((x, i) => (i === g.at ? item : x)) });
 
@@ -328,7 +444,8 @@ export function timerLength(g: Game): number {
   const item = g.items[g.at];
   switch (g.phase) {
     case 'write': return g.settings.answerSecs * 1000;
-    case 'vote': return g.settings.voteSecs * 1000 * (item?.kind === 'final' ? 2 : 1);
+    case 'show': return item?.kind === 'lines' ? showLength(item) : 0;
+    case 'vote': return voteLength(g, item);
     case 'reveal': return item?.kind === 'final' ? FINAL_REVEAL_MS : REVEAL_MS;
     case 'scores': return SCORES_MS;
     default: return 0;

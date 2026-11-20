@@ -1,6 +1,8 @@
 // Device motion for the forehead game: permission, a normalised gravity stream, and the
 // sign fix for platforms that report gravity with inverted axes.
 
+import type { MotionSample, Vec3 } from './pitch';
+
 export type Gravity = [number, number, number];
 
 type PermissionFn = () => Promise<'granted' | 'denied' | 'default'>;
@@ -75,6 +77,26 @@ export function watchGravity(onSample: (g: Gravity, t: number) => void, sign: 1 
     const a = e.accelerationIncludingGravity;
     if (!a || a.x == null || a.y == null || a.z == null) return;
     onSample([a.x * sign, a.y * sign, a.z * sign], e.timeStamp || performance.now());
+  };
+  addEventListener('devicemotion', handler);
+  return () => removeEventListener('devicemotion', handler);
+}
+
+/**
+ * Streams every devicemotion reading: gravity, gravity-free acceleration and rotation rate
+ * (each null when the browser leaves it out). `sign` applies to the acceleration axes only.
+ */
+export function watchMotion(onSample: (s: MotionSample) => void, sign: 1 | -1 = 1): () => void {
+  const vec = (v: { x: number | null; y: number | null; z: number | null } | null, k: number): Vec3 | null =>
+    v && v.x != null && v.y != null && v.z != null ? [v.x * k, v.y * k, v.z * k] : null;
+  const handler = (e: DeviceMotionEvent) => {
+    const g = vec(e.accelerationIncludingGravity, sign);
+    if (!g) return;
+    const r = e.rotationRate;
+    // A missing field becomes NaN: the tracker still uses the others where its layout needs only those.
+    const rot: Vec3 | null = r && (r.alpha != null || r.beta != null || r.gamma != null)
+      ? [r.alpha ?? NaN, r.beta ?? NaN, r.gamma ?? NaN] : null;
+    onSample({ g, lin: vec(e.acceleration, sign), rot, t: e.timeStamp || performance.now() });
   };
   addEventListener('devicemotion', handler);
   return () => removeEventListener('devicemotion', handler);

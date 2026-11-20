@@ -1,11 +1,11 @@
 <script lang="ts">
   import Button from '../../components/Button.svelte';
   import Popup from '../../components/Popup.svelte';
-  import Avatar from './Avatar.svelte';
-  import Qr from './Qr.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
+  import Qr from '../../components/room/Qr.svelte';
   import { MAX_PLAYERS, MIN_PLAYERS, canStart, present, type Game } from './logic';
   import { packNames } from './host.svelte';
-  import { brokerLabel } from './broker';
+  import { brokerLabel } from '../../lib/room/broker';
 
   // The room before the game: how to join (QR, address, code), who is in, settings, Start.
   let { game, online, link, onstart, onkick, onsettings, onconnection }: {
@@ -22,7 +22,7 @@
   const need = $derived(Math.max(0, MIN_PLAYERS - players.length));
   const site = location.host + location.pathname.replace(/\/$/, '');
   const s = $derived(game.settings);
-  const summary = $derived(`${s.rounds} rounds · ${s.answerSecs} s to write · ${s.voteSecs} s to vote · ${packNames(s.packIds).join(', ') || 'Classic'}`);
+  const summary = $derived(`${s.rounds} rounds${s.final === 'duels' ? ' (three-line duel final)' : ''} · ${s.answerSecs} s to write · ${s.voteSecs} s to vote · ${packNames(s.packIds).join(', ') || 'Classic'}`);
   let kicking = $state<{ pid: string; name: string } | null>(null);
   // A tile that has just appeared ignores taps for 400 ms, so a double tap never kicks.
   const shownAt = new Map<string, number>();

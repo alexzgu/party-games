@@ -23,6 +23,6 @@ describe('parsePastedWords', () => {
   it('dedupes against the deck being added to and within the paste', () => {
     const r = parsePastedWords('Pizza Rat\npizza rat\nHot Dog\nHOT DOG!', ['Pizza Rat']);
     expect(r.items).toEqual(['Hot Dog']);
-    expect(r.skipped).toEqual(['already in the deck', 'already in the deck', 'repeated']);
+    expect(r.skipped).toEqual(['already in the pack', 'already in the pack', 'repeated']);
   });
 });

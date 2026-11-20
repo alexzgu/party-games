@@ -1,5 +1,6 @@
 <script lang="ts">
   import ListTools from '../../components/ListTools.svelte';
+  import PackFile from '../../components/PackFile.svelte';
   import { customSongs, type SongPack } from '../../lib/content';
   import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
@@ -7,12 +8,20 @@
 
   // Multi-select pack tiles. Tapping a tile ticks it; the pencil opens the pack to see, edit or
   // delete its songs. Search and sort only change what is shown: hidden ticks still count.
-  let { packs, selected = $bindable(), onnew, onedit }: {
+  let { packs, selected = $bindable(), onnew, onedit, onimported }: {
     packs: SongPack[];
     selected: string[];
     onnew: () => void;
     onedit: (packId: string) => void;
+    /** After an import: the parent reloads `packs`. */
+    onimported: () => void;
   } = $props();
+
+  /** Imported packs are ticked, like a pack just made. */
+  function imported(ids: string[]) {
+    selected = [...ids.filter((id) => !selected.includes(id)), ...selected];
+    onimported();
+  }
 
   // Taps this soon after the list appears are the tail of the tap that opened it.
   const shownAt = performance.now();
@@ -59,6 +68,7 @@
       </button>
     </li>
   </ul>
+  <PackFile game="song" onimported={imported} />
 </section>
 
 <style>

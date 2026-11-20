@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Avatar from './Avatar.svelte';
-  import Timer from './Timer.svelte';
+  import Avatar from '../../components/room/Avatar.svelte';
+  import Timer from '../../components/room/Timer.svelte';
   import Voters from './Voters.svelte';
   import { FINAL_VOTES_EACH, player, votersFor, type Finale, type Game } from './logic';
   import { FINAL_VOTE_POINTS } from './scoring';
@@ -13,7 +13,7 @@
 
   const item = $derived(game.items[game.at] as Finale);
   const reveal = $derived(game.phase === 'reveal' && !!item.result);
-  const voters = $derived(votersFor(game, item).map((pid) => player(game, pid)!).filter(Boolean));
+  const voters = $derived(votersFor(game, item).map((pid) => { const p = player(game, pid)!; return { name: p.name, color: p.color, done: pid in item.ballots, away: !online.has(pid) }; }));
   const cards = $derived.by(() => {
     const list = item.authors
       .filter((pid) => item.answers[pid] != null)
@@ -49,7 +49,7 @@
     <footer class="foot">
       <div class="voting">
         <p class="call">Spread your {FINAL_VOTES_EACH} votes on your phone!</p>
-        <Voters {voters} {online} voted={(pid) => pid in item.ballots} />
+        <Voters people={voters} />
       </div>
       <Timer {left} {total} paused={game.paused !== null} size={88} />
     </footer>

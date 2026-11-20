@@ -60,7 +60,7 @@ describe('board editor', () => {
   });
   it('tidies a board for saving: trims text and names blank categories', () => {
     const b = e.tidyBoard({ ...e.renameCategory(filled(), 1, '  '), name: '  ', blurb: ' b ', custom: true });
-    expect(b.name).toBe('My board');
+    expect(b.name).toBe('My pack');
     expect(b.categories[1].name).toBe('Category 2');
     expect('custom' in b).toBe(false);
   });

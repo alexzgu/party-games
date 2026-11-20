@@ -38,7 +38,7 @@
         <button class="card" style:--accent={g.accent} onclick={() => open(g.id)}>
           <span class="emoji" aria-hidden="true">{g.emoji}</span>
           <span class="txt">
-            <span class="name">{g.name}</span>
+            <span class="name" class:long={g.name.length > 13}>{g.name}</span>
             <span class="players">{g.players}</span>
           </span>
           <svg class="chev" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -91,7 +91,9 @@
   .emoji { font-size: 2.6rem; flex: none; filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--shade) 40%, transparent)); }
   .txt { display: flex; flex-direction: column; gap: 2px; flex: 1; }
   .name { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; color: var(--accent); letter-spacing: -0.02em; }
-  .players { color: var(--text-faint); font-size: 0.85rem; margin-top: 2px; }
+  /* A long name (Inn Co Hear Ant) a size down, so it stays on one line on a phone. */
+  .name.long { font-size: min(1.32rem, 6vw); white-space: nowrap; }
+  .players { color: var(--text-dim); font-weight: 700; font-size: 0.92rem; margin-top: 2px; }
   .chev { color: var(--text-faint); flex: none; }
   .install { margin-top: auto; }
   .install-btn { width: 100%; min-height: var(--tap); border-radius: var(--r-md); border: 1.5px dashed var(--line-strong); background: transparent; color: var(--text-dim); font-weight: 600; }
