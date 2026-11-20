@@ -69,6 +69,7 @@
       bind:value={settings.tiltSensitivity}
       onchange={saveSettings}
     />
+    <p class="faint">How far the phone must tip forward (got it) or back (pass) to count, measured from how you held it when the round started. Small nod: about 20–25°, a quick dip of the head. Medium: about 30–40°. Big tilt: about 40–55°, for players whose nods score by accident.</p>
   </section>
 
   <section class="stack">

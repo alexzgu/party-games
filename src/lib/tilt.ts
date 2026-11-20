@@ -3,8 +3,9 @@
 //
 // theta = asin(g_z / |g|): the screen-normal pitch. 0° with the phone upright on a forehead,
 // +90° screen to the ceiling, -90° screen to the floor. Gestures are measured from the
-// player's own resting pitch (the baseline caught while the phone sat steady before the
-// countdown), not from true vertical.
+// player's own resting pitch, not from true vertical: it starts as the pitch caught while the
+// phone sat steady before the countdown, then follows where the phone has been over the last
+// two seconds, so a head that slowly drifts never makes one side easier than the other.
 
 export type TiltEvent = 'correct' | 'pass';
 export type TiltSensitivity = 'small' | 'medium' | 'big';
@@ -38,6 +39,23 @@ export const BASELINE_MAX_DEG = 25;
  */
 export const STILL_DEG = 4;
 export const STILL_MS = 300;
+/**
+ * The rolling baseline: while armed, the baseline is the median pitch over the last
+ * ROLL_MS, leaving out the newest LAG_MS so a quick nod stands out against where the head
+ * just was, and only once ROLL_MIN_MS of samples have built up since the last score or
+ * re-base. Frozen from a score until the phone re-arms, so a held tilt can never drag it
+ * along and make the way back count as the opposite gesture. A tilt slower than about
+ * 20° a second is absorbed as drift and does not score.
+ */
+export const ROLL_MS = 2000;
+export const LAG_MS = 250;
+export const ROLL_MIN_MS = 500;
+
+function median(xs: number[]): number {
+  const s = xs.slice().sort((a, b) => a - b);
+  const m = s.length >> 1;
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
 
 function pitchDeg(u2: number): number {
   return (Math.asin(Math.max(-1, Math.min(1, u2))) * 180) / Math.PI;
@@ -51,6 +69,8 @@ export class TiltDetector {
   private last: TiltEvent | null = null;
   private stillRef = NaN;
   private stillSince = 0;
+  /** Recent samples for the rolling baseline, cleared on a score and on a re-base. */
+  private recent: { t: number; p: number }[] = [];
   private readonly fire: TiltThresholds;
 
   /** `baselineDeg`: the player's resting pitch; 0 (true vertical) when none was caught. */
@@ -65,6 +85,7 @@ export class TiltDetector {
     const mag = Math.hypot(g[0], g[1], g[2]);
     if (!(mag > 1)) return null; // garbage or missing sample
     const pitch = pitchDeg(g[2] / mag);
+    if (this.armed) this.roll(pitch, nowMs);
     const rel = pitch - this.base;
     if (!(Math.abs(pitch - this.stillRef) <= STILL_DEG)) {
       this.stillRef = pitch;
@@ -87,9 +108,20 @@ export class TiltDetector {
       if (this.settledElsewhere(pitch, rel, nowMs)) {
         this.base = pitch;
         this.armed = true;
+        this.recent = [];
       }
     }
     return null;
+  }
+
+  /** Moves the baseline to the median of the last ROLL_MS, newest LAG_MS left out. */
+  private roll(pitch: number, nowMs: number): void {
+    this.recent.push({ t: nowMs, p: pitch });
+    while (this.recent.length && this.recent[0].t < nowMs - ROLL_MS) this.recent.shift();
+    const settled = this.recent.filter((s) => s.t <= nowMs - LAG_MS);
+    if (!settled.length || settled[settled.length - 1].t - settled[0].t < ROLL_MIN_MS - LAG_MS) return;
+    const m = median(settled.map((s) => s.p));
+    this.base = Math.max(-BASELINE_MAX_DEG, Math.min(BASELINE_MAX_DEG, m));
   }
 
   private settledElsewhere(pitch: number, rel: number, nowMs: number): boolean {
@@ -104,6 +136,7 @@ export class TiltDetector {
     this.neutralSince = null;
     this.last = null;
     this.stillRef = NaN;
+    this.recent = [];
   }
 
   private fired(e: TiltEvent): TiltEvent {
@@ -111,6 +144,7 @@ export class TiltDetector {
     this.neutralSince = null;
     this.last = e;
     this.stillRef = NaN;
+    this.recent = [];
     return e;
   }
 }

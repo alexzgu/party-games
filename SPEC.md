@@ -105,8 +105,11 @@ shout clues; the holder tilts down for "got it", up for "pass".
 - **Results**: score headline, every word shown marked ✓/✗ and tappable to fix mis-tilts.
   Play again (same settings, next player), change decks, home. Round scores of this session
   listed so the group can compare.
-- Tilt is measured from the player's resting pose (mean pitch while held steady before the
-  countdown, clamped to ±25°; 0 after a tap start). Settings "Tilt needed to score": Small nod
+- Tilt is measured from where the phone has been over the last 2 seconds (the median pitch,
+  leaving out the newest quarter second, clamped to ±25°), starting from the pose held steady
+  before the countdown (0 after a tap start). That reference is frozen from a score until the
+  phone settles again, so a held tilt never scores twice or counts the way back. A tilt slower
+  than about 20° a second is treated as drift and does not score. Settings "Tilt needed to score": Small nod
   (default, 22° down / 26° up), Medium (32/40), Big tilt (40/55, the old Android app's values).
   After a score the phone must settle near rest for 150 ms before the next one counts.
   Constants in `src/lib/tilt.ts`.
