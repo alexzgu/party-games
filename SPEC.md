@@ -111,15 +111,16 @@ shout clues; the holder tilts down for "got it", up for "pass".
   normal that reads, for ~100 ms, as a big tilt the other way, so got-it nods scored as passes.
   Browsers disagree on which `rotationRate` field holds which axis (Firefox on Android puts the
   nod on `beta`), so each phone learns its layout from its own motion (whichever candidate
-  tracks gravity best while the phone is on a forehead) and keeps it. With no gyroscope, the
+  tracks gravity best while the phone is on a forehead) and keeps it; Firefox on Android starts
+  from its recorded layout. With no gyroscope, the
   browser's gravity estimate (`accelerationIncludingGravity` minus `acceleration`) is used.
 - Tilt is measured from where the phone has been over the last 2 seconds (the median pitch,
   leaving out the newest quarter second, clamped to ±25°), starting from the pose held steady
   before the countdown (0 after a tap start). That reference is frozen from a score until the
   phone settles again, so a held tilt never scores twice or counts the way back. A score needs
-  the angle (default 25° either way) and speed: the pitch must have turned at least 80°/s in the
-  last 0.4 s (recorded tilts: 170–840°/s; talking, laughing, looking around, leaning back: under
-  ~105°/s). After a score the phone must settle near rest for 150 ms, or hold still at least
+  the angle and speed: the pitch must have turned briskly in the last 0.4 s. Until a player
+  calibrates: 25° down, 20° up, 150°/s, the owner's calibration from 64 recorded tilts (they
+  turned at 175–1100°/s; talking, laughing, looking around, leaning back stayed under ~105°/s). After a score the phone must settle near rest for 150 ms, or hold still at least
   halfway back from the tilt, before the next one counts. Constants in `src/lib/tilt.ts`.
 - **Calibrate tilt** (`#/forehead/calibrate`, from Setup and Settings): the phone, on the
   forehead, says "Down" or "Up"; each practice tilt it catches beeps and counts; as many as the

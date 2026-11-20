@@ -6,7 +6,7 @@ import {
   upEdge, UprightTracker, type Gravity,
 } from '../../lib/motion';
 import { load, save } from '../../lib/storage';
-import { PitchTracker, GYRO_LAYOUTS, type GyroLayout, type MotionSample } from '../../lib/pitch';
+import { PitchTracker, GYRO_LAYOUTS, likelyLayout, type GyroLayout, type MotionSample } from '../../lib/pitch';
 
 export const motion = $state({
   live: false, denied: false, angle: screenAngle() as number, edge: 0 as 0 | 90 | 180 | 270,
@@ -40,7 +40,7 @@ const SIGN_SAMPLE_MS = 400;
 /** The gyroscope layout this phone's browser was found to use; it survives reloads. */
 function savedLayout(): GyroLayout | null {
   const l = load<GyroLayout | null>('forehead:gyroLayout', null);
-  return GYRO_LAYOUTS.find((x) => x.map === l?.map && x.sign === l?.sign) ?? null;
+  return GYRO_LAYOUTS.find((x) => x.map === l?.map && x.sign === l?.sign) ?? likelyLayout(navigator.userAgent);
 }
 let tracker = new PitchTracker(savedLayout());
 

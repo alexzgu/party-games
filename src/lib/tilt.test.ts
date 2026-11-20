@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { BASELINE_MAX_DEG, DEFAULT_TILT, SteadyDetector, TiltDetector, type TiltThresholds } from './tilt';
+import { BASELINE_MAX_DEG, SteadyDetector, TiltDetector, type TiltThresholds } from './tilt';
 import { UprightTracker, axisSignFromLookingAt, toScreen, uprightRotation, type Gravity } from './motion';
 
 const G = 9.81;
-/** The three fixed sizes the detector had before calibration; the behaviour at each is unchanged. */
+/**
+ * The three fixed sizes the detector had before calibration, with a gentle speed check (80°/s)
+ * so these hand-made nods (26° in 250 ms is 104°/s) still count; the behaviour at each is unchanged.
+ */
+const GENTLE = 80;
 const SIZE: Record<'small' | 'medium' | 'big', TiltThresholds> = {
-  small: { down: 22, up: 26, rate: DEFAULT_TILT.rate },
-  medium: { down: 32, up: 40, rate: DEFAULT_TILT.rate },
-  big: { down: 40, up: 55, rate: DEFAULT_TILT.rate },
+  small: { down: 22, up: 26, rate: GENTLE },
+  medium: { down: 32, up: 40, rate: GENTLE },
+  big: { down: 40, up: 55, rate: GENTLE },
 };
 /** Spec-convention gravity for a phone sideways (right edge up) pitched `deg` screen-up. */
 const pitched = (deg: number): Gravity => {

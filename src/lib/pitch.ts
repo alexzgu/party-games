@@ -30,6 +30,15 @@ export const GYRO_LAYOUTS: GyroLayout[] = [
   { map: 'spec', sign: 1 }, { map: 'spec', sign: -1 }, { map: 'xyz', sign: 1 }, { map: 'xyz', sign: -1 },
 ];
 
+/**
+ * The layout to start from before this phone has shown its own: Firefox on Android reports the
+ * nod on `beta` (recorded 2026-11-20). Other browsers start unknown and learn it within the first
+ * few tilts. A wrong start is replaced as soon as another layout clearly tracks gravity better.
+ */
+export function likelyLayout(userAgent: string): GyroLayout | null {
+  return /Firefox\//.test(userAgent) && /Android/.test(userAgent) ? { map: 'xyz', sign: 1 } : null;
+}
+
 /** Blend time constant: the gyroscope rules faster changes, gravity slower ones. */
 export const BLEND_S = 1;
 /** Layout learning forgets evidence older than about this. */

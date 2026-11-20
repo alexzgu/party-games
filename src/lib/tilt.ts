@@ -19,8 +19,12 @@ export type TiltEvent = 'correct' | 'pass';
  */
 export interface TiltThresholds { down: number; up: number; rate: number }
 
-/** Used until the player calibrates. */
-export const DEFAULT_TILT: TiltThresholds = { down: 25, up: 25, rate: 80 };
+/**
+ * Used until a player calibrates: the owner's calibration from 64 recorded practice tilts
+ * (Tilt lab, 2026-11-20; median 81° down / 57° up, slowest 175°/s). A player who tilts more
+ * gently than that should calibrate.
+ */
+export const DEFAULT_TILT: TiltThresholds = { down: 25, up: 20, rate: 150 };
 export const RATE_WINDOW_MS = 400;
 /**
  * Re-arms only after the phone is back within this fraction of each side's threshold of the
