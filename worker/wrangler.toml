@@ -1,0 +1,23 @@
+# The wizard server for Jerk Box's "magic words" route. Deploy from this folder:
+#   npx wrangler@4.165.0 deploy
+# Secrets (set in the Cloudflare dashboard or with `npx wrangler@4.165.0 secret put <NAME>`,
+# never written here or anywhere in the repo):
+#   ANTHROPIC_API_KEY  the separate, spend-limited Anthropic key the server uses
+#   PARTY_PHRASES      the accepted magic words, one phrase per line
+name = "jerkbox-wizard"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[vars]
+# Sites allowed to call from a browser: the published site, `npm run dev` and `npm run preview`.
+ALLOWED_ORIGINS = "https://alexzgu.github.io,http://localhost:5173,http://localhost:4173"
+
+[[durable_objects.bindings]]
+name = "LIMITS"
+class_name = "Limits"
+
+# SQLite-backed Durable Object: the kind the free plan includes.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Limits"]

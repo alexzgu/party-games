@@ -8,7 +8,7 @@
   import PasteList from '../../components/PasteList.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import WizardEffort from '../../components/WizardEffort.svelte';
-  import { hasKey } from '../../lib/claude';
+  import { hasKey, NOT_HERE } from '../../lib/claude';
   import { customSpectra, slugify, type Spectrum, type SpectrumPack } from '../../lib/content';
   import { generatePairs, parsePastedPairs, THEME_CHIPS } from './generate';
   import { cardId } from './state';
@@ -159,7 +159,7 @@
     <PasteList label="One per line: Left | Right" placeholder={'Cold | Hot\nUnderrated | Overrated\nCheap | Expensive'}
       parse={(t) => parsePastedPairs(t, savedPack?.cards ?? [])} onadd={pasted} bind:text={pasteText} />
   {:else if step === 'theme' && !hasKey()}
-    <p class="nokey">Fizzwick isn't on this phone yet: open the invite link the host sent you.</p>
+    <p class="nokey">{NOT_HERE}</p>
   {:else if step === 'theme'}
     <form class="stack" onsubmit={(e) => { e.preventDefault(); startFresh(theme); }}>
       <label class="stack">

@@ -1,0 +1,127 @@
+// The wizard server: a friend's phone trades a party phrase for a session token (POST /redeem),
+// then uses the server as its Anthropic base URL (POST /v1/messages). The server checks the
+// token and the request, reserves the daily allowance, and forwards the request with its own
+// key, streaming the answer back. Nothing here logs a phrase, token, key or body.
+import { addressLabel, deriveKeys, type Keys } from './crypto';
+import type { Env, ExecutionContextLike } from './env';
+import { corsHeaders, errorResponse, limitResponse, originAllowed, parseOrigins, preflight } from './http';
+import { limit } from './limitsObject';
+import { currentPhraseIds, matchPhrase, MAX_PHRASE_LENGTH } from './phrase';
+import { newSession, signToken, tokenFrom, verifyToken, type Verdict } from './token';
+import { apiVersion, checkBetas, checkMessageBody, MAX_BODY_BYTES, readLimited } from './validate';
+
+export { Limits } from './limitsObject';
+
+const ANTHROPIC_MESSAGES = 'https://api.anthropic.com/v1/messages';
+const MAX_REDEEM_BYTES = 1024;
+type Cors = Record<string, string>;
+
+type Problem = Exclude<Verdict, { ok: true }>['reason'];
+const SESSION_PROBLEM: Record<Problem, string> = {
+  malformed: 'This phone has no valid wizard pass. Say the magic words again.',
+  signature: 'This phone has no valid wizard pass. Say the magic words again.',
+  expired: 'The wizard pass has expired. Say the magic words again.',
+  revoked: 'Those magic words no longer work.',
+};
+
+/**
+ * `x-wizard-reason` tells the app which words to use: on 401 `expired`, `revoked` or `invalid`;
+ * on 429 `guesses`, `redeems`, `phone` or `party`.
+ */
+const REASON = 'x-wizard-reason';
+const reasonFor = (p: Problem) => (p === 'expired' || p === 'revoked' ? p : 'invalid');
+
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContextLike): Promise<Response> {
+    const allowed = parseOrigins(env.ALLOWED_ORIGINS);
+    const origin = request.headers.get('origin');
+    const cors = corsHeaders(origin, allowed);
+    const path = new URL(request.url).pathname;
+    if (path !== '/redeem' && path !== '/v1/messages') return errorResponse(404, 'not_found_error', 'Nothing here.', cors);
+    if (request.method === 'OPTIONS') return preflight(request, allowed);
+    // A browser on another site gets nothing; tools without an Origin still meet every other check.
+    if (origin !== null && !originAllowed(origin, allowed)) return errorResponse(403, 'permission_error', 'This site may not use the wizard server.', cors);
+    if (request.method !== 'POST') return errorResponse(405, 'invalid_request_error', 'Use POST.', { ...cors, Allow: 'POST, OPTIONS' });
+    if (!env.ANTHROPIC_API_KEY) return errorResponse(503, 'api_error', 'The wizard server is not set up yet.', cors);
+    const keys = await deriveKeys(env.ANTHROPIC_API_KEY);
+    return path === '/redeem' ? redeem(request, env, keys, cors) : messages(request, env, ctx, keys, cors);
+  },
+};
+
+async function redeem(request: Request, env: Env, keys: Keys, cors: Cors): Promise<Response> {
+  const raw = await readLimited(request, MAX_REDEEM_BYTES);
+  if (raw === null) return errorResponse(413, 'request_too_large', 'That is far too long for magic words.', cors);
+  let phrase: unknown;
+  try {
+    phrase = JSON.parse(raw)?.phrase;
+  } catch {
+    /* answered below */
+  }
+  if (typeof phrase !== 'string' || !phrase.trim() || phrase.length > MAX_PHRASE_LENGTH) {
+    return errorResponse(400, 'invalid_request_error', 'Send {"phrase": "<the magic words>"}.', cors);
+  }
+  const address = await addressLabel(request.headers.get('cf-connecting-ip') ?? 'unknown');
+  const slot = await limit(env.LIMITS, { op: 'guess', address });
+  if (!slot.ok) return limitResponse('Too many wrong guesses. Wait, then try again.', slot.retryAfter, { ...cors, [REASON]: 'guesses' });
+  const pid = await matchPhrase(keys, phrase, env.PARTY_PHRASES);
+  if (!pid) return errorResponse(401, 'authentication_error', 'Those are not the magic words.', cors);
+  const counted = await limit(env.LIMITS, { op: 'redeemed', address, at: slot.at ?? 0 });
+  if (!counted.ok) return limitResponse('The magic words were said too often from here today.', counted.retryAfter, { ...cors, [REASON]: 'redeems' });
+  const session = newSession(pid, Date.now());
+  const token = await signToken(keys.session, session);
+  return Response.json({ token, expires: session.exp }, { headers: { ...cors, 'Cache-Control': 'no-store' } });
+}
+
+async function messages(request: Request, env: Env, ctx: ExecutionContextLike, keys: Keys, cors: Cors): Promise<Response> {
+  const pids = await currentPhraseIds(keys, env.PARTY_PHRASES);
+  const verdict = await verifyToken(keys.session, tokenFrom(request.headers), Date.now(), pids);
+  if (!verdict.ok) return errorResponse(401, 'authentication_error', SESSION_PROBLEM[verdict.reason], { ...cors, [REASON]: reasonFor(verdict.reason) });
+  const raw = await readLimited(request, MAX_BODY_BYTES);
+  if (raw === null) return errorResponse(413, 'request_too_large', `Requests here are limited to ${MAX_BODY_BYTES / 1024} KB.`, cors);
+  const body = checkMessageBody(raw);
+  if (!body.ok) return errorResponse(400, 'invalid_request_error', body.message, cors);
+  const betas = checkBetas(request.headers.get('anthropic-beta'));
+  if (!betas.ok) return errorResponse(400, 'invalid_request_error', betas.message, cors);
+
+  const session = verdict.session.sid;
+  const slot = await limit(env.LIMITS, { op: 'spend', session });
+  if (!slot.ok) {
+    const phone = slot.scope === 'session';
+    const why = phone ? "This phone has used today's wizard allowance." : "The party's wizard allowance for today is used up.";
+    return limitResponse(why, slot.retryAfter, { ...cors, [REASON]: phone ? 'phone' : 'party' });
+  }
+  const day = slot.day ?? '';
+  const giveBack = () => ctx.waitUntil(limit(env.LIMITS, { op: 'unspend', session, day }));
+
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    'anthropic-version': apiVersion(request.headers.get('anthropic-version')),
+    'x-api-key': env.ANTHROPIC_API_KEY,
+  };
+  let upstream: Response;
+  try {
+    // The re-serialised checked object, so the API reads exactly what was checked.
+    // redirect 'manual': the key header never follows a redirect anywhere.
+    upstream = await fetch(ANTHROPIC_MESSAGES, { method: 'POST', headers, body: JSON.stringify(body.value), redirect: 'manual' });
+  } catch {
+    giveBack();
+    return errorResponse(502, 'api_error', 'The wizard server could not reach its crystal ball.', cors);
+  }
+  if (!upstream.ok) giveBack();
+  // The server's own key failing is the host's problem; a 401 here would wrongly end the phone's session.
+  if (upstream.status === 401 || upstream.status === 403) {
+    await upstream.body?.cancel();
+    return errorResponse(502, 'api_error', "The wizard server's own key was refused. The host needs to check it.", cors);
+  }
+  if (upstream.status >= 300 && upstream.status < 400) {
+    await upstream.body?.cancel();
+    return errorResponse(502, 'api_error', 'The crystal ball tried to send the wizard server elsewhere; it did not follow.', cors);
+  }
+  const out = new Headers(cors);
+  for (const h of ['content-type', 'request-id', 'retry-after']) {
+    const v = upstream.headers.get(h);
+    if (v) out.set(h, v);
+  }
+  out.set('Cache-Control', 'no-store');
+  return new Response(upstream.body, { status: upstream.status, headers: out });
+}

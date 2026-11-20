@@ -8,7 +8,7 @@
   import Segmented from '../../components/Segmented.svelte';
   import WizardEffort from '../../components/WizardEffort.svelte';
   import { customDecks, dedupe, slugify, wordDecks } from '../../lib/content';
-  import { hasKey } from '../../lib/claude';
+  import { hasKey, NOT_HERE } from '../../lib/claude';
   import { back } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
@@ -126,7 +126,7 @@
         {@render saveTo()}
       </PasteList>
     {:else if !keyReady && demo == null}
-      <p class="nokey">Fizzwick isn't on this phone yet: open the invite link the host sent you.</p>
+      <p class="nokey">{NOT_HERE}</p>
     {:else}
       <form class="stack" onsubmit={(e) => { e.preventDefault(); if (theme.trim()) void run(); }}>
         <label class="field">

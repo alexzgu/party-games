@@ -160,6 +160,11 @@ needs inside knowledge unless the pack is about the group. "After Dark": cheeky,
 
 ## Other changes
 
+`worker/` is the wizard server for the magic words (Cloudflare Worker; `worker/README.md`). It
+holds no secrets: the real phrases and its Anthropic key live only in Cloudflare, entered by the
+owner. Never ask for them or put real ones anywhere; tests use obvious fakes. Check it with
+`npm run worker:check` and `npm test`; the owner deploys it.
+
 Follow `SPEC.md`. Keep each game in `src/games/<id>/`, shared code in `src/lib/` and
 `src/components/`, colours and sizes in `src/styles/tokens.css`. Run all three checks before
 pushing; every push goes live.

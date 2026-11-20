@@ -29,7 +29,7 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   `motion` (permission, motion stream, sign fix, upright rotation), `pitch` (forehead pitch from
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
-  `claude` (live generation, streamed line by line), `wizard` (effort → model), `invite` and `join` (invite links), `history` (finished rounds and games),
+  `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
   `paste` (reading pasted lists), `packfile` (pack files: export, import), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
 - `src/components/` — `Screen` (page frame: back button, title, sticky actions), `Popup`,
   `HowTo` (the "?" header button that opens a game's rules), `Button`,
@@ -63,9 +63,27 @@ Three routes, in the order the owner chose to rely on them:
    Each make page shows "How hard Fizzwick tries" (`WizardEffort`) next to the theme and the
    make button, when the phone has a key: 🥱 Half-asleep (Haiku 5.5), ☕ Had his coffee (Sonnet
    5.5), 🔮 Full beard power (Opus 5.5, the default), kept in `settings.model`; an unknown stored
-   id uses Opus. Without a key the make page says to open the host's invite link.
+   id uses Opus. Without a key the make page says to open the host's invite link (and, when
+   the wizard server is set, to say the magic words in Settings).
    `streamLines()` hands each line over as soon as it is complete; items stream into `Triage`;
    "More" sends the items already kept so the wizard avoids repeats.
+4. **The magic words** (second way in, kept apart from invite links): a small Cloudflare Worker
+   in `worker/` (setup in `worker/README.md`) holds its own, spend-capped Anthropic key and a few
+   shared party phrases as secrets the owner enters in Cloudflare. A friend types a phrase in
+   Settings; the server checks it (case, punctuation and spacing ignored; wrong guesses limited
+   to 10 per address per 15 minutes and 300 overall per hour; right ones to 20 per address per
+   day) and returns a 30-day pass, kept in `settings.wizardPass`, never in a URL or an invite
+   link. The phone then uses the server as its API address with the pass in place of a key and
+   without model fallback; the server allows only the app's own requests (models from
+   `wizard.ts`, plain text, no fallback or betas, capped tokens and size), counts them against a
+   daily allowance (300 for everyone, the real cap; 60 per pass, a soft cap since the words can
+   be said again), and forwards them with its key. A phone with its own key uses that instead,
+   with fallback as before. Removing a phrase ends its passes ("The magic words have changed.
+   Ask the host for the new ones."); an old pass says "Fizzwick's pass expired. Say the magic
+   words again."; either way the pass is forgotten, unless a newer one was saved meanwhile. The
+   allowance running out says "Fizzwick needs a nap", naming this phone's share or the party's.
+   `WIZARD_SERVER` in `src/lib/wizardServer.ts` holds the server's address; empty hides the
+   magic words everywhere.
 
 **Every pack can be opened and edited**, built-in or the player's own. Editing a built-in saves
 an edit under the same id that replaces it everywhere on that phone, marked "Edited", until
@@ -101,7 +119,11 @@ another game says which game to open; anything else says it isn't a pack file.
   "Send it privately: anyone with the link can use the wizard." and "Remove from this phone";
   without one, a line saying to open the host's invite link, and a box to paste that link with
   "Let him in" (an iPhone Home Screen app keeps its own storage, apart from Safari where links
-  open). No key field and no model list. Descriptions are --text-dim, weight 600.
+  open); when the wizard server is set, also "Say the magic words" (a hidden field with Show,
+  no autofill, and "Say them"), answered "Fizzwick heard you. He's yours on this phone.",
+  "Fizzwick doesn't know those words." or, after too many guesses, how long to wait. With a pass
+  from the magic words: "Fizzwick came because of the magic words", "Forget the magic words"
+  and the invite paste box (a pasted key is used instead of the pass); no invite link to copy. No key field and no model list. Descriptions are --text-dim, weight 600.
   Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
 - **Rules** live in each game's "?" popup, not on its screens.
 - **History** (`#/history`): one entry per Heads Down. round (rewritten if a word is fixed
