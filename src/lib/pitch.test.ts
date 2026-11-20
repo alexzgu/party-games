@@ -3,6 +3,7 @@ import { PitchTracker, edgeOf, type MotionSample } from './pitch';
 import { TiltDetector, DEFAULT_TILT, type TiltThresholds } from './tilt';
 import { GestureCatcher, thresholdsFrom, ANGLE_LIMITS, RATE_LIMITS } from './calibration';
 import recorded from './fixtures/tilt-recorded.json';
+import speed from './fixtures/tilt-speed.json';
 
 // Real recordings from the Tilt lab (Firefox on Android, phone on a forehead): eight quick tilts
 // 1.7 s apart, and 38 s of talking, laughing, looking around and leaning back with no tilts.
@@ -50,6 +51,42 @@ describe('recorded quick tilts', () => {
     const events = play({ ...fast, rows: fast.rows.map((r) => [...r.slice(0, 7), NaN, NaN, NaN]) });
     const right = events.filter((e, i) => e === cued(fast)[i]).length;
     expect(right).toBeGreaterThanOrEqual(6);
+  });
+});
+
+// A recorded speed run (Chrome on Android): alternating tilts 0.7 s apart, where a wind-up
+// (the head lifting ~20° before nodding down) once scored as a pass; then as many downs, and then
+// ups, as fast as possible, where the rest reference used to sink and lose every up.
+describe('recorded speed run', () => {
+  const after = (p: Part, kind: string, ms: number) => p.cues.find((c) => c.kind === kind)!.t + ms;
+  function events(p: Part) {
+    const tracker = new PitchTracker(XYZ);
+    const d = new TiltDetector(DEFAULT_TILT);
+    const out: { t: number; e: string }[] = [];
+    for (const s of samples(p)) {
+      tracker.update(s);
+      const e = d.step(tracker.pitch, tracker.rate, s.t);
+      if (e) out.push({ t: s.t, e });
+    }
+    return out;
+  }
+
+  it('scores alternating tilts as they alternate, never the same way twice in a row', () => {
+    const got = events(speed.alternating as Part).map((x) => x.e);
+    expect(got.length).toBeGreaterThanOrEqual(11);
+    expect(got.every((e, i) => i === 0 || e !== got[i - 1])).toBe(true);
+  });
+
+  it('scores fast downs, then fast ups, each run all one way', () => {
+    const p = speed.free as Part;
+    const all = events(p);
+    // The player switches about a second after each spoken change.
+    const downs = all.filter((x) => x.t > after(p, 'free-down', 1000) && x.t < after(p, 'free-up', 0));
+    const ups = all.filter((x) => x.t > after(p, 'free-up', 1000));
+    expect(downs.length).toBeGreaterThanOrEqual(8);
+    expect(downs.every((x) => x.e === 'correct')).toBe(true);
+    expect(ups.length).toBeGreaterThanOrEqual(7);
+    expect(ups.every((x) => x.e === 'pass')).toBe(true);
   });
 });
 

@@ -115,29 +115,29 @@ shout clues; the holder tilts down for "got it", up for "pass".
   from its recorded layout. A gap of over 0.25 s between readings restarts from gravity, and a
   different edge must point up for 150 ms before the nod's sign follows it. With no gyroscope, the
   browser's gravity estimate (`accelerationIncludingGravity` minus `acceleration`) is used.
-- Tilt is measured from where the phone has been over the last 2 seconds (the median pitch,
-  leaving out the newest quarter second, moving at most 10°/s and only toward the phone,
+- Tilt is measured from where the phone rests: the median over the last 2 seconds of the
+  readings near the current rest (leaving out the newest quarter second, moving at most 10°/s,
   clamped to ±35° like the countdown's steady check), starting from the pose held steady before
-  the countdown (0 after a tap start). That reference is frozen from a score until the phone
-  settles again, so a held tilt never scores twice or counts the way back. A score needs the
-  angle and speed: the pitch must have turned briskly toward that side in the last 0.4 s, since
-  that direction was armed (so the way back from one tilt never lends its speed to the next).
-  Until a player calibrates: 25° down, 20° up, 150°/s, the owner's calibration from 64 recorded
-  tilts (they turned at 175–1100°/s; talking, laughing, looking around, leaning back stayed
-  under ~105°/s).
+  the countdown (0 after a tap start). Tilts, slow or missed ones and fast spamming included,
+  never pull it along. It is frozen from a score until the phone settles again, so a held tilt
+  never scores twice or counts the way back. A score needs the angle and speed: the pitch must
+  have turned briskly toward that side in the last 0.4 s, since that direction was armed (so
+  the way back from one tilt never lends its speed to the next). Until a player calibrates:
+  25° down, 25° up, 150°/s: the owner's calibration from 64 recorded tilts (they turned at
+  175–1100°/s; talking, laughing, looking around, leaning back stayed under ~105°/s), with up
+  raised from 20° because a ~21° wind-up before a fast nod down scored as a pass.
 - Quick tilts in a row: the same direction counts again as soon as the phone is back near rest
-  (and 150 ms after the last score). On the way back the head swings past rest by up to 25°
-  (recorded 24°), so right after a score the other direction needs 15° more than the larger of
-  its angle and 25°; a swing past that 25° line that falls short of it is a wobble, and then
-  nothing counts until the phone settles: 150 ms near rest, or held still at least halfway back
-  from the tilt. Settling re-arms both directions at their plain angles. Constants in
-  `src/lib/tilt.ts`.
+  (and 150 ms after the last score), with no pause there. On the way back the head bounces past
+  rest by up to ~28°, so right after a score the other direction needs 15° more than the larger
+  of its angle and 25° (40° by default). Once the phone settles (150 ms near rest, or held still
+  at least halfway back from the tilt) both directions count at their plain angles. Tuned on
+  three Tilt lab recordings, a speed run among them. Constants in `src/lib/tilt.ts`.
 - **Calibrate tilt** (`#/forehead/calibrate`, from Setup and Settings): the phone, on the
   forehead, says "Down" or "Up"; each practice tilt it catches beeps and counts (the way back
   from a tilt never counts: the next one starts only once the phone is halfway back and still).
   A tilt under 12° (too small ever to score) is not kept; the phone says "Further". Done saves
   once there are at least 3 of each; with fewer it says how many more and keeps the old
-  calibration. Thresholds: 35% of the player's median tilt (12–25°) and half their median speed
+  calibration. Thresholds: 45% of the player's median tilt (12–25°; not lower, so a wind-up before a nod the other way never scores) and half their median speed
   (60–150°/s). Kept on the phone until the next calibration (a damaged stored value is clamped
   into those limits or ignored); Reset returns to the defaults. Replaces the old Small / Medium /
   Big setting.

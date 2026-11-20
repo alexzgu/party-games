@@ -9,10 +9,12 @@ export interface Gesture { dir: Direction; amp: number; rate: number }
 
 /**
  * Thresholds land at these fractions of the player's typical tilt, within these limits. The
- * angle can sit low because the speed bar already keeps out laughing and looking around (it
- * stayed under ~105°/s in the recordings, while deliberate tilts turned at 170°/s and up).
+ * angle can sit below half because the speed bar already keeps out laughing and looking around
+ * (it stayed under ~105°/s in the recordings, while deliberate tilts turned at 170°/s and up);
+ * not as low as a third, because a head lifts about a third of a tilt as a wind-up before a fast
+ * nod the other way (recorded speed run: ~21° before ~75° nods), and that must not score.
  */
-export const ANGLE_SHARE = 0.35;
+export const ANGLE_SHARE = 0.45;
 export const RATE_SHARE = 0.5;
 export const ANGLE_LIMITS: [number, number] = [12, 25];
 export const RATE_LIMITS: [number, number] = [60, 150];

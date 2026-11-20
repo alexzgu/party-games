@@ -21,10 +21,11 @@ export interface TiltThresholds { down: number; up: number; rate: number }
 
 /**
  * Used until a player calibrates: the owner's calibration from 64 recorded practice tilts
- * (Tilt lab, 2026-11-20; median 81° down / 57° up, slowest 175°/s). A player who tilts more
- * gently than that should calibrate.
+ * (Tilt lab, 2026-11-20; median 81° down / 57° up, slowest 175°/s), with up raised from 20° to
+ * 25°: in a recorded speed run the head lifted about 21° at 195°/s just before nodding down, and
+ * at 20° that wind-up scored as a pass. A player who tilts more gently should calibrate.
  */
-export const DEFAULT_TILT: TiltThresholds = { down: 25, up: 20, rate: 150 };
+export const DEFAULT_TILT: TiltThresholds = { down: 25, up: 25, rate: 150 };
 export const RATE_WINDOW_MS = 400;
 /**
  * The neutral band: within this fraction of each side's threshold of the baseline. Held for
@@ -35,10 +36,10 @@ export const NEUTRAL_HOLD_MS = 150;
 /**
  * Quick tilts in a row, without that hold. The same direction again counts as soon as the phone
  * is back inside the neutral band. The other direction counts at once only well clear of the
- * rebound: on the way back from a tilt the head swings past rest by up to REBOUND_DEG (recorded:
- * 24°), so right after a score the other side needs max(its threshold, REBOUND_DEG) plus
- * OPPOSITE_EXTRA_DEG. A swing past max(threshold, REBOUND_DEG) that falls short of that is a
- * wobble, not a tilt: then nothing counts until the phone settles.
+ * bounce: on the way back from a tilt the head swings past rest by up to about REBOUND_DEG
+ * (recorded: up to 28° from a +4° rest), so right after a score the other side needs
+ * max(its threshold, REBOUND_DEG) plus OPPOSITE_EXTRA_DEG (40° by default; recorded tilts reach
+ * 41° and beyond). Tuned on three Tilt lab recordings, a speed run among them.
  */
 export const REBOUND_DEG = 25;
 export const OPPOSITE_EXTRA_DEG = 15;
@@ -61,12 +62,14 @@ export const BASELINE_MAX_DEG = READY_UPRIGHT_DEG;
 export const STILL_DEG = 4;
 export const STILL_MS = 300;
 /**
- * The rolling baseline: once settled, the baseline is the median pitch over the last ROLL_MS,
- * leaving out the newest LAG_MS so a quick nod stands out against where the head just was, and
- * only once ROLL_MIN_MS of samples have built up since the last score or re-base. It moves at
- * most BASE_DRIFT_DEG_S and only toward the phone's current pitch, so a tilt held just short of
- * scoring is not taken as the new rest (its release would score the other way). Frozen from a score until the phone settles again. A tilt
- * slower than about 20° a second is absorbed as drift and does not score.
+ * The rolling baseline: once settled, the baseline is the median of the readings inside the
+ * neutral band over the last ROLL_MS, leaving out the newest LAG_MS so a quick nod stands out
+ * against where the head just was, and only once ROLL_MIN_MS of them have built up since the
+ * last score or re-base. Readings outside the band (tilts, slow or missed ones too, and fast
+ * spamming) never pull it along: in a recorded speed run, following every reading dragged it to
+ * -28° and every tilt up after that was lost. It moves at most BASE_DRIFT_DEG_S. Frozen from a
+ * score until the phone settles again. Slow drift is followed; a tilt slower than about 20° a
+ * second is absorbed as drift and does not score.
  */
 export const ROLL_MS = 2000;
 export const LAG_MS = 250;
@@ -95,8 +98,6 @@ export class TiltDetector {
   /** Both directions at their plain thresholds, the baseline following the head. */
   private settled = false;
   private arm: Record<TiltEvent, Arm | null> = { correct: null, pass: null };
-  /** Since the last score, the same direction may re-arm without a hold (no wobble seen). */
-  private quickOk = false;
   private firedAt = NaN;
   private neutralSince: number | null = null;
   private base: number;
@@ -166,18 +167,13 @@ export class TiltDetector {
     return null;
   }
 
-  /** After a score: quick re-arm for the same direction, a wobble check, then settling. */
+  /** After a score: quick re-arm for the same direction, then settling. */
   private recover(pitch: number, rel: number, nowMs: number): void {
     const last = this.last;
-    if (last && this.quickOk) {
-      if (this.signed(other(last), rel) >= Math.max(this.angle(other(last)), REBOUND_DEG)) {
-        this.quickOk = false; // a wobble: wait for the phone to settle
-        this.arm = { correct: null, pass: null };
-      } else if (!this.arm[last] && nowMs - this.firedAt >= QUICK_REARM_MS && this.signed(last, rel) <= this.angle(last) * REARM_FRACTION) {
-        this.arm[last] = { since: nowMs, extra: 0 };
-      }
+    if (last && !this.arm[last] && nowMs - this.firedAt >= QUICK_REARM_MS && this.signed(last, rel) <= this.angle(last) * REARM_FRACTION) {
+      this.arm[last] = { since: nowMs, extra: 0 };
     }
-    if (rel >= -this.fire.down * REARM_FRACTION && rel <= this.fire.up * REARM_FRACTION) {
+    if (this.neutral(rel)) {
       this.neutralSince ??= nowMs;
       if (nowMs - this.neutralSince >= NEUTRAL_HOLD_MS) this.settle(nowMs);
     } else {
@@ -187,6 +183,10 @@ export class TiltDetector {
         this.settle(nowMs);
       }
     }
+  }
+
+  private neutral(rel: number): boolean {
+    return rel >= -this.fire.down * REARM_FRACTION && rel <= this.fire.up * REARM_FRACTION;
   }
 
   private angle(e: TiltEvent): number {
@@ -207,14 +207,12 @@ export class TiltDetector {
   private roll(pitch: number, nowMs: number): void {
     const dt = Number.isFinite(this.lastRollT) ? Math.max(0, nowMs - this.lastRollT) / 1000 : 0;
     this.lastRollT = nowMs;
+    if (!this.neutral(pitch - this.base)) return; // only readings near the current rest
     this.recent.push({ t: nowMs, p: pitch });
     while (this.recent.length && this.recent[0].t < nowMs - ROLL_MS) this.recent.shift();
     const settled = this.recent.filter((s) => s.t <= nowMs - LAG_MS);
     if (!settled.length || settled[settled.length - 1].t - settled[0].t < ROLL_MIN_MS - LAG_MS) return;
-    // Only toward where the phone is now: after a held pose is released, the older samples
-    // must not keep dragging the baseline away from the phone.
     const m = median(settled.map((s) => s.p));
-    if ((m - this.base) * (pitch - this.base) <= 0) return;
     const step = BASE_DRIFT_DEG_S * dt;
     this.base = clampBase(Math.max(this.base - step, Math.min(this.base + step, m)));
   }
@@ -232,7 +230,6 @@ export class TiltDetector {
   /** Both directions armed at their plain thresholds; speed counts from now (or an earlier quick re-arm). */
   private settle(nowMs: number): void {
     this.settled = true;
-    this.quickOk = false;
     this.neutralSince = null;
     for (const e of EVENTS) {
       const keep = this.arm[e] && !this.arm[e]!.extra ? this.arm[e]!.since : nowMs;
@@ -244,7 +241,6 @@ export class TiltDetector {
   reset(): void {
     this.settled = false;
     this.arm = { correct: null, pass: null };
-    this.quickOk = false;
     this.neutralSince = null;
     this.last = null;
     this.stillRef = NaN;
@@ -255,7 +251,6 @@ export class TiltDetector {
   private fired(e: TiltEvent, pitch: number, nowMs: number): TiltEvent {
     this.settled = false;
     this.arm = { [e]: null, [other(e)]: { since: nowMs, extra: OPPOSITE_EXTRA_DEG } } as Record<TiltEvent, Arm | null>;
-    this.quickOk = true;
     this.neutralSince = null;
     this.last = e;
     this.firedAt = nowMs;

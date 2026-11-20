@@ -93,8 +93,9 @@
       () => screen.orientation?.removeEventListener?.('change', onAngle),
       onGravity((g, t, p) => {
         if (!detector) {
-          steady.update(g, t);
-          if (cues.some((c) => c.block === 'normal')) {
+          steady.update(g, t, p.pitch);
+          // Both scripts open with an intro and a rest; the detector starts with the next part.
+          if (cues.some((c) => c.block !== 'intro' && c.block !== 'rest')) {
             detector = new TiltDetector(tiltThresholds(), steady.baseline() ?? 0);
             detectorRows.push([r(t, 10)!, 'baseline', r(steady.baseline() ?? 0, 100)!]);
           }

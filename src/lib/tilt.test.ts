@@ -72,12 +72,13 @@ describe('TiltDetector', () => {
     expect(feed(d, [...rest(0), ...wobble, ...wobble])).toEqual(['correct']);
   });
 
-  it('needs a held return to rest between scores', () => {
+  it('scores a quick second got-it after the swing back, and a held one after rest', () => {
     const d = new TiltDetector(SIZE.small);
     // Swinging back up through rest after a got-it is not a pass.
     expect(feed(d, [...rest(0), pitched(-25), pitched(-5), pitched(5), pitched(30), pitched(35)])).toEqual(['correct']);
-    // Back at rest too briefly (under the hold time): still no score.
-    expect(feed(d, [...rest(0, 3), pitched(-25)], 1000)).toEqual([]);
+    // Back at rest only briefly, then down again: counts, so quick tilts in a row all score
+    // (changed with the owner's agreement, 2026-11-20; this used to require a held return).
+    expect(feed(d, [...rest(0, 3), pitched(-25)], 1000)).toEqual(['correct']);
     // Held at rest long enough: the next nod counts.
     expect(feed(d, [...rest(0), pitched(-25)], 2000)).toEqual(['correct']);
   });
