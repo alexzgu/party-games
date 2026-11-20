@@ -4,7 +4,7 @@
   import Segmented from '../../components/Segmented.svelte';
   import PackPicker from './PackPicker.svelte';
   import { snarkPacks } from '../../lib/content';
-  import { ANSWER_CHOICES, VOTE_CHOICES } from './logic';
+  import { ANSWER_CHOICES, VOTE_CHOICES, type FinalStyle } from './logic';
   import { loadSettings, saveSettings } from './store';
   import { host } from './host.svelte';
 
@@ -17,15 +17,18 @@
   let rounds = $state<2 | 3>(s.rounds);
   let answerSecs = $state(s.answerSecs);
   let voteSecs = $state(s.voteSecs);
+  let final = $state<FinalStyle>(s.final ?? 'everyone');
   // svelte-ignore state_referenced_locally
   let selected = $state(s.packIds.filter((id) => packs.some((p) => p.id === id)));
   const locked = host.game !== null && host.game.phase !== 'lobby';
 
   $effect(() => {
-    const next = { rounds, answerSecs, voteSecs, packIds: $state.snapshot(selected) };
+    const next = { rounds, answerSecs, voteSecs, packIds: $state.snapshot(selected), final };
     saveSettings(next);
     host.settings(next);
   });
+  // Duels need finals; packs without any borrow Classic's (logic falls back to the 3-vote final if there are none at all).
+  const ownFinals = $derived(packs.some((p) => selected.includes(p.id) && p.finals?.length));
   const prompts = $derived(packs.filter((p) => selected.includes(p.id)).reduce((n, p) => n + p.prompts.length, 0));
 </script>
 
@@ -45,6 +48,13 @@
       <span class="label">Seconds to vote</span>
       <Segmented label="Seconds to vote" bind:value={voteSecs} options={VOTE_CHOICES.map((v) => ({ value: v as number, label: `${v}` }))} />
       <span class="hint">The final vote gets twice as long.</span>
+    </div>
+    <div class="opt">
+      <span class="label">Final round</span>
+      <Segmented label="Final round" bind:value={final} options={[{ value: 'everyone', label: 'Everyone, 3 votes' }, { value: 'duels', label: 'Three-line duels' }]} />
+      <span class="hint">{final === 'duels'
+        ? `Players pair off and each writes up to three short lines; with an odd number, last place takes on the house.${ownFinals ? '' : ' The picked packs have no duel prompts, so Classic’s are used.'}`
+        : 'One prompt for everyone; each player spreads 3 votes over the other answers.'}</span>
     </div>
   </section>
   <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = snarkPacks())} />

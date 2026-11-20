@@ -158,6 +158,21 @@ commercial game's prompts). Open-ended so there are a hundred funny answers, not
 ("A terrible name for a boat", "What your dog is thinking during a thunderstorm"); nothing that
 needs inside knowledge unless the pack is about the group. "After Dark": cheeky, never explicit.
 
+Two optional fields (write both for a new pack unless asked not to; the game works without them):
+
+```json
+"safety": {"A terrible name for a dorm": "The Mold Hilton"},
+"finals": [{"prompt": "Three things you should never say to your RA", "house": ["I live here now", "Smell that?", "Define fire hazard"]}]
+```
+
+- `safety`: a stock answer per prompt, keyed by the prompt exactly as written; players tap "Give
+  me one" when stuck (half points if sent as is). Decent and mildly funny, never the best answer
+  in the room; 1–8 words, sentence case, no end punctuation (80 characters at most).
+- `finals`: prompts for the three-line duel final, each asking for three things ("Three …"),
+  3–14 words, new across *all* Snark packs (the list shows existing finals) and never one of the
+  regular prompts; `house` is exactly three lines the game plays against an odd player out, 1–6
+  words each (40 characters at most), genuinely funny. About one final per five prompts.
+
 ## Other changes
 
 Follow `SPEC.md`. Keep each game in `src/games/<id>/`, shared code in `src/lib/` and

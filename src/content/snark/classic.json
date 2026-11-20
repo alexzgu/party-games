@@ -204,5 +204,529 @@
     "A new rule for every family reunion",
     "The worst thing your smart speaker could overhear",
     "A terrible name for a bakery"
+  ],
+  "safety": {
+    "A terrible name for a dentist's office": "Root Canal Cove",
+    "The real reason the dinosaurs went extinct": "They forgot to book a flight",
+    "What your houseplant says about you behind your back": "Honestly, she's overwatering me",
+    "A rejected flavor of potato chip": "Mild cheddar and regret",
+    "The worst thing to find in your burrito": "A single tiny sock",
+    "A new rule for the group chat": "Everyone must reply within ten seconds",
+    "What the check engine light actually means": "The car wants attention",
+    "A bad slogan for a funeral home": "Where everyone arrives on time",
+    "The worst possible name for a boat": "Boaty McBoatface the Second",
+    "A fortune cookie message that would ruin your day": "Your wifi password is wrong",
+    "What your dog is thinking during a thunderstorm": "Is the vacuum coming for me",
+    "A terrible theme for a kid's birthday party": "Mandatory accounting seminar",
+    "The worst thing to say in a job interview": "I'm very good at napping",
+    "A new Olympic sport nobody asked for": "Synchronized napping",
+    "What aliens find most confusing about humans": "Why we hug but never share fries",
+    "A bad title for a self-help book": "Chapter one: Give up",
+    "The most useless superpower imaginable": "Always knowing what time it is",
+    "What the terms and conditions actually say": "You owe us your firstborn dog",
+    "A rejected name for a hurricane": "Hurricane Kevin",
+    "The worst thing to yell during a wedding": "Does anyone have a mint",
+    "A weird thing to keep in your glove compartment": "Emergency taco",
+    "The worst possible ice cream flavor": "Gravy swirl",
+    "What your roommate does when you're not home": "Hosts a tiny dance party",
+    "A terrible first line for a novel": "It was a dark and soggy night",
+    "A text you'd hate to get from your mom at 3 a.m.": "Are you eating enough, honey",
+    "A suspicious item to find in a hotel nightstand": "A mystery key",
+    "What really happens at a homeowners' association meeting": "Heated arguments about mulch",
+    "A bad name for a new energy drink": "Liquid Tuesday",
+    "The worst advice a life coach could give": "Just quit and see what happens",
+    "A rejected mascot for a sports team": "The Fighting Sock Puppets",
+    "The first thing you'd do as president for a day": "Free tacos for everyone",
+    "What the Mona Lisa is smirking about": "She forgot to turn the oven off",
+    "A terrible name for a law firm": "Dewey, Cheatham and Howe",
+    "The real reason your flight was delayed": "The pilot had a feeling",
+    "A fake holiday that should be real": "National Snack Day",
+    "An unconvincing excuse for being late to work": "My cat had a doctor's appointment",
+    "What cats are secretly planning": "Something with the curtains",
+    "The worst skill to list on a resume": "Professional cuddler",
+    "A terrible sign to put on your front lawn": "Beware of goose",
+    "A phone feature nobody needs": "A phone that folds into a sandwich",
+    "The worst thing to hear from your barber mid-haircut": "Please stop narrating the haircut",
+    "A rejected name for a breakfast cereal": "Crunchy Regret",
+    "The world's most boring museum exhibit": "A history of beige paint",
+    "What your rideshare driver is really thinking": "I hope they tip well",
+    "A bad thing to name your first child": "Gerald",
+    "The worst possible pizza topping": "Anchovies and pudding",
+    "What grandma's secret ingredient really is": "Mostly butter and love",
+    "A bad tagline for a dating app": "Swipe right for mediocre",
+    "The worst gift to bring to a housewarming": "A very large candle",
+    "Something you should never say to a cop": "I'm not telling you anything",
+    "A horrible name for a retirement home": "Sunny Acres Senior Wing",
+    "What the fish in the dentist's aquarium talk about": "Whose turn is it to swim",
+    "A terrible souvenir from the moon": "A rock that looks like cheese",
+    "A sign your vacation rental host is a little too involved": "They know your sleep schedule",
+    "The worst thing to find in your Christmas stocking": "Another pair of socks",
+    "A new reality show nobody would watch": "Watching strangers fold laundry",
+    "The real reason Bigfoot avoids humans": "He's shy and also cranky",
+    "A rejected Girl Scout cookie flavor": "Peanut butter and sorrow",
+    "A terrible password hint": "It's your first pet's name",
+    "What you'd find in a supervillain's grocery cart": "Evil and organic kale",
+    "The worst thing to whisper during a movie": "Is that a spider on your head",
+    "A sequel nobody asked for": "Still Not Dead 2",
+    "The worst possible name for a gym": "Planet Flex",
+    "What your car would say if it could talk": "Please stop touching my dashboard",
+    "A bad way to end a first date": "Text them in the morning",
+    "A weird thing to bring to a picnic": "A whole raw pineapple",
+    "The worst theme song for a superhero": "Theme song with only kazoos",
+    "A terrible thing to engrave on a trophy": "Best at snacking",
+    "What actually happens in the employees-only room": "Nobody tells us anything",
+    "A terrible name for a pet goldfish": "Gerald the Goldfish",
+    "A rejected candle scent": "Fresh Laundry Number Seven",
+    "The worst thing to see written on a cake": "Happy birthday, Becky, you're old",
+    "The least threatening thing a pirate could say": "Pardon me, matey",
+    "A new word for when your foot falls asleep": "Tingly Foot Syndrome",
+    "Something a ghost would complain about": "The thermostat is always wrong",
+    "The worst phone call to get during a wedding": "Is it a wedding or a funeral",
+    "A terrible motto for a hospital": "Fine, we guess",
+    "What's really inside a hot dog": "Mostly pigs and hope",
+    "The worst thing to say when meeting your partner's parents": "Meet my parents, I'm Dave",
+    "The most awkward thing to say in an elevator": "Is this elevator or a bus",
+    "A bad name for a yoga pose": "Downward dog that bites",
+    "What the Statue of Liberty is thinking right now": "Where is everyone going",
+    "The worst thing a magician could pull out of a hat": "A very surprised bunny",
+    "An app that should never be invented": "An app that tells you when to nap",
+    "A rejected song from an animated princess movie": "A song called Sad Feet",
+    "What penguins argue about": "Arguing about who's tallest",
+    "The worst place to propose": "On the roof of my parents' house",
+    "A bad thing to hear from your surgeon": "Oops, wrong patient",
+    "The hardest possible spelling bee word": "Antidisestablishmentarianism",
+    "The worst thing to bring to show and tell": "My cousin's lizard",
+    "Something you should never microwave": "Metal forks, a lot of them",
+    "A terrible name for a wine": "Pinot Maybe",
+    "A new law every city should pass": "Mandatory nap hour",
+    "The worst thing to say to a waiter": "No extra butter",
+    "A rejected inspirational poster slogan": "Believe in yourself and also tacos",
+    "What your dentist is really writing down": "You really need to floss",
+    "A terrible reason to call 911": "My cat is stuck on a shelf",
+    "The worst thing about living forever": "Everyone's group chat",
+    "A bad name for a hair salon": "Cut and Run",
+    "A terrible way to announce a pregnancy": "A cake that says surprise",
+    "What babies are actually crying about": "They're tired of being short",
+    "A new crayon color nobody asked for": "Mildly Gray",
+    "The worst job at the North Pole": "Cleaning up after the reindeer",
+    "What a sloth does on its day off": "Hangs out and does nothing",
+    "The worst instructions to find with flat-pack furniture": "A single unlabeled screw",
+    "A weird requirement for a library card": "A small bag of cookies",
+    "The worst prize at a carnival": "A goldfish in a bag",
+    "A bad way to start a speech": "By clearing your throat loudly",
+    "What really lives under your bed": "The sock I lost last year",
+    "A terrible name for a band": "The Fighting Pillows",
+    "The worst thing to do on your first day at work": "Hide in the supply closet",
+    "Something that would get you kicked out of a zoo": "Feeding the penguins pizza",
+    "A terrible bedtime story": "Once upon a time, nap",
+    "A creative way to break up with someone": "Send a fruit basket",
+    "What your fridge thinks of your diet": "It doesn't believe in you",
+    "The worst place to have a picnic": "On a busy highway",
+    "A bad sign to see in a doctor's waiting room": "A sign that says oops",
+    "A new extreme sport for retirees": "Competitive shuffleboard",
+    "What a toddler would do with a million dollars": "Buy one hundred balloons",
+    "A terrible flavor for a cough drop": "Cabbage and honey",
+    "The worst thing to hear from the next bathroom stall": "Is there any toilet paper",
+    "What actually happened to Atlantis": "It floated away",
+    "A bad thing to say on a tour of the White House": "Is this a good couch",
+    "The worst thing to forget on vacation": "The charger",
+    "A rejected Thanksgiving tradition": "Running with turkeys",
+    "The worst nickname for a firefighter": "Mister Hose",
+    "A failed invention that almost changed the world": "A rocking chair that charges your phone",
+    "What the tooth fairy does with all the teeth": "Builds a very tiny house",
+    "A terrible way to end a phone call": "Okay, love you, bye, love you",
+    "Something you'd hear at a really bad spa": "Please take off your socks",
+    "What a pigeon would post online": "I have rights",
+    "The worst thing to say during a group project": "Never talk about the project",
+    "A conspiracy theory about squirrels": "They're hoarding more than nuts",
+    "A rejected title for a cookbook": "The Art of Frying Water",
+    "A sign you're at a bad wedding": "The groom hasn't arrived",
+    "The last thing you want your GPS to say": "Turn left into the lake",
+    "A terrible name for a perfume": "Eau de Sock",
+    "What your goldfish remembers about you": "You liked fish crackers",
+    "A weird thing to say at the end of a job interview": "Do you have a ticket",
+    "The worst thing to find in a used car": "Someone else's sandwich",
+    "A bad idea for a theme park ride": "The Lazy Splash",
+    "What sharks really think of surfers": "Why is he wearing a flotation device",
+    "The worst name for a Wi-Fi network": "Wi-Fi Fighter",
+    "An unusual thing to put on a pancake": "A single sardine",
+    "A new emoji we desperately need": "A sad face with a hat",
+    "The worst thing to say on a hot mic": "Is this thing on",
+    "What a robot would do on its first day of freedom": "Order a pizza",
+    "A greeting card that would never sell": "Happy Meh Day",
+    "The worst way to wake someone up": "Poking them with a spoon",
+    "A weird hobby for a vampire": "Collecting teeth",
+    "What the bouncer is really checking for": "Wait, which one is the bouncer",
+    "A terrible thing to say at a baby shower": "Congratulations, the baby looks old",
+    "The worst thing to hear from your flight attendant": "Please stop texting",
+    "The most passive-aggressive office email subject line": "Per my last email",
+    "A weird thing to see at the gym": "A person with a goat",
+    "What a time traveler from 2090 would warn us about": "Never trust the cat",
+    "The worst way to spend a lottery win": "A thousand tacos",
+    "A rejected name for a cartoon monster": "Skippy the Sock",
+    "A failed attempt at a pickup line": "Do you come here often",
+    "A bad name for a cruise ship": "The Titanic 2",
+    "Something that would make jury duty fun": "Free snacks",
+    "A new tradition for the end of every party": "A group hug",
+    "The worst job in a medieval castle": "Cleaning the moat",
+    "What's really at the center of the Earth": "A very hot meatball",
+    "The worst text to send to the wrong person": "Wrong chat, my bad",
+    "A cursed object for sale at a garage sale": "A haunted lamp",
+    "A suspicious name for a restaurant": "Chez Sketchy",
+    "The worst thing to bring on a road trip": "Your ex",
+    "What the weather forecast should honestly say": "Grab a coat anyway",
+    "A terrible thing to hear during a massage": "Is that your hand",
+    "The least intimidating name for a wrestler": "Little Bobby Tables",
+    "The worst tattoo to get on a dare": "A cartoon snail",
+    "What babies talk about at daycare": "Who's the boss now",
+    "A terrible chore to give a ghost": "Dust the ceiling fan",
+    "The title of a horror movie set in a grocery store": "Aisle Nine",
+    "The worst thing to say to a tow truck driver": "It's not my car",
+    "A weird rule at your grandparents' house": "No sneakers on the carpet",
+    "What really goes on at book club": "Mostly wine, few books",
+    "A word that should exist but doesn't": "Snoozle",
+    "The world's least popular podcast": "A man whispering about bread",
+    "Something you should never say on a roller coaster": "Weeee, wait, no",
+    "A bad thing to find out about your new neighbor": "He owns a very large drum set",
+    "What a cowboy would complain about today": "Where's my horse",
+    "A rejected Olympic mascot": "Boris the Beaver",
+    "A terrible name for a nail salon": "Sparkly Ten",
+    "What your future self would text you": "Stop texting your ex",
+    "Something a game show host should never say": "Sorry, that was incorrect",
+    "What the dog really ate instead of your homework": "My little brother",
+    "The secret ingredient in hospital food": "Gravy",
+    "A new sport played only at 2 a.m.": "Midnight badminton",
+    "The worst way to celebrate a promotion": "Sleep for a week",
+    "The most disappointing thing to win in a raffle": "A single bar of soap",
+    "A terrible tagline for a toothpaste": "Fresh breath, bright dreams",
+    "What you'd hear at a support group for houseplants": "It's too sunny",
+    "A bad first sentence for a wedding toast": "Marriage is like a sandwich",
+    "The worst thing to say when someone sneezes": "Gesundheit and good luck",
+    "What a squirrel would buy with a credit card": "Hire a tiny lawyer",
+    "A new rule for every family reunion": "No politics, only pie",
+    "The worst thing your smart speaker could overhear": "That it's a spy",
+    "A terrible name for a bakery": "Rolling in Dough"
+  },
+  "finals": [
+    {
+      "prompt": "Three rejected names for a new energy drink",
+      "house": [
+        "Liquid Tuesday",
+        "Gulp Thunder",
+        "Panic Juice"
+      ]
+    },
+    {
+      "prompt": "Three things you should never say to a toddler with a marker",
+      "house": [
+        "Please draw on me",
+        "It's washable, probably",
+        "Go wild on the couch"
+      ]
+    },
+    {
+      "prompt": "Three terrible slogans for a mattress store",
+      "house": [
+        "Sleep is overrated",
+        "Come get horizontal",
+        "Yours until it sags"
+      ]
+    },
+    {
+      "prompt": "Three signs your neighbor is secretly a wizard",
+      "house": [
+        "His mailbox hums",
+        "Raccoons bow to him",
+        "Rain avoids his lawn"
+      ]
+    },
+    {
+      "prompt": "Three things a seagull says right before stealing your fries",
+      "house": [
+        "Excuse me, sir",
+        "This is mine now",
+        "Nothing personal"
+      ]
+    },
+    {
+      "prompt": "Three awful names for a children's book about taxes",
+      "house": [
+        "Timmy Files Early",
+        "The Hungry Audit",
+        "Goodnight, Deductions"
+      ]
+    },
+    {
+      "prompt": "Three things you'd find in the world's worst gift basket",
+      "house": [
+        "One warm grape",
+        "Dusty soap",
+        "A single mitten"
+      ]
+    },
+    {
+      "prompt": "Three excuses for why the dishes are still in the sink",
+      "house": [
+        "They're soaking, for science",
+        "I'm letting them marinate",
+        "The sink is a lifestyle"
+      ]
+    },
+    {
+      "prompt": "Three bad names for a goldfish",
+      "house": [
+        "Sushi",
+        "Lunch",
+        "Soggy Dave"
+      ]
+    },
+    {
+      "prompt": "Three warnings printed on a haunted house ticket",
+      "house": [
+        "Ghosts may hug you",
+        "No refunds after death",
+        "Watch for clingy skeletons"
+      ]
+    },
+    {
+      "prompt": "Three things a cat would put in a cover letter",
+      "house": [
+        "Excellent at ignoring you",
+        "Available at 3 sharp",
+        "Skilled knocker of cups"
+      ]
+    },
+    {
+      "prompt": "Three rejected Olympic events",
+      "house": [
+        "Competitive sock folding",
+        "Synchronized napping",
+        "Extreme parallel parking"
+      ]
+    },
+    {
+      "prompt": "Three things your GPS should say when you're lost",
+      "house": [
+        "You're on your own",
+        "Pick a direction, hero",
+        "Nice detour, genius"
+      ]
+    },
+    {
+      "prompt": "Three terrible things to use as a bookmark",
+      "house": [
+        "A live hamster",
+        "Raw bacon",
+        "A hot pepper"
+      ]
+    },
+    {
+      "prompt": "Three things a pirate would complain about at brunch",
+      "house": [
+        "The mimosas lack rum",
+        "My parrot's cranky",
+        "Where's the treasure map"
+      ]
+    },
+    {
+      "prompt": "Three awful names for a lawn care company",
+      "house": [
+        "Weeds R Us",
+        "Grass Roots Mob",
+        "Mow Money Mow Problems"
+      ]
+    },
+    {
+      "prompt": "Three things you hear at a very quiet library fight",
+      "house": [
+        "Shh, I'm punching",
+        "Overdue, jerk",
+        "Mind the paperbacks"
+      ]
+    },
+    {
+      "prompt": "Three rejected flavors of toothpaste",
+      "house": [
+        "Meatloaf",
+        "Wet dog",
+        "Cold coffee"
+      ]
+    },
+    {
+      "prompt": "Three things you shouldn't say to your boss at the holiday party",
+      "house": [
+        "Nice tie, Santa",
+        "I vote we leave",
+        "Is this open bar forever"
+      ]
+    },
+    {
+      "prompt": "Three signs you've been in the airport too long",
+      "house": [
+        "You name the pigeons",
+        "Pretzels are dinner",
+        "You trust the announcer"
+      ]
+    },
+    {
+      "prompt": "Three names for a very slow sports car",
+      "house": [
+        "The Tortoise",
+        "Sunday Drive",
+        "Snail Mail"
+      ]
+    },
+    {
+      "prompt": "Three things squirrels whisper to each other",
+      "house": [
+        "The nuts are mine",
+        "Watch the dog",
+        "Winter is coming"
+      ]
+    },
+    {
+      "prompt": "Three things a robot would say at its first job interview",
+      "house": [
+        "Beep boop, hire me",
+        "I never sleep",
+        "I love spreadsheets"
+      ]
+    },
+    {
+      "prompt": "Three bad ideas for a family road trip game",
+      "house": [
+        "Who's the loudest breather",
+        "Count the potholes",
+        "Silent car karaoke"
+      ]
+    },
+    {
+      "prompt": "Three terrible places to hide a spare key",
+      "house": [
+        "Inside the goldfish bowl",
+        "Under the moon",
+        "In the neighbor's shoe"
+      ]
+    },
+    {
+      "prompt": "Three reasons the chicken crossed the road",
+      "house": [
+        "It saw a sale",
+        "Wi-Fi was better",
+        "It forgot something"
+      ]
+    },
+    {
+      "prompt": "Three weird ingredients in your grandma's famous soup",
+      "house": [
+        "Love and gravel",
+        "One mystery bone",
+        "Secret sock"
+      ]
+    },
+    {
+      "prompt": "Three awful names for a children's cereal",
+      "house": [
+        "Sugar Regret",
+        "Crunch Pain",
+        "Frosted Nails"
+      ]
+    },
+    {
+      "prompt": "Three things you should never microwave at the office",
+      "house": [
+        "Fish",
+        "A whole egg",
+        "Last night's shrimp"
+      ]
+    },
+    {
+      "prompt": "Three things your dog would add to the family rules",
+      "house": [
+        "Everyone shares food",
+        "Walks every hour",
+        "No baths ever"
+      ]
+    },
+    {
+      "prompt": "Three lines from a terrible superhero's catchphrase",
+      "house": [
+        "I'm here, sort of",
+        "Justice is calling",
+        "Behold, mild inconvenience"
+      ]
+    },
+    {
+      "prompt": "Three things to do at the DMV while you wait",
+      "house": [
+        "Make friends with a stranger",
+        "Learn a new language",
+        "Contemplate your choices"
+      ]
+    },
+    {
+      "prompt": "Three bad pieces of advice from a fortune teller",
+      "house": [
+        "Invest in socks",
+        "Marry the next stranger",
+        "Avoid all Tuesdays"
+      ]
+    },
+    {
+      "prompt": "Three things the moon would complain about",
+      "house": [
+        "Too many selfies",
+        "Howling wolves",
+        "People hogging the light"
+      ]
+    },
+    {
+      "prompt": "Three terrible names for a new street",
+      "house": [
+        "Pothole Boulevard",
+        "Dead End Lane",
+        "Traffic Jam Alley"
+      ]
+    },
+    {
+      "prompt": "Three things you'd bring to a desert island",
+      "house": [
+        "My phone charger",
+        "Sunscreen forever",
+        "A very long nap"
+      ]
+    },
+    {
+      "prompt": "Three rejected names for a vacuum cleaner",
+      "house": [
+        "The Dust Buster",
+        "Hoover Dam Two",
+        "Sucky McSuckface"
+      ]
+    },
+    {
+      "prompt": "Three awful things to name a cruise ship",
+      "house": [
+        "Barely Floating",
+        "The Iceberg Magnet",
+        "Seasick Sue"
+      ]
+    },
+    {
+      "prompt": "Three things your houseplant would say if it could talk",
+      "house": [
+        "I need water",
+        "Please stop singing",
+        "You overdid the sun"
+      ]
+    },
+    {
+      "prompt": "Three bad ideas for a wedding first dance",
+      "house": [
+        "The robot",
+        "Slow and sad",
+        "A full tango"
+      ]
+    }
   ]
 }

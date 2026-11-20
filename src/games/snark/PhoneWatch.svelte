@@ -3,6 +3,7 @@
   import Voters from './Voters.svelte';
   import PhoneReveal from './PhoneReveal.svelte';
   import PhoneStandings from './PhoneStandings.svelte';
+  import PhoneShow from './PhoneShow.svelte';
   import { ordinal, roundName, secs } from './look';
   import { pts } from './record';
   import type { PlayerView } from './view';
@@ -13,10 +14,12 @@
 
   const s = $derived(view.screen);
   const next = $derived(view.round + 1);
-  const nextName = $derived(roundName(next, view.rounds) + (next >= view.rounds ? ': one prompt for everyone' : next === 2 ? ': double points' : ''));
+  const nextName = $derived(roundName(next, view.rounds) + (next >= view.rounds ? (view.duels ? ': three-line duels' : ': one prompt for everyone') : next === 2 ? ': double points' : ''));
 </script>
 
-{#if s.k === 'reveal' && s.show}
+{#if s.k === 'show'}
+  <PhoneShow prompt={s.prompt} sides={s.sides} {left} span={view.span} />
+{:else if s.k === 'reveal' && s.show}
   <PhoneReveal show={s.show} gain={s.gain} />
 {:else if s.k === 'scores' && s.rows}
   <div class="watch pop-in">

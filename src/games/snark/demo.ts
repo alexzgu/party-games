@@ -18,12 +18,27 @@ const ANSWERS = [
   'Wet Sock', 'Grandma\'s Purse', 'A second, smaller burrito', 'Your ex\'s phone number',
   'No voice notes over 4 minutes', 'Every typo must be defended', 'Car is just tired', 'It means $1,800',
 ];
+/** A stock answer for each prompt, for "Give me one". */
+const STOCKS = ['Plaque to the Future', 'You could water me more', 'Damp Basement', 'A single raisin', 'No replying "k"', 'It wants attention'];
+const FINALS = [
+  { prompt: 'Three things you should never say on a first date', house: ['I already named our kids', 'My mom is outside', 'Are you finishing that?'] },
+  { prompt: 'Three rejected names for a cruise ship', house: ['The Seasick Queen', 'Lifeboat Optional', 'Norovirus Princess'] },
+  { prompt: 'Three things a ghost would put on its résumé', house: ['Fluent in moaning', 'Great at walls', 'Never late, technically'] },
+];
+const LINES = [
+  ['My ex says hi', 'Do you like clowns?', 'I peaked in 8th grade'],
+  ['The Floating Buffet'],
+  ['Spooked 400 tourists', 'Chain rattling (advanced)', ''],
+  ['Is this Venmo or Zelle?', 'I do my own stunts', 'Sorry, that was my stomach'],
+  ['Titanic II', 'Iceberg Lettuce', 'S.S. Probably Fine'],
+];
 const NOW = 1_000_000;
-const draw: L.Draw = (n) => PROMPTS.slice(0, n);
+/** Prompts with their stock answers; finals with the house's lines. */
+const draw: L.Draw = (n, kind) => (kind === 'lines' ? FINALS.slice(0, n) : PROMPTS.slice(0, n).map((prompt, i) => ({ prompt, safety: STOCKS[i] })));
 const seq = (seed: number) => () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
 
-function lobby(n = 5): L.Game {
-  let g = L.newGame('KPXT', { rounds: 3, answerSecs: 75, voteSecs: 15, packIds: ['classic'] });
+function lobby(n = 5, final: L.FinalStyle = 'everyone'): L.Game {
+  let g = L.newGame('KPXT', { rounds: 3, answerSecs: 75, voteSecs: 15, packIds: ['classic'], final });
   NAMES.slice(0, n).forEach((name, i) => (g = L.join(g, `d${i}`, name, new Set()).game));
   return g;
 }
@@ -39,14 +54,18 @@ function answered(g: L.Game, all = true): L.Game {
   return g;
 }
 
-function votingDuel(): L.Game {
-  return L.step(answered(L.startRound(lobby(), draw, NOW - 80000, seq(3))), NOW - 4000, draw);
+/** Voting on the first head-to-head; `safe`: its first author sent the stock answer untouched. */
+function votingDuel(safe = false): L.Game {
+  let g = L.startRound(lobby(), draw, NOW - 80000, seq(3));
+  const item = g.items[0] as L.Duel;
+  if (safe) g = L.answer(g, item.a, 0, item.safety ?? STOCKS[0]);
+  return L.step(answered(g), NOW - 4000, draw);
 }
 
 function castAll(g: L.Game): L.Game {
   const item = g.items[g.at];
   L.votersFor(g, item).forEach((pid, k) => {
-    if (item.kind === 'duel') g = L.vote(g, pid, k % 3 === 2 ? 'b' : 'a');
+    if (item.kind !== 'final') g = L.vote(g, pid, k % 3 === 2 ? 'b' : 'a');
     else g = L.voteFinal(g, pid, { [item.authors.indexOf(L.votableFinal(item, pid)[k % 2])]: 2, [item.authors.indexOf(L.votableFinal(item, pid)[2] ?? L.votableFinal(item, pid)[0])]: 1 });
   });
   return g;
@@ -57,6 +76,26 @@ function finalVote(): L.Game {
   g.players = g.players.map((p, i) => ({ ...p, score: [3250, 2400, 4100, 1500, 2900][i] }));
   g = L.startRound(g, () => ['The secret ingredient in hospital food'], NOW - 90000, seq(5));
   return L.step(answered(g), NOW - 9000, draw);
+}
+
+/** Three-line duels in the final, five players: two pairs and last place against the house. */
+function duelWrite(at = NOW - 30000): L.Game {
+  const g = scored({ ...lobby(5, 'duels'), round: 2 });
+  return L.startRound(g, draw, at, seq(5));
+}
+
+function duelLines(g: L.Game): L.Game {
+  let k = 0;
+  g.items.forEach((item, i) => {
+    for (const pid of L.authorsOf(item)) if (pid !== L.HOUSE) g = L.answerLines(g, pid, i, LINES[k++ % LINES.length]);
+  });
+  return g;
+}
+
+/** Voting on the first duel, its lines all shown. */
+function duelVote(): L.Game {
+  const g = L.step(duelLines(duelWrite(NOW - 120000)), NOW - 40000, draw);
+  return L.step(g, NOW - 5000, draw);
 }
 
 function scored(g: L.Game): L.Game {
@@ -83,7 +122,7 @@ export function demoHost(screen: string): { game: L.Game; online: ReadonlySet<st
       const voter = L.votersFor(g, g.items[0])[0];
       return { game: L.vote(g, voter, 'a'), online: everyone, now: NOW };
     }
-    case 'reveal': g = L.step(castAll(votingDuel()), NOW - 2000, draw); return { game: g, online: everyone, now: NOW };
+    case 'reveal': g = L.step(castAll(votingDuel(true)), NOW - 2000, draw); return { game: g, online: everyone, now: NOW };
     case 'vote3': {
       g = finalVote();
       const item = g.items[0] as L.Finale;
@@ -97,6 +136,17 @@ export function demoHost(screen: string): { game: L.Game; online: ReadonlySet<st
       return { game: g, online: everyone, now: NOW };
     }
     case 'over': g = L.finish(scored(lobby())); return { game: { ...g, round: 3 }, online: everyone, now: NOW };
+    case 'duel-write': {
+      g = duelWrite();
+      for (const pid of ['d1', 'd2']) g = L.answerLines(g, pid, g.items.findIndex((it) => L.authorsOf(it).includes(pid)), LINES[0]);
+      return { game: g, online: away, now: NOW };
+    }
+    case 'duel-vote': {
+      g = duelVote();
+      const voter = L.votersFor(g, g.items[0])[0];
+      return { game: L.vote(g, voter, 'a'), online: everyone, now: NOW };
+    }
+    case 'duel-reveal': g = L.step(castAll(duelVote()), NOW - 2000, draw); return { game: g, online: everyone, now: NOW };
     case 'paused': g = L.pause(L.startRound(lobby(), draw, NOW - 31000, seq(3)), NOW); return { game: g, online: everyone, now: NOW };
     default: return null;
   }
@@ -137,8 +187,17 @@ export function demoPhone(screen: string): { view: PlayerView | null; link: Link
       return as(g, 'd5');
     }
     case 'reveal': {
-      const g = L.step(castAll(votingDuel()), NOW - 2000, draw);
+      const g = L.step(castAll(votingDuel(true)), NOW - 2000, draw);
       return as(g, (g.items[0] as L.Duel).a);
+    }
+    case 'duel-write': return as(duelWrite(), 'd0');
+    case 'duel-vote': {
+      const g = duelVote();
+      return as(g, L.votersFor(g, g.items[0])[0]);
+    }
+    case 'duel-reveal': {
+      const g = L.step(castAll(duelVote()), NOW - 2000, draw);
+      return as(g, L.authorsOf(g.items[0]).find((pid) => pid !== L.HOUSE));
     }
     case 'scores': {
       let g = scored(L.step(castAll(votingDuel()), NOW - 2000, draw));

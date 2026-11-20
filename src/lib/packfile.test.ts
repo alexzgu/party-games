@@ -26,6 +26,21 @@ describe('pack files', () => {
     expect(r).toEqual({ packs: [SAMPLES[game]], skipped: 0, problems: [] });
   });
 
+  it('carries a Snark pack\'s stock answers and finals, dropping broken ones', () => {
+    const extras = {
+      safety: { 'A terrible name for a boat': 'The Sinker' },
+      finals: [{ prompt: 'Three things you never say on a boat', house: ['Iceberg!', 'Who can swim?', 'Oops'] }],
+    };
+    const full = { ...SAMPLES.snark, ...extras };
+    expect(readFile(exportFile('snark', [full]), 'snark')).toEqual({ packs: [full], skipped: 0, problems: [] });
+    const broken = {
+      ...SAMPLES.snark,
+      safety: { ...extras.safety, 'Not a prompt here': 'x', 'The worst thing to hear from your pilot': 'y'.repeat(81) },
+      finals: [...extras.finals, { prompt: 'Three more things', house: ['one', 'two'] }, { prompt: 'Three long ones', house: ['a', 'b', 'c'.repeat(41)] }],
+    };
+    expect(readFile(file('snark', [broken]), 'snark')).toEqual({ packs: [full], skipped: 0, problems: [] });
+  });
+
   it('names the file after the game and the pack', () => {
     expect(fileName('forehead', 'our-trip')).toBe('heads-down-our-trip.jerkbox.txt');
     expect(fileName('quiz')).toBe('big-board-my-packs.jerkbox.txt');

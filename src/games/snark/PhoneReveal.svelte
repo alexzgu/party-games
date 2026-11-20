@@ -5,28 +5,32 @@
   import type { Shown } from './view';
 
   // The reveal on a phone, as on the host screen: who wrote each answer, who voted for it, the
-  // points. Head-to-head: both answers, the winner lit. Final: every answer, most votes first.
+  // points. Head-to-head and three-line duels: both sides, the winner lit (a stock answer
+  // tagged, the house named). Final: every answer, most votes first.
   let { show, gain }: { show: Shown; gain: number | null } = $props();
 
-  const top = $derived(show.kind === 'duel'
+  const top = $derived(show.kind !== 'final'
     ? (show.sides[0].votes === show.sides[1].votes ? -1 : show.sides[0].votes > show.sides[1].votes ? 0 : 1)
     : -1);
   const best = $derived(show.kind === 'final' ? Math.max(0, ...show.cards.map((c) => c.votes)) : 0);
-  const total = $derived(show.kind === 'duel' ? show.sides[0].votes + show.sides[1].votes : 0);
+  const total = $derived(show.kind !== 'final' ? show.sides[0].votes + show.sides[1].votes : 0);
 </script>
 
 <div class="reveal">
   {#if gain !== null}<p class="gain pop-in" class:zero={gain === 0}>{gain ? `+${pts(gain)} for you` : 'No votes for you this time'}</p>{/if}
   <h2 class="prompt">{show.prompt}</h2>
 
-  {#if show.kind === 'duel'}
+  {#if show.kind !== 'final'}
     {#each show.sides as s, i (i)}
       <article class="card pop-in" class:win={top === i} class:lose={top !== -1 && top !== i} class:missing={s.empty}
-        style:--who={playerColor(s.by.color)} style:animation-delay="{i * 150}ms">
-        <p class="text">{s.text}</p>
+        style:--who={s.house ? 'var(--text-dim)' : playerColor(s.by.color)} style:animation-delay="{i * 150}ms">
+        {#if s.lines && !s.empty}
+          <ol class="lines">{#each s.lines as line, k (k)}<li>{line}</li>{/each}</ol>
+        {:else}<p class="text">{s.text}</p>{/if}
+        {#if s.safety}<p class="safety"><span class="tag">Safety</span> stock answer: half points</p>{/if}
         <footer class="by">
-          <Avatar name={s.by.name} color={s.by.color} size={30} /><b>{s.by.name}</b>
-          <span class="pts">+{pts(s.points)}</span>
+          {#if s.house}<span class="house" aria-hidden="true">🏠</span>{:else}<Avatar name={s.by.name} color={s.by.color} size={30} />{/if}<b>{s.by.name}</b>
+          <span class="pts">{s.house ? 'no points' : `+${pts(s.points)}`}</span>
         </footer>
         <p class="n">{s.votes} {s.votes === 1 ? 'vote' : 'votes'}{total ? ` · ${Math.round((100 * s.votes) / total)}%` : ''}{s.sweep ? ' · clean sweep!' : ''}</p>
         {#if s.backers.length}
@@ -67,6 +71,11 @@
   .card.lose { opacity: 0.8; }
   .text { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; line-height: 1.2; overflow-wrap: anywhere; }
   .cards .text { font-size: 1.05rem; }
+  .lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; line-height: 1.2; overflow-wrap: anywhere; }
+  .lines li { padding-left: var(--s-2); border-left: 3px solid color-mix(in srgb, var(--who) 60%, transparent); }
+  .safety { color: var(--text-dim); font-weight: 700; font-size: 0.85rem; }
+  .tag { padding: 1px 8px; margin-right: 4px; border-radius: var(--r-pill); background: var(--overlay-strong); color: var(--text); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+  .house { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--overlay-strong); font-size: 0.95rem; }
   .missing .text { color: var(--text-faint); font-style: italic; }
   .by { display: flex; align-items: center; gap: var(--s-2); }
   .by b { flex: 1; min-width: 0; color: var(--who); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

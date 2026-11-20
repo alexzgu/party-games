@@ -9,19 +9,42 @@ import { playerView } from './view';
 import { readToHost } from './protocol';
 import { loadGame, loadSettings, saveGame, saveSettings } from './store';
 import { gameRecord } from './record';
-import { dedupe, snarkPacks } from '../../lib/content';
+import { dedupe, snarkPacks, type SnarkPack } from '../../lib/content';
 import { makeBag } from '../../lib/bag';
 import { record } from '../../lib/history';
 
 export const packNames = (ids: string[]) => snarkPacks().filter((p) => ids.includes(p.id)).map((p) => p.name);
 
-/** Prompts for a round from the chosen packs, never repeating until the pool runs out (across games too). */
-export function drawPrompts(packIds: string[], count: number): string[] {
+/** The chosen packs, or Classic when none of them has what `has` asks for. */
+function source(packIds: string[], has: (p: SnarkPack) => boolean): SnarkPack[] {
   const packs = snarkPacks();
-  let pool = dedupe(packs.filter((p) => packIds.includes(p.id)).flatMap((p) => p.prompts));
-  if (!pool.length) pool = dedupe(packs.find((p) => p.id === 'classic')?.prompts ?? ['Say something funny']);
+  const chosen = packs.filter((p) => packIds.includes(p.id) && has(p));
+  return chosen.length ? chosen : packs.filter((p) => p.id === 'classic' && has(p));
+}
+
+/**
+ * Prompts for a round from the chosen packs, never repeating until the pool runs out (across
+ * games too), each with its pack's stock answer when it has one.
+ */
+export function drawPrompts(packIds: string[], count: number): L.Dealt[] {
+  const packs = source(packIds, (p) => p.prompts.length > 0);
+  const pool = packs.length ? dedupe(packs.flatMap((p) => p.prompts)) : ['Say something funny'];
+  const safety = new Map(packs.flatMap((p) => Object.entries(p.safety ?? {})));
   const bag = makeBag('snark', pool, (x) => x);
-  return Array.from({ length: count }, () => bag.next()!);
+  return Array.from({ length: count }, () => {
+    const prompt = bag.next()!;
+    const stock = safety.get(prompt);
+    return stock ? { prompt, safety: stock } : prompt;
+  });
+}
+
+/** Finals for three-line duels from the chosen packs (else Classic), never repeating like prompts; none when no pack has any. */
+export function drawFinals(packIds: string[], count: number): L.Dealt[] {
+  const finals = source(packIds, (p) => !!p.finals?.length).flatMap((p) => p.finals ?? []);
+  const seen = new Set<string>();
+  const pool = finals.filter((f) => !seen.has(f.prompt) && seen.add(f.prompt));
+  const bag = makeBag('snark:finals', pool, (f) => f.prompt);
+  return pool.length ? Array.from({ length: count }, () => bag.next()!) : [];
 }
 
 class HostSession {
@@ -91,7 +114,7 @@ class HostSession {
     for (const pid of this.link.pids()) this.sendView(pid);
   }
 
-  private draw = (n: number) => drawPrompts(this.game?.settings.packIds ?? [], n);
+  private draw: L.Draw = (n, kind) => (kind === 'lines' ? drawFinals : drawPrompts)(this.game?.settings.packIds ?? [], n);
 
   private tick(): void {
     this.now = Date.now();

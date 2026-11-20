@@ -1,12 +1,19 @@
 <script lang="ts">
   import Avatar from '../../components/room/Avatar.svelte';
   import Timer from '../../components/room/Timer.svelte';
-  import { isFinalRound, present, promptCount, tasksFor, type Game } from './logic';
+  import { HOUSE, isFinalRound, player, present, promptCount, tasksFor, type Game } from './logic';
 
   // Everyone is typing on their phone; the room sees who is still writing.
   let { game, online, left, total }: { game: Game; online: ReadonlySet<string>; left: number | null; total: number } = $props();
 
   const final = $derived(isFinalRound(game));
+  const lines = $derived(game.items[0]?.kind === 'lines');
+  const nameIn = (pid: string) => (pid === HOUSE ? 'the house' : player(game, pid)?.name ?? '?');
+  const pairs = $derived(lines ? game.items.map((it) => (it.kind === 'final' ? '' : `${nameIn(it.a)} vs ${nameIn(it.b)}`)) : []);
+  const title = $derived(lines ? 'Three-line duels' : final ? 'One prompt for everyone' : 'Write your answers');
+  const sub = $derived(lines ? 'Check your phone: one prompt per duel, up to three short lines each.'
+    : final ? 'Same prompt on every phone. Make it count: every vote is worth points.'
+    : `Check your phone: two prompts each${game.round === 2 ? ', and points count double this round' : ''}.`);
   const writers = $derived(present(game).filter((p) => p.active));
   const late = $derived(present(game).filter((p) => !p.active));
   const doneCount = $derived(writers.filter((p) => tasksFor(game, p.pid).length === 0).length);
@@ -15,8 +22,11 @@
 <div class="write">
   <div class="top">
     <div>
-      <h1 class="pop-in">{final ? 'One prompt for everyone' : 'Write your answers'}</h1>
-      <p class="sub">{final ? 'Same prompt on every phone. Make it count: every vote is worth points.' : `Check your phone: two prompts each${game.round === 2 ? ', and points count double this round' : ''}.`}</p>
+      <h1 class="pop-in">{title}</h1>
+      <p class="sub">{sub}</p>
+      {#if pairs.length}
+        <ul class="pairs" aria-label="Duels">{#each pairs as p, k (k)}<li>{p}</li>{/each}</ul>
+      {/if}
     </div>
     <Timer {left} {total} paused={game.paused !== null} size={112} />
   </div>
@@ -46,6 +56,8 @@
   .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
   h1 { font-size: clamp(2rem, 6.5vmin, 4rem); line-height: 1.05; }
   .sub { color: var(--text-dim); font-size: clamp(1rem, 2.6vmin, 1.5rem); margin-top: var(--s-2); }
+  .pairs { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .pairs li { padding: 4px 14px; border-radius: var(--r-pill); background: var(--overlay); font-weight: 700; font-size: clamp(0.95rem, 2vmin, 1.2rem); }
   .tally { font-weight: 700; color: var(--text-dim); font-size: clamp(1rem, 2.2vmin, 1.3rem); }
   .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: var(--s-3); }
   li {

@@ -2,7 +2,7 @@
   import Avatar from '../../components/room/Avatar.svelte';
   import Timer from '../../components/room/Timer.svelte';
   import Voters from './Voters.svelte';
-  import { NO_ANSWER, multiplier, player, votersFor, type Duel, type Game } from './logic';
+  import { NO_ANSWER, isSafety, multiplier, player, votersFor, type Duel, type Game } from './logic';
   import { SWEEP_BONUS } from './scoring';
   import { pts } from './record';
   import { playerColor } from './look';
@@ -24,6 +24,7 @@
       votes: item.result?.votes[pid] ?? 0,
       points: item.result?.points[pid] ?? 0,
       sweep: item.result?.sweep === pid,
+      safety: isSafety(item, pid),
     };
   }));
   const totalVotes = $derived(sides[0].votes + sides[1].votes);
@@ -39,6 +40,7 @@
       <article class="answer pop-in" class:win={winner === s.side} class:lose={winner && winner !== s.side} class:missing={s.missing}
         style:--who={reveal && s.author ? playerColor(s.author.color) : 'var(--accent)'} style:animation-delay="{150 + i * 150}ms">
         <p class="text">{s.text}</p>
+        {#if reveal && s.safety}<p class="safety pop-in" style:animation-delay="200ms"><span class="tag">Safety</span> stock answer: half points</p>{/if}
         {#if reveal}
           <div class="votes">
             <span class="n pop-in" style:animation-delay="300ms">{s.votes} {s.votes === 1 ? 'vote' : 'votes'}{totalVotes ? ` · ${Math.round((100 * s.votes) / totalVotes)}%` : ''}</span>
@@ -52,7 +54,7 @@
             {#if s.author}<Avatar name={s.author.name} color={s.author.color} size={40} /><b>{s.author.name}</b>{/if}
             <span class="pts">+{pts(s.points)}</span>
           </footer>
-          {#if s.sweep}<p class="sweep pop-in" style:animation-delay="1100ms">Clean sweep! +{pts(SWEEP_BONUS * multiplier(game))}</p>{/if}
+          {#if s.sweep}<p class="sweep pop-in" style:animation-delay="1100ms">Clean sweep!{s.safety ? '' : ` +${pts(SWEEP_BONUS * multiplier(game))}`}</p>{/if}
         {/if}
       </article>
       {#if i === 0}<span class="vs" aria-hidden="true">vs</span>{/if}
@@ -95,6 +97,8 @@
   .by { display: flex; align-items: center; gap: var(--s-2); font-size: clamp(1.1rem, 3vmin, 1.8rem); }
   .by b { flex: 1; min-width: 0; color: var(--who); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pts { font-family: var(--font-display); font-weight: 800; font-variant-numeric: tabular-nums; }
+  .safety { text-align: center; color: var(--text-dim); font-weight: 700; font-size: clamp(0.85rem, 1.9vmin, 1.05rem); }
+  .tag { padding: 2px 10px; margin-right: 4px; border-radius: var(--r-pill); background: var(--overlay-strong); color: var(--text); font-size: 0.8em; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
   .sweep { text-align: center; font-weight: 800; color: var(--c-gold); font-size: clamp(1rem, 2.4vmin, 1.4rem); }
   .foot { display: flex; align-items: center; justify-content: center; gap: var(--s-4); min-height: 88px; }
   .voting { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); }

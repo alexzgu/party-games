@@ -239,6 +239,38 @@ describe('Snark Tank packs', () => {
     expect(packs.slice(0, 2).map((p) => p.id)).toEqual(['classic', 'after-dark']);
     expect(problems).toEqual([]);
   });
+  // Optional extras: stock answers for "Give me one" and finals for three-line duels. Shapes
+  // only; a pack need not have one for every prompt.
+  it('stock answers belong to their pack\'s prompts; finals are new prompts with three house lines', () => {
+    const problems: string[] = [];
+    const packs = snarkPacks();
+    const regular = new Set(packs.flatMap((p) => (Array.isArray(p.prompts) ? p.prompts.map(key) : [])));
+    const finals = new Map<string, string>();
+    for (const p of packs) {
+      if (p.safety !== undefined) {
+        if (!p.safety || typeof p.safety !== 'object' || Array.isArray(p.safety)) problems.push(`${p.id}: "safety" should be an object of prompt → answer`);
+        else for (const [q, a] of Object.entries(p.safety)) {
+          if (!p.prompts.includes(q)) problems.push(`${p.id}: safety answer for "${q}", which is not one of this pack's prompts`);
+          if (typeof a !== 'string' || !a.trim() || a.length > 80) problems.push(`${p.id}: safety answer for "${q}" should be 1–80 characters`);
+        }
+      }
+      if (p.finals === undefined) continue;
+      if (!Array.isArray(p.finals)) { problems.push(`${p.id}: "finals" should be a list`); continue; }
+      for (const f of p.finals) {
+        const q = typeof f?.prompt === 'string' ? f.prompt : '';
+        if (!q.trim()) { problems.push(`${p.id}: a final with no prompt`); continue; }
+        if (regular.has(key(q))) problems.push(`${p.id}: final "${q}" is also a regular prompt`);
+        const prev = finals.get(key(q));
+        if (prev) problems.push(`${p.id}: final "${q}" already exists in ${prev}`);
+        finals.set(key(q), p.id);
+        const house = f.house as unknown;
+        if (!Array.isArray(house) || house.length !== 3 || !house.every((l) => typeof l === 'string' && l.trim() && l.length <= 40)) {
+          problems.push(`${p.id}: final "${q}" needs exactly 3 house lines of 1–40 characters`);
+        }
+      }
+    }
+    expect(problems).toEqual([]);
+  });
 });
 
 describe('Earworm packs', () => {

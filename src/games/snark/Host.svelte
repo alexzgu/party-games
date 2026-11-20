@@ -15,6 +15,7 @@
   import HostWrite from './HostWrite.svelte';
   import HostDuel from './HostDuel.svelte';
   import HostFinal from './HostFinal.svelte';
+  import HostLines from './HostLines.svelte';
   import HostScores from './HostScores.svelte';
   import HostOver from './HostOver.svelte';
   import { host } from './host.svelte';
@@ -83,7 +84,7 @@
   }
 
   const timed = $derived(!!game && (game.deadline !== null || game.paused !== null));
-  const skipLabel = $derived(game?.phase === 'write' ? 'End writing' : game?.phase === 'vote' ? 'End voting' : 'Next');
+  const skipLabel = $derived(game?.phase === 'write' ? 'End writing' : game?.phase === 'show' ? 'Start voting' : game?.phase === 'vote' ? 'End voting' : 'Next');
 </script>
 
 <svelte:window onkeydown={(e) => {
@@ -142,10 +143,12 @@
           <HostLobby {game} {online} {link} onstart={() => host.start()} onkick={(pid) => host.kick(pid)} onsettings={() => go('/snark/settings')} onconnection={() => (showConn = true)} />
         {:else if game.phase === 'write'}
           <HostWrite {game} {online} {left} {total} />
-        {:else if game.phase === 'vote' || game.phase === 'reveal'}
+        {:else if game.phase === 'show' || game.phase === 'vote' || game.phase === 'reveal'}
           {#key `${game.round}:${game.at}`}
             {#if game.items[game.at]?.kind === 'final'}
               <HostFinal {game} {online} {left} {total} />
+            {:else if game.items[game.at]?.kind === 'lines'}
+              <HostLines {game} {online} {left} {total} />
             {:else}
               <HostDuel {game} {online} {left} {total} />
             {/if}

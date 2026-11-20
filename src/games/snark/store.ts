@@ -8,7 +8,7 @@ const GAME = 'snark:host';
 const SETTINGS = 'snark:settings';
 const DRAFTS = 'snark:drafts';
 
-const PHASES = ['lobby', 'write', 'vote', 'reveal', 'scores', 'over'];
+const PHASES = ['lobby', 'write', 'show', 'vote', 'reveal', 'scores', 'over'];
 
 /** A saved game, or null when there is none or it is from an older shape. */
 export function validGame(x: unknown): Game | null {
@@ -30,6 +30,7 @@ export function loadSettings(): Settings {
     answerSecs: (ANSWER_CHOICES as readonly number[]).includes(s.answerSecs ?? 0) ? s.answerSecs! : DEFAULT_SETTINGS.answerSecs,
     voteSecs: (VOTE_CHOICES as readonly number[]).includes(s.voteSecs ?? 0) ? s.voteSecs! : DEFAULT_SETTINGS.voteSecs,
     packIds: Array.isArray(s.packIds) ? s.packIds.filter((id) => typeof id === 'string') : DEFAULT_SETTINGS.packIds,
+    final: s.final === 'duels' ? 'duels' : 'everyone',
   };
 }
 export const saveSettings = (s: Settings) => save(SETTINGS, s);

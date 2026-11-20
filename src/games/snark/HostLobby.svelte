@@ -22,7 +22,7 @@
   const need = $derived(Math.max(0, MIN_PLAYERS - players.length));
   const site = location.host + location.pathname.replace(/\/$/, '');
   const s = $derived(game.settings);
-  const summary = $derived(`${s.rounds} rounds · ${s.answerSecs} s to write · ${s.voteSecs} s to vote · ${packNames(s.packIds).join(', ') || 'Classic'}`);
+  const summary = $derived(`${s.rounds} rounds${s.final === 'duels' ? ' (three-line duel final)' : ''} · ${s.answerSecs} s to write · ${s.voteSecs} s to vote · ${packNames(s.packIds).join(', ') || 'Classic'}`);
   let kicking = $state<{ pid: string; name: string } | null>(null);
   // A tile that has just appeared ignores taps for 400 ms, so a double tap never kicks.
   const shownAt = new Map<string, number>();

@@ -33,5 +33,7 @@ for (const p of packs) {
     else if ('banned' in it) console.log(`${it.word}: ${it.banned.join(', ')}`);
     else { console.log(`${it.answer}  ←  ${it.phrase}`); hints.set(it.hint, (hints.get(it.hint) ?? 0) + 1); }
   }
+  // Snark Tank finals (three-line duels) must be new across packs too.
+  if (p.finals?.length) console.log(`\n### finals (${p.finals.length})\n` + p.finals.map((f) => f.prompt).join('\n'));
 }
 if (hints.size) console.log('\n## hints in use\n' + [...hints].sort((a, b) => b[1] - a[1]).map(([h, n]) => `${h} (${n})`).join(', '));

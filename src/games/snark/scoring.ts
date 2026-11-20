@@ -6,6 +6,8 @@ export const SWEEP_BONUS = 250;
 export const SWEEP_MIN_VOTES = 2;
 export const FINAL_VOTE_POINTS = 400;
 export const FINAL_VOTES_EACH = 3;
+/** Three-line duels in the final: the head-to-head formula times this (3000 split by votes, 750 sweep bonus). */
+export const LINES_MULTIPLIER = 3;
 
 export interface Result {
   /** Votes each author received. */
@@ -27,6 +29,22 @@ export function scoreDuel(a: string, b: string, ballots: Record<string, string>,
   const sweep = total >= SWEEP_MIN_VOTES ? [a, b].find((pid) => votes[pid] === total) : undefined;
   if (sweep) points[sweep] += SWEEP_BONUS * multiplier;
   return sweep ? { votes, points, sweep } : { votes, points };
+}
+
+/** A three-line duel: the head-to-head formula × 3. Votes for `house` (the game's own lines) score nothing. */
+export function scoreLines(a: string, b: string, ballots: Record<string, string>, house?: string): Result {
+  const r = scoreDuel(a, b, ballots, LINES_MULTIPLIER);
+  if (house === undefined || !(house in r.points)) return r;
+  const points = { ...r.points, [house]: 0 };
+  return r.sweep && r.sweep !== house ? { votes: r.votes, points, sweep: r.sweep } : { votes: r.votes, points };
+}
+
+/** Halves (rounded down) everything the given authors earned, sweep bonus included: their answer was the pack's stock one. */
+export function halve(r: Result, pids: readonly string[]): Result {
+  if (!pids.length) return r;
+  const points = { ...r.points };
+  for (const pid of pids) if (pid in points) points[pid] = Math.floor(points[pid] / 2);
+  return { ...r, points };
 }
 
 /** The final round. `ballots` maps each voter to how many of their votes went to each author. */

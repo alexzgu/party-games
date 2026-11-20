@@ -439,32 +439,46 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
 - **Host controls**: pause/resume (Space; the timer stops on every phone too), skip (End
   writing / End voting / Next; ignores a second tap within 0.8 s), end game, rules. Wake Lock
   on the host and on phones while in a room.
-- Demo screens: `#/snark/host?demo=lobby|lobby-empty|write|vote|reveal|vote3|reveal3|scores|over|paused`,
-  `#/snark/join?demo=join|lobby|late|write|wait|vote|voted|vote-own|vote3|voted3|reveal|reveal3|scores|over`.
+- Demo screens: `#/snark/host?demo=lobby|lobby-empty|write|vote|reveal|vote3|reveal3|scores|over|paused|duel-write|duel-vote|duel-reveal`,
+  `#/snark/join?demo=join|lobby|late|write|wait|vote|voted|vote-own|vote3|voted3|reveal|reveal3|scores|over|duel-write|duel-vote|duel-reveal`.
 - **Packs**: `src/content/snark/*.json`, `{"prompts": [...]}`, 3–14 words (Classic 200, After
-  Dark 80).
+  Dark 80); optional `safety` and `finals`, below.
 
 ### Snark Tank: Quiplash 3 options (`snark`, on by setting; defaults unchanged)
 
-Settings gain **Final round**: "Everyone, 3 votes" (today's final, default) or "Three-line duels".
-Rules from Quiplash 3; amounts marked *house* are ours (the original's are not published).
+Settings gain **Final round**: "Everyone, 3 votes" (today's final, default; also what settings and
+games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amounts marked
+*house* are ours (the original's are not published).
 
-- **Stuck? button** (both options): in head-to-head rounds a prompt that has a stored safety answer
-  shows "Give me one"; it fills the box with that answer. Sent unchanged, the answer is marked
-  safety and every point it earns is halved (rounded down). Edited, it is a normal answer.
-- **Three-line duels** (final round when chosen): players are paired at random; each pair gets
-  one final prompt (asks for three things). Each player writes three lines (40 characters each;
-  Done needs at least one). Odd count: the player in last place (ties: random) faces the house,
-  whose three lines come with the prompt. Each duel in turn on the host: the prompt, then side
-  A's lines one at a time (1.5 s apart), then side B's; then everyone except the two duellers
-  votes for a whole set (twice the vote time). Points: vote share × 3000, +750 for a clean sweep
-  of 2+ votes (*house*, Snark's head-to-head formula × 3). Votes for the house score nothing.
-  Then the winner screen as today.
+- **Give me one** (both options): in head-to-head rounds a prompt whose pack has a stock (safety)
+  answer for it sends that answer with the prompt; the phone shows "Give me one", which fills the
+  box. The host compares each sent answer (cleaned) with its own copy, never trusting the phone:
+  an exact match earns half of every point (rounded down, sweep bonus included); an edited one is
+  a normal answer. The reveal tags it "Safety" on the host and the phones.
+- **Three-line duels** (the final, when chosen and the game has 3+ players and some finals):
+  players are paired at random, each pair with its own final prompt (asks for three things). With
+  an odd count the player in last place (ties: random) faces **the house**, whose three lines come
+  with the prompt. Each player writes up to three lines of 40 characters (Done needs one; blank
+  lines dropped; drafts survive a reload). Each duel in turn: a showing step (`show` phase, timed,
+  pausable, skippable with "Start voting"), where the prompt and then side A's lines appear one at
+  a time 1.5 s apart, then side B's (reduced motion: all at once; the steps are counted from the
+  timer, so a pause holds them and a reloaded host or reconnecting phone lands in step); then
+  everyone except the two duellers votes for a whole side (twice the vote time; late joiners too).
+  Authors (and which side is the house) stay hidden until the reveal. Points: vote share × 3000,
+  +750 for a clean sweep of 2+ votes (*house*: the head-to-head formula × 3); votes for the house
+  score nothing. Phones with nothing to do follow the showing and the reveal like the host. Then
+  the winner screen as today; History gets one line per duel.
+- **Fallbacks**: no finals in the chosen packs → Classic's; none at all, or fewer than 3 players
+  left → the 3-vote final.
 - **Content**: a Snark pack may add `"safety": {"<prompt>": "<answer>"}` and
-  `"finals": [{"prompt": "...", "house": ["...", "...", "..."]}]`. Finals are drawn from the
-  chosen packs, falling back to Classic. Classic and After Dark get safety answers for every
-  prompt and 40 / 20 finals.
-- Demo screens add `duel-write`, `duel-reveal`, `duel-vote` on host and phone.
+  `"finals": [{"prompt": "...", "house": ["...", "...", "..."]}]`. Finals are dealt from the
+  chosen packs, never repeating until they run out (like prompts). The content gate checks
+  shapes only: safety keys are the pack's own prompts and answers 1–80 characters; final prompts
+  are unique across Snark packs and never a regular prompt; exactly 3 house lines of 1–40
+  characters. Pack files carry both fields when present (broken entries dropped). Classic and
+  After Dark have a safety answer for every prompt and 40 / 20 finals.
+- Demo screens add `duel-write`, `duel-vote`, `duel-reveal` on host and phone (the head-to-head
+  demos carry stock answers; `reveal` shows one sent untouched).
 
 ## Shared room link (`src/lib/room/`)
 

@@ -141,7 +141,15 @@ export const customSongs = customStore<SongPack>('custom:songs', builtinSongs);
 export const songPacks = (): SongPack[] => merged(customSongs.saved(), builtinSongs);
 
 // Snark Tank: prompts players write funny answers to ("The worst thing to hear from your pilot").
-export interface SnarkPack { id: string; name: string; blurb: string; prompts: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+/** A final for three-line duels: a prompt that asks for three things, and the house's own three lines. */
+export interface SnarkFinal { prompt: string; house: [string, string, string] }
+export interface SnarkPack {
+  id: string; name: string; blurb: string; prompts: string[];
+  /** Prompt → a stock answer for "Give me one" (sent untouched, it earns half points). */
+  safety?: Record<string, string>;
+  /** Finals for three-line duels. */
+  finals?: SnarkFinal[];
+  custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
 const snarkFiles = import.meta.glob<SnarkPack>('../content/snark/*.json', { eager: true, import: 'default' });
 const builtinSnark = ordered(Object.values(snarkFiles), ['classic', 'after-dark']);
 export const customSnark = customStore<SnarkPack>('custom:snark', builtinSnark);

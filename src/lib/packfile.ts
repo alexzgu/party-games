@@ -7,7 +7,7 @@
 import { APP, gameName, GAMES, type PackGameId } from '../app.config';
 import {
   customDecks, customGibberish, customQuick, customQuiz, customSnark, customSongs, customSpectra, customTaboo, slugify,
-  type GibberishCard, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkPack, type Song,
+  type GibberishCard, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkFinal, type SnarkPack, type Song,
   type SongPack, type Spectrum, type SpectrumPack, type TabooCard, type TabooPack, type WordDeck,
 } from './content';
 import { MAX_ITEM_CHARS, MAX_WORDS_PER_ITEM } from '../games/forehead/words';
@@ -17,6 +17,7 @@ import { checkCard } from '../games/gibberish/parse';
 import { MAX_CATEGORIES, MAX_LEVELS, sizeProblem, tidyBoard } from '../games/quiz/board';
 import { cleanPrompt, promptError } from '../games/quick/parse';
 import { promptProblem } from '../games/snark/prompts';
+import { ANSWER_MAX, LINE_MAX } from '../games/snark/logic';
 import { checkSong } from '../games/song/edit';
 import { cardId as tabooId, cardProblems, tidy as tidyTaboo } from '../games/taboo/cards';
 
@@ -41,12 +42,14 @@ const NOT_A_PACK_FILE = `This isn't a ${APP.name} pack file.`;
 
 // ---- Writing
 
-/** The pack as it goes in a file: id, name, emoji (Heads Down. only), blurb and items. */
+/** The pack as it goes in a file: id, name, emoji (Heads Down. only), blurb and items (Snark Tank: stock answers and finals too, when it has them). */
 function plain(game: PackGameId, p: AnyPack): Record<string, unknown> {
   const field = FIELD[game];
+  const { safety, finals } = game === 'snark' ? (p as SnarkPack) : {};
   return {
     id: p.id, name: p.name, ...(game === 'forehead' ? { emoji: (p as WordDeck).emoji } : {}), blurb: p.blurb,
     [field]: (p as unknown as Record<Field, unknown>)[field],
+    ...(safety ? { safety } : {}), ...(finals ? { finals } : {}),
   };
 }
 
@@ -110,6 +113,33 @@ function quick(x: unknown, kept: string[]): string | null {
 function snark(x: unknown): string | null {
   const q = text(x);
   return q && !promptProblem(q) ? q : null;
+}
+
+/** A Snark pack's stock answers, kept only for prompts the pack still has (1–80 characters each). */
+function safety(x: unknown, prompts: string[]): Record<string, string> | null {
+  if (!isObj(x)) return null;
+  const have = new Set(prompts);
+  const out = Object.entries(x).flatMap(([q, a]) => {
+    const t = text(a);
+    return have.has(text(q)) && t && t.length <= ANSWER_MAX ? [[text(q), t]] : [];
+  });
+  return out.length ? Object.fromEntries(out) : null;
+}
+
+/** A final for three-line duels: a usable prompt and exactly three house lines of 1–40 characters. */
+function final(x: unknown): SnarkFinal | null {
+  if (!isObj(x) || !Array.isArray(x.house) || x.house.length !== 3) return null;
+  const prompt = text(x.prompt);
+  const house = x.house.map(text);
+  if (!prompt || promptProblem(prompt) || house.some((l) => !l || l.length > LINE_MAX)) return null;
+  return { prompt, house: house as SnarkFinal['house'] };
+}
+
+/** A Snark pack's optional extras; absent fields stay absent, so packs without them read back unchanged. */
+function snarkExtras(raw: Record<string, unknown>, prompts: string[]): Partial<SnarkPack> {
+  const stock = safety(raw.safety, prompts);
+  const finals = Array.isArray(raw.finals) ? keep(raw.finals, final, (f) => f.prompt.toLowerCase()).items : [];
+  return { ...(stock ? { safety: stock } : {}), ...(finals.length ? { finals } : {}) };
 }
 
 function song(x: unknown, kept: Song[]): Song | null {
@@ -180,7 +210,8 @@ function readPack(game: PackGameId, raw: unknown): ReadPack {
     return why ? { problem: `“${name}” cannot be played: ${why}.` } : { pack: tidyBoard(b), skipped: got.skipped };
   }
   const emoji = text(raw.emoji);
-  const extra = game === 'forehead' ? { emoji: emoji && emoji.length <= 16 ? emoji : '🃏' } : {};
+  const extra = game === 'forehead' ? { emoji: emoji && emoji.length <= 16 ? emoji : '🃏' }
+    : game === 'snark' ? snarkExtras(raw, got.items as string[]) : {};
   return { pack: { ...base, ...extra, [FIELD[game]]: got.items } as unknown as AnyPack, skipped: got.skipped };
 }
 

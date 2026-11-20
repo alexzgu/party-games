@@ -17,3 +17,22 @@ export function assignPrompts(pids: readonly string[], prompts: readonly string[
   // Vote order: shuffled, so nobody can work out the ring from the order on screen.
   return shuffle(pairings, rand);
 }
+
+export interface Pairs { pairs: [string, string][]; /** The odd one out, who faces the house. */ alone?: string }
+
+/**
+ * Pairs for the three-line duels: random pairs; with an odd count the player in last place
+ * (ties broken at random, by the shuffle) sits out the pairing and faces the house instead.
+ */
+export function pairDuels(pids: readonly string[], score: (pid: string) => number, rand: () => number = Math.random): Pairs {
+  let order = shuffle(pids, rand);
+  let alone: string | undefined;
+  if (order.length % 2) {
+    const low = Math.min(...order.map(score));
+    alone = order.find((pid) => score(pid) === low)!;
+    order = order.filter((pid) => pid !== alone);
+  }
+  const pairs: [string, string][] = [];
+  for (let i = 0; i + 1 < order.length; i += 2) pairs.push([order[i], order[i + 1]]);
+  return alone === undefined ? { pairs } : { pairs, alone };
+}

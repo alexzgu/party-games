@@ -84,5 +84,249 @@
     "The worst text to wake up to after a night out",
     "A terrible name for a strip club DJ",
     "The worst thing to overhear at a bachelorette brunch"
+  ],
+  "safety": {
+    "The worst thing to find in your browser history": "Seventeen tabs about goat yoga",
+    "What your ex is doing right now": "Googling me, probably",
+    "The worst thing to text your boss at 2 a.m.": "Sorry, wrong boss, I meant mom",
+    "What really happened at the bachelor party": "What happens in Vegas stays in group chats",
+    "A terrible safe word": "Pineapple",
+    "A dating profile red flag": "Still lives with his ex",
+    "The worst thing to hear the morning after": "Is that my shirt",
+    "A bad name for a cocktail": "Regret on the Rocks",
+    "What's actually in the jungle juice": "Mostly Mountain Dew and bad decisions",
+    "The worst thing to find in your roommate's room": "A suspiciously large inflatable flamingo",
+    "A pickup line that would get a drink thrown at you": "Do you come with a warranty",
+    "The worst thing to drunk-text your ex": "Hey, it's me, you remember",
+    "A terrible theme for a frat party": "Toga party for tax accountants",
+    "The most suspicious thing to say at airport security": "I packed it myself, honestly",
+    "A cocktail named after your worst decision": "The Fourth Margarita",
+    "A better name for the walk of shame": "The Stride of Pride",
+    "The real reason you got kicked out of the bar": "I only did a cartwheel",
+    "The worst thing to whisper in someone's ear": "Your stove is still on",
+    "The worst place to make out": "Inside a ball pit",
+    "The worst thing to shout at a bachelorette party": "Where's the stripper's boyfriend",
+    "What your hangover is trying to tell you": "Never again, until Saturday",
+    "The worst thing to say right after a first kiss": "Wow, that was fast",
+    "A terrible name for an adult toy shop": "Frisky Business",
+    "A new drinking game nobody should play": "Chug, shout, sing, repeat",
+    "What's really in grandma's special brownies": "Mostly butter and bad ideas",
+    "The worst possible dating app bio": "Single and dangerously bored",
+    "The real reason the neighbors called the cops": "Someone invited the whole zip code",
+    "What your liver would say if it could talk": "Please stop, I'm so tired",
+    "A bad excuse for showing up to brunch still drunk": "I'm just resting my eyes",
+    "A terrible name for a hangover cure": "Hair of the Dog Spritzer",
+    "The worst thing to find under a hotel bed": "A tiny ukulele",
+    "Something you never want your mom to find in your nightstand": "Whatever that stain is",
+    "The worst possible wedding vow": "I promise to share my fries",
+    "The hardest thing to explain to a cop at 3 a.m.": "Why I was wearing a tutu",
+    "A terrible name for a condom brand": "Slippery When Ambitious",
+    "The most awkward thing to say in a hot tub": "Is the water supposed to be warm",
+    "What your therapist writes down about you": "You're so emotionally unavailable",
+    "The worst lie you could tell on a first date": "I own a boat",
+    "The worst thing to blurt out at a work happy hour": "My therapist says I'm fine",
+    "A fake excuse to leave a party early": "My cat just texted me",
+    "An honest name for a dive bar": "The Wet Floor",
+    "The worst thing to learn about last night's date": "He's still married",
+    "What really happened at the office holiday party": "Somebody photocopied something",
+    "A terrible tattoo to get at 3 a.m.": "Her name in Comic Sans",
+    "The worst thing to find on your partner's phone": "Seventeen unread messages from his ex",
+    "A new shot nobody should ever order": "The Dumpster Fire",
+    "The worst caption for a beach selfie": "Living my best life, sort of",
+    "A bad pet name for your significant other": "Snuggle Bandit",
+    "The most suspicious item in your carry-on": "A suspicious amount of snacks",
+    "The wildest thing on a bucket list for your thirties": "Skydive in a banana suit",
+    "What happens at a very open-minded book club": "Mostly rosé, almost no reading",
+    "The worst thing to scream during karaoke": "My ex's favorite song",
+    "An honest review of last night's date": "Two stars, would not return",
+    "What the morning-after pancakes are apologizing for": "Sorry, we got carried away",
+    "The worst way to get caught skinny dipping": "Right when the lifeguard shows up",
+    "What your mattress has seen": "Too many secrets",
+    "A rejected flavor of hard seltzer": "Lime and Regret",
+    "A dating app filter that should exist": "Must own a boat",
+    "The real reason the party got shut down": "Karen called the HOA",
+    "The worst toast at a divorce party": "At least the cake was good",
+    "What Cupid does on his day off": "Napping in a hammock",
+    "A new rule for the walk of shame": "Carry your shoes and your dignity",
+    "A bad thing to hear from your tattoo artist halfway through": "Are you sure about the spelling",
+    "The real reason they call it happy hour": "It's the only time we're free",
+    "Something you should never do in the back of a rideshare": "Sing along to every song",
+    "The worst sound to hear through your apartment wall": "A very enthusiastic neighbor",
+    "What your one-night stand's roommate really thought": "Where did you meet again",
+    "The worst photo to end up in a wedding slideshow": "Why did I wear this shirt",
+    "A terrible name for a lingerie store": "Moist Dreams",
+    "What your bartender is secretly judging you for": "That you're on your fourth drink",
+    "A terrible flavor of vodka": "Cucumber Disappointment",
+    "The most embarrassing reason to visit urgent care": "Slipped on a banana peel",
+    "The worst thing to say during couples therapy": "You bring up my ex again",
+    "The first thing you'd do with a hall pass": "Call my ex, then stay home",
+    "What your bed would say about you": "You should really change me",
+    "A sign you're too old for this club": "Everyone's wearing glitter",
+    "The worst thing to do when the kiss cam finds you": "Hide behind the nachos",
+    "The worst text to wake up to after a night out": "Who is this Brad",
+    "A terrible name for a strip club DJ": "DJ Slippery Pete",
+    "The worst thing to overhear at a bachelorette brunch": "The groom's grandmother"
+  },
+  "finals": [
+    {
+      "prompt": "Three things you should never say at a first kiss",
+      "house": [
+        "Was that it",
+        "My ex does it better",
+        "Do you taste garlic"
+      ]
+    },
+    {
+      "prompt": "Three terrible names for a cocktail",
+      "house": [
+        "Regret Colada",
+        "Bad Idea Sour",
+        "Walk of Shame Mule"
+      ]
+    },
+    {
+      "prompt": "Three red flags on a dating profile",
+      "house": [
+        "Looking for someone to pay",
+        "Ask me about my crypto",
+        "No ex drama, just lawsuits"
+      ]
+    },
+    {
+      "prompt": "Three things you shouldn't text at two in the morning",
+      "house": [
+        "U up",
+        "I miss your cat",
+        "Want to rob a bank"
+      ]
+    },
+    {
+      "prompt": "Three worst places to wake up the next morning",
+      "house": [
+        "A strange bathtub",
+        "A kiddie pool",
+        "Next to a goat"
+      ]
+    },
+    {
+      "prompt": "Three excuses for showing up late to brunch",
+      "house": [
+        "My bed needed me",
+        "I got engaged to a stranger",
+        "Traffic and tequila"
+      ]
+    },
+    {
+      "prompt": "Three awful names for a hangover cure",
+      "house": [
+        "The Resurrection",
+        "Mother's Mercy",
+        "Tomorrow's Problem"
+      ]
+    },
+    {
+      "prompt": "Three things you hear from a very bad bartender",
+      "house": [
+        "Pick a color",
+        "It's mostly ice",
+        "I have no idea"
+      ]
+    },
+    {
+      "prompt": "Three things you'd find in a frat house fridge",
+      "house": [
+        "One sad lime",
+        "Mystery juice",
+        "Mustard and regret"
+      ]
+    },
+    {
+      "prompt": "Three things your wingman should never say",
+      "house": [
+        "She's way out of your league",
+        "Ask about her ex",
+        "My buddy has a rash"
+      ]
+    },
+    {
+      "prompt": "Three bad pickup lines at a laundromat",
+      "house": [
+        "Nice spin cycle",
+        "Wash my heart",
+        "Want to tumble dry"
+      ]
+    },
+    {
+      "prompt": "Three things your tattoo artist should never say",
+      "house": [
+        "Oops",
+        "Let's call it art",
+        "Hold still, I'm lost"
+      ]
+    },
+    {
+      "prompt": "Three things you shouldn't scream on a first date",
+      "house": [
+        "Marry me now",
+        "I'm a spy",
+        "Pay the bill"
+      ]
+    },
+    {
+      "prompt": "Three suspicious things to say in a rideshare",
+      "house": [
+        "Can we stop for a shovel",
+        "Don't look in the trunk",
+        "Is this your real name"
+      ]
+    },
+    {
+      "prompt": "Three terrible wedding toast openers",
+      "house": [
+        "I can't believe he got her",
+        "Let's discuss the ex",
+        "Does this mic work"
+      ]
+    },
+    {
+      "prompt": "Three worst things to find in a hotel bed",
+      "house": [
+        "A stranger's sock",
+        "Glitter",
+        "A very old wig"
+      ]
+    },
+    {
+      "prompt": "Three things your drunk self would buy online",
+      "house": [
+        "Fifteen hammocks",
+        "A pet llama",
+        "Live goats"
+      ]
+    },
+    {
+      "prompt": "Three awful names for a bar",
+      "house": [
+        "The Spilled Pint",
+        "Sticky Floors",
+        "Bad Decisions Tavern"
+      ]
+    },
+    {
+      "prompt": "Three things the neighbors heard last night",
+      "house": [
+        "A trombone",
+        "Very loud karaoke",
+        "Someone yelling about tacos"
+      ]
+    },
+    {
+      "prompt": "Three worst lies to tell your date",
+      "house": [
+        "I'm a doctor",
+        "I love your cat",
+        "I'm not married"
+      ]
+    }
   ]
 }

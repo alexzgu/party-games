@@ -87,7 +87,8 @@
     <main class="body">
       {#if s.k === 'write'}
         {#key `${view.code}:${view.round}`}
-          <PhoneWrite code={view.code} round={view.round} tasks={s.tasks} total={s.total} final={view.final} writers={s.writers} onsend={(i, text) => send({ t: 'answer', r: view.round, i, text })} />
+          <PhoneWrite code={view.code} round={view.round} tasks={s.tasks} total={s.total} final={view.final} lines={s.lines} writers={s.writers}
+            onsend={(i, text) => send({ t: 'answer', r: view.round, i, text })} onlines={(i, lines) => send({ t: 'lines', r: view.round, i, lines })} />
         {/key}
       {:else if s.k === 'vote'}
         {#key `${view.round}:${s.at}`}<PhoneVote screen={s} onvote={(c) => send({ t: 'vote', r: view.round, at: s.at, c })} />{/key}
