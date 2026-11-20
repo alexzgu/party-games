@@ -59,7 +59,7 @@ No secret ever goes into this repo or to an AI chat. You type them into Cloudfla
 4. **Add the two secrets.** In the Cloudflare dashboard: Workers & Pages → `jerkbox-wizard` →
    Settings → Variables and Secrets → Add. Choose type **Secret** each time:
    - `ANTHROPIC_API_KEY`: the key from step 2.
-   - `PARTY_PHRASES`: the magic words, one phrase per line (see below).
+   - `PARTY_PHRASES`: the magic words, one phrase per line, or several on one line separated by commas (see below).
 
    Save and deploy. (Or in your own terminal: `npx wrangler@4.165.0 secret put ANTHROPIC_API_KEY`,
    which asks for the value without showing it. The phrase list has several lines, so the

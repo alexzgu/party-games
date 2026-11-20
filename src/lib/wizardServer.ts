@@ -3,7 +3,7 @@
 // keeps its own Anthropic key; the phone never sees it, and the words never go in a URL.
 
 /** The wizard server's address (its workers.dev URL, no trailing slash). Empty hides the magic words everywhere. */
-export const WIZARD_SERVER = '';
+export const WIZARD_SERVER = 'https://jerkbox-wizard.jerkbox.workers.dev';
 
 export type Redeemed =
   | { ok: true; token: string }

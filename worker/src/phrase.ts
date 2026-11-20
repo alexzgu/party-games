@@ -15,10 +15,14 @@ export function normalisePhrase(text: string): string {
     .trim();
 }
 
-/** The accepted phrases from the secret: one per line, normalised, blanks and repeats dropped. */
+/**
+ * The accepted phrases from the secret: one per line, or separated by commas or semicolons (a
+ * dashboard box may be one line; punctuation is never part of a phrase), normalised, blanks and
+ * repeats dropped.
+ */
 export function parsePhrases(secret: string | undefined): string[] {
   const out = new Set<string>();
-  for (const line of (secret ?? '').split(/\r?\n/)) {
+  for (const line of (secret ?? '').split(/\r?\n|[,;]/)) {
     const p = normalisePhrase(line);
     if (p) out.add(p);
   }

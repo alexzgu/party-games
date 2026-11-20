@@ -12,6 +12,7 @@ describe('party phrases', () => {
   it('reads one phrase per line, skipping blanks and repeats', () => {
     expect(parsePhrases('Test phrase one\r\n\n  test phrase ONE \ntest phrase two\n')).toEqual(['test phrase one', 'test phrase two']);
     expect(parsePhrases(undefined)).toEqual([]);
+    expect(parsePhrases('test phrase one, Test phrase two;test phrase three,')).toEqual(['test phrase one', 'test phrase two', 'test phrase three']);
   });
   it('matches any accepted phrase however it is typed, and nothing else', async () => {
     const keys = await deriveKeys(FAKE_KEY);
