@@ -10,8 +10,9 @@ Content only: `npm run test:content`; list a game's existing items: `npm run lis
 ## Making a new pack (the main live-content route)
 
 The owner, or a friend at the party, asks a chat for a pack, e.g. "make a Spectrum pack about
-our college", "Heads Down. deck: 2000s cartoons, 60 words" or "a Big Board about Marvel"
-(a Big Board pack is a whole quiz board made from a topic). You write it as a built-in pack,
+our college", "Heads Down. pack: 2000s cartoons, 60 words" or "a Big Board about Marvel"
+(a Big Board pack is a whole quiz board made from a topic; a request for a Heads Down. "deck"
+or a Big Board "board" means a pack). You write it as a built-in pack,
 check it, and publish it. Phones get it within a minute of the site rebuilding, the next time
 they are on the main menu. Do the whole thing without asking questions unless the game or
 theme is unclear; pick sensible defaults and say what you chose.
@@ -27,12 +28,12 @@ theme is unclear; pick sensible defaults and say what you chose.
      column of clue + answer, easiest first.
 2. **Size** if not given: Heads Down. 60 words, Spectrum 40 cards, Inn Co Hear Ant 40 cards,
    Big Board 5 categories × 5 clues (any 3–6 × 3–5 works; every category the same length; the
-   phone's own board maker allows 1–8 × 1–10, but a built-in board in the repo stays 3–6 × 3–5).
+   phone's own pack maker allows 1–8 × 1–10, but a built-in Big Board pack in the repo stays 3–6 × 3–5).
    **List what exists first**: `npm run list -- <folder>` prints every word, scale or answer
    already in that game (and, for Inn Co Hear Ant, the hint categories in use). Spectrum
    scales and Inn Co Hear Ant answers must be new across *all* packs of that game, not just
-   similar ones; Heads Down. words only need to be new within the deck. Big Board clues must be
-   new within the board; avoid reusing another board's answers.
+   similar ones; Heads Down. words only need to be new within the pack. Big Board clues must be
+   new within the pack; avoid reusing another Big Board pack's answers.
 3. **Write** `src/content/<folder>/<id>.json`. `id` is a new lowercase slug (`college-life`),
    never an existing file's id. Exact shapes:
 
@@ -68,8 +69,8 @@ theme is unclear; pick sensible defaults and say what you chose.
      changed recently. Write ~1.5× the clues and keep the best.
    - "After Dark" style requests: cheeky, never explicit.
 5. **Check**: `npm run test:content` (the content gate in `src/lib/content.test.ts` rejects
-   bad shapes, repeats within a deck, any Spectrum scale or Inn Co Hear Ant answer that already
-   exists in another pack, phrases containing the answer's words, and Big Boards with the wrong
+   bad shapes, repeats within a pack, any Spectrum scale or Inn Co Hear Ant answer that already
+   exists in another pack, phrases containing the answer's words, and Big Board packs with the wrong
    number of categories or clues, uneven categories, empty answers or a repeated clue; it lists
    every problem in one run). Fix them all and rerun until it passes. A pack-only change needs nothing else.
 6. **Publish**: `git add src/content && git commit -m "Add <game> pack: <name>"` then `git push`.
@@ -79,7 +80,7 @@ theme is unclear; pick sensible defaults and say what you chose.
    `curl -s https://api.github.com/repos/alexzgu/party-games/actions/runs` until the newest run
    for your commit is `completed` / `success` (about 1–2 minutes), then tell the asker:
    "Live. Go back to the main menu, wait a moment, then open <game> and tick <pack name> in
-   the pack list" (Big Board: "pick <board name> in the Board list"). Mention the 3 to 5 items you are least sure about.
+   the pack list" (Big Board: "pick <pack name> in the Pack list"). Mention the 3 to 5 items you are least sure about.
 
 ### Earworm song packs (`song/`), made only by a Claude Code chat on this laptop
 

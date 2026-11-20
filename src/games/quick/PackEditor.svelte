@@ -1,6 +1,7 @@
 <script lang="ts">
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
+  import ExportPack from '../../components/ExportPack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import PromptForm from './PromptForm.svelte';
@@ -103,6 +104,7 @@
         <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
       {/if}
     </div>
+    <ExportPack game="quick" {pack} />
 
     <label class="name">
       <span>Pack name</span>

@@ -13,6 +13,7 @@
   import { startMotion, stopMotion, axisSign, onGravity, enterPlayMode, exitPlayMode } from '../sensors.svelte';
   import { labScript, speedScript, type Step } from './protocol';
   import { unlockVoice, say, hush, tone } from '../voice';
+  import { downloadFile, shareOrDownload } from '../../../lib/share';
 
   type Cue = { t: number; spokenAt?: number; kind: string; block: string; text: string };
 
@@ -163,22 +164,14 @@
     }
   }
 
+  const asFile = (blob: Blob) => new File([blob], fileName, { type: 'application/json' });
+
   async function share() {
-    if (!file) return;
-    const f = new File([file], fileName, { type: 'application/json' });
-    try {
-      if (navigator.canShare?.({ files: [f] })) { await navigator.share({ files: [f], title: fileName }); return; }
-    } catch { /* cancelled or unsupported: fall through to a download */ }
-    save();
+    if (file) await shareOrDownload(asFile(file));
   }
 
   function save() {
-    if (!file) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(file);
-    a.download = fileName;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    if (file) downloadFile(asFile(file));
   }
 
   onDestroy(stopAll);

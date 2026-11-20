@@ -1,6 +1,7 @@
 <script lang="ts">
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
+  import ExportPack from '../../components/ExportPack.svelte';
   import Popup from '../../components/Popup.svelte';
   import Stepper from '../../components/Stepper.svelte';
   import { customQuiz, quizBoards, type QuizBoard } from '../../lib/content';
@@ -121,29 +122,30 @@
   /** A blank name gets a sensible one when the field is left. */
   function settleName(key: 'name' | 'category') {
     if (!board) return;
-    if (key === 'name' && !board.name.trim()) update({ ...board, name: 'My board' });
+    if (key === 'name' && !board.name.trim()) update({ ...board, name: 'My pack' });
     if (key === 'category' && cat && !cat.name.trim()) update(edit.renameCategory(board, ci, `Category ${ci + 1}`));
   }
 </script>
 
-<Screen title={fresh ? 'New board' : 'Edit board'} onback={() => (fresh && board ? (confirm = 'leave') : onback())}>
+<Screen title={fresh ? 'New pack' : 'Edit pack'} onback={() => (fresh && board ? (confirm = 'leave') : onback())}>
   {#if !board}
-    <p class="muted">{fresh ? 'There is no board being made on this phone.' : 'This board is no longer on this phone.'}</p>
+    <p class="muted">{fresh ? 'There is no pack being made on this phone.' : 'This pack is no longer on this phone.'}</p>
   {:else}
     <div class="about">
       <p class="muted">
-        {#if fresh}Not saved yet{:else if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else}Your board, on this phone only{/if}
+        {#if fresh}Not saved yet{:else if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else}Your pack, on this phone only{/if}
       </p>
       {#if builtin && edited}
         <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
       {:else if !fresh && !builtin}
-        <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete board</Button></span>
+        <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
       {/if}
     </div>
+    {#if !fresh}<ExportPack game="quiz" pack={board} />{/if}
     {#if note}<p class="faint small">{note}</p>{/if}
 
     <label class="field">
-      <span>Board name</span>
+      <span>Pack name</span>
       <input type="text" value={board.name} oninput={field('name')} onchange={() => settleName('name')} maxlength="40" autocomplete="off" enterkeyhint="done" />
     </label>
     <label class="field">
@@ -207,7 +209,7 @@
 
   {#snippet actions()}
     {#if board && fresh}
-      <Button size="lg" onclick={saveNew}>{gaps.length ? 'Save as a draft' : 'Save board'}</Button>
+      <Button size="lg" onclick={saveNew}>{gaps.length ? 'Save as a draft' : 'Save pack'}</Button>
     {:else}
       <Button size="lg" onclick={onback}>Done</Button>
     {/if}
@@ -223,18 +225,18 @@
     </div>
   </Popup>
 {:else if board && confirm === 'delete'}
-  <Popup title="Delete this board?" onclose={() => (confirm = '')}>
+  <Popup title="Delete this pack?" onclose={() => (confirm = '')}>
     <div class="confirm">
       <p>“{board.name}” is deleted from this phone.</p>
-      <Button variant="danger" onclick={deleteBoard}>Delete board</Button>
+      <Button variant="danger" onclick={deleteBoard}>Delete pack</Button>
       <Button variant="secondary" onclick={() => (confirm = '')}>Keep it</Button>
     </div>
   </Popup>
 {:else if board && confirm === 'leave'}
-  <Popup title="Save this board?" onclose={() => (confirm = '')}>
+  <Popup title="Save this pack?" onclose={() => (confirm = '')}>
     <div class="confirm">
       <p>“{board.name}” is not saved yet.</p>
-      <Button onclick={saveNew}>{gaps.length ? 'Save as a draft' : 'Save board'}</Button>
+      <Button onclick={saveNew}>{gaps.length ? 'Save as a draft' : 'Save pack'}</Button>
       <Button variant="danger" onclick={discard}>Throw it away</Button>
       <Button variant="ghost" onclick={() => (confirm = '')}>Keep editing</Button>
     </div>

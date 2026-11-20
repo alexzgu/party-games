@@ -3,8 +3,8 @@
   import { MAX_TEAMS, MIN_TEAMS } from './logic';
   import { DEFAULT_TEAMS, teamColor } from './look';
 
-  // How many teams (one team is a solo player), and their names. All twenty names are kept, so
-  // going 12 → 3 → 12 loses nothing. Past four the names sit two to a row on wider screens.
+  // How many teams (one team is a solo player), and their names. All ten names are kept, so
+  // going 8 → 3 → 8 loses nothing. Past four the names sit two to a row on wider screens.
   let { names = $bindable(), count = $bindable() }: { names: string[]; count: number } = $props();
 </script>
 

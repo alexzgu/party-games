@@ -53,7 +53,7 @@
   }
 
   const startLabel = $derived(
-    chosen.length === 0 ? 'Pick a deck' : wordCount === 0 ? 'Those decks have no words yet' : chosen.length === 1 ? `Start · ${chosen[0].name}` : `Start · ${chosen.length} decks mixed`,
+    chosen.length === 0 ? 'Pick a pack' : wordCount === 0 ? 'Those packs have no words yet' : chosen.length === 1 ? `Start · ${chosen[0].name}` : `Start · ${chosen.length} packs mixed`,
   );
 </script>
 
@@ -73,13 +73,15 @@
   {/snippet}
 
   <section>
-    <ListTools key="forehead:setup" bind:query bind:sort placeholder="Search decks or words" shown={shown.length} total={decks.length}>
+    <ListTools key="forehead:setup" bind:query bind:sort placeholder="Search packs or words" shown={shown.length} total={decks.length}>
       {#snippet title()}
-        <h3>Decks</h3>
-        <p class="faint count">{chosen.length ? `${chosen.length} picked · ${wordCount} words` : 'pick one or more'}</p>
-      {/snippet}
-      {#snippet extra()}
-        <button class="link" onclick={() => go('/forehead/decks')}>Edit decks</button>
+        <div class="packs-head">
+          <div class="packs-title">
+            <h3>Packs</h3>
+            <p class="faint count">{chosen.length ? `${chosen.length} picked · ${wordCount} words` : 'pick one or more'}</p>
+          </div>
+          <button class="link" onclick={() => go('/forehead/decks')} aria-label="Edit packs">Edit</button>
+        </div>
       {/snippet}
     </ListTools>
     <ul class="grid">
@@ -101,13 +103,13 @@
         <li>
           <button class="deck make" onclick={() => go('/forehead/make')}>
             <span class="emoji" aria-hidden="true">✨</span>
-            <span class="name">Make a deck</span>
-            <span class="meta">paste a list or ask Claude</span>
+            <span class="name">Make a pack</span>
+            <span class="meta">paste a list or ask the wizard</span>
           </button>
         </li>
       {/if}
     </ul>
-    {#if !shown.length && query.trim()}<p class="faint none">No decks match “{query.trim()}”</p>{/if}
+    {#if !shown.length && query.trim()}<p class="faint none">No packs match “{query.trim()}”</p>{/if}
   </section>
 
   <section class="stack">
@@ -132,8 +134,11 @@
 </Screen>
 
 <style>
+  /* Title and count on the left, Edit just before the search and sort toggles at the right end. */
+  .packs-head { display: flex; align-items: center; gap: var(--s-2); }
+  .packs-title { flex: 1; min-width: 0; }
   .count { font-size: 0.85rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .link { border: 0; background: transparent; color: var(--accent); font-weight: 700; min-height: 44px; padding: 0 var(--s-2); }
+  .link { flex: none; border: 0; background: transparent; color: var(--accent); font-weight: 700; min-height: 44px; min-width: 44px; padding: 0 var(--s-2); }
   .small { font-size: 0.9rem; }
   .grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-2); }
   .deck {

@@ -22,19 +22,20 @@ the home screen, and works offline once loaded. Names shown to players live in
 ## Stack and layout
 
 Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Hash routing
-(`#/forehead`, `#/dial`, `#/gibberish`, `#/quiz`, `#/settings`) so any static host works.
+(`#/forehead`, `#/dial`, `#/gibberish`, `#/quiz`, `#/settings`, `#/join/<key>`) so any static host works.
 
 - `src/lib/` — shared logic: `storage` (guarded localStorage), `router.svelte`, `settings.svelte`,
   `sound` (synthesised cues; call `unlockAudio()` in the first tap), `haptics`, `wakelock`,
   `motion` (permission, motion stream, sign fix, upright rotation), `pitch` (forehead pitch from
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
-  `claude` (live generation, streamed line by line), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `update` (new versions switch in on the main menu), `random`.
+  `claude` (live generation, streamed line by line), `wizard` (effort → model), `invite` and `join` (invite links), `history` (finished rounds and games),
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
 - `src/components/` — `Screen` (page frame: back button, title, sticky actions), `Popup`,
   `HowTo` (the "?" header button that opens a game's rules), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
-  items while they stream in).
+  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (Import packs, Export my packs),
+  `ExportPack` (Export pack).
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
   to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
@@ -51,18 +52,57 @@ Three routes, in the order the owner chose to rely on them:
 2. **Paste a list** on the phone: each game's "Make a pack" screen takes a pasted list (one
    item per line, in the game's format), shows it in `Triage` for review, and saves it as a
    custom pack on that phone.
-3. **Ask Claude in the app** (later, needs an API key): the host pastes an Anthropic API key in
-   Settings; it stays in that phone's localStorage and the phone calls the API directly.
+3. **Ask the wizard in the app** (needs the host's invite link): players see live generation as
+   "Fizzwick the Wizard" 🧙; no screen names Claude, Anthropic or an API key. The host (the owner,
+   who pays for usage) sends friends a link `<site>#/join/<key>` carrying an Anthropic key; the
+   key is never in the repo or the bundle. Opening it (`src/lib/join.ts`, `invite.ts`) stores
+   the key in `settings.apiKey` (that phone's localStorage), wipes it from the address bar and
+   history at once (`replaceState` to `#/`), and says "Fizzwick the Wizard has moved in on this
+   phone."; a link whose key does not look like an Anthropic key (`sk-ant-`, 20–300 of
+   `[A-Za-z0-9_-]`) says it is broken and stores nothing. The phone calls the API directly.
+   Each make page shows "How hard Fizzwick tries" (`WizardEffort`) next to the theme and the
+   make button, when the phone has a key: 🥱 Half-asleep (Haiku 5.5), ☕ Had his coffee (Sonnet
+   5.5), 🔮 Full beard power (Opus 5.5, the default), kept in `settings.model`; an unknown stored
+   id uses Opus. Without a key the make page says to open the host's invite link.
    `streamLines()` hands each line over as soon as it is complete; items stream into `Triage`;
-   "More" sends the items already kept so Claude avoids repeats.
+   "More" sends the items already kept so the wizard avoids repeats.
 
 **Every pack can be opened and edited**, built-in or the player's own. Editing a built-in saves
 an edit under the same id that replaces it everywhere on that phone, marked "Edited", until
 "Restore original". Only the player's own packs can be deleted.
 
+**Packs are called packs in every game** (a Heads Down. pack is a list of words, a Big Board
+pack is one whole board). Code, routes and storage keys keep their older names (`decks`, `board`).
+
+**Import and export** (`src/lib/packfile.ts`, buttons in `PackFile` and `ExportPack`): a pack file
+is JSON, `{"jerkBox": 1, "game": "<game id>", "packs": [...]}`, each pack as stored (id, name,
+emoji for Heads Down., blurb, items) without `custom` and `added`; named
+`<game>-<pack id or my-packs>.jerkbox.txt` (JSON inside, plain-text type so Chrome on Android
+can share it; import also takes `.json`). "Export pack" sits in every pack editor (built-ins
+included); "Import packs" and "Export my packs" (every pack made or edited on this phone; hidden
+when there are none) sit under every pack list: Heads Down.'s "Packs" screen (Edit on setup),
+Spectrum and Don't Say It setup under "Make a pack", the pack tiles of Inn Co Hear Ant, Brain
+Freeze and Earworm setup, Big Board's pack list, and Snark Tank's game settings. Export uses the
+share sheet when the browser can share the file, else a download. Import reads a file of at most
+1 MB and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
+pack editor's or the paste route's; Big Board: 1–8 categories × 1–10 clues, cut and padded like a
+pasted board); drops what fails and says how many; leaves out a pack with nothing usable; and
+saves each pack as the player's own, ticked (Big Board: picked), under a fresh id (`-2`, `-3`, …)
+when a built-in or a pack on the phone already has its id, so nothing is overwritten. A file of
+another game says which game to open; anything else says it isn't a pack file.
+
 ## Shared behaviour
 
 - **Home** shows every game in `GAMES` (name, emoji, player count), History and Settings. No blurbs.
+- **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours), Heads Down. (scored-word feedback,
+  "Calibrate tilt" with the calibration note under it, "Check tilt" with its notes under it),
+  The wizard, Cards (reset card history). The wizard: with a key, "Fizzwick the Wizard lives on
+  this phone", "Copy invite link" (clipboard; if that fails, the link in a selectable field),
+  "Send it privately: anyone with the link can use the wizard." and "Remove from this phone";
+  without one, a line saying to open the host's invite link, and a box to paste that link with
+  "Let him in" (an iPhone Home Screen app keeps its own storage, apart from Safari where links
+  open). No key field and no model list. Descriptions are --text-dim, weight 600.
+  Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
 - **Rules** live in each game's "?" popup, not on its screens.
 - **History** (`#/history`): one entry per Heads Down. round (rewritten if a word is fixed
   afterwards) and per finished Spectrum or Inn Co Hear Ant game: title, scores, packs and
@@ -88,13 +128,13 @@ Updates reach phones without interrupting play: a new version downloads in the b
 Heads Up-style. One player holds the phone on their forehead, screen facing out; the others
 shout clues; the holder tilts down for "got it", up for "pass".
 
-- **Setup**: grid of decks (emoji, name, word count); tap to select one or several (mixed).
+- **Setup**: grid of packs (emoji, name, word count); tap to select one or several (mixed).
   Round length 30/60/90/120 s (default 60). Controls: Tilt, Tap or Both (default Both on phones
   and tablets, Tap on a laptop; the old saved "Tilt", which always took taps, carries over as
   Both). Only the chosen input scores: in a Tilt round the tap zones are gone and the arrow keys
   do nothing; in a Tap round tilting does nothing. A Tilt round on a phone that cannot feel
   motion takes taps instead, so it can always be played (`accepts` in `round.ts`).
-  "Edit decks" opens the deck list: open any deck to see, edit or restore its words.
+  "Edit" (in the packs header, before the search and sort toggles) opens the pack list: open any pack to see, edit or restore its words.
 - **Start tap**: `unlockAudio()`, `requestMotion()` (iOS prompt), sample gravity for the sign fix
   (`axisSignFromLookingAt`), `keepAwake(true)`, and on Android try fullscreen + landscape lock
   (guarded; iOS has neither).
@@ -107,9 +147,9 @@ shout clues; the holder tilts down for "got it", up for "pass".
   Feedback (Settings): by default the screen edge on the side of the matching tap zone glows
   green or amber; "Flash the screen" flashes the whole screen instead. Tap fallback always on: right half correct, left half pass. Last 10 s:
   tick each second and a red pulsing timer. Leaving the app pauses; returning shows a Resume
-  overlay. A small ✕ ends the round after confirmation. Deck exhausted → round ends early.
+  overlay. A small ✕ ends the round after confirmation. Packs used up → round ends early.
 - **Results**: score headline, every word shown marked ✓/✗ and tappable to fix mis-tilts.
-  Play again (same settings, next player), change decks, home. Round scores of this session
+  Play again (same settings, next player), change packs, home. Round scores of this session
   listed so the group can compare.
 - Pitch comes from the gyroscope blended with gravity (1 s time constant, `src/lib/pitch.ts`).
   Raw gravity alone fails: recorded nods (Tilt lab, below) start with a shove along the screen
@@ -159,7 +199,7 @@ team sets a dial to where they think the target is.
 
 - **Setup**: two team names (editable), points to win (default 10), packs (multi-select),
   optional "steal" rule: the other team then guesses whether the target is left or right of
-  the needle for 1 point. Entry to "Make a pack" (paste a list or ask Claude). Each pack row
+  the needle for 1 point. Entry to "Make a pack" (paste a list or ask the wizard). Each pack row
   has a separate › that opens the pack editor.
 - **Teams**: Early Birds (`--c-team-a`, warm orange) vs Night Owls (`--c-team-b`, blue), on the
   dark theme: team colour as glow, border and name, never a full bright fill. The scoreboard
@@ -180,7 +220,7 @@ Mad Gab / Incoherent-genre. Each card is a phrase of real but unrelated words th
 aloud, sounds like something well known ("Eye Scream" → Ice Cream).
 
 - **Setup**: player names (3+; add/remove; remembered), packs (multi-select), seconds per card
-  (off/20/30/45/60, default 30), points to win (default 5). Entry to "Make a pack" (paste a list or ask Claude).
+  (off/20/30/45/60, default 30), points to win (default 5). Entry to "Make a pack" (paste a list or ask the wizard).
   A pencil on each pack tile opens the pack editor (giveaway check applies to edits).
 - **Card**: the reader rotates each card. Hand-off screen ("X reads — everyone else, eyes off the
   phone") → reader view: the phrase huge, a "Show category" button the reader may read out,
@@ -191,15 +231,15 @@ aloud, sounds like something well known ("Eye Scream" → Ice Cream).
 
 ## Game 4 — Big Board (`quiz`)
 
-A team quiz board for a host who reads aloud, on a phone or a laptop on the TV. A board has
-categories across and clues down, easiest at the top. Built-in boards (`src/content/quiz/*.json`)
-are 3–6 categories × 3–5 clues; boards made or edited on the phone may be 1–8 × 1–10.
+A team quiz board for a host who reads aloud, on a phone or a laptop on the TV. Each pack is one
+board: categories across and clues down, easiest at the top. Built-in packs (`src/content/quiz/*.json`)
+are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1–8 × 1–10.
 
-- **Setup**: 1–20 teams (stepper, default 3; a team may be one person), names editable and
+- **Setup**: 1–10 teams (stepper, default 3; a team may be one person), names editable and
   remembered for all twenty seats, each with its own colour (`--team-1` … `--team-20` in
-  tokens.css, one set per scheme, readable as text and under a number badge). One board
-  (search/sort list; a pencil per row opens the editor; "Make a board" at the end), points
-  100, 200, … per level or doubled, "Wrong answers lose points" (default off). A board with an
+  tokens.css, one set per scheme, readable as text and under a number badge). One pack
+  (search/sort list; a pencil per row opens the editor; "Make a pack" at the end), points
+  100, 200, … per level or doubled, "Wrong answers lose points" (default off). A pack with an
   empty clue or answer is a draft: setup names the empty tiles and will not start it.
 - **Board**: fills the screen; categories across, values down; a played tile goes dim with a dot
   in the winning team's colour. Header: back to setup (game saved), Undo, full screen (wide
@@ -227,20 +267,21 @@ are 3–6 categories × 3–5 clues; boards made or edited on the phone may be 1
   early; more than 4 teams: the title gives the top score and the team count); End with nothing
   scored just closes the board. State saved after every step; a reload resumes on the same
   screen. Saves and setups from the 2–4 team version load unchanged.
-- **Board editor** (`#/quiz/board?id=<id>`): name, short description, levels stepper (adds or
+- **Pack editor** (`#/quiz/board?id=<id>`): name, short description, levels stepper (adds or
   removes the bottom level on every category; removing one with clues asks first), category
   tabs (add up to 8, rename, move left/right, remove), and every clue and answer inline, empty
   ones highlighted. Every change saves at once; a built-in saves this phone's copy under the
-  same id (Edited tag, "Restore original"); own boards can be deleted.
-- **Make a board** (`#/quiz/make`): Blank (name, categories 1–8 × levels 1–10, default 5 × 5),
+  same id (Edited tag, "Restore original"); own packs can be deleted.
+- **Make a pack** (`#/quiz/make`): Blank (name, categories 1–8 × levels 1–10, default 5 × 5),
   Paste (a "# Category" line then "clue | answer" lines, easiest first; tolerant of other
   headings, list markers, tables, "Q:/A:", value columns and "Category | level | clue | answer"
   lines; short categories get empty tiles; past 8 × 10 is cut off and the skipped lines are
-  counted), or Ask Claude with an API key (topic, categories × levels; Claude streams one line
+  counted), or 🧙 Wizard (topic, categories × levels, how hard Fizzwick tries; the model streams one line
   per clue, "Category | level | clue | answer", easiest row first, under the AGENTS.md quality
-  bar, and a live preview fills tile by tile; "Stop" opens what came). Without a key it points to
-  Settings or to a Claude Code chat ("a Big Board about <topic>"). Every route opens the new
-  board in the editor, kept in storage (`quiz:new-board`) until "Save board" (or "Save as a
+  bar, and a live preview fills tile by tile; "Stop" opens what came). Without a key it says to
+  open the host's invite link, or to ask the host for a built-in pack ("a Big Board about
+  <topic>", which the owner's Claude Code chat makes). Every route opens the new
+  pack in the editor, kept in storage (`quiz:new-board`) until "Save pack" (or "Save as a
   draft" with empty tiles), which picks it on setup.
 
 ## Game 5 — Don't Say It (`taboo`)
@@ -280,7 +321,7 @@ few seconds to name three things that fit it out loud; the room judges.
 
 - **Setup**: player names (2+; add/remove; remembered, and a first visit borrows Inn Co Hear
   Ant's list), packs (search/sort; a pencil on each opens its editor; "Make a pack": paste a
-  list or ask Claude), seconds on the clock 5/7/10 (default 5), points to win (default 7, 3–15),
+  list or ask the wizard), seconds on the clock 5/7/10 (default 5), points to win (default 7, 3–15),
   Steal (default on).
 - **Turn**: hand-off ("Pass the phone to Maya"; the last turn's result and a scoreboard strip in
   seating order above it) → "I'm Maya, show my prompt" reveals "Name 3 …" huge (`FitText`) and

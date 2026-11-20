@@ -61,7 +61,7 @@ export function selectedDecks(ids: readonly string[] = prefs.deckIds): WordDeck[
 }
 
 export function deckLabel(decks: readonly WordDeck[]): string {
-  if (decks.length === 0) return 'No deck';
+  if (decks.length === 0) return 'No pack';
   if (decks.length <= 2) return decks.map((d) => d.name).join(' + ');
   return `${decks[0].name} + ${decks.length - 1} more`;
 }

@@ -5,6 +5,7 @@
   // saved (and ticked in setup) on its first change.
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
+  import ExportPack from '../../components/ExportPack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import CardForm from './CardForm.svelte';
@@ -142,6 +143,7 @@
       <span>{pack.cards.length} {pack.cards.length === 1 ? 'card' : 'cards'}</span>
       {#if !builtin}<span class="tag">{pack.id ? 'yours' : 'new'}</span>{:else if edited}<span class="tag hot">edited</span>{:else}<span class="tag">built-in</span>{/if}
     </p>
+    {#if pack.id}<ExportPack game="taboo" {pack} />{/if}
 
     <div class="add">
       <div class="add-head">

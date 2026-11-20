@@ -14,7 +14,7 @@
   import type { Snippet } from 'svelte';
   import Button from './Button.svelte';
 
-  // Paste a list (typed, or copied from the Claude app) → the game's parser picks out the
+  // Paste a list (typed, or copied from a chatbot app) → the game's parser picks out the
   // items → the caller reviews them. Says how many lines were skipped and why.
   let {
     label,

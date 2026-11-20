@@ -59,7 +59,7 @@ export function parsePastedWords(text: string, existing: readonly string[] = [])
       const item = cleanLine(piece);
       const k = item ? itemKey(item) : '';
       if (!item || !k) out.skipped.push(tooLong(piece) && !/:(\s|$)/.test(piece) ? 'too long for a card' : 'not a word or phrase');
-      else if (have.has(k)) out.skipped.push('already in the deck');
+      else if (have.has(k)) out.skipped.push('already in the pack');
       else if (seen.has(k)) out.skipped.push('repeated');
       else { seen.add(k); out.items.push(item); }
     }

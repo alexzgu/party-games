@@ -14,7 +14,7 @@ export const loadGame = (): Game | null => validGame(load<unknown>(GAME, null));
 export const saveGame = (g: Game | null): void => (g ? save(GAME, g) : remove(GAME));
 
 export interface SetupPrefs {
-  /** Names for all twenty seats; the first `count` play. */
+  /** Names for every seat; the first `count` play. */
   names: string[];
   count: number;
   boardId: string | null;
@@ -26,7 +26,7 @@ export const DEFAULT_SETUP: SetupPrefs = { names: DEFAULT_TEAMS, count: 3, board
 
 /**
  * Saved setup choices, each field checked on its own and replaced by its default if bad. A setup
- * saved when there were four seats gets the other sixteen default names.
+ * saved with fewer seats gets default names for the rest; one saved with more keeps the first ten.
  */
 export function validSetup(x: unknown): SetupPrefs {
   const p = (x && typeof x === 'object' ? x : {}) as Partial<SetupPrefs>;

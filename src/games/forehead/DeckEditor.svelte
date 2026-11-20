@@ -3,6 +3,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import ExportPack from '../../components/ExportPack.svelte';
   import type { SortKey } from '../../lib/listing';
   import { customDecks, dedupe, slugify, wordDecks, type WordDeck } from '../../lib/content';
   import { back, go } from '../../lib/router.svelte';
@@ -40,7 +41,7 @@
       deck.id = 'my-' + slugify(deck.name || 'deck') + '-' + Date.now().toString(36);
       history.replaceState(null, '', '#/forehead/deck?id=' + encodeURIComponent(deck.id));
     }
-    customDecks.put({ ...$state.snapshot(deck), name: deck.name.trim() || 'My deck' });
+    customDecks.put({ ...$state.snapshot(deck), name: deck.name.trim() || 'My pack' });
     edited = builtin;
     confirmRestore = false;
     if (!picked && deck.words.length > 0) {
@@ -94,7 +95,7 @@
   }
 </script>
 
-<Screen title={existing ? (builtin ? 'Built-in deck' : 'Edit deck') : 'New deck'} accent="var(--c-forehead)">
+<Screen title={existing ? (builtin ? 'Built-in pack' : 'Edit pack') : 'New pack'} accent="var(--c-forehead)">
   {#if builtin}
     <div class="note" class:edited>
       {#if edited}
@@ -113,7 +114,7 @@
       <span class="lbl">Name</span>
       <input type="text" placeholder="e.g. Our Friend Group" bind:value={deck.name} oninput={persist} maxlength="40" />
     </label>
-    <div class="emojis" role="radiogroup" aria-label="Deck icon">
+    <div class="emojis" role="radiogroup" aria-label="Pack icon">
       {#each emojis as e (e)}
         <button role="radio" aria-checked={deck.emoji === e} class:on={deck.emoji === e} onclick={() => { deck.emoji = e; persist(); }}>{e}</button>
       {/each}
@@ -148,8 +149,9 @@
     {/if}
   </section>
 
+  {#if deck.id}<ExportPack game="forehead" pack={deck} />{/if}
   {#if deck.id && !builtin}
-    <Button variant={confirmDelete ? 'danger' : 'ghost'} onclick={remove}>{confirmDelete ? 'Tap again to delete this deck' : 'Delete deck'}</Button>
+    <Button variant={confirmDelete ? 'danger' : 'ghost'} onclick={remove}>{confirmDelete ? 'Tap again to delete this pack' : 'Delete pack'}</Button>
   {/if}
 
   {#snippet actions()}

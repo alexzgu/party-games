@@ -56,13 +56,13 @@
 </script>
 
 <div class="check stack">
+  {#if phase === 'idle' || phase === 'denied'}
+    <Button variant="secondary" onclick={start}>Check tilt</Button>
+  {/if}
   <p class="faint">
     Running as: <b>{installed ? 'installed app (home screen)' : 'browser tab'}</b>.
     {#if motionNeedsPermission()}This phone asks before sharing motion.{/if}
   </p>
-  {#if phase === 'idle' || phase === 'denied'}
-    <Button variant="secondary" onclick={start}>Check tilt</Button>
-  {/if}
   {#if phase === 'asking'}<p class="faint">Waiting for permission…</p>{/if}
   {#if phase === 'denied'}
     <p class="bad">Motion was refused. On iPhone: close this app fully and open it again, then tap Check tilt and choose Allow.</p>

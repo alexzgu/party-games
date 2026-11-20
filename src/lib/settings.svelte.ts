@@ -1,10 +1,12 @@
 import { load, save } from './storage';
+import { DEFAULT_MODEL } from './wizard';
 
 export interface Settings {
   sound: boolean;
   haptics: boolean;
-  /** Anthropic API key for live generation. Stays on this device only. */
+  /** Anthropic API key for live generation, stored by the host's invite link. Stays on this device only. */
   apiKey: string;
+  /** The model behind the wizard's effort choice (one of `EFFORTS` in wizard.ts). */
   model: string;
   /** Heads Down.: how a scored word shows. 'edge' lights the edge on the side picked; 'screen' flashes the whole screen. */
   headsDownFeedback: 'edge' | 'screen';
@@ -16,7 +18,7 @@ const DEFAULTS: Settings = {
   sound: true,
   haptics: true,
   apiKey: '',
-  model: 'claude-opus-5-5',
+  model: DEFAULT_MODEL,
   headsDownFeedback: 'edge',
   theme: 'dark',
 };

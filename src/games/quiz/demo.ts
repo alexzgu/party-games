@@ -1,4 +1,4 @@
-// Fixed states for screenshots and design review: #/quiz?demo=<screen>&teams=<1–20>. Never saved or recorded.
+// Fixed states for screenshots and design review: #/quiz?demo=<screen>&teams=<1–10>. Never saved or recorded.
 import { quizBoards } from '../../lib/content';
 import { MAX_TEAMS, MIN_TEAMS, newGame, openTile, showAnswer, toggleWrong, type Game, type LogEntry } from './logic';
 import { DEFAULT_TEAMS } from './look';

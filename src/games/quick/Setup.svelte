@@ -23,12 +23,13 @@
   } = $props();
 
   const prefs = loadSetup();
-  const packs = quickPacks();
+  let packs = $state.raw(quickPacks());
   let names = $state(loadPlayers());
   let seconds = $state(prefs.seconds);
   let target = $state(prefs.target);
   let steal = $state(prefs.steal);
   // First visit: every built-in pack except the adults-only one.
+  // svelte-ignore state_referenced_locally
   let selected = $state((prefs.packIds ?? packs.filter((p) => p.id !== 'after-dark').map((p) => p.id)).filter((id) => packs.some((p) => p.id === id)));
 
   $effect(() => savePlayers($state.snapshot(names)));
@@ -87,7 +88,7 @@
   {/if}
 
   <Players bind:names />
-  <PackPicker {packs} bind:selected {onmake} {onedit} />
+  <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = quickPacks())} />
 
   <section class="opts" aria-labelledby="opts-h">
     <h3 id="opts-h">Rules</h3>

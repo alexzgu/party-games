@@ -1,27 +1,12 @@
 <script lang="ts">
   import Screen from '../../components/Screen.svelte';
   import PasteList from '../../components/PasteList.svelte';
-  import { customSnark, dedupe, slugify, snarkPacks } from '../../lib/content';
-  import { pastedLines, firstCell } from '../../lib/paste';
+  import { customSnark, slugify, snarkPacks } from '../../lib/content';
+  import { parsePrompts as parse } from './prompts';
 
   // A new pack from a pasted list, one prompt per line (numbers, bullets and quotes dropped).
   let { onsaved, onback }: { onsaved: (id: string) => void; onback: () => void } = $props();
   let name = $state('');
-
-  function parse(text: string): { items: string[]; skipped: string[] } {
-    const skipped: string[] = [];
-    const items: string[] = [];
-    for (const line of pastedLines(text)) {
-      const q = firstCell(line).replace(/^(\d+[.)]|[-*•])\s*/, '').replace(/^["“]|["”]$/g, '').trim();
-      const words = q.split(/\s+/).length;
-      if (words < 2) skipped.push('too short');
-      else if (q.length > 140) skipped.push('too long');
-      else items.push(q);
-    }
-    const unique = dedupe(items);
-    for (let i = unique.length; i < items.length; i++) skipped.push('repeated');
-    return { items: unique, skipped };
-  }
 
   function add(prompts: string[]) {
     const n = name.trim() || 'My prompts';

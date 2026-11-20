@@ -1,5 +1,6 @@
 <script lang="ts">
   import ListTools from '../../components/ListTools.svelte';
+  import PackFile from '../../components/PackFile.svelte';
   import { customGibberish, type GibberishPack } from '../../lib/content';
   import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
@@ -8,12 +9,20 @@
   // Multi-select pack tiles. Tapping a tile ticks it; the pencil in its corner opens the pack
   // to see, edit or delete its cards. Own packs carry "Mine", edited built-ins "Edited".
   // Search and sort only change what is shown: ticks on hidden packs stay and still count.
-  let { packs, selected = $bindable(), onmake, onedit }: {
+  let { packs, selected = $bindable(), onmake, onedit, onimported }: {
     packs: GibberishPack[];
     selected: string[];
     onmake: () => void;
     onedit: (packId: string) => void;
+    /** After an import: the parent reloads `packs`. */
+    onimported: () => void;
   } = $props();
+
+  /** Imported packs are ticked, like a pack just made. */
+  function imported(ids: string[]) {
+    selected = [...ids.filter((id) => !selected.includes(id)), ...selected];
+    onimported();
+  }
 
   function toggle(id: string) {
     selected = selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id];
@@ -52,10 +61,11 @@
       <button class="tile make" onclick={onmake}>
         <span class="spark" aria-hidden="true">✨</span>
         <span class="name wide">Make a pack</span>
-        <span class="blurb">Paste a list or ask Claude</span>
+        <span class="blurb">Paste a list or ask the wizard</span>
       </button>
     </li>
   </ul>
+  <PackFile game="gibberish" onimported={imported} />
 </section>
 
 <style>

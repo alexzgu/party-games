@@ -53,7 +53,7 @@ export function describeEmpty(b: Pick<QuizBoard, 'categories'>, values?: number[
 export function blankBoard(name: string, cats = DEFAULT_CATEGORIES, len = DEFAULT_LEVELS): QuizBoard {
   const c = Math.min(MAX_CATEGORIES, Math.max(1, cats));
   const l = Math.min(MAX_LEVELS, Math.max(1, len));
-  return { id: '', name: name.trim() || 'My board', blurb: 'Made on this phone', categories: Array.from({ length: c }, (_, i) => blankCategory(i + 1, l)) };
+  return { id: '', name: name.trim() || 'My pack', blurb: 'Made on this phone', categories: Array.from({ length: c }, (_, i) => blankCategory(i + 1, l)) };
 }
 
 // ---- Edits. Each returns the same board when the edit is not allowed (size limits, bad index).
@@ -112,7 +112,7 @@ export function tidyBoard(b: QuizBoard): QuizBoard {
   const { custom: _, ...rest } = b;
   return {
     ...rest,
-    name: b.name.trim().replace(/\s+/g, ' ') || 'My board',
+    name: b.name.trim().replace(/\s+/g, ' ') || 'My pack',
     blurb: b.blurb.trim(),
     categories: b.categories.map((c, i) => ({
       name: c.name.trim() || `Category ${i + 1}`,

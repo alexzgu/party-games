@@ -12,11 +12,12 @@
   // this device for next time; a game already started keeps the settings it started with.
   let { onback, onedit, onmake }: { onback: () => void; onedit: (id: string) => void; onmake: () => void } = $props();
 
-  const packs = snarkPacks();
+  let packs = $state.raw(snarkPacks());
   const s = host.game?.settings ?? loadSettings();
   let rounds = $state<2 | 3>(s.rounds);
   let answerSecs = $state(s.answerSecs);
   let voteSecs = $state(s.voteSecs);
+  // svelte-ignore state_referenced_locally
   let selected = $state(s.packIds.filter((id) => packs.some((p) => p.id === id)));
   const locked = host.game !== null && host.game.phase !== 'lobby';
 
@@ -46,7 +47,7 @@
       <span class="hint">The final vote gets twice as long.</span>
     </div>
   </section>
-  <PackPicker {packs} bind:selected {onmake} {onedit} />
+  <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = snarkPacks())} />
   <p class="faint">{prompts} prompts picked. Each game deals ones this device has not shown lately.</p>
   {#snippet actions()}
     <Button size="lg" onclick={onback} disabled={selected.length === 0}>{selected.length ? 'Done' : 'Pick at least one pack'}</Button>

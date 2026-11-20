@@ -4,12 +4,11 @@
   import Button from '../../components/Button.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import Stepper from '../../components/Stepper.svelte';
+  import WizardEffort from '../../components/WizardEffort.svelte';
   import PasteList from '../../components/PasteList.svelte';
   import BoardPreview from './BoardPreview.svelte';
   import type { QuizBoard } from '../../lib/content';
   import { hasKey } from '../../lib/claude';
-  import { settings } from '../../lib/settings.svelte';
-  import { go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { blankBoard, DEFAULT_CATEGORIES, DEFAULT_LEVELS, emptyTiles, MAX_CATEGORIES, MAX_LEVELS } from './board';
   import { parsePastedBoard } from './parse';
@@ -29,13 +28,12 @@
   } = $props();
 
   const keyed = hasKey();
-  const modelName = settings.model.replace(/^claude-/, '').replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/^\w/, (c) => c.toUpperCase());
   const leftover = loadNewBoard();
 
   const MODES = [
     { value: 'blank' as const, label: 'Blank' },
     { value: 'paste' as const, label: 'Paste' },
-    { value: 'claude' as const, label: 'Ask Claude' },
+    { value: 'claude' as const, label: '🧙 Wizard' },
   ];
   let mode = $state<'blank' | 'paste' | 'claude'>(keyed ? 'claude' : 'blank');
   let name = $state('');
@@ -96,7 +94,7 @@
   onDestroy(() => ctrl?.abort());
 </script>
 
-<Screen title="Make a board" onback={() => { ctrl?.abort(); onback(); }}>
+<Screen title="Make a pack" onback={() => { ctrl?.abort(); onback(); }}>
   {#if leftover && !live}
     <div class="leftover" role="status">
       <p>You were making “{leftover.name}”.</p>
@@ -108,7 +106,7 @@
     <section class="live">
       <h3>{live.name}</h3>
       <p class="count" aria-live="polite">
-        {#if streaming}<span class="dot" aria-hidden="true"></span> Claude is writing… {/if}<b>{filled}</b> of {cats * len} clues
+        {#if streaming}<span class="dot" aria-hidden="true"></span> Fizzwick is conjuring… {/if}<b>{filled}</b> of {cats * len} clues
       </p>
       <BoardPreview board={live} />
       {#if error}
@@ -126,16 +124,16 @@
 
     {#if mode === 'blank'}
       <div class="form">
-        <label class="field"><span>Board name</span>
-          <input type="text" bind:value={name} placeholder="My board" maxlength="40" autocomplete="off" enterkeyhint="done" />
+        <label class="field"><span>Pack name</span>
+          <input type="text" bind:value={name} placeholder="My pack" maxlength="40" autocomplete="off" enterkeyhint="done" />
         </label>
         {@render size()}
         <p class="faint small">Then type every clue and answer in the editor.</p>
-        <Button size="lg" onclick={() => { make(blankBoard(name, cats, len)); sfx.tap(); }}>Make a blank board</Button>
+        <Button size="lg" onclick={() => { make(blankBoard(name, cats, len)); sfx.tap(); }}>Make a blank pack</Button>
       </div>
     {:else if mode === 'paste'}
-      <label class="field"><span>Board name</span>
-        <input type="text" bind:value={name} placeholder="Pasted board" maxlength="40" autocomplete="off" enterkeyhint="done" />
+      <label class="field"><span>Pack name</span>
+        <input type="text" bind:value={name} placeholder="Pasted pack" maxlength="40" autocomplete="off" enterkeyhint="done" />
       </label>
       <PasteList label="A “# Category” line, then one “clue | answer” line per level, easiest first"
         placeholder={'# Space\nThe planet nicknamed the Red Planet | Mars\nThe first person to walk on the Moon | Neil Armstrong\n# Food\nThe country pizza comes from | Italy'}
@@ -143,13 +141,12 @@
       <p class="faint small">Up to {MAX_CATEGORIES} categories of up to {MAX_LEVELS} clues. Shorter categories get empty tiles to fill in.</p>
     {:else if !keyed}
       <div class="nokey">
-        <p>Asking Claude here needs an Anthropic API key.
-          <button type="button" class="link" onclick={() => go('/settings')}>Add one in Settings</button></p>
-        <p class="faint">Or ask a Claude Code chat for it: “a Big Board about {topic.trim() || '<topic>'}”. It shows up in the board list once the site updates.</p>
+        <p>Fizzwick isn't on this phone yet: open the invite link the host sent you.</p>
+        <p class="faint">Or ask the host for a built-in one: “a Big Board about {topic.trim() || '<topic>'}”. It shows up in the pack list once the site updates.</p>
       </div>
     {:else}
       <div class="form">
-        <label class="field" for="topic-in"><span>What should the board be about?</span></label>
+        <label class="field" for="topic-in"><span>What should the pack be about?</span></label>
         <input id="topic-in" type="text" bind:value={topic} onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void ask(); } }} placeholder="e.g. 90s cartoons, Taylor Swift, our office" autocomplete="off" enterkeyhint="go" maxlength="80" />
         <div class="chips" role="group" aria-label="Quick topics">
           {#each TOPICS as t (t)}
@@ -157,8 +154,9 @@
           {/each}
         </div>
         {@render size()}
-        <p class="faint small">Claude ({modelName}) writes {cats * len} clues, easiest row first. You fix anything in the editor before saving.</p>
-        <Button size="lg" onclick={ask} disabled={!topic.trim()}>✨ Make the board</Button>
+        <WizardEffort />
+        <p class="faint small">Fizzwick writes {cats * len} clues, easiest row first. You fix anything in the editor before saving.</p>
+        <Button size="lg" onclick={ask} disabled={!topic.trim()}>✨ Make the pack</Button>
       </div>
     {/if}
   {/if}
@@ -188,7 +186,6 @@
   .chip.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
   .nokey { display: flex; flex-direction: column; gap: var(--s-2); color: var(--text-dim); }
   .nokey p { margin: 0; }
-  .link { min-height: 44px; padding: 0; border: 0; background: none; color: var(--accent); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
   .leftover {
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-2); padding: var(--s-3) var(--s-4);
     border-radius: var(--r-md); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
