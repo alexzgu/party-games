@@ -157,29 +157,6 @@ commercial game's prompts). Open-ended so there are a hundred funny answers, not
 ("A terrible name for a boat", "What your dog is thinking during a thunderstorm"); nothing that
 needs inside knowledge unless the pack is about the group. "After Dark": cheeky, never explicit.
 
-### Getting Warmer packs (`warm/`)
-
-Default size 50 cards. Run `npm run list -- warm` before writing. Answers must be
-unique across the game. Each card has an `answer` and a `clues` array of 4–6 strings
-(aim for five). Put the pack in `src/content/warm/<id>.json` with the usual
-`id`, `name`, `blurb`, `added` and `cards` fields. Pick answers the room might
-recognise. Start with a vague but true clue, then narrow it down with different
-facts until the last clue nearly gives it away. Keep clues short enough to read
-aloud. Keep the words in the answer out of all clues.
-
-### Room Service packs (`room/`)
-
-Default size 60 cards. Run `npm run list -- room` before writing. Prompts must
-be unique across the game. Put the pack in `src/content/room/<id>.json` with
-`id`, `name`, `blurb`, `added` and `cards`. A card is one of:
-
-- `{"type":"side","a":"First choice","b":"Second choice"}`. Give each side a case worth making.
-- `{"type":"proof","text":"Something with a price sticker still on it"}`. Use ordinary things guests can carry or see. Keep clothing on and private phone content private.
-- `{"type":"foley","lines":["The floor gives way [CRACK]","The goose protests [HONK]"]}`. Write 2–4 short lines and bracket the sounds.
-- `{"type":"together","text":"Something everyone forgets on a weekend trip"}`. Use prompts likely to produce a few matches and a few surprises.
-
-Keep debates friendly and After Dark cheeky. Mix types unless the theme calls for one.
-
 ## Other changes
 
 Follow `SPEC.md`. Keep each game in `src/games/<id>/`, shared code in `src/lib/` and

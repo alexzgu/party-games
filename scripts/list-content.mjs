@@ -1,12 +1,12 @@
 // Lists what a game's built-in packs already contain, so a new pack can avoid repeats:
-//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|song|warm|room
+//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|song
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const game = process.argv[2];
 const dir = join(import.meta.dirname, '..', 'src', 'content', game ?? '');
-if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'song', 'warm', 'room'].includes(game)) {
-  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|song|warm|room');
+if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'song'].includes(game)) {
+  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|song');
   process.exit(1);
 }
 const packs = readdirSync(dir)
@@ -31,10 +31,6 @@ for (const p of packs) {
     else if ('left' in it) console.log(`${it.left} | ${it.right}`);
     else if ('youtube' in it) console.log(`${it.title} — ${it.artist}  [${it.youtube} from ${it.start}s]`);
     else if ('banned' in it) console.log(`${it.word}: ${it.banned.join(', ')}`);
-    else if ('clues' in it) console.log(it.answer);
-    else if (it.type === 'side') console.log(`side: ${it.a} | ${it.b}`);
-    else if (it.type === 'foley') console.log(`foley: ${it.lines.join(' / ')}`);
-    else if ('type' in it) console.log(`${it.type}: ${it.text}`);
     else { console.log(`${it.answer}  ←  ${it.phrase}`); hints.set(it.hint, (hints.get(it.hint) ?? 0) + 1); }
   }
 }

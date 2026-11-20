@@ -4,7 +4,7 @@ export const APP = {
   shortName: 'Jerk Box',
 } as const;
 
-export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'song' | 'warm' | 'room';
+export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'song';
 
 export interface GameInfo {
   id: GameId;
@@ -24,8 +24,6 @@ export const GAMES: GameInfo[] = [
   { id: 'quick', name: 'Brain Freeze', players: '2+ players', accent: 'var(--c-quick)', emoji: '🥶' },
   { id: 'snark', name: 'Snark Tank', players: '3–8 players · own phones', accent: 'var(--c-snark)', emoji: '🦈' },
   { id: 'song', name: 'Earworm', players: '2+ players · needs internet', accent: 'var(--c-song)', emoji: '🎧' },
-  { id: 'warm', name: 'Getting Warmer', players: 'Everyone · no teams', accent: 'var(--c-warm)', emoji: '🔥' },
-  { id: 'room', name: 'Room Service', players: 'Everyone · no teams', accent: 'var(--c-room)', emoji: '🛎️' },
 ];
 
 /** The name players see for a game; screens read it from here, never hard-code it. */

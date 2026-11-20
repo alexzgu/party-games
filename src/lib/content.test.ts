@@ -8,8 +8,6 @@ import { quickPacks } from './content';
 import { snarkPacks } from './content';
 import { cardId, cardProblems } from '../games/taboo/cards';
 import { songPacks } from './content';
-import { roomPacks, warmPacks } from './content';
-import { cardKey, cardProblem } from './dropin/cards';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Small words a phrase may share with its answer without giving it away. */
@@ -268,39 +266,6 @@ describe('Earworm packs', () => {
       }
     }
     expect(packs.slice(0, 3).map((p) => p.id)).toEqual(['2000s-bangers', '2010s-hits', 'throwbacks']);
-    expect(problems).toEqual([]);
-  });
-});
-
-describe('Getting Warmer and Room Service packs', () => {
-  it.each([
-    ['warm', warmPacks],
-    ['room', roomPacks],
-  ] as const)('%s packs have valid and unique cards', (game, list) => {
-    const problems: string[] = [];
-    const packs = list();
-    const seen = new Map<string, string>();
-    packBasics(packs, problems);
-    expect(packs.length).toBeGreaterThan(0);
-    for (const pack of packs) {
-      if (!pack.added) problems.push(`${pack.id}: missing added date`);
-      if (!Array.isArray(pack.cards) || !pack.cards.length) {
-        problems.push(`${pack.id}: expected a nonempty cards array`);
-        continue;
-      }
-      for (const [index, card] of pack.cards.entries()) {
-        const where = `${pack.id}, card ${index + 1}`;
-        const problem = cardProblem(game, card);
-        if (problem) {
-          problems.push(`${where}: ${problem}`);
-          continue;
-        }
-        const key = cardKey(card);
-        const previous = seen.get(key);
-        if (previous) problems.push(`${where}: repeats ${previous}`);
-        seen.set(key, where);
-      }
-    }
     expect(problems).toEqual([]);
   });
 });
