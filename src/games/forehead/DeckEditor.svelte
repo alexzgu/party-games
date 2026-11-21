@@ -5,8 +5,7 @@
   import ListTools from '../../components/ListTools.svelte';
   import PinnedPanel from '../../components/PinnedPanel.svelte';
   import SharedPill from '../../components/SharedPill.svelte';
-  import ExportPack from '../../components/ExportPack.svelte';
-  import SharePack from '../../components/SharePack.svelte';
+  import PackActions from '../../components/PackActions.svelte';
   import AddMore from '../../components/AddMore.svelte';
   import { mergeOnTop } from '../../lib/addMore';
   import { afterRun, shareWizardPack } from '../../lib/library';
@@ -177,8 +176,7 @@
         </label>
       </section>
 
-      {#if deck.id}<ExportPack game="forehead" pack={deck} />{/if}
-      {#if deck.id}<SharePack game="forehead" pack={deck} onshared={() => (deck.shared = true)} />{/if}
+      {#if deck.id}<PackActions game="forehead" pack={deck} onshared={() => (deck.shared = true)} />{/if}
       {#if deck.id && !builtin}
         <Button variant={confirmDelete ? 'danger' : 'ghost'} onclick={remove}>{confirmDelete ? 'Tap again to delete this pack' : 'Delete pack'}</Button>
       {/if}

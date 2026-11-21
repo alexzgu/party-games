@@ -157,7 +157,7 @@ the page shows a small note, "Couldn't share to the library". Each wizard form s
 small text, "Packs Fizzwick makes are shared in the Community library." Shared packs stay for
 good (the owner can hide one).
 **Sharing by hand** (`SharePack`, `canShare`, `shareStatus`, `shareProblem`): every pack editor of
-a game with the library shows "Share" under "Export" for the phone's own saved
+a game with the library shows "Share" beside "Export" for the phone's own saved
 packs (pasted, typed by hand, imported from a file or made by Fizzwick), never for a built-in pack
 or its edit, nor for a pack imported from the Community library (marked `fromLibrary` when
 imported; packs imported before the mark existed cannot be told apart). The first share of a pack
@@ -208,7 +208,8 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
   Any other address, such as one of a game taken out of the app (`#/song`), shows Home.
 - **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours; pack lists as Tiles or List, the same choice as the switch on every pack list), Heads Down. (scored-word feedback,
   "Calibrate tilt" with the calibration note under it, "Check tilt" with its notes under it),
-  The wizard, Cards (reset card history). The wizard never mentions invite links. Without a key
+  The wizard, Cards (reset card history), and App (refresh the offline cache and reload).
+  The wizard never mentions invite links. Without a key
   or pass: "Fizzwick the Wizard is not on this phone yet. Say the magic words the host told
   you:", a hidden field with Show (no autofill) and "Say them", answered "Fizzwick heard you.
   He's yours on this phone.", "Fizzwick doesn't know those words." or, after too many guesses,

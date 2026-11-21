@@ -1,4 +1,7 @@
 /// <reference types="vitest/config" />
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -12,7 +15,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: false,
-      includeAssets: ['icon.svg', 'apple-touch-icon.png'],
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      includeManifestIcons: false,
       manifest: {
         name: APP.name,
         short_name: APP.shortName,
@@ -30,12 +36,15 @@ export default defineConfig({
           { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml' },
         ],
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,json}'],
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
-        navigateFallback: 'index.html',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,json,webmanifest}'],
+        manifestTransforms: [async (manifest) => ({
+          manifest: await Promise.all(manifest.map(async (entry) => {
+            const file = fileURLToPath(new URL(`./dist/${entry.url}`, import.meta.url));
+            const digest = createHash('sha256').update(await readFile(file)).digest('base64');
+            return { ...entry, integrity: `sha256-${digest}` };
+          })),
+        })],
       },
     }),
   ],

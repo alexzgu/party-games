@@ -2,8 +2,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import SharedPill from '../../components/SharedPill.svelte';
-  import ExportPack from '../../components/ExportPack.svelte';
-  import SharePack from '../../components/SharePack.svelte';
+  import PackActions from '../../components/PackActions.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import PinnedPanel from '../../components/PinnedPanel.svelte';
@@ -139,8 +138,7 @@
               <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
             {/if}
           </div>
-          <ExportPack game="gibberish" {pack} />
-          <SharePack game="gibberish" {pack} onshared={() => { if (pack) pack.shared = true; }} />
+          <PackActions game="gibberish" {pack} onshared={() => { if (pack) pack.shared = true; }} />
 
           <label class="name">
             <span>Pack name</span>

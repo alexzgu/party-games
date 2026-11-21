@@ -2,8 +2,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import SharedPill from '../../components/SharedPill.svelte';
-  import ExportPack from '../../components/ExportPack.svelte';
-  import SharePack from '../../components/SharePack.svelte';
+  import PackActions from '../../components/PackActions.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import PinnedPanel from '../../components/PinnedPanel.svelte';
@@ -140,8 +139,7 @@
               <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
             {/if}
           </div>
-          <ExportPack game="snark" {pack} />
-          <SharePack game="snark" {pack} onshared={() => { if (pack) pack.shared = true; }} />
+          <PackActions game="snark" {pack} onshared={() => { if (pack) pack.shared = true; }} />
           {#if !builtin && missing}
             <div class="fill">
               <p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer, so “Give me one” can't help there.</p>

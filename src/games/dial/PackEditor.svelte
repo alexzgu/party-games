@@ -5,8 +5,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import SharedPill from '../../components/SharedPill.svelte';
-  import ExportPack from '../../components/ExportPack.svelte';
-  import SharePack from '../../components/SharePack.svelte';
+  import PackActions from '../../components/PackActions.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import PinnedPanel from '../../components/PinnedPanel.svelte';
@@ -154,8 +153,7 @@
             <span>{pack.cards.length} {pack.cards.length === 1 ? "card" : "cards"}</span>
             {#if !builtin}<span class="tag">yours</span>{:else if edited}<span class="tag hot">edited</span>{:else}<span class="tag">built-in</span>{/if}
           </p>
-          <ExportPack game="dial" {pack} />
-          <SharePack game="dial" {pack} onshared={() => (pack = pack && { ...pack, shared: true })} />
+          <PackActions game="dial" {pack} onshared={() => (pack = pack && { ...pack, shared: true })} />
         {/if}
 
         <form class="add" onsubmit={add}>

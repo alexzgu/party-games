@@ -7,8 +7,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import SharedPill from '../../components/SharedPill.svelte';
-  import ExportPack from '../../components/ExportPack.svelte';
-  import SharePack from '../../components/SharePack.svelte';
+  import PackActions from '../../components/PackActions.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import PinnedPanel from '../../components/PinnedPanel.svelte';
@@ -197,8 +196,7 @@
             <span>{pack.cards.length} {pack.cards.length === 1 ? 'card' : 'cards'}</span>
             {#if !builtin}<span class="tag">{pack.id ? 'yours' : 'new'}</span>{:else if edited}<span class="tag hot">edited</span>{:else}<span class="tag">built-in</span>{/if}
           </p>
-          {#if pack.id}<ExportPack game="taboo" {pack} />{/if}
-          {#if pack.id}<SharePack game="taboo" {pack} onshared={() => (pack = pack && { ...pack, shared: true })} />{/if}
+          {#if pack.id}<PackActions game="taboo" {pack} onshared={() => (pack = pack && { ...pack, shared: true })} />{/if}
 
           <div class="add">
             <div class="add-head">

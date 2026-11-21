@@ -14,8 +14,22 @@
   import { haptic } from '../lib/haptics';
   import UsernameField from '../components/UsernameField.svelte';
   import { device, soundHint, vibrationHint } from '../lib/device';
+  import { canRefreshApp, refreshApp } from '../lib/update';
 
   let cleared = $state(false);
+  let refreshing = $state(false);
+  let refreshNote = $state('');
+
+  async function refreshCache() {
+    refreshing = true;
+    refreshNote = '';
+    try {
+      await refreshApp();
+    } catch {
+      refreshing = false;
+      refreshNote = 'Could not refresh the app cache. Check your connection and try again.';
+    }
+  }
 
   // Switching Sound or Vibration on plays a sample, so anyone can tell at once whether this phone does it.
   function soundChanged() {
@@ -105,6 +119,16 @@
     <Button variant="secondary" onclick={clearSeen}>Reset card history</Button>
     {#if cleared}<p class="status ok" role="status">Card history cleared. Every card can come up again.</p>{/if}
   </section>
+  {#if canRefreshApp}
+    <section class="stack">
+      <h3>App</h3>
+      <Button variant="secondary" onclick={refreshCache} disabled={refreshing}>
+        {refreshing ? 'Refreshing app cache…' : 'Refresh app cache'}
+      </Button>
+      <p class="faint">Checks for updates, downloads a fresh offline copy and reloads the app.</p>
+      {#if refreshNote}<p class="status" role="status">{refreshNote}</p>{/if}
+    </section>
+  {/if}
 </Screen>
 
 <style>
