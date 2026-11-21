@@ -270,9 +270,10 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
     the page opens, so a keyboard shrinking the screen never folds them. The button and the
     tiles/list switch ignore taps in their first 400 ms (the tail of a double tap on the screen
     before). Heads Down. and Snark Tank have nothing above their packs row and no button.
-  - **Players and team names that grow** (Inn Co Hear Ant and Brain Freeze players, Big Board
-    team names) show in a window about three rows tall that scrolls on its own, with Add player
-    (Big Board: the team count) always in view outside it. Its top and bottom edges fade out,
+  - **Players and teams that grow** (Inn Co Hear Ant and Brain Freeze players, Big Board
+    teams; one list, `PlayerList`: two tiles a row, tap a name to rename it in place, ✕ removes,
+    the count and "need N+" in its head) show in a window about three rows tall that scrolls on
+    its own, with Add player (Big Board: Add team) always in view outside it. Its top and bottom edges fade out,
     each only while there is more to scroll that way; a name scrolled to or being typed stops
     clear of the fades. Adding a player (or a team) scrolls the window to the new row. A shorter
     screen shows fewer rows (down to one), and if it shrinks while a name is being typed, that
@@ -475,9 +476,14 @@ A team quiz board for a host who reads aloud, on a phone or a laptop on the TV. 
 board: categories across and clues down, easiest at the top. Built-in packs (`src/content/quiz/*.json`)
 are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1–8 × 1–10.
 
-- **Setup**: 1–10 teams (stepper, default 3; a team may be one person), names editable and
-  remembered for all twenty seats, each with its own colour (`--team-1` … `--team-20` in
-  tokens.css, one set per scheme, readable as text and under a number badge). One pack
+- **Setup**: 1–10 teams (default 3; a team may be one person), in the same list as Inn Co Hear
+  Ant's players: Add team (the next unused default name, then "Team N"), tap a name to rename it
+  (blank or repeated names are turned down; 18 characters at most), ✕ to remove; the head says
+  "Solo" for one team, with "Play for a high score" under it. The list is remembered. Each team
+  has its own colour (`--team-1` … `--team-20` in tokens.css, one set per scheme, readable as text
+  and under a number badge), shown as its tile's dot with its number; colours and numbers follow
+  the team's place. While a game is saved, solo stays solo (Add is off) and teams stay two or
+  more (no ✕ at two); a removed team leaves with its points (tiles it won count as nobody's). One pack
   (the shared pack list, single pick; a pencil on each opens the editor; Add pack → New at the end). A "Points" card
   ("Tiles 100–500 · wrong answers cost nothing") holds points 100, 200, … per level or doubled
   and "Wrong answers lose points" (default off). A pack with an
@@ -512,7 +518,8 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   columns on wide screens). History gets one entry at that moment (`finished: false` when ended
   early; more than 4 teams: the title gives the top score and the team count); End with nothing
   scored just closes the board. State saved after every step; a reload resumes on the same
-  screen. Saves and setups from the 2–4 team version load unchanged.
+  screen. Saves from the 2–4 team version load unchanged; a setup saved with a name for every seat
+  and a team count loads as its first that many names.
 - **Pack editor** (`#/quiz/board?id=<id>`): name, short description, levels stepper (adds or
   removes the bottom level on every category; removing one with clues asks first), category
   tabs (add up to 8, rename, move left/right, remove), and every clue and answer inline, empty

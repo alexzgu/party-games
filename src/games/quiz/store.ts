@@ -4,6 +4,7 @@ import { load, remove, save } from '../../lib/storage';
 import { customQuiz, isBuiltin, slugify, type QuizBoard } from '../../lib/content';
 import { MAX_TEAMS, MIN_TEAMS, validGame, type Game } from './logic';
 import { DEFAULT_TEAMS } from './look';
+import { tidyTeams } from './teams';
 import { sizeProblem } from './board';
 
 const GAME = 'quiz:game';
@@ -14,27 +15,32 @@ export const loadGame = (): Game | null => validGame(load<unknown>(GAME, null));
 export const saveGame = (g: Game | null): void => (g ? save(GAME, g) : remove(GAME));
 
 export interface SetupPrefs {
-  /** Names for every seat; the first `count` play. */
+  /** The teams, in seating order (one is a solo player). */
   names: string[];
-  count: number;
   boardId: string | null;
   double: boolean;
   penalty: boolean;
 }
 
-export const DEFAULT_SETUP: SetupPrefs = { names: DEFAULT_TEAMS, count: 3, boardId: null, double: false, penalty: false };
+export const DEFAULT_SETUP: SetupPrefs = { names: DEFAULT_TEAMS.slice(0, 3), boardId: null, double: false, penalty: false };
 
 /**
- * Saved setup choices, each field checked on its own and replaced by its default if bad. A setup
- * saved with fewer seats gets default names for the rest; one saved with more keeps the first ten.
+ * The saved team list, tidied (see tidyTeams) and cut to MAX_TEAMS; the default three when there
+ * is none. Setups saved before teams were added one by one kept a name for every seat and how
+ * many played (`count`): those load as their first `count` names (3 when the count is bad).
  */
+function savedTeams(names: unknown, count: unknown): string[] {
+  if (count === undefined && (!Array.isArray(names) || names.length === 0)) return DEFAULT_SETUP.names.slice();
+  const list = Array.isArray(names) ? names : [];
+  const n = count === undefined ? list.length : Number.isInteger(count) && (count as number) >= MIN_TEAMS && (count as number) <= MAX_TEAMS ? (count as number) : 3;
+  return tidyTeams(Array.from({ length: Math.min(n, MAX_TEAMS) }, (_, i) => (typeof list[i] === 'string' ? list[i] : '')));
+}
+
+/** Saved setup choices, each field checked on its own and replaced by its default if bad. */
 export function validSetup(x: unknown): SetupPrefs {
-  const p = (x && typeof x === 'object' ? x : {}) as Partial<SetupPrefs>;
-  const names = DEFAULT_TEAMS.map((d, i) => (Array.isArray(p.names) && typeof p.names[i] === 'string' ? p.names[i] : d));
-  const count = Number.isInteger(p.count) && p.count! >= MIN_TEAMS && p.count! <= MAX_TEAMS ? p.count! : DEFAULT_SETUP.count;
+  const p = (x && typeof x === 'object' ? x : {}) as Partial<SetupPrefs> & { count?: unknown };
   return {
-    names,
-    count,
+    names: savedTeams(p.names, p.count),
     boardId: typeof p.boardId === 'string' ? p.boardId : null,
     double: p.double === true,
     penalty: p.penalty === true,

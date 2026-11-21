@@ -70,7 +70,7 @@
       saved={game}
       onstart={start}
       onresume={() => go('/quiz/play', true)}
-      onroster={(teams) => game && commit(reseat(game, teams))}
+      onroster={(r) => game && commit(reseat(game, r))}
       onhome={() => back('/')}
       onedit={(id, cat) => go(`/quiz/board?id=${encodeURIComponent(id)}${cat ? `&cat=${cat}` : ''}`)}
       onmake={() => go('/quiz/make')}

@@ -7,6 +7,3 @@ export const DEFAULT_TEAMS = [
   'Smarty Pants', 'Know-It-Alls', 'Lucky Guesses', 'Wild Cards', 'Quizzly Bears',
   'Big Brains', 'Night Owls', 'Hot Takes', 'Fun Facts', 'Dark Horses',
 ];
-
-/** A typed team name, tidied, or the default for that seat when left blank. */
-export const teamName = (raw: string, i: number): string => raw.trim().replace(/\s+/g, ' ').slice(0, 18) || DEFAULT_TEAMS[i] || `Team ${i + 1}`;

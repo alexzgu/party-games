@@ -4,15 +4,32 @@
   import { sfx } from '../lib/sound';
   import ScrollWindow from './ScrollWindow.svelte';
 
-  // The player list on a game's setup screen. Add makes a tile named "Player N";
+  // The player list on a game's setup screen (Big Board: its teams, `noun` "team"). Add makes a
+  // tile named "Player N" (or `newName`'s pick);
   // tapping a tile's name (the pencil) renames it in place: Enter or leaving the box keeps it, Escape cancels.
   // `seats`, when bound, follows each tile's first place in the list (-1 for a tile added here),
   // so a saved game can tell a renamed player from a new one. The tiles show in a window about three
   // rows tall that scrolls on its own (a new player scrolls it to the end); Add player stays under it.
   type Check = (raw: string, existing: string[]) => { name: string; error: string };
-  let { names = $bindable(), seats = $bindable([]), min, max, check, avatar }: {
+  let {
+    names = $bindable(), seats = $bindable([]), min, max, check, avatar,
+    noun = 'player', nouns = 'players', newName = nextPlayerName, tally = String, keep = 0, full, note,
+  }: {
     names: string[]; seats?: number[]; min: number; max: number; check: Check; avatar: Snippet<[string, number]>;
+    /** What a tile is, one and many: "Add team", "10 teams is the most", the heading "Teams". */
+    noun?: string; nouns?: string;
+    /** The name a new tile gets. */
+    newName?: (names: string[]) => string;
+    /** The count in the head ("3"; Big Board: "Solo" for one). */
+    tally?: (n: number) => string;
+    /** ✕ shows only while there are more tiles than this. */
+    keep?: number;
+    /** The Add button's words at `max`, when not "N players is the most". */
+    full?: string;
+    /** Shown under the head. */
+    note?: Snippet;
   } = $props();
+  const heading = $derived(nouns[0].toUpperCase() + nouns.slice(1));
   let tiles: ScrollWindow | undefined = $state();
   let editing = $state(-1);
   let draft = $state('');
@@ -20,7 +37,7 @@
 
   function add() {
     editing = -1;
-    names = [...names, nextPlayerName(names)];
+    names = [...names, newName(names)];
     seats = [...seats, -1];
     error = '';
     sfx.tap();
@@ -64,16 +81,17 @@
   }
 </script>
 
-<section class="players" aria-labelledby="players-h">
+<section class="players" aria-labelledby="{nouns}-h">
   <div class="head">
-    <h3 id="players-h">Players</h3>
-    <span class="count" class:short={names.length < min}>{names.length} {#if names.length < min}· need {min}+{/if}</span>
+    <h3 id="{nouns}-h">{heading}</h3>
+    <span class="count" class:short={names.length < min}>{tally(names.length)} {#if names.length < min}· need {min}+{/if}</span>
   </div>
+  {@render note?.()}
   {#if names.length}
     <ScrollWindow bind:this={tiles}>
     <ul class="list">
       {#each names as name, i (name)}
-        <li class="pop-in">
+        <li class="pop-in" class:fixed={names.length <= keep}>
           {@render avatar(name, i)}
           {#if editing === i}
             <input
@@ -91,9 +109,11 @@
               <span>{name}</span>
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg>
             </button>
-            <button class="x" onclick={() => removeAt(i)} aria-label="Remove {name}">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
-            </button>
+            {#if names.length > keep}
+              <button class="x" onclick={() => removeAt(i)} aria-label="Remove {name}">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+              </button>
+            {/if}
           {/if}
         </li>
       {/each}
@@ -101,7 +121,7 @@
     </ScrollWindow>
   {/if}
   <button class="add" onclick={add} disabled={names.length >= max}>
-    {names.length >= max ? `${max} players is the most` : 'Add player'}
+    {names.length >= max ? (full ?? `${max} ${nouns} is the most`) : `Add ${noun}`}
   </button>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
 </section>
@@ -113,6 +133,7 @@
   .count.short { color: var(--c-pass); }
   .list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
   li { display: flex; align-items: center; gap: var(--s-1); padding: 4px 0 4px 8px; border-radius: var(--r-md); background: var(--surface); min-height: 52px; }
+  li.fixed { padding-right: 8px; }
   .name { flex: 1; min-width: 0; min-height: 44px; display: flex; align-items: center; gap: var(--s-1); padding: 0 0 0 var(--s-1);
     border: 0; border-radius: var(--r-sm); background: transparent; color: inherit; font: inherit; font-weight: 700; text-align: left; }
   /* Up to two lines, so "Player 12" keeps its number in a half-width tile. */

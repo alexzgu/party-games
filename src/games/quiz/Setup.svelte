@@ -12,8 +12,9 @@
   import { quizBoards } from '../../lib/content';
   import { unlockAudio } from '../../lib/sound';
   import { loadSetup, saveSetup } from './store';
-  import { points, rowValues, standings, type Game, type Options } from './logic';
-  import { teamName } from './look';
+  import { MAX_TEAMS, MIN_TEAMS, points, rowValues, standings, type Game, type Options } from './logic';
+  import { tidyTeams } from './teams';
+  import { reseating, unchanged, type Reseat } from '../../lib/players';
   import { describeEmpty, emptyTiles, tidyBoard } from './board';
   import { pointsSummary } from './pointsSummary';
 
@@ -22,7 +23,7 @@
     onstart: (o: Options) => void;
     onresume: () => void;
     /** Team changes made here, for the saved game (only when there are some). */
-    onroster: (teams: string[]) => void;
+    onroster: (r: Reseat) => void;
     onhome: () => void;
     /** Opens a board's editor, on category `cat` when given. */
     onedit: (boardId: string, cat?: number) => void;
@@ -34,31 +35,38 @@
   // A saved game's own teams are the list here: changes to it join that game on Resume.
   // svelte-ignore state_referenced_locally
   const live = saved && saved.phase !== 'win' ? saved : null;
-  let names = $state(live ? [...live.teams, ...prefs.names.slice(live.teams.length)] : prefs.names);
-  let count = $state(live ? live.teams.length : prefs.count);
+  let names = $state(live ? tidyTeams(live.teams) : prefs.names);
+  let seats = $state(live ? live.teams.map((_, i) => i) : []);
   // svelte-ignore state_referenced_locally
   let picked = $state(boards.some((b) => b.id === prefs.boardId) ? [prefs.boardId as string] : boards.slice(0, 1).map((b) => b.id));
   const boardId = $derived(picked[0] ?? null);
   let scale = $state<'x1' | 'x2'>(prefs.double ? 'x2' : 'x1');
   let penalty = $state(prefs.penalty);
 
-  $effect(() => saveSetup({ names: $state.snapshot(names), count, boardId, double: scale === 'x2', penalty }));
+  $effect(() => saveSetup({ names: $state.snapshot(names), boardId, double: scale === 'x2', penalty }));
 
   const board = $derived(boards.find((b) => b.id === boardId) ?? null);
   const rows = $derived(board?.categories[0]?.clues.length ?? 5);
   const range = (double: boolean) => { const v = rowValues(rows, double); return `${v[0]}–${points(v[v.length - 1])}`; };
   const scales = $derived([{ value: 'x1' as const, label: range(false) }, { value: 'x2' as const, label: range(true) }]);
   const inProgress = $derived(saved && saved.phase !== 'win' ? saved : null);
+  // A saved game keeps solo and team play apart: its teams cannot drop below two.
+  const locked = $derived(inProgress ? (inProgress.teams.length === 1 ? 'solo' : 'teams') : null);
+  const fewest = $derived(locked === 'teams' ? 2 : MIN_TEAMS);
 
   /** Hands the team changes to the saved game, when there are any. */
   function keepRoster() {
-    if (!inProgress) return;
-    const teams = names.slice(0, count).map(teamName);
-    if (teams.length !== inProgress.teams.length || teams.some((t, i) => t !== inProgress.teams[i])) onroster(teams);
+    if (!inProgress || names.length < fewest || names.length > MAX_TEAMS) return;
+    const r = reseating(names, seats, inProgress.teams.length);
+    if (unchanged(r, inProgress.teams)) return;
+    onroster(r);
+    seats = names.map((_, i) => i);
   }
   // A board with empty tiles is kept as a draft: it can be edited but not played yet.
   const gaps = $derived(board ? emptyTiles(board).length : 0);
-  const blocked = $derived(!board ? 'Pick a pack' : gaps ? `Fill ${gaps} empty ${gaps === 1 ? 'tile' : 'tiles'} first` : '');
+  // A game saved when 20 teams were allowed must come down to the limit before it can go on.
+  const extra = $derived(names.length - MAX_TEAMS);
+  const blocked = $derived(names.length < fewest ? 'Add a team' : extra > 0 ? `Remove ${extra} ${extra === 1 ? 'team' : 'teams'}` : !board ? 'Pick a pack' : gaps ? `Fill ${gaps} empty ${gaps === 1 ? 'tile' : 'tiles'} first` : '');
 
   // With a game saved, starting over takes a second tap so nobody wipes the scores by accident.
   let confirming = $state(false);
@@ -81,7 +89,7 @@
   function start() {
     if (!board || blocked) return;
     unlockAudio();
-    onstart({ teams: names.slice(0, count).map(teamName), board: tidyBoard(board), double: scale === 'x2', penalty });
+    onstart({ teams: $state.snapshot(names), board: tidyBoard(board), double: scale === 'x2', penalty });
   }
 </script>
 
@@ -89,10 +97,10 @@
   {#snippet trailing()}<Rules />{/snippet}
 <div class="setup">
   <PackList game="quiz" entries={boards.map(boardEntry)} bind:selected={picked} single noun="clues" placeholder="Search packs and clues"
-    makeHint="Start blank, paste one, or ask the wizard" topName="teams"
+    makeHint="Start blank, paste one, or ask the wizard" topName="teams" topNeeded={names.length < fewest}
     onedit={(id) => onedit(id)} {onmake} onimported={() => (boards = quizBoards())}>
     {#snippet top()}
-      <Teams bind:names bind:count locked={inProgress ? (inProgress.teams.length === 1 ? 'solo' : 'teams') : null} />
+      <Teams bind:names bind:seats {locked} />
     {/snippet}
     {#snippet notice()}
       {#if inProgress}
@@ -126,7 +134,7 @@
         {blocked || (confirming ? 'Tap again to end it and start over' : 'Start a new game')}
       </Button>
     {:else}
-      <Button size="lg" onclick={start} disabled={!!blocked}>{blocked || (count === 1 ? 'Start solo game' : 'Start game')}</Button>
+      <Button size="lg" onclick={start} disabled={!!blocked}>{blocked || (names.length === 1 ? 'Start solo game' : 'Start game')}</Button>
     {/if}
   {/snippet}
 </Screen>

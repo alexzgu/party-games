@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { QuizBoard } from '../../lib/content';
 import * as q from './logic';
+import { reseating } from '../../lib/players';
 
 const board: QuizBoard = {
   id: 'test', name: 'Test Board', blurb: 'b',
@@ -209,19 +210,25 @@ describe('saving and resuming', () => {
   it('keeps good setup fields and replaces bad ones', async () => {
     const { validSetup, DEFAULT_SETUP } = await import('./store');
     expect(validSetup(null)).toEqual(DEFAULT_SETUP);
-    expect(validSetup({ names: ['Us', 5], count: 21, boardId: 'x', double: true, penalty: 'yes' }))
-      .toEqual({ names: ['Us', ...DEFAULT_SETUP.names.slice(1)], count: 3, boardId: 'x', double: true, penalty: false });
-    expect(validSetup({ count: 0 }).count).toBe(3);
-    expect(validSetup({ count: 1 }).count).toBe(1);
-    expect(validSetup({ count: 10 }).count).toBe(10);
-    expect(validSetup({ count: 20 }).count).toBe(3);
+    expect(DEFAULT_SETUP.names).toHaveLength(3);
+    expect(validSetup({ names: ['Us', 5, ' us '], boardId: 'x', double: true, penalty: 'yes' }))
+      .toEqual({ names: ['Us', DEFAULT_SETUP.names[1], DEFAULT_SETUP.names[0]], boardId: 'x', double: true, penalty: false });
+    expect(validSetup({ names: [] }).names).toEqual(DEFAULT_SETUP.names);
+    expect(validSetup({ names: ['Solo'] }).names).toEqual(['Solo']);
+    expect(validSetup({ names: Array.from({ length: 12 }, (_, i) => `T${i}`) }).names).toHaveLength(q.MAX_TEAMS);
   });
-  it('loads a setup saved when there were four seats, keeping its names and filling the rest', async () => {
+  it('loads a setup saved with a name for every seat and a team count as its first `count` names', async () => {
     const { validSetup, DEFAULT_SETUP } = await import('./store');
-    const old = validSetup({ names: ['A', 'B', 'C', 'D'], count: 4, boardId: 'pop-culture-mix', double: false, penalty: true });
-    expect(old.names).toHaveLength(q.MAX_TEAMS);
-    expect(old.names.slice(0, 5)).toEqual(['A', 'B', 'C', 'D', DEFAULT_SETUP.names[4]]);
-    expect(old).toMatchObject({ count: 4, penalty: true });
+    const ten = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+    expect(validSetup({ names: ten, count: 4, boardId: 'pop-culture-mix', double: false, penalty: true }))
+      .toEqual({ names: ['A', 'B', 'C', 'D'], boardId: 'pop-culture-mix', double: false, penalty: true });
+    expect(validSetup({ names: ten, count: 1 }).names).toEqual(['A']);
+    expect(validSetup({ names: ten, count: 10 }).names).toEqual(ten);
+    expect(validSetup({ names: ten, count: 0 }).names).toEqual(['A', 'B', 'C']);
+    expect(validSetup({ names: ten, count: 20 }).names).toEqual(['A', 'B', 'C']);
+    // A seat left blank (or missing) played under its default name.
+    expect(validSetup({ names: ['A', '', 'C'], count: 4 }).names).toEqual(['A', DEFAULT_SETUP.names[1], 'C', 'Wild Cards']);
+    expect(validSetup({ count: 2 }).names).toEqual(DEFAULT_SETUP.names.slice(0, 2));
   });
   it('loads a game saved before 1–20 teams exactly as it was', () => {
     // The shape a 2–4 team game was saved in: same fields, nothing to convert.
@@ -240,14 +247,37 @@ describe('teams edited in setup', () => {
   it('renames by slot, adds teams at 0 and drops teams off the end with their points', () => {
     let g = play(fresh(true), 0, 2, [1]); // Greens win, Blues wrong
     g = q.adjust(g, 2, 100);
-    const t = q.reseat(g, ['Reds', 'Navy']);
+    const t = q.reseat(g, reseating(['Reds', 'Navy'], [0, 1], 3));
     expect(t.teams).toEqual(['Reds', 'Navy']);
     expect(q.scores(t)).toEqual([0, -100]);
-    expect(q.reseat(t, ['Reds', 'Navy', 'Golds']).teams.length).toBe(3);
+    expect(q.reseat(t, reseating(['Reds', 'Navy', 'Golds'], [0, 1, -1], 2)).teams.length).toBe(3);
+  });
+
+  it('keeps every kept team its points when one in the middle is removed', () => {
+    let g = play(fresh(true), 0, 2, [0]); // Greens win 100, Reds wrong −100
+    g = play(g, 1, 1); // Blues win 200
+    g = q.adjust(g, 1, 50);
+    g = q.showAnswer(q.toggleWrong(q.openTile(g, 2), 2)); // Greens wrong on the open 300
+    const t = q.reseat(g, reseating(['Reds', 'Greens', 'Golds'], [0, 2, -1], 3));
+    expect(t.teams).toEqual(['Reds', 'Greens', 'Golds']);
+    expect(q.scores(t)).toEqual([-100, 100 - 300, 0]);
+    expect(t.open?.wrong).toEqual([1]);
+    // The tile Blues won stays played, as nobody's.
+    expect(q.usedTiles(t).has(1)).toBe(true);
+    expect(t.log.filter((e) => e.kind === 'adjust')).toEqual([]);
+    expect(q.validGame(JSON.parse(JSON.stringify(t)))).toEqual(t);
+  });
+
+  it('follows teams that moved: points go with the team, not the place', () => {
+    const g = play(fresh(), 0, 0); // Reds win 100
+    const t = q.reseat(g, reseating(['Greens', 'Reds'], [2, 0], 3));
+    expect(q.scores(t)).toEqual([0, 100]);
   });
 
   it('never turns team play into solo or back', () => {
     const g = fresh();
-    expect(q.reseat(g, ['Reds'])).toBe(g);
+    expect(q.reseat(g, reseating(['Reds'], [0], 3))).toBe(g);
+    const s = q.newGame({ teams: ['Me'], board, double: false, penalty: true });
+    expect(q.reseat(s, reseating(['Me', 'You'], [0, -1], 1))).toBe(s);
   });
 });

@@ -2,6 +2,7 @@
 // stay thin and each step can be saved and unit-tested. Scores are never stored: they are the
 // sum of the log (plus wrong marks on the clue that is open), so undo is just "drop the last entry".
 import type { HistoryEntry } from '../../lib/history';
+import type { Reseat } from '../../lib/players';
 import type { QuizBoard, QuizCategory } from '../../lib/content';
 import { emptyTiles, sizeProblem } from './board';
 
@@ -170,17 +171,21 @@ export function anyScored(g: Game): boolean {
 }
 
 /**
- * The saved game with the teams edited in setup, slot by slot: a renamed team keeps its points,
- * added teams start at 0, and teams dropped off the end leave with their points (tiles they won
- * count as nobody's). Solo and team play do not turn into each other mid-game.
+ * The saved game with the teams edited in setup (`r` from `reseating`): a kept team keeps its
+ * points under its new name and place, added teams start at 0, and a removed team leaves with its
+ * points (tiles it won count as nobody's, its wrong marks and score fixes go). Solo and team play
+ * do not turn into each other mid-game.
  */
-export function reseat(g: Game, teams: string[]): Game {
-  if (teams.length < MIN_TEAMS || teams.length > MAX_TEAMS || (teams.length === 1) !== solo(g)) return g;
-  const n = teams.length;
+export function reseat(g: Game, r: Reseat): Game {
+  const n = r.names.length;
+  if (n < MIN_TEAMS || n > MAX_TEAMS || (n === 1) !== solo(g)) return g;
+  const to = (t: number) => r.places[t] ?? -1;
+  const kept = (wrong: number[]) => wrong.map(to).filter((t) => t >= 0).sort((a, b) => a - b);
   const log = g.log.flatMap((e): LogEntry[] =>
-    e.kind === 'adjust' ? (e.team < n ? [e] : []) : [{ ...e, winner: e.winner < n ? e.winner : -1, wrong: e.wrong.filter((t) => t < n) }]);
-  const open = g.open && { ...g.open, wrong: g.open.wrong.filter((t) => t < n) };
-  return { ...g, teams: teams.slice(), log, open };
+    e.kind === 'adjust' ? (to(e.team) >= 0 ? [{ ...e, team: to(e.team) }] : [])
+    : [{ ...e, winner: e.winner >= 0 ? to(e.winner) : -1, wrong: kept(e.wrong) }]);
+  const open = g.open && { ...g.open, wrong: kept(g.open.wrong) };
+  return { ...g, teams: r.names.slice(), log, open };
 }
 
 /** Game over: the board is cleared, or the host ended it (`early`). */
