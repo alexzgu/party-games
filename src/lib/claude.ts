@@ -4,7 +4,7 @@
 // The SDK is imported lazily so it costs nothing until someone actually generates.
 import { settings, saveSettings } from './settings.svelte';
 import { canFallBack, modelFor, SERVER_MAX_TOKENS, WIZARD_BETAS } from './wizard';
-import { WIZARD_SERVER } from './wizardServer';
+import { SERVER_TROUBLE, WIZARD_SERVER } from './wizardServer';
 
 export class ClaudeError extends Error {}
 
@@ -16,6 +16,9 @@ function viaPass(): boolean {
 export function hasKey(): boolean {
   return settings.apiKey.trim().length > 0 || viaPass();
 }
+
+/** What a make page says above the magic words box when the wizard is not on this phone yet. */
+export const WANTS = '🧙 Fizzwick the Wizard can make this for you. Say the magic words the host told you:';
 
 /** What a make page says when the wizard is not on this phone. */
 export const NOT_HERE = WIZARD_SERVER
@@ -32,13 +35,19 @@ async function client(pass: string) {
 
 /**
  * The wizard's words for an API status, or null to fall through to the general cases. `reason`
- * is the wizard server's `x-wizard-reason` header (401: expired, revoked, invalid; 429: phone, party).
+ * is the wizard server's `x-wizard-reason` header (401: expired, revoked, invalid; 429: phone,
+ * party, and none when Anthropic itself is busy; 500: server). Only `revoked` means the words
+ * changed; any other refused pass (one signed with a replaced server key, say) just needs the
+ * words said again.
  */
 export function statusMessage(status: number | undefined, pass: boolean, reason: string | null = null): string | null {
   if (pass && status === 401 && reason === 'expired') return "Fizzwick's pass expired. Say the magic words again.";
-  if (pass && status === 401) return 'The magic words have changed. Ask the host for the new ones.';
+  if (pass && status === 401 && reason === 'revoked') return 'The magic words have changed. Ask the host for the new ones.';
+  if (pass && status === 401) return 'Fizzwick forgot this phone. Say the magic words again.';
+  if (pass && status === 500 && reason === 'server') return SERVER_TROUBLE;
   if (pass && status === 429 && reason === 'phone') return 'Fizzwick needs a nap: this phone has had its share of magic today. Try again tomorrow.';
-  if (pass && status === 429) return "Fizzwick needs a nap: the party's wizard allowance is used up for now. Try again later.";
+  // Only the server's own `party` reason means the allowance is used up; any other 429 is Anthropic busy.
+  if (pass && status === 429 && reason === 'party') return "Fizzwick needs a nap: the party's wizard allowance is used up for now. Try again later.";
   if (status === 401) return "Fizzwick's magic stopped working on this phone. In Settings, send him away, then say the magic words again.";
   if (status === 429) return 'Fizzwick is swamped. Give him a moment, then try again.';
   if (status === 529 || (status && status >= 500)) return "Fizzwick's crystal ball is overloaded. Try again shortly.";

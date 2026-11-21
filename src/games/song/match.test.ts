@@ -29,6 +29,8 @@ describe('reading links', () => {
     expect(youtubeFrom('https://www.youtube.com/playlist?list=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG')).toEqual({ list: 'PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG' });
     expect(youtubeFrom('https://music.youtube.com/playlist?list=OLAK5uy_kXyz1234567890')).toEqual({ list: 'OLAK5uy_kXyz1234567890' });
     expect(youtubeFrom('https://www.youtube.com/watch?list=RDdQw4w9WgXcQ')).toEqual({});
+    expect(youtubeFrom('https://youtube.com/playlist?list=PLfrCXry7dQ84')).toEqual({ cut: true });
+    expect(parseLine('https://youtube.com/playlist?list=PLfrCXry7dQ84')).toMatchObject({ kind: 'skip', why: expect.stringContaining('cut off') });
     expect(youtubeFrom('https://vimeo.com/watch?v=dQw4w9WgXcQ')).toBeNull();
   });
 

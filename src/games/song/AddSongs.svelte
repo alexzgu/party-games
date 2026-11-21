@@ -12,7 +12,8 @@
   import { spotifyTitle } from './spotify';
   import { askClaude, COUNT_RANGE, DEFAULT_COUNT } from './generate';
   import { loadAdding, saveAdding } from './store';
-  import { hasKey, NOT_HERE } from '../../lib/claude';
+  import { hasKey, WANTS } from '../../lib/claude';
+  import MagicWords from '../../components/MagicWords.svelte';
   import WizardEffort from '../../components/WizardEffort.svelte';
   import { customSongs, songPacks, type SongPack } from '../../lib/content';
   import { sfx } from '../../lib/sound';
@@ -185,7 +186,8 @@
       {/if}
     {:else}
       <div class="nokey">
-        <p><b>{NOT_HERE}</b> Or ask any chatbot app:</p>
+        <MagicWords intro={WANTS} />
+        <p>Or ask any chatbot app:</p>
         <p class="quote">“List 30 songs everyone screams at a wedding, one per line as Title - Artist.”</p>
         <p>Then copy its answer, come back and paste it under <b>Paste</b>.</p>
         <Button variant="secondary" onclick={() => (mode = 'paste')}>Go to Paste</Button>

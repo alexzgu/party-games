@@ -8,7 +8,8 @@
   import Segmented from '../../components/Segmented.svelte';
   import WizardEffort from '../../components/WizardEffort.svelte';
   import { customDecks, dedupe, slugify, wordDecks } from '../../lib/content';
-  import { hasKey, NOT_HERE } from '../../lib/claude';
+  import { hasKey, WANTS } from '../../lib/claude';
+  import MagicWords from '../../components/MagicWords.svelte';
   import { back } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
@@ -33,8 +34,9 @@
   let controller: AbortController | null = null;
 
   const targetDeck = $derived(mine.find((d) => d.id === target));
-  const keyReady = hasKey();
+  const keyReady = $derived(hasKey());
   const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
+  // svelte-ignore state_referenced_locally
   let mode = $state<'paste' | 'claude'>(keyReady || start.isDemo ? 'claude' : 'paste');
   let pasteText = $state('');
   let note = $state('');
@@ -126,7 +128,7 @@
         {@render saveTo()}
       </PasteList>
     {:else if !keyReady && demo == null}
-      <p class="nokey">{NOT_HERE}</p>
+      <MagicWords intro={WANTS} />
     {:else}
       <form class="stack" onsubmit={(e) => { e.preventDefault(); if (theme.trim()) void run(); }}>
         <label class="field">
@@ -193,5 +195,4 @@
     border-radius: var(--r-md); background: color-mix(in srgb, var(--c-bad) 16%, var(--surface)); color: var(--on-danger);
   }
   .note { font-size: 0.92rem; }
-  .nokey { color: var(--text-dim); }
 </style>

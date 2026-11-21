@@ -2,7 +2,8 @@
 // then uses the server as its Anthropic base URL (POST /v1/messages). The server checks the
 // token and the request, reserves the daily allowance, and forwards the request with its own
 // key, streaming the answer back. Nothing here logs a phrase, token, key or body.
-import { addressLabel, deriveKeys, type Keys } from './crypto';
+import { clientOf } from './address';
+import { deriveKeys, type Keys } from './crypto';
 import type { Env, ExecutionContextLike } from './env';
 import { corsHeaders, errorResponse, limitResponse, originAllowed, parseOrigins, preflight } from './http';
 import { limit } from './limitsObject';
@@ -16,6 +17,13 @@ const ANTHROPIC_MESSAGES = 'https://api.anthropic.com/v1/messages';
 const MAX_REDEEM_BYTES = 1024;
 type Cors = Record<string, string>;
 
+/**
+ * API answers known to cost nothing, so their reservation is given back: a 4xx (the request was
+ * refused before it ran) or 529 (overloaded, not run). Anything else, a 5xx or a connection that
+ * failed after sending, may have run, so it stays counted.
+ */
+export const unbilled = (status: number) => (status >= 400 && status < 500) || status === 529;
+
 type Problem = Exclude<Verdict, { ok: true }>['reason'];
 const SESSION_PROBLEM: Record<Problem, string> = {
   malformed: 'This phone has no valid wizard pass. Say the magic words again.',
@@ -26,27 +34,37 @@ const SESSION_PROBLEM: Record<Problem, string> = {
 
 /**
  * `x-wizard-reason` tells the app which words to use: on 401 `expired`, `revoked` or `invalid`;
- * on 429 `guesses`, `redeems`, `phone` or `party`.
+ * on 429 `guesses`, `redeems`, `phone` or `party`; on 500 `server`.
  */
 const REASON = 'x-wizard-reason';
 const reasonFor = (p: Problem) => (p === 'expired' || p === 'revoked' ? p : 'invalid');
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContextLike): Promise<Response> {
-    const allowed = parseOrigins(env.ALLOWED_ORIGINS);
-    const origin = request.headers.get('origin');
-    const cors = corsHeaders(origin, allowed);
-    const path = new URL(request.url).pathname;
-    if (path !== '/redeem' && path !== '/v1/messages') return errorResponse(404, 'not_found_error', 'Nothing here.', cors);
-    if (request.method === 'OPTIONS') return preflight(request, allowed);
-    // A browser on another site gets nothing; tools without an Origin still meet every other check.
-    if (origin !== null && !originAllowed(origin, allowed)) return errorResponse(403, 'permission_error', 'This site may not use the wizard server.', cors);
-    if (request.method !== 'POST') return errorResponse(405, 'invalid_request_error', 'Use POST.', { ...cors, Allow: 'POST, OPTIONS' });
-    if (!env.ANTHROPIC_API_KEY) return errorResponse(503, 'api_error', 'The wizard server is not set up yet.', cors);
-    const keys = await deriveKeys(env.ANTHROPIC_API_KEY);
-    return path === '/redeem' ? redeem(request, env, keys, cors) : messages(request, env, ctx, keys, cors);
+    const cors = corsHeaders(request.headers.get('origin'), parseOrigins(env.ALLOWED_ORIGINS));
+    try {
+      return await handle(request, env, ctx, cors);
+    } catch {
+      // Something failed unexpectedly (the counters' Durable Object, say). Answer with the CORS
+      // headers, so the phone can read that it was the server and not its connection; no details.
+      return errorResponse(500, 'api_error', 'The wizard server hit a problem.', { ...cors, [REASON]: 'server' });
+    }
   },
 };
+
+async function handle(request: Request, env: Env, ctx: ExecutionContextLike, cors: Cors): Promise<Response> {
+  const allowed = parseOrigins(env.ALLOWED_ORIGINS);
+  const origin = request.headers.get('origin');
+  const path = new URL(request.url).pathname;
+  if (path !== '/redeem' && path !== '/v1/messages') return errorResponse(404, 'not_found_error', 'Nothing here.', cors);
+  if (request.method === 'OPTIONS') return preflight(request, allowed);
+  // A browser on another site gets nothing; tools without an Origin still meet every other check.
+  if (origin !== null && !originAllowed(origin, allowed)) return errorResponse(403, 'permission_error', 'This site may not use the wizard server.', cors);
+  if (request.method !== 'POST') return errorResponse(405, 'invalid_request_error', 'Use POST.', { ...cors, Allow: 'POST, OPTIONS' });
+  if (!env.ANTHROPIC_API_KEY) return errorResponse(503, 'api_error', 'The wizard server is not set up yet.', cors);
+  const keys = await deriveKeys(env.ANTHROPIC_API_KEY);
+  return path === '/redeem' ? redeem(request, env, keys, cors) : messages(request, env, ctx, keys, cors);
+}
 
 async function redeem(request: Request, env: Env, keys: Keys, cors: Cors): Promise<Response> {
   const raw = await readLimited(request, MAX_REDEEM_BYTES);
@@ -60,12 +78,12 @@ async function redeem(request: Request, env: Env, keys: Keys, cors: Cors): Promi
   if (typeof phrase !== 'string' || !phrase.trim() || phrase.length > MAX_PHRASE_LENGTH) {
     return errorResponse(400, 'invalid_request_error', 'Send {"phrase": "<the magic words>"}.', cors);
   }
-  const address = await addressLabel(request.headers.get('cf-connecting-ip') ?? 'unknown');
-  const slot = await limit(env.LIMITS, { op: 'guess', address });
+  const who = await clientOf(request.headers.get('cf-connecting-ip'));
+  const slot = await limit(env.LIMITS, { op: 'guess', ...who });
   if (!slot.ok) return limitResponse('Too many wrong guesses. Wait, then try again.', slot.retryAfter, { ...cors, [REASON]: 'guesses' });
   const pid = await matchPhrase(keys, phrase, env.PARTY_PHRASES);
   if (!pid) return errorResponse(401, 'authentication_error', 'Those are not the magic words.', cors);
-  const counted = await limit(env.LIMITS, { op: 'redeemed', address, at: slot.at ?? 0 });
+  const counted = await limit(env.LIMITS, { op: 'redeemed', ...who, at: slot.at ?? 0, fresh: slot.fresh === true });
   if (!counted.ok) return limitResponse('The magic words were said too often from here today.', counted.retryAfter, { ...cors, [REASON]: 'redeems' });
   const session = newSession(pid, Date.now());
   const token = await signToken(keys.session, session);
@@ -104,10 +122,10 @@ async function messages(request: Request, env: Env, ctx: ExecutionContextLike, k
     // redirect 'manual': the key header never follows a redirect anywhere.
     upstream = await fetch(ANTHROPIC_MESSAGES, { method: 'POST', headers, body: JSON.stringify(body.value), redirect: 'manual' });
   } catch {
-    giveBack();
+    // The request may have reached the API before the connection failed, so the reservation stays.
     return errorResponse(502, 'api_error', 'The wizard server could not reach its crystal ball.', cors);
   }
-  if (!upstream.ok) giveBack();
+  if (unbilled(upstream.status)) giveBack();
   // The server's own key failing is the host's problem; a 401 here would wrongly end the phone's session.
   if (upstream.status === 401 || upstream.status === 403) {
     await upstream.body?.cancel();

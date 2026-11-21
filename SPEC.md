@@ -64,27 +64,44 @@ Three routes, in the order the owner chose to rely on them:
    Each make page shows "How hard Fizzwick tries" (`WizardEffort`) next to the theme and the
    make button, when the phone has a key: 🥱 Half-asleep (Haiku 5.5), ☕ Had his coffee (Sonnet
    5.5), 🔮 Full beard power (Opus 5.5, the default), kept in `settings.model`; an unknown stored
-   id uses Opus. Without a key or pass the make page says "Fizzwick isn't on this phone yet: say
-   the magic words in Settings." (`NOT_HERE` in claude.ts).
+   id uses Opus. Without a key or pass the magic-words box (`MagicWords`) appears wherever the
+   wizard is wanted: Settings and in place of the wizard's form on every make page.
    `streamLines()` hands each line over as soon as it is complete; items stream into `Triage`;
    "More" sends the items already kept so the wizard avoids repeats.
 4. **The magic words** (second way in, kept apart from invite links): a small Cloudflare Worker
    in `worker/` (setup in `worker/README.md`) holds its own, spend-capped Anthropic key and a few
    shared party phrases as secrets the owner enters in Cloudflare. A friend types a phrase in
-   Settings; the server checks it (case, punctuation and spacing ignored; wrong guesses limited
-   to 10 per address per 15 minutes and 300 overall per hour; right ones to 20 per address per
-   day) and returns a 30-day pass, kept in `settings.wizardPass`, never in a URL or an invite
+   the magic-words box; the server checks it (case, punctuation and spacing ignored; guesses limited to 10
+   per address, an IPv4 address or an IPv6 /64, per 15 minutes and 300 overall per hour, but
+   once the 300 are used an address with no guess in the last hour is still checked, within 100
+   such guesses an hour and 2 per network, so a stranger flooding guesses is unlikely to lock
+   friends out, though it cannot be promised for a given friend: a typo from the same Wi-Fi, a
+   network whose fresh guesses are spent, or a second friend saying the words while the first
+   one's are still being given back can each mean a wait; right ones
+   are given back and limited to 20 per address per day; `worker/README.md` has the numbers)
+   and returns a 30-day pass, kept in `settings.wizardPass`, never in a URL or an invite
    link. The phone then uses the server as its API address with the pass in place of a key and
    without model fallback; the server allows only the app's own requests (models from
    `wizard.ts`, plain text, no fallback or betas, capped tokens and size), counts them against a
-   daily allowance (300 for everyone, the real cap; 60 per pass, a soft cap since the words can
+   daily allowance (300 requests for everyone; 60 per pass, a soft cap since the words can
    be said again), and forwards them with its key. A phone with its own key uses that instead,
    with fallback as before. Removing a phrase ends its passes ("The magic words have changed.
    Ask the host for the new ones."); an old pass says "Fizzwick's pass expired. Say the magic
-   words again."; either way the pass is forgotten, unless a newer one was saved meanwhile. The
-   allowance running out says "Fizzwick needs a nap", naming this phone's share or the party's.
+   words again."; any other refused pass (one signed before the server's key was replaced)
+   says "Fizzwick forgot this phone. Say the magic words again."; in each case the
+   pass is forgotten, unless a newer one was saved meanwhile. The
+   allowance running out says "Fizzwick needs a nap", naming this phone's share or the party's
+   (only when the server says `party`; any other 429 is Anthropic busy: "Fizzwick is swamped").
+   A connection lost after sending, or a 5xx, stays counted (the API may have run it); the
+   Anthropic workspace spend limit is the money cap.
+   An unexpected server error (a JSON 500 with the usual CORS headers and `x-wizard-reason:
+   server`, no details; when saying the words, any 5xx) says "Fizzwick's tower is having
+   trouble. Try again in a little while." and keeps the pass.
    `WIZARD_SERVER` in `src/lib/wizardServer.ts` holds the server's address; empty hides the
-   magic words everywhere.
+   magic words everywhere (the box then says "Ask the host." and only takes the host's key).
+   Something that looks like a key or invite link but is not a whole one is turned down on the
+   phone ("That looks like a key but isn't a whole one.") and never sent to the server; an
+   answer arriving after the box has gone, or after the phone's key or pass changed, is dropped.
 
 **Every pack can be opened and edited**, built-in or the player's own. Editing a built-in saves
 an edit under the same id that replaces it everywhere on that phone, marked "Edited", until
@@ -306,8 +323,9 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   lines; short categories get empty tiles; past 8 × 10 is cut off and the skipped lines are
   counted), or 🧙 Wizard (topic, categories × levels, how hard Fizzwick tries; the model streams one line
   per clue, "Category | level | clue | answer", easiest row first, under the AGENTS.md quality
-  bar, and a live preview fills tile by tile; "Stop" opens what came). Without a key it says to
-  say the magic words in Settings (`NOT_HERE`), or to ask the host for a built-in pack ("a Big Board about
+  bar, and a live preview fills tile by tile; "Stop" opens what came; a pass refused mid-preview
+  shows the magic-words box under the error in place of "Try again"). Without a key it shows the
+  magic-words box, and suggests asking the host for a built-in pack ("a Big Board about
   <topic>", which the owner's Claude Code chat makes). Every route opens the new
   pack in the editor, kept in storage (`quiz:new-board`) until "Save pack" (or "Save as a
   draft" with empty tiles), which picks it on setup.
@@ -439,6 +457,15 @@ play, so here's another."). Songs from a clip pack (below) play without it.
   no screen before it renders the title, artist, art or video; the clips play through Web Audio
   (no media element, so the lock screen, notification shade and car displays get no song
   details); the page title stays the app's; the YouTube player is created only on the reveal.
+  The YouTube player (reveal and playlist reading, `youtube.ts`) is always a plain cross-origin
+  `youtube-nocookie.com/embed` iframe driven by postMessage, answering only messages from that
+  frame on that origin; no YouTube script is ever added to the app's page, so YouTube's code
+  never runs where the phone's settings (an invite key, the wizard pass) are stored. The frame
+  is sandboxed (scripts, its own origin, presentation and pop-ups only, never top navigation,
+  so it cannot move the app's page); only the watched video gets media permissions. It counts
+  as answered only on the player's `onReady` or `initialDelivery`. If the player is not ready
+  within 15 s, or reports an error before or after it is ready, the reveal shows a "Watch the
+  video on YouTube" link.
   Then the scoreboard → "Next song" → ready. First to the target wins (win screen, confetti, rematch). History gets one entry per
   finished game, `finished: false` when a game with something scored is thrown away; songs
   whose preview would not play are listed in its details.
@@ -452,13 +479,14 @@ play, so here's another."). Songs from a clip pack (below) play without it.
   any mix of YouTube links in every form, Apple Music song links, Spotify song links
   (`open.spotify.com/track/…`, with or without `/intl-xx/` and `?si=…`, or `spotify:track:…`),
   "Title - Artist" or "Artist - Title", numbered or bulleted lists, tables from a chat), Playlist (a YouTube playlist link: an
-  off-screen IFrame API player reads up to 200 video ids and is never played; a playlist YouTube
-  will not list (private, deleted or empty) becomes a line saying "That YouTube playlist can't be
-  read: it may be private or empty", pasting it again retries, and the list goes on; YouTube not
-  loading at all, or being offline, pauses the list), or 🧙 Ask the
+  off-screen embedded player reads up to 200 video ids and is never played; a playlist YouTube
+  will not list (private, deleted or empty: the player reports an error, or no videos within
+  15 s) becomes a line saying "That YouTube playlist can't be
+  read: it may be private or empty", pasting it again retries, and the list goes on; the player
+  never answering within 15 s, or being offline, pauses the list), or 🧙 Ask the
   wizard (a theme, a count and "How hard Fizzwick tries"; "Fizzwick is conjuring … songs" while
   "Title | Artist" lines stream in through `streamLines`; without the wizard the screen shows
-  `NOT_HERE` and how to ask any chatbot app and paste the answer). Every line goes through the
+  the magic-words box and how to ask any chatbot app and paste the answer). Every line goes through the
   matcher (`match.ts`): a YouTube link's title comes from oEmbed and is cleaned (official video,
   lyrics, HD, remastered, featured artists, VEVO and "- Topic" channels), then searched on Apple;
   results are ranked by title and artist likeness, preferring the original studio recording over
@@ -503,8 +531,12 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
 - **Networking**: no server of ours. Phones and the host talk directly over WebRTC data
   channels (PeerJS, JSON messages); PeerJS's free public broker only introduces them. The host
   registers as `jerkbox-snark-<CODE>` (4 consonants, no vowels or L). `?peer=host:port` (or
-  `wss://host:port/path`) on any Snark Tank address switches that device to another broker, e.g.
-  `npx peer --port 9000`, and is remembered; `?peer=cloud` switches back; the join link and QR
+  `wss://host:port/path`) on any Snark Tank address switches that device to another broker, and
+  is remembered. The published site is https, so a backup broker must be reachable over
+  https/wss (on an https page every broker address connects with wss://; plain ws:// works only
+  from an http page, i.e. local dev): e.g. `npx peer --port 9000` plus a quick tunnel such as
+  `cloudflared tunnel --url http://localhost:9000`, then `?peer=<name>.trycloudflare.com:443`.
+  `?peer=cloud` switches back; the join link and QR
   code carry it to phones. Connection settings (start screen, join screen, lobby) do the same by
   hand. Broker unreachable → "Can't reach the matchmaking service. Check internet, or use the
   backup broker." on both sides, retrying in the background.

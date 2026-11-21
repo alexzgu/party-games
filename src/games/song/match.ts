@@ -108,7 +108,7 @@ export function stripListing(raw: string): string {
 }
 
 /** A YouTube URL → its video or playlist; null when it is not a YouTube link. */
-export function youtubeFrom(raw: string): { video?: string; list?: string } | null {
+export function youtubeFrom(raw: string): { video?: string; list?: string; cut?: true } | null {
   const url = asUrl(raw);
   if (!url) return null;
   const host = url.hostname.replace(/^(www|m|music)\./, '');
@@ -120,6 +120,8 @@ export function youtubeFrom(raw: string): { video?: string; list?: string } | nu
   const list = url.searchParams.get('list') ?? undefined;
   if (video && VIDEO_ID.test(video)) return { video };
   // Radio mixes (RD…) are made up per viewer and cannot be read back as a list.
+  // A user playlist id is PL plus 16 or 32 characters; any other length was cut off in copying.
+  if (list?.startsWith('PL') && list.length !== 18 && list.length !== 34) return { cut: true };
   if (list && /^[A-Za-z0-9_-]{10,}$/.test(list) && !list.startsWith('RD')) return { list };
   return {};
 }
@@ -191,6 +193,7 @@ export function parseLine(raw: string): Wanted | null {
     const yt = youtubeFrom(url);
     if (yt?.video) return { kind: 'youtube', id: yt.video, line };
     if (yt?.list) return { kind: 'playlist', list: yt.list, line };
+    if (yt?.cut) return { kind: 'skip', why: 'a playlist link that was cut off; copy it again with Share, then Copy link', line };
     const spotify = spotifyFrom(url);
     if (spotify) return 'track' in spotify ? { kind: 'spotify', id: spotify.track, line } : { kind: 'skip', why: spotify.skip, line };
     const apple = appleFrom(url);

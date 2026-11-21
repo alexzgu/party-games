@@ -7,7 +7,8 @@
   import Segmented from '../../components/Segmented.svelte';
   import WizardEffort from '../../components/WizardEffort.svelte';
   import { customQuick, slugify, type QuickPack } from '../../lib/content';
-  import { hasKey, NOT_HERE } from '../../lib/claude';
+  import { hasKey, WANTS } from '../../lib/claude';
+  import MagicWords from '../../components/MagicWords.svelte';
   import { sfx } from '../../lib/sound';
   import { generatePrompts, THEME_CHIPS } from './generate';
   import { parsePasted } from './parse';
@@ -134,7 +135,7 @@
       {@render saveTo()}
     </PasteList>
   {:else if !reviewing && !keyed}
-    <p class="nokey">{NOT_HERE}</p>
+    <MagicWords intro={WANTS} />
   {:else if !reviewing}
     <form class="theme" onsubmit={(e) => { e.preventDefault(); void run(); }}>
       <label for="theme-in"><h3>What should the prompts be about?</h3></label>
@@ -180,7 +181,6 @@
 <style>
   h3 { font-size: 1.3rem; }
   .small { font-size: 0.9rem; }
-  .nokey { color: var(--text-dim); }
   .theme { display: flex; flex-direction: column; gap: var(--s-3); }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
   .chip { min-height: 44px; padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1.5px solid var(--line-strong); background: var(--surface); font-weight: 600; }

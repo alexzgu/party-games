@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { revealPlayer, type YTPlayer } from './youtube';
+  import { revealPlayer, type Player } from './youtube';
 
   // The song's music video at the reveal, in full view with YouTube's own controls (never
   // covered, never smaller than 200×200). It waits for the room to start it; starting it stops
-  // the preview. If YouTube cannot be reached, a plain link takes its place.
+  // the preview. If YouTube cannot be reached or will not play it, a plain link takes its place.
   let { id, demo = false, onplay }: { id: string; demo?: boolean; onplay: () => void } = $props();
 
   let host = $state<HTMLDivElement>();
@@ -12,10 +12,11 @@
 
   onMount(() => {
     if (demo) return;
-    let player: YTPlayer | null = null;
+    let player: Player | null = null;
     let gone = false;
     if (!host) return;
-    revealPlayer(host, id, onplay).then((p) => { if (gone) p.destroy(); else player = p; }, () => (failed = true));
+    // Never ready in time, or an error before or after ready (a video that can't play here): the link.
+    revealPlayer(host, id, onplay, () => (failed = true)).then((p) => { if (gone) p.destroy(); else player = p; }, () => (failed = true));
     return () => {
       gone = true;
       try { player?.destroy(); } catch { /* already gone */ }

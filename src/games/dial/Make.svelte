@@ -8,7 +8,8 @@
   import PasteList from '../../components/PasteList.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import WizardEffort from '../../components/WizardEffort.svelte';
-  import { hasKey, NOT_HERE } from '../../lib/claude';
+  import { hasKey, WANTS } from '../../lib/claude';
+  import MagicWords from '../../components/MagicWords.svelte';
   import { customSpectra, slugify, type Spectrum, type SpectrumPack } from '../../lib/content';
   import { generatePairs, parsePastedPairs, THEME_CHIPS } from './generate';
   import { cardId } from './state';
@@ -159,7 +160,7 @@
     <PasteList label="One per line: Left | Right" placeholder={'Cold | Hot\nUnderrated | Overrated\nCheap | Expensive'}
       parse={(t) => parsePastedPairs(t, savedPack?.cards ?? [])} onadd={pasted} bind:text={pasteText} />
   {:else if step === 'theme' && !hasKey()}
-    <p class="nokey">{NOT_HERE}</p>
+    <MagicWords intro={WANTS} />
   {:else if step === 'theme'}
     <form class="stack" onsubmit={(e) => { e.preventDefault(); startFresh(theme); }}>
       <label class="stack">
@@ -220,7 +221,6 @@
 </Screen>
 
 <style>
-  .nokey { color: var(--text-dim); }
   .note { font-size: 0.92rem; }
   .lbl { font-weight: 700; }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }

@@ -8,8 +8,8 @@
   import { calibration } from '../games/forehead/calibration.svelte';
   import { go } from '../lib/router.svelte';
   import { settings, saveSettings, applyTheme } from '../lib/settings.svelte';
-  import { keyFromTyped } from '../lib/invite';
-  import { WIZARD_SERVER, redeemPhrase, redeemMessage } from '../lib/wizardServer';
+  import MagicWords from '../components/MagicWords.svelte';
+  import { hasKey } from '../lib/claude';
   import { sfx, unlockAudio } from '../lib/sound';
   import { haptic } from '../lib/haptics';
 
@@ -28,55 +28,13 @@
     if (settings.haptics) haptic.pass();
   }
 
-  // The magic words: sent once to the wizard server, which answers with a pass kept on this phone
-  // (never the words themselves, never in a URL). Players are only told about the magic words;
-  // an invite link or bare key typed here still works, for the host's own testing.
-  let words = $state('');
-  let showWords = $state(false);
-  let saying = $state(false);
-  let wordsNote = $state('');
-  let wordsOk = $state(false);
-  const hasWizard = $derived(settings.apiKey.trim().length > 0 || (!!WIZARD_SERVER && settings.wizardPass.trim().length > 0));
-  function arrived() {
-    words = '';
-    showWords = false;
-    wordsOk = true;
-    wordsNote = "Fizzwick heard you. He's yours on this phone.";
-    sfx.correct();
-  }
-  async function sayWords() {
-    if (!words.trim() || saying) return;
-    wordsNote = '';
-    const key = keyFromTyped(words);
-    if (key) {
-      settings.apiKey = key;
-      saveSettings();
-      return arrived();
-    }
-    if (!WIZARD_SERVER) {
-      wordsOk = false;
-      wordsNote = "Fizzwick doesn't know those words.";
-      return;
-    }
-    saying = true;
-    const r = await redeemPhrase(words);
-    saying = false;
-    wordsOk = r.ok;
-    wordsNote = redeemMessage(r);
-    if (!r.ok) return;
-    settings.wizardPass = r.token;
-    saveSettings();
-    words = '';
-    showWords = false;
-    sfx.correct();
-  }
+  const hasWizard = $derived(hasKey());
 
   /** Sends Fizzwick away from this phone, however he came. */
   function forgetWords() {
     settings.wizardPass = '';
     settings.apiKey = '';
     saveSettings();
-    wordsNote = '';
   }
 
   function clearSeen() {
@@ -123,16 +81,8 @@
     {#if hasWizard}
       <p class="muted small">🧙 Fizzwick the Wizard lives on this phone: he can make packs from any theme.</p>
       <button type="button" class="remove" onclick={forgetWords}>Send Fizzwick away</button>
-    {:else}
-      <p class="muted small">🧙 Fizzwick the Wizard is not on this phone yet. Say the magic words the host told you:</p>
-      <div class="words">
-        <input type={showWords ? 'text' : 'password'} placeholder="The magic words" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"
-          maxlength="400" bind:value={words} oninput={() => (wordsNote = '')} onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void sayWords(); } }} aria-label="Magic words" />
-        <button type="button" class="show" onclick={() => (showWords = !showWords)} aria-pressed={showWords}>{showWords ? 'Hide' : 'Show'}</button>
-      </div>
-      <Button variant="secondary" onclick={sayWords} disabled={!words.trim() || saying}>{saying ? 'Listening…' : 'Say them'}</Button>
     {/if}
-    {#if wordsNote}<p class="status" class:ok={wordsOk} class:err={!wordsOk} role="status">{wordsNote}</p>{/if}
+    <MagicWords />
   </section>
 
   <section class="stack">
@@ -149,11 +99,7 @@
   section :global(:is(.faint, .muted, .hint)) { color: var(--text-dim); font-weight: 600; font-size: 0.98rem; }
   h3 { color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700; }
   .small { font-size: 0.92rem; }
-  .words { display: flex; gap: var(--s-2); }
-  .words input { flex: 1; min-width: 0; }
-  .show { min-height: var(--tap); padding: 0 var(--s-3); border: 1.5px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface); color: var(--text-dim); font-weight: 600; }
   .remove { align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; color: var(--text-dim); font-size: 0.92rem; text-decoration: underline; text-underline-offset: 3px; }
   .status { padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--surface); }
   .status.ok { color: var(--c-good); }
-  .status.err { color: color-mix(in srgb, var(--c-bad) 55%, var(--text)); }
 </style>

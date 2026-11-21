@@ -111,6 +111,30 @@ describe('the magic words, phone to server to API', () => {
     expect(hasKey()).toBe(false);
   });
 
+  it('forgets the pass but keeps the words when the server key was replaced', async () => {
+    const env = fakeEnv();
+    wire(env);
+    await passFor();
+    env.ANTHROPIC_API_KEY = 'sk-ant-test-a-new-fake-key-22222';
+    await expect(lines()).rejects.toThrow('Fizzwick forgot this phone. Say the magic words again.');
+    expect(settings.wizardPass).toBe('');
+    expect(await passFor()).not.toBe('');
+    expect(await lines()).toEqual(['Test item one', 'Test item two']);
+  });
+
+  it("says the server is in trouble, not the internet, when it fails, and keeps the pass", async () => {
+    const env = fakeEnv();
+    wire(env);
+    const pass = await passFor();
+    const broken = { ...env, LIMITS: { idFromName: (n: string) => n, get: () => ({ fetch: async (): Promise<Response> => { throw new Error('storage detail'); } }) } };
+    wire(broken);
+    const r = await redeemPhrase('test phrase one', SERVER);
+    expect(r).toEqual({ ok: false, reason: 'server' });
+    expect(redeemMessage(r)).toBe("Fizzwick's tower is having trouble. Try again in a little while.");
+    await expect(lines()).rejects.toThrow("Fizzwick's tower is having trouble. Try again in a little while.");
+    expect(settings.wizardPass).toBe(pass);
+  });
+
   it('says when the pass expired, and forgets it', async () => {
     wire(fakeEnv());
     await passFor();
@@ -154,12 +178,17 @@ describe('the magic words, phone to server to API', () => {
 
 describe('wizard messages', () => {
   it("speak in the wizard's voice per route", () => {
-    expect(statusMessage(401, true)).toBe('The magic words have changed. Ask the host for the new ones.');
+    expect(statusMessage(401, true)).toBe('Fizzwick forgot this phone. Say the magic words again.');
+    expect(statusMessage(401, true, 'invalid')).toBe('Fizzwick forgot this phone. Say the magic words again.');
+    expect(statusMessage(500, true, 'server')).toBe("Fizzwick's tower is having trouble. Try again in a little while.");
+    expect(statusMessage(500, false, 'server')).toMatch(/overloaded/);
     expect(statusMessage(401, true, 'revoked')).toBe('The magic words have changed. Ask the host for the new ones.');
     expect(statusMessage(401, true, 'expired')).toBe("Fizzwick's pass expired. Say the magic words again.");
     expect(statusMessage(429, true, 'phone')).toMatch(/this phone has had its share/);
     expect(statusMessage(429, false, 'phone')).toMatch(/swamped/);
-    expect(statusMessage(429, true)).toBe("Fizzwick needs a nap: the party's wizard allowance is used up for now. Try again later.");
+    expect(statusMessage(429, true, 'party')).toBe("Fizzwick needs a nap: the party's wizard allowance is used up for now. Try again later.");
+    // A 429 without the server's reason is Anthropic busy, passed on: not the party's allowance.
+    expect(statusMessage(429, true)).toBe('Fizzwick is swamped. Give him a moment, then try again.');
     expect(statusMessage(401, false)).toMatch(/say the magic words again/);
     expect(statusMessage(429, false)).toMatch(/swamped/);
     expect(statusMessage(502, true)).toMatch(/overloaded/);
@@ -173,5 +202,6 @@ describe('wizard messages', () => {
     expect(waitWords(4 * 3600)).toBe('about 4 hours');
     expect(redeemMessage({ ok: true, token: 't' })).toBe("Fizzwick heard you. He's yours on this phone.");
     expect(redeemMessage({ ok: false, reason: 'wrong' })).toBe("Fizzwick doesn't know those words.");
+    expect(redeemMessage({ ok: false, reason: 'server' })).toBe("Fizzwick's tower is having trouble. Try again in a little while.");
   });
 });

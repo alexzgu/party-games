@@ -84,6 +84,30 @@ describe('wizard server', () => {
     expect((await redeem(env, 'nope')).status).toBe(429);
   });
 
+  it('counts IPv6 guesses by /64, so new addresses in the same /64 get no more', async () => {
+    const env = fakeEnv();
+    for (let i = 1; i <= LIMITS.guessesPerAddress; i++) expect((await redeem(env, 'nope', `2001:db8:1:2::${i.toString(16)}`)).status).toBe(401);
+    expect((await redeem(env, 'test phrase one', '2001:db8:1:2:ffff:1:2:3')).status).toBe(429);
+    expect((await redeem(env, 'test phrase one', '2001:db8:1:3::1')).status).toBe(200);
+  });
+
+  it("doesn't let strangers filling everyone's guesses lock out friends who say the right words", async () => {
+    const env = fakeEnv();
+    const flooders = LIMITS.guessesEveryone / LIMITS.guessesPerAddress;
+    for (let a = 0; a < flooders; a++) {
+      for (let i = 0; i < LIMITS.guessesPerAddress; i++) await redeem(env, `wrong ${i}`, `198.51.100.${a}`);
+    }
+    // Everyone's guesses are used up: an address that already guessed this hour is refused...
+    const late = await redeem(env, 'test phrase one', '198.51.100.0');
+    expect([late.status, late.headers.get('x-wizard-reason')]).toEqual([429, 'guesses']);
+    // ...but a friend's phone that has not guessed gets in, and so does the next friend on its Wi-Fi.
+    expect((await redeem(env, 'test phrase one', '192.0.2.10')).status).toBe(200);
+    expect((await redeem(env, 'test phrase two', '192.0.2.10')).status).toBe(200);
+    // A fresh address still gets only one wrong guess while everyone's are used up.
+    expect((await redeem(env, 'still wrong', '203.0.113.99')).status).toBe(401);
+    expect((await redeem(env, 'test phrase one', '203.0.113.99')).status).toBe(429);
+  });
+
   it('refuses a model the app does not offer, without calling the API', async () => {
     const env = fakeEnv();
     const token = await tokenFor(env);
@@ -108,6 +132,8 @@ describe('wizard server', () => {
     expect(((await removed.json()) as { error: { type: string } }).error.type).toBe('authentication_error');
     expect(removed.headers.get('x-wizard-reason')).toBe('revoked');
     expect((await ask({ ...env, ANTHROPIC_API_KEY: 'sk-ant-test-a-new-fake-key-22222' }, token).res).status).toBe(401);
+    // A new key makes the pass unreadable, not its words removed: the app tells the two apart.
+    expect((await ask({ ...env, ANTHROPIC_API_KEY: 'sk-ant-test-a-new-fake-key-22222' }, token).res).headers.get('x-wizard-reason')).toBe('invalid');
     const junk = await ask(env, 'junk.token').res;
     expect([junk.status, junk.headers.get('x-wizard-reason')]).toEqual([401, 'invalid']);
     expect((await ask(env, token).res).status).toBe(200);
@@ -157,11 +183,46 @@ describe('wizard server', () => {
     expect((await ask(env, await tokenFor(env)).res).status).toBe(200);
   });
 
+  it('keeps the reservation when the API may have run the request (connection lost, 5xx), gives back 4xx', async () => {
+    const env = fakeEnv();
+    const token = await tokenFor(env);
+    const replies: (() => Response)[] = [
+      () => { throw new TypeError('connection reset'); },
+      () => Response.json({ type: 'error', error: { type: 'api_error', message: 'x' } }, { status: 500 }),
+      () => Response.json({ type: 'error', error: { type: 'invalid_request_error', message: 'x' } }, { status: 400 }),
+    ];
+    for (const reply of replies) {
+      stubAnthropic(reply);
+      const r = ask(env, token);
+      expect((await r.res).status).toBeGreaterThanOrEqual(400);
+      await r.ctx.settle();
+    }
+    // Two of the three stayed counted, so this pass has two fewer left today.
+    stubAnthropic();
+    for (let i = 0; i < LIMITS.requestsPerSessionPerDay - 2; i++) expect((await ask(env, token).res).status).toBe(200);
+    expect((await ask(env, token).res).headers.get('x-wizard-reason')).toBe('phone');
+  });
+
   it("turns the server's own key being refused into a 502, so phones keep their pass", async () => {
     const env = fakeEnv();
     const token = await tokenFor(env);
     stubAnthropic(() => Response.json({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }, { status: 401 }));
     expect((await ask(env, token).res).status).toBe(502);
+  });
+
+  it('answers an unexpected failure with a readable 500 that says nothing more', async () => {
+    const env = fakeEnv();
+    const token = await tokenFor(env);
+    const broken = { ...env, LIMITS: { idFromName: (n: string) => n, get: () => ({ fetch: async (): Promise<Response> => { throw new Error('storage detail 12345'); } }) } };
+    for (const res of [await redeem(broken, 'test phrase one'), await ask(broken, token).res]) {
+      expect(res.status).toBe(500);
+      expect(res.headers.get('access-control-allow-origin')).toBe(SITE);
+      expect(res.headers.get('access-control-expose-headers')).toContain('x-wizard-reason');
+      expect(res.headers.get('x-wizard-reason')).toBe('server');
+      expect(await res.json()).toEqual({ type: 'error', error: { type: 'api_error', message: 'The wizard server hit a problem.' } });
+    }
+    const other = await call(broken, '/redeem', { method: 'POST', body: '{"phrase":"test phrase one"}', headers: { origin: 'https://evil.test' } }).res;
+    expect(other.status).toBe(403);
   });
 
   it('answers preflights, refuses other sites and paths', async () => {

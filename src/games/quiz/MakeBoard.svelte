@@ -8,7 +8,8 @@
   import PasteList from '../../components/PasteList.svelte';
   import BoardPreview from './BoardPreview.svelte';
   import type { QuizBoard } from '../../lib/content';
-  import { hasKey, NOT_HERE } from '../../lib/claude';
+  import { hasKey, WANTS } from '../../lib/claude';
+  import MagicWords from '../../components/MagicWords.svelte';
   import { sfx } from '../../lib/sound';
   import { blankBoard, DEFAULT_CATEGORIES, DEFAULT_LEVELS, emptyTiles, MAX_CATEGORIES, MAX_LEVELS } from './board';
   import { parsePastedBoard } from './parse';
@@ -27,7 +28,7 @@
     onback: () => void;
   } = $props();
 
-  const keyed = hasKey();
+  const keyed = $derived(hasKey());
   const leftover = loadNewBoard();
 
   const MODES = [
@@ -35,6 +36,7 @@
     { value: 'paste' as const, label: 'Paste' },
     { value: 'claude' as const, label: '🧙 Wizard' },
   ];
+  // svelte-ignore state_referenced_locally
   let mode = $state<'blank' | 'paste' | 'claude'>(keyed ? 'claude' : 'blank');
   let name = $state('');
   let topic = $state('');
@@ -112,8 +114,10 @@
       {#if error}
         <div class="error" role="alert">
           <p>{error}</p>
+          <!-- A refused pass leaves the phone without the wizard: the words come back here, then Try again. -->
+          {#if !keyed}<MagicWords intro={WANTS} />{/if}
           <div class="row">
-            <Button variant="secondary" size="sm" onclick={ask}>Try again</Button>
+            {#if keyed}<Button variant="secondary" size="sm" onclick={ask}>Try again</Button>{/if}
             {#if filled}<Button variant="ghost" size="sm" onclick={() => live && make(live)}>Open what came</Button>{/if}
           </div>
         </div>
@@ -141,7 +145,7 @@
       <p class="faint small">Up to {MAX_CATEGORIES} categories of up to {MAX_LEVELS} clues. Shorter categories get empty tiles to fill in.</p>
     {:else if !keyed}
       <div class="nokey">
-        <p>{NOT_HERE}</p>
+        <MagicWords intro={WANTS} />
         <p class="faint">Or ask the host for a built-in one: “a Big Board about {topic.trim() || '<topic>'}”. It shows up in the pack list once the site updates.</p>
       </div>
     {:else}
@@ -197,5 +201,6 @@
   @keyframes pulse { 50% { opacity: 0.3; transform: scale(0.7); } }
   .error { display: flex; flex-direction: column; gap: var(--s-2); align-items: flex-start; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: color-mix(in srgb, var(--c-bad) 16%, var(--surface)); }
   .error p { margin: 0; }
+  .error :global(.magic) { align-self: stretch; }
   .row { display: flex; gap: var(--s-2); flex-wrap: wrap; }
 </style>
