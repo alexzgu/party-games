@@ -120,4 +120,19 @@
   .delta.landed.neg { color: var(--bad-ink); }
   .delta small { font-size: inherit; font-weight: 700; font-family: var(--font-body); }
   .status { text-align: center; font-size: 1.15rem; font-weight: 700; color: var(--text-dim); }
+  /* A phone on its side: the two teams on the left at full height, where things stand and the
+     buttons on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .scores {
+      height: 100dvh; max-width: 960px; display: grid; gap: var(--s-2) var(--s-5);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+      padding-bottom: calc(var(--safe-bottom) + var(--s-2));
+    }
+    header { grid-column: 1 / -1; min-height: 0; }
+    .board { grid-column: 1; grid-row: 2 / 4; min-height: 0; }
+    .team { padding: var(--s-3); justify-content: center; }
+    .score { font-size: clamp(3.5rem, 22dvh, 6rem); }
+    .status { grid-column: 2; grid-row: 2; align-self: center; }
+    .go { grid-column: 2; grid-row: 3; }
+  }
 </style>

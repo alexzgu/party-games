@@ -13,21 +13,25 @@
 
 <Confetti count={70} />
 
-<Screen title="Game over" onback={onhome} backLabel="Home">
-  <div class="champ" style:--c={playerColor(w)}>
-    <span class="trophy pop-in" aria-hidden="true">🏆</span>
-    <p class="name pop-in">{game.players[w].name}</p>
-    <p class="wins">wins with {game.players[w].score} points after {game.log.length} {game.log.length === 1 ? 'turn' : 'turns'}</p>
+<Screen title="Game over" onback={onhome} backLabel="Home" split>
+  <div class="split-main">
+    <div class="champ" style:--c={playerColor(w)}>
+      <span class="trophy pop-in" aria-hidden="true">🏆</span>
+      <p class="name pop-in">{game.players[w].name}</p>
+      <p class="wins">wins with {game.players[w].score} points after {game.log.length} {game.log.length === 1 ? 'turn' : 'turns'}</p>
+    </div>
   </div>
-  <ol class="board" aria-label="Final scores">
-    {#each rows as { player, index } (index)}
-      <li class:top={index === w}>
-        <Avatar name={player.name} {index} size={34} />
-        <span class="pname">{player.name}</span>
-        <b class="score">{player.score}</b>
-      </li>
-    {/each}
-  </ol>
+  <div class="split-side">
+    <ol class="board" class:two={rows.length > 5} style:--half={Math.ceil(rows.length / 2)} aria-label="Final scores">
+      {#each rows as { player, index } (index)}
+        <li class:top={index === w}>
+          <Avatar name={player.name} {index} size={34} />
+          <span class="pname">{player.name}</span>
+          <b class="score">{player.score}</b>
+        </li>
+      {/each}
+    </ol>
+  </div>
 
   {#snippet actions()}
     <Button size="lg" onclick={onrematch}>Rematch</Button>
@@ -46,4 +50,18 @@
   li.top { box-shadow: inset 0 0 0 2px var(--c-gold); }
   .pname { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .score { font-family: var(--font-display); font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+  /* A phone on its side (Screen's split): the scores on the left (six players or more in two
+     columns, leader first, down the left, names in place of the avatars); the winner, trophy
+     beside the name, and the buttons on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .champ { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s-3); row-gap: var(--s-1); align-items: center; text-align: left; padding: 0; }
+    .trophy { grid-row: 1 / 3; font-size: 3.2rem; filter: none; } /* its glow would be cut square by the column's edge */
+    .name { font-size: clamp(2rem, 6vw, 3rem); }
+    .wins { font-size: 1rem; }
+    .board { gap: 6px; }
+    li { min-height: 44px; padding: 4px var(--s-3) 4px var(--s-2); }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--half), auto); grid-auto-flow: column; column-gap: var(--s-2); }
+    .two li { gap: var(--s-2); padding-left: var(--s-3); }
+    .two :global(.avatar) { display: none; }
+  }
 </style>

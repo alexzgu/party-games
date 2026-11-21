@@ -12,34 +12,38 @@
   const first = $derived(game.cardsPlayed === 0 && game.players.every((p) => p.score === 0));
 </script>
 
-<Screen title={gameName('gibberish')} onback={onleave} backLabel="Back to setup">
+<Screen title={gameName('gibberish')} onback={onleave} backLabel="Back to setup" split>
   {#snippet trailing()}<Rules target={game.target} />{/snippet}
 <div class="center">
-  <div class="hand" style:--c={playerColor(game.reader)}>
-    <p class="kicker">Pass the phone to</p>
-    <div class="who pop-in">
-      <span class="glow" aria-hidden="true"></span>
-      <span class="name">{reader.name}</span>
+  <div class="split-side">
+    <div class="hand" style:--c={playerColor(game.reader)}>
+      <p class="kicker">Pass the phone to</p>
+      <div class="who pop-in">
+        <span class="glow" aria-hidden="true"></span>
+        <span class="name">{reader.name}</span>
+      </div>
+      <p class="role">📣 {reader.name} reads this card</p>
     </div>
-    <p class="role">📣 {reader.name} reads this card</p>
+
+    <div class="look-away">
+      <span class="eyes" aria-hidden="true">🙈</span>
+      <p><b>Everyone else: eyes off the phone.</b> Just listen.</p>
+    </div>
   </div>
 
-  <div class="look-away">
-    <span class="eyes" aria-hidden="true">🙈</span>
-    <p><b>Everyone else: eyes off the phone.</b> Just listen.</p>
+  <div class="split-main">
+    {#if first}
+      <ol class="how" aria-label="How to play">
+        <li><b>{reader.name}</b> reads a nonsense phrase out loud. Again and again, faster each time.</li>
+        <li>Everyone shouts what it really sounds like.</li>
+        <li>First to say it scores. First to {game.target} points wins.</li>
+      </ol>
+    {:else}
+      <p class="meta">Card {game.cardsPlayed + 1} · first to {game.target} wins</p>
+    {/if}
+
+    {#if error}<p class="error" role="alert">{error}</p>{/if}
   </div>
-
-  {#if first}
-    <ol class="how" aria-label="How to play">
-      <li><b>{reader.name}</b> reads a nonsense phrase out loud. Again and again, faster each time.</li>
-      <li>Everyone shouts what it really sounds like.</li>
-      <li>First to say it scores. First to {game.target} points wins.</li>
-    </ol>
-  {:else}
-    <p class="meta">Card {game.cardsPlayed + 1} · first to {game.target} wins</p>
-  {/if}
-
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
 </div>
 
   {#snippet actions()}
@@ -73,4 +77,17 @@
   .error { color: var(--bad-ink); text-align: center; }
   @keyframes breathe { 50% { transform: scale(1.12); opacity: 0.7; } }
   @media (prefers-reduced-motion: reduce) { .glow { animation: none; } }
+  /* A phone on its side (Screen's split): who reads and the look-away note on the left, the
+     how-to and the button on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .center { display: contents; }
+    .hand { gap: var(--s-2); }
+    .who { min-height: 96px; }
+    .glow { width: 140px; height: 140px; }
+    .name { font-size: clamp(2.4rem, 7vw, 4rem); }
+    .role { font-size: 1.05rem; }
+    .look-away { padding: var(--s-3); font-size: 1rem; }
+    .eyes { font-size: 2rem; }
+    .how { padding-block: var(--s-3); font-size: 0.98rem; }
+  }
 </style>

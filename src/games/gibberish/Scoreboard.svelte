@@ -8,7 +8,7 @@
   const rows = $derived(standings(game));
 </script>
 
-<ol class="board" aria-label="Scores, first to {game.target}">
+<ol class="board" class:two={rows.length > 5} style:--half={Math.ceil(rows.length / 2)} aria-label="Scores, first to {game.target}">
   {#each rows as { player, index } (index)}
     <li class:flash={index === flash} animate:flip={{ duration: 380 }}>
       <Avatar name={player.name} {index} size={36} />
@@ -44,4 +44,14 @@
   }
   @keyframes float { from { opacity: 0; transform: translateY(14px) scale(0.6); } 30% { opacity: 1; transform: translateY(-4px) scale(1.15); } to { opacity: 0; transform: translateY(-22px); } }
   @media (prefers-reduced-motion: reduce) { .plus { animation: none; opacity: 0; } }
+  /* A phone on its side: slimmer rows, and six players or more in two columns (leader first,
+     down the left), where the avatars and pips give way to the names. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .board { gap: 6px; }
+    li { min-height: 44px; padding: 4px var(--s-3) 4px var(--s-2); }
+    .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--half), auto); grid-auto-flow: column; column-gap: var(--s-2); }
+    .two li { gap: var(--s-2); }
+    .two .pips, .two .next, .two :global(.avatar) { display: none; }
+    .two li { padding-left: var(--s-3); }
+  }
 </style>

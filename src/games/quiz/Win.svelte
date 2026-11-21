@@ -42,7 +42,7 @@
   {#if alone}
     <p class="tiles pop-in" style:animation-delay="240ms">Got {got} of {tileCount(game)} tiles</p>
   {:else}
-    <ol class="final" class:many style:--half={Math.ceil(rows.length / 2)} aria-label="Final scores">
+    <ol class="final" class:many class:two={rows.length > 4} style:--half={Math.ceil(rows.length / 2)} aria-label="Final scores">
       {#each rows as r, k (r.index)}
         <li class="pop-in" class:lead={top.includes(r.index)} style:--team={teamColor(r.index)} style:animation-delay="{300 + k * step}ms">
           <span class="place">{place(r.score)}</span>
@@ -92,6 +92,23 @@
   .final.many li.lead { box-shadow: none; }
   @media (min-width: 700px) {
     .final.many { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(var(--half), auto); grid-auto-flow: column; column-gap: var(--s-3); }
+  }
+  /* A phone on its side: the winner and the board's name on the left, the scores (five teams
+     or more in two columns) and the buttons side by side on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .win {
+      display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto 1fr auto;
+      align-items: center; column-gap: var(--s-5); row-gap: var(--s-2); width: min(100%, 960px); padding-top: 0;
+    }
+    .trophy { grid-column: 1; grid-row: 1; align-self: end; font-size: 3rem; }
+    h1 { grid-column: 1; grid-row: 2; font-size: clamp(2rem, 6vw, 3.2rem); }
+    .early { grid-column: 1; grid-row: 3; }
+    .win > .faint { grid-column: 1; grid-row: 4; align-self: start; }
+    .final, .tiles { grid-column: 2; grid-row: 1 / 5; min-width: 0; }
+    .final { gap: 6px; }
+    .final.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--half), auto); grid-auto-flow: column; column-gap: var(--s-2); }
+    li, .final.many li { padding: 6px var(--s-3); font-size: 1.1rem; gap: var(--s-2); border-width: 1.5px; }
+    .actions { grid-column: 2; grid-row: 5; width: 100%; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
   }
   .solo-score { display: block; font-size: 1.25em; font-variant-numeric: tabular-nums; }
   .solo-score.neg { color: var(--c-bad); }

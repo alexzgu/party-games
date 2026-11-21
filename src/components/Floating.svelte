@@ -1,28 +1,33 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { untrack, type Snippet } from 'svelte';
   import { clampInto, isTap, type Point } from '../lib/drag';
 
   // A box floating over the page that can be dragged anywhere with a finger or the mouse and is
   // kept wholly on screen (after drags, rotation and resizes). A press that barely moves is a
   // tap and reaches the buttons inside; a drag never does, and never scrolls the page.
-  // `pos` is the top-left corner in px, null for the default spot (bottom right).
-  let { pos = $bindable(null), label, children }: { pos?: Point | null; label: string; children: Snippet } = $props();
+  // `pos` is the top-left corner in px, null for the default spot: with `dock`, the box sits in
+  // the page's flow where the parent placed it (a place the page keeps free for it) until it is
+  // first dragged; without, it floats at the bottom right.
+  let { pos = $bindable(null), dock = false, label, children }: { pos?: Point | null; dock?: boolean; label: string; children: Snippet } = $props();
 
   let box = $state<HTMLElement>();
   let at = $state<Point>({ x: 0, y: 0 });
   let press: { id: number; from: Point; start: Point; moved: boolean } | null = null;
   let dragging = $state(false);
+  const docked = $derived(dock && pos === null && !dragging);
 
   const area = () => ({ w: document.documentElement.clientWidth, h: innerHeight });
   const size = () => ({ w: box?.offsetWidth ?? 0, h: box?.offsetHeight ?? 0 });
   function fit(p: Point | null) {
+    if (docked) return;
     const s = size(), a = area();
     at = clampInto(p ?? { x: a.w - s.w, y: a.h - s.h - 96 }, s, a);
   }
 
   $effect(() => {
     if (!box) return;
-    fit(pos);
+    const p = pos; // placed again only when the position is set, not when a drag starts
+    untrack(() => fit(p));
     const refit = () => fit(at);
     addEventListener('resize', refit);
     addEventListener('orientationchange', refit);
@@ -40,7 +45,8 @@
 
   function down(e: PointerEvent) {
     if (press || (e.pointerType === 'mouse' && e.button !== 0)) return;
-    press = { id: e.pointerId, from: { x: e.clientX, y: e.clientY }, start: at, moved: false };
+    const r = box!.getBoundingClientRect();
+    press = { id: e.pointerId, from: { x: e.clientX, y: e.clientY }, start: docked ? { x: r.left, y: r.top } : at, moved: false };
     // The page's listeners follow a mouse that leaves the box before the drag starts.
     addEventListener('pointermove', move, { passive: false });
     addEventListener('pointerup', up);
@@ -72,8 +78,8 @@
   }
 </script>
 
-<div class="floating" class:dragging role="group" aria-label={label} bind:this={box}
-  style:left="{at.x}px" style:top="{at.y}px"
+<div class="floating" class:dragging class:docked role="group" aria-label={label} bind:this={box}
+  style:left={docked ? null : `${at.x}px`} style:top={docked ? null : `${at.y}px`}
   onpointerdown={down}>
   {@render children()}
 </div>
@@ -81,4 +87,5 @@
 <style>
   .floating { position: fixed; z-index: 20; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
   .dragging { cursor: grabbing; }
+  .docked { position: relative; }
 </style>

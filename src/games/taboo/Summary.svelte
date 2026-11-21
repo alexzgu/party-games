@@ -36,19 +36,23 @@
   const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
 </script>
 
-<Screen title={ran} hideBack accent={teamColor(turn.team)}>
+<Screen title={ran} hideBack accent={teamColor(turn.team)} split>
   {#snippet trailing()}
     <button class="menu" onclick={() => (menu = true)} aria-label="Game menu" aria-expanded={menu}>
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>
     </button>
   {/snippet}
-  <div class="hero pop-in">
-    <span class="big" class:neg={pts < 0} aria-hidden="true">{signed(pts)}</span>
-    <div class="hero-txt">
-      <p class="team">{game.names[turn.team]}</p>
-      <p class="muted">{count('got')} got · {count('buzz')} buzzed · {count('skip')} skipped</p>
+  <div class="split-side">
+    <div class="hero pop-in">
+      <span class="big" class:neg={pts < 0} aria-hidden="true">{signed(pts)}</span>
+      <div class="hero-txt">
+        <p class="team">{game.names[turn.team]}</p>
+        <p class="muted">{count('got')} got · {count('buzz')} buzzed · {count('skip')} skipped</p>
+      </div>
     </div>
   </div>
+
+  <div class="split-main">
 
   {#if turn.cards.length}
     <p class="faint tip">Marked wrong? Tap a card to change it.</p>
@@ -69,6 +73,7 @@
   {:else}
     <p class="muted">No cards this turn.</p>
   {/if}
+  </div>
 
   {#snippet actions()}
     <Button size="lg" onclick={ondone}>{ends ? 'See who won' : 'Done · see the scores'}</Button>
@@ -115,4 +120,11 @@
   .skip .w, .time .w { color: var(--text-dim); }
   .state { flex: none; display: flex; flex-direction: column; align-items: flex-end; font-size: 0.82rem; font-weight: 700; color: var(--m); line-height: 1.2; }
   .state b { font-family: var(--font-display); font-size: 1.05rem; }
+  /* A phone on its side (Screen's split): the turn's total on the left, the cards (scrolling
+     inside their column when there are many) and the button on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .hero { flex-direction: column; text-align: center; gap: var(--s-2); }
+    .hero-txt { align-items: center; }
+    .tip { margin-bottom: 0; }
+  }
 </style>

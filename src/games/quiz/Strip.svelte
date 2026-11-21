@@ -139,5 +139,23 @@
     70% { opacity: 1; transform: scale(1); }
     to { opacity: 0; }
   }
+  /* A phone on its side: the scores run down the column beside the board and share its height,
+     one team per row up to four, then two columns with the leader in its place; a change shows
+     on the team's own box, where the column cannot clip it. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .wrap { flex: 1 1 auto; min-height: 0; }
+    .strip, .mid .strip, .many .strip {
+      display: grid; overflow: visible; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(48px, 1fr); gap: 6px;
+    }
+    .big .strip { grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(60px, 1fr); }
+    .big .score { font-size: clamp(1.35rem, 8dvh, 2.4rem); }
+    .many li { width: auto; }
+    .many li.pinned { display: block; }
+    .lead { display: none; }
+    .float, .many .float {
+      top: 50%; translate: -50% -50%; padding: 0 8px; border-radius: var(--r-pill);
+      background: var(--bg-raised); font-size: 1.3rem; animation-name: badge;
+    }
+  }
   @media (prefers-reduced-motion: reduce) { .float { animation: none; opacity: 0; } }
 </style>

@@ -121,33 +121,37 @@
     {#if total > 0}<Ring {left} {total} size={64} />{:else}<span class="spacer"></span>{/if}
   </header>
 
-  <section class="bubble" aria-label="Phrase to read out loud">
-    <p class="say">Say it out loud</p>
-    <div class="phrase"><FitText text={card.phrase} max={112} min={26} /></div>
-  </section>
+  <div class="read">
+    <section class="bubble" aria-label="Phrase to read out loud">
+      <p class="say">Say it out loud</p>
+      <div class="phrase"><FitText text={card.phrase} max={112} min={26} /></div>
+    </section>
 
-  <div class="tools">
-    {#if showCategory}
-      <div class="category fade-in" role="status"><span>Category</span><b>{card.hint || 'Anything'}</b></div>
-    {:else}
-      <button class="show-cat" onclick={revealCategory}><span aria-hidden="true">💡</span> Show category</button>
-    {/if}
-    <HoldAnswer answer={card.answer} bind:peek />
+    <div class="tools">
+      {#if showCategory}
+        <div class="category fade-in" role="status"><span>Category</span><b>{card.hint || 'Anything'}</b></div>
+      {:else}
+        <button class="show-cat" onclick={revealCategory}><span aria-hidden="true">💡</span> Show category</button>
+      {/if}
+      <HoldAnswer answer={card.answer} bind:peek />
+    </div>
   </div>
 
-  <h3 class="who">Who said it first?</h3>
-  <div class="grid" class:three={guessers.length > 6}>
-    {#each guessers as { p, i } (i)}
-      <button class="player" onclick={() => pick(i)}>
-        <Avatar name={p.name} index={i} size={30} />
-        <span>{p.name}</span>
-      </button>
-    {/each}
-  </div>
+  <div class="judge">
+    <h3 class="who">Who said it first?</h3>
+    <div class="grid" class:three={guessers.length > 6}>
+      {#each guessers as { p, i } (i)}
+        <button class="player" onclick={() => pick(i)}>
+          <Avatar name={p.name} index={i} size={30} />
+          <span>{p.name}</span>
+        </button>
+      {/each}
+    </div>
 
-  <div class="row">
-    <Button variant="secondary" onclick={onnobody}>Nobody got it</Button>
-    <Button variant="ghost" onclick={onskip}>↻ Skip card</Button>
+    <div class="row">
+      <Button variant="secondary" onclick={onnobody}>Nobody got it</Button>
+      <Button variant="ghost" onclick={onskip}>↻ Skip card</Button>
+    </div>
   </div>
 </div>
 
@@ -222,12 +226,31 @@
   .grid.three .player :global(.avatar) { display: none; }
   .player:active { transform: scale(0.96); background: color-mix(in srgb, var(--c-good) 30%, var(--surface)); }
   .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+  .read, .judge { display: contents; }
   /* A short phone with a big room: the phrase gives up height so every name and Nobody stay on screen. */
   @media (max-height: 720px) {
     .card-screen { gap: var(--s-2); }
     .bubble { flex-basis: 140px; min-height: 120px; }
     .show-cat, .category, .tools :global(.hold) { min-height: 48px; }
     .grid.three .player { min-height: 46px; }
+  }
+
+  /* A phone on its side: the phrase and its tools on the left at full height, who said it and
+     Nobody on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .card-screen {
+      height: 100dvh; max-width: 960px; display: grid; column-gap: var(--s-5); row-gap: var(--s-2);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+      padding-bottom: calc(var(--safe-bottom) + var(--s-2));
+    }
+    header { grid-column: 1 / -1; min-height: 0; }
+    .read, .judge { display: flex; flex-direction: column; gap: var(--s-2); min-height: 0; }
+    .judge { justify-content: center; overflow-y: auto; }
+    .bubble { flex: 1 1 auto; min-height: 0; padding: var(--s-3) var(--s-3) var(--s-4); }
+    .who { margin-top: 0; }
+    .grid { gap: 6px; }
+    .player, .grid.three .player { min-height: 44px; }
+    .row :global(.btn) { min-height: 48px; padding: 0 var(--s-2); }
   }
 
   .paused {
@@ -238,4 +261,9 @@
   .paused:focus { outline: none; }
   .ptitle { font-family: var(--font-display); font-weight: 800; font-size: 3rem; }
   .pactions { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-4); }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .paused { gap: var(--s-2); padding-top: calc(var(--safe-top) + var(--s-3)); padding-bottom: calc(var(--safe-bottom) + var(--s-3)); overflow-y: auto; }
+    .ptitle { font-size: 2.2rem; line-height: 1.1; }
+    .pactions { margin: var(--s-2) auto 0; width: min(480px, 100%); }
+  }
 </style>

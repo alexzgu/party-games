@@ -1,6 +1,7 @@
 <script lang="ts">
-  // A countdown chip floating over the board and clues, for a host who wants one. Cosmetic: it
-  // never changes scores or play. Tap the time to start or pause, ↺ to reset, the length to change
+  // A countdown chip for a host who wants one: it sits in a place the play screen keeps free for
+  // it (under the scores) until the host drags it somewhere else. Cosmetic: it never changes
+  // scores or play. Tap the time to start or pause, ↺ to reset, the length to change
   // it (10/20/30/60 s), × to hide (the ⏱ in the board's header brings it back). A new clue resets
   // it to full without starting it.
   import Floating from '../../components/Floating.svelte';
@@ -68,7 +69,7 @@
   }
 </script>
 
-<Floating bind:pos={timer.pos} label="Timer">
+<Floating bind:pos={timer.pos} dock label="Timer">
   <div class="chip" class:on class:up>
     <button class="time" onclick={tap} aria-label={up ? "Time's up. Tap to start again" : on ? `Pause the timer, ${shown} left` : `Start the timer, ${shown}`}>
       {shown}
@@ -99,6 +100,11 @@
     background: transparent; color: var(--text-dim); font-weight: 800; font-size: 0.95rem;
   }
   .x { font-size: 1.5rem; }
+  /* A phone on its side: a slimmer chip, so it fits beside the board under the scores. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .time { min-width: 80px; min-height: 48px; font-size: 1.6rem; padding: 0 var(--s-2); }
+    .small { min-height: 48px; }
+  }
   @keyframes pulse { 50% { transform: scale(1.06); } }
   @media (prefers-reduced-motion: reduce) { .up .time { animation: none; } }
 </style>

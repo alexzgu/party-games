@@ -11,14 +11,18 @@
   const owner = $derived(game.players[game.turn]);
 </script>
 
-<Screen title={gameName('quick')} onback={onleave} backLabel="Back to setup">
+<Screen title={gameName('quick')} onback={onleave} backLabel="Back to setup" split>
 <div class="center" style:--c={playerColor(game.actor)}>
-  <p class="missed pop-in"><span aria-hidden="true">✗</span> {owner.name} missed</p>
-  <p class="steal pop-in">Steal!</p>
-  <div class="hand">
-    <p class="kicker">Pass the phone to</p>
-    <p class="name pop-in">{thief.name}</p>
-    <p class="hint">Same prompt, fresh {game.seconds} seconds. Name 3 things <b>{owner.name} didn't say</b> to take the point.</p>
+  <div class="split-side">
+    <p class="missed pop-in"><span aria-hidden="true">✗</span> {owner.name} missed</p>
+    <p class="steal pop-in">Steal!</p>
+  </div>
+  <div class="split-main">
+    <div class="hand">
+      <p class="kicker">Pass the phone to</p>
+      <p class="name pop-in">{thief.name}</p>
+      <p class="hint">Same prompt, fresh {game.seconds} seconds. Name 3 things <b>{owner.name} didn't say</b> to take the point.</p>
+    </div>
   </div>
 </div>
 
@@ -42,4 +46,14 @@
   .name { font-family: var(--font-display); font-weight: 800; color: var(--c); font-size: clamp(2.4rem, 14vw, 4.2rem); line-height: 1; letter-spacing: -0.03em; overflow-wrap: anywhere; animation-delay: 160ms; }
   .hint { font-size: 1.05rem; max-width: 22em; color: var(--text-dim); }
   .hint b { color: var(--text); }
+  /* A phone on its side (Screen's split): the miss and "Steal!" on the left, who steals and the
+     button on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .center { display: contents; }
+    .split-side, .split-main { align-items: center; text-align: center; }
+    .steal { font-size: clamp(3rem, 11vw, 5.5rem); }
+    .hand { margin-top: 0; }
+    .name { font-size: clamp(2.2rem, 6.5vw, 3.4rem); }
+    .hint { font-size: 1rem; }
+  }
 </style>

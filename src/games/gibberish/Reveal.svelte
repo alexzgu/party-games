@@ -19,23 +19,25 @@
 
 {#if scorer >= 0}<Confetti />{/if}
 
-<Screen title={gameName('gibberish')} onback={onleave} backLabel="Back to setup">
-  <div class="banner {outcome.kind}" style:--c={scorer >= 0 ? playerColor(scorer) : 'var(--text-dim)'}>
-    {#if scorer >= 0}
-      <span class="big pop-in">🎉 {game.players[scorer].name} got it!</span>
-    {:else if outcome.kind === 'timeout'}
-      <span class="big">⏰ Time's up</span>
-    {:else}
-      <span class="big">🤷 Nobody got it</span>
-    {/if}
+<Screen title={gameName('gibberish')} onback={onleave} backLabel="Back to setup" split>
+  <div class="split-main">
+    <div class="banner {outcome.kind}" style:--c={scorer >= 0 ? playerColor(scorer) : 'var(--text-dim)'}>
+      {#if scorer >= 0}
+        <span class="big pop-in">🎉 {game.players[scorer].name} got it!</span>
+      {:else if outcome.kind === 'timeout'}
+        <span class="big">⏰ Time's up</span>
+      {:else}
+        <span class="big">🤷 Nobody got it</span>
+      {/if}
+    </div>
+
+    <section class="answer pop-in" aria-label="The answer">
+      <p class="phrase">“{game.card?.phrase}” was</p>
+      <div class="fit"><FitText text={game.card?.answer ?? ''} max={88} min={24} /></div>
+    </section>
   </div>
 
-  <section class="answer pop-in" aria-label="The answer">
-    <p class="phrase">“{game.card?.phrase}” was</p>
-    <div class="fit"><FitText text={game.card?.answer ?? ''} max={88} min={24} /></div>
-  </section>
-
-  <Scoreboard {game} flash={scorer} nextReader={won ? -1 : nextReader} />
+  <div class="split-side"><Scoreboard {game} flash={scorer} nextReader={won ? -1 : nextReader} /></div>
 
   {#snippet actions()}
     <Button size="lg" onclick={onnext}>
@@ -58,4 +60,12 @@
   }
   .phrase { color: var(--text-dim); font-weight: 600; text-align: center; }
   .fit { width: 100%; height: 150px; color: var(--c-gold); }
+  /* A phone on its side (Screen's split): the scores on the left, the answer and the buttons on
+     the right; the answer takes the height the buttons leave. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .banner { padding-top: 0; }
+    .big { font-size: 1.5rem; }
+    .answer { flex: 1 1 auto; min-height: 0; padding: var(--s-3); }
+    .fit { flex: 1; height: auto; min-height: 56px; }
+  }
 </style>

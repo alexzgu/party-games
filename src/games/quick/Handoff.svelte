@@ -29,43 +29,47 @@
 
 {#if last && last.scorer >= 0 && game.prev}<Confetti count={30} />{/if}
 
-<Screen title={gameName('quick')} onback={onleave} backLabel="Back to setup">
+<Screen title={gameName('quick')} onback={onleave} backLabel="Back to setup" split>
   {#snippet trailing()}<Rules seconds={game.seconds} target={game.target} steal={game.steal} />{/snippet}
 <div class="center">
-  {#if last}
-    <section class="last" aria-label="Last turn">
-      {#if last.scorer >= 0}
-        <p class="verdict good pop-in" style:--c={playerColor(last.scorer)}>
-          <span aria-hidden="true">✓</span>
-          {last.scorer === last.stealer ? `${name(last.scorer)} stole it!` : `Point to ${name(last.scorer)}!`}
-        </p>
-      {:else}
-        <p class="verdict bad pop-in"><span aria-hidden="true">✗</span> {last.stealer >= 0 ? 'Nobody got it' : `${name(last.player)} missed`}</p>
-      {/if}
-      <p class="prompt">{said(last.prompt)}</p>
-    </section>
-  {/if}
+  <div class="split-side">
+    {#if last}
+      <section class="last" aria-label="Last turn">
+        {#if last.scorer >= 0}
+          <p class="verdict good pop-in" style:--c={playerColor(last.scorer)}>
+            <span aria-hidden="true">✓</span>
+            {last.scorer === last.stealer ? `${name(last.scorer)} stole it!` : `Point to ${name(last.scorer)}!`}
+          </p>
+        {:else}
+          <p class="verdict bad pop-in"><span aria-hidden="true">✗</span> {last.stealer >= 0 ? 'Nobody got it' : `${name(last.player)} missed`}</p>
+        {/if}
+        <p class="prompt">{said(last.prompt)}</p>
+      </section>
+    {/if}
 
-  <Strip {game} flash={game.prev && last ? last.scorer : -1} up={won >= 0 ? -1 : game.turn} />
+    <Strip {game} flash={game.prev && last ? last.scorer : -1} up={won >= 0 ? -1 : game.turn} />
+  </div>
 
-  {#if won >= 0}
-    <div class="hand" style:--c={playerColor(won)}>
-      <p class="kicker">First to {game.target}</p>
-      <p class="name pop-in">🏆 {name(won)}</p>
-    </div>
-  {:else}
-    <div class="hand" style:--c={playerColor(game.turn)}>
-      <p class="kicker">Pass the phone to</p>
-      <div class="who pop-in">
-        <span class="glow" aria-hidden="true"></span>
-        <span class="name">{up.name}</span>
+  <div class="split-main">
+    {#if won >= 0}
+      <div class="hand" style:--c={playerColor(won)}>
+        <p class="kicker">First to {game.target}</p>
+        <p class="name pop-in">🏆 {name(won)}</p>
       </div>
-      <p class="hint">The clock starts when you tap: <b>{game.seconds} seconds</b> to name 3.</p>
-    </div>
-    {#if !last}<p class="meta">First to {game.target} points wins{game.steal ? ' · steals on' : ''}</p>{/if}
-  {/if}
+    {:else}
+      <div class="hand" style:--c={playerColor(game.turn)}>
+        <p class="kicker">Pass the phone to</p>
+        <div class="who pop-in">
+          <span class="glow" aria-hidden="true"></span>
+          <span class="name">{up.name}</span>
+        </div>
+        <p class="hint">The clock starts when you tap: <b>{game.seconds} seconds</b> to name 3.</p>
+      </div>
+      {#if !last}<p class="meta">First to {game.target} points wins{game.steal ? ' · steals on' : ''}</p>{/if}
+    {/if}
 
-  {#if error}<p class="error" role="alert">{error}</p>{:else if notice}<p class="notice" role="status">{notice}</p>{/if}
+    {#if error}<p class="error" role="alert">{error}</p>{:else if notice}<p class="notice" role="status">{notice}</p>{/if}
+  </div>
 </div>
 
   {#snippet actions()}
@@ -105,4 +109,14 @@
   .notice { color: var(--text-dim); font-weight: 600; text-align: center; }
   @keyframes breathe { 50% { transform: scale(1.12); opacity: 0.7; } }
   @media (prefers-reduced-motion: reduce) { .glow { animation: none; } }
+  /* A phone on its side (Screen's split): the last turn and the scores on the left, who is up
+     and the button on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .center { display: contents; }
+    .verdict { font-size: 1.5rem; }
+    .who { min-height: 76px; }
+    .glow { width: 130px; height: 130px; }
+    .name { font-size: clamp(2.2rem, 6.5vw, 3.6rem); }
+    .hint { font-size: 1rem; }
+  }
 </style>

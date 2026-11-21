@@ -34,4 +34,11 @@
   }
   @keyframes float { from { opacity: 0; transform: translateY(14px) scale(0.6); } 30% { opacity: 1; transform: translateY(-4px) scale(1.15); } to { opacity: 0; transform: translateY(-18px); } }
   @media (prefers-reduced-motion: reduce) { .plus { animation: none; opacity: 0; } }
+  /* A phone on its side: the scores share a column with the last turn, so the chips come down a size. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .strip { gap: 6px; }
+    li { min-height: 38px; padding: 2px var(--s-2) 2px 4px; gap: 4px; font-size: 0.92rem; }
+    .name { max-width: 7em; }
+    .score { font-size: 1.1rem; }
+  }
 </style>

@@ -123,6 +123,8 @@
     grid-template-rows: minmax(0, 1.15fr) repeat(var(--rows), minmax(0, 1fr));
   }
   @media (max-height: 560px) { .grid { grid-template-rows: minmax(48px, 1.15fr) repeat(var(--rows), minmax(48px, 1fr)); } }
+  /* A phone on its side: the board has the full height beside the scores, so the rows share it. */
+  @media (orientation: landscape) and (max-height: 500px) { .grid { grid-template-rows: minmax(0, 1.15fr) repeat(var(--rows), minmax(0, 1fr)); } }
   .cat {
     min-height: 0; padding: clamp(4px, 1vmin, 14px); border-radius: clamp(6px, 1vmin, 14px);
     background: color-mix(in srgb, var(--accent) 16%, var(--bg-raised));

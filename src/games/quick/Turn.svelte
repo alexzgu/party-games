@@ -144,6 +144,19 @@
   .clock { flex: none; width: min(70vw, 32dvh, 300px); margin: 0 auto; }
   .foot { flex: none; min-height: 116px; display: flex; flex-direction: column; justify-content: flex-end; }
 
+  /* A phone on its side: the prompt on the left at full height, the clock and the buttons on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .turn {
+      height: 100dvh; max-width: 960px; display: grid; column-gap: var(--s-5); row-gap: var(--s-2);
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+      padding-bottom: calc(var(--safe-bottom) + var(--s-2));
+    }
+    header { grid-column: 1 / -1; min-height: 44px; }
+    .card { grid-column: 1; grid-row: 2 / 4; min-height: 0; }
+    .clock { grid-column: 2; grid-row: 2; align-self: center; width: auto; height: 100%; max-height: min(100%, 220px); aspect-ratio: 1; min-height: 0; }
+    .foot { grid-column: 2; grid-row: 3; min-height: 0; }
+  }
+
   .paused {
     position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; justify-content: center; gap: var(--s-4);
     padding: calc(var(--safe-top) + var(--s-5)) var(--s-5) calc(var(--safe-bottom) + var(--s-5));
@@ -152,4 +165,9 @@
   .paused:focus { outline: none; }
   .ptitle { font-family: var(--font-display); font-weight: 800; font-size: 3rem; }
   .pactions { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-4); max-width: 480px; width: 100%; margin-inline: auto; }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .paused { gap: var(--s-2); padding-top: calc(var(--safe-top) + var(--s-3)); padding-bottom: calc(var(--safe-bottom) + var(--s-3)); overflow-y: auto; }
+    .ptitle { font-size: 2.2rem; line-height: 1.1; }
+    .pactions { margin-top: var(--s-2); }
+  }
 </style>

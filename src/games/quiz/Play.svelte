@@ -95,27 +95,30 @@
   }
 </script>
 
-<!-- Many teams on a clue (more so with ✗ marks) can outgrow a phone screen: there the page scrolls. -->
+<!-- Many teams on a clue (more so with ✗ marks) can outgrow an upright phone screen: there the
+     page scrolls. The timer, unless the host dragged it away, sits in its own place under the
+     scores, so it never covers a tile, a clue or a button. -->
 <div class="play" class:over={game.phase === 'win'} class:tall={game.phase !== 'board' && game.teams.length > 8}>
   <TapToFinish>
     {#if game.phase === 'win'}
       <Win {game} {onnew} {onhome} />
     {:else}
-      {#if game.phase === 'board'}
-        <Board {game} onopen={open} onundo={undo} onend={() => end(true)} onwin={() => end(false)} {onleave} />
-      {:else}
-        {#key game.open?.tile}
-          <Clue {game} onanswer={answer} onaward={award} onwrong={wrong} onback={() => commit(rules.closeTile(game))} />
-        {/key}
-      {/if}
-      <Strip {game} {flash} onfix={(t) => (fixing = t)} />
+      <div class="main">
+        {#if game.phase === 'board'}
+          <Board {game} onopen={open} onundo={undo} onend={() => end(true)} onwin={() => end(false)} {onleave} />
+        {:else}
+          {#key game.open?.tile}
+            <Clue {game} onanswer={answer} onaward={award} onwrong={wrong} onback={() => commit(rules.closeTile(game))} />
+          {/key}
+        {/if}
+      </div>
+      <div class="side"><Strip {game} {flash} onfix={(t) => (fixing = t)} /></div>
     {/if}
   </TapToFinish>
+  {#if timer.shown && game.phase !== 'win'}
+    <Timer clue={game.open?.tile ?? null} />
+  {/if}
 </div>
-
-{#if timer.shown && game.phase !== 'win'}
-  <Timer clue={game.open?.tile ?? null} />
-{/if}
 {#if fixing >= 0 && game.phase !== 'win'}
   <FixScore {game} team={fixing} onadjust={adjust} onclose={() => (fixing = -1)} />
 {/if}
@@ -128,7 +131,21 @@
     -webkit-user-select: none; user-select: none;
   }
   .play.over { height: auto; min-height: 100dvh; }
+  .main, .side { display: contents; }
+  .play > :global(.docked) { align-self: center; }
   @media (max-width: 699px) { .play.tall { height: auto; min-height: 100dvh; } }
-  /* Phone on its side: too short to fit everything, so the page grows and scrolls instead. */
+  /* Short and wide but not a phone on its side: the page grows and scrolls. */
   @media (max-height: 560px) { .play { height: auto; min-height: 100dvh; } }
+  /* A phone on its side: the board or the clue on the left at full height; the scores down the
+     right, with the timer's place under them. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .play, .play.tall {
+      height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr) clamp(236px, 28vw, 300px);
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+    .play.over { display: flex; height: auto; }
+    .main { display: flex; flex-direction: column; grid-column: 1; grid-row: 1 / -1; min-height: 0; min-width: 0; }
+    .side { display: flex; flex-direction: column; grid-column: 2; grid-row: 1; min-height: 0; overflow-y: auto; }
+    .play > :global(.docked) { grid-column: 2; grid-row: 2; justify-self: center; }
+  }
 </style>

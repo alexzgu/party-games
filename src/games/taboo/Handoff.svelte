@@ -117,4 +117,21 @@
   .rival .icon { color: var(--rival); background: color-mix(in srgb, var(--rival) 16%, transparent); }
   .go { display: flex; flex-direction: column; gap: var(--s-2); }
   .err { color: var(--bad-ink); font-weight: 700; text-align: center; }
+  /* A phone on its side (as Spectrum's hand-off): the team on the left, the steps and the button
+     on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .handoff {
+      height: 100dvh; max-width: 960px; display: grid; gap: var(--s-2) var(--s-5);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+      padding-bottom: calc(var(--safe-bottom) + var(--s-2));
+    }
+    header { grid-column: 1 / -1; }
+    .content { display: contents; }
+    .top { grid-column: 1; grid-row: 2 / 4; align-self: center; }
+    .steps { grid-column: 2; grid-row: 2; align-self: center; max-height: 100%; overflow-y: auto; }
+    .steps li { padding: var(--s-2) var(--s-3); font-size: 1rem; }
+    .icon { width: 36px; height: 36px; }
+    .go { grid-column: 2; grid-row: 3; }
+    h1 { font-size: clamp(2.4rem, 7vw, 3.6rem); }
+  }
 </style>

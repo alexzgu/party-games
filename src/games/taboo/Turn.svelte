@@ -203,6 +203,23 @@
   .got { min-height: 96px; gap: var(--s-2); font-size: 1.7rem; background: var(--c-good); color: var(--on-accent); }
   .skip { min-height: var(--tap); gap: var(--s-2); font-size: 1.15rem; background: var(--surface); color: var(--text); }
 
+  /* A phone on its side: the card on the left at full height, the buttons on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .turn {
+      height: 100dvh; max-width: 960px; display: grid; column-gap: var(--s-5); row-gap: var(--s-2);
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr);
+      padding-bottom: calc(var(--safe-bottom) + var(--s-2));
+    }
+    header, .bar { grid-column: 1 / -1; }
+    .card { grid-column: 1; grid-row: 3; min-height: 0; gap: var(--s-1); padding: var(--s-2) var(--s-3) var(--s-3); }
+    .word { flex: 1 1 auto; min-height: 44px; }
+    .label.no { padding-top: var(--s-1); }
+    .banned li { font-size: clamp(1rem, 4.6dvh, 1.35rem); line-height: 1.2; }
+    .pad { grid-column: 2; grid-row: 3; min-height: 0; }
+    .buzz { min-height: 0; }
+    .got { min-height: 0; }
+  }
+
   .flash { position: fixed; inset: 0; z-index: 20; pointer-events: none; animation: flash 450ms ease-out both; }
   .flash.buzz { background: color-mix(in srgb, var(--c-bad) 55%, transparent); }
   .flash.got { background: color-mix(in srgb, var(--c-good) 30%, transparent); animation-duration: 300ms; }

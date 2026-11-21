@@ -76,63 +76,66 @@
     {/if}
   </section>
 
-  {#if answering && alone}
-    <p class="ask">Did {game.teams[0]} get it?</p>
-    <div class="solo">
-      <button class="team" style:--team={teamColor(0)} onclick={() => settled() && onaward(0)} aria-label="Got it, plus {info.value}">
-        <span class="tname">✓ Got it</span><span class="pts">+{info.value}</span>
-      </button>
-      <button class="team missed" onclick={() => settled() && onaward(-1)} aria-label={game.penalty ? `Missed, minus ${info.value}` : 'Missed'}>
-        <span class="tname">✗ Missed</span><span class="pts">{game.penalty ? `−${info.value}` : 'no points'}</span>
-      </button>
-    </div>
-  {:else if answering && compact}
-    <p class="ask">Who got it? <span class="faint">+{info.value}</span></p>
-    <ul class="cells" class:pen={game.penalty} style:--n={n}>
-      {#each game.teams as name, i (i)}
-        {@const wrong = open.wrong.includes(i)}
-        <li class="cell" class:wrong style:--team={teamColor(i)}>
-          <button class="got" disabled={wrong} onclick={() => settled() && onaward(i)} aria-label={wrong ? `${name}, marked wrong` : `${name} got it, plus ${info.value}`}>
-            {#if i < 9}<span class="num" aria-hidden="true">{i + 1}</span>{/if}<span class="cname">{name}</span>
+  <div class="controls">
+    <div class="picks">
+      {#if answering && alone}
+        <p class="ask">Did {game.teams[0]} get it?</p>
+        <div class="solo">
+          <button class="team" style:--team={teamColor(0)} onclick={() => settled() && onaward(0)} aria-label="Got it, plus {info.value}">
+            <span class="tname">✓ Got it</span><span class="pts">+{info.value}</span>
           </button>
-          {#if game.penalty}
-            <button class="x" class:on={wrong} aria-pressed={wrong} onclick={() => settled() && onwrong(i)} aria-label="{name} answered wrong">✗</button>
-          {/if}
-        </li>
-      {/each}
-    </ul>
-  {:else if answering}
-    <p class="ask">Who got it?</p>
-    <div class="teams" class:four={n === 4} style:--n={n}>
-      {#each game.teams as name, i (i)}
-        {@const wrong = open.wrong.includes(i)}
-        <button class="team" class:wrong style:--team={teamColor(i)} disabled={wrong} onclick={() => settled() && onaward(i)} aria-label={wrong ? `${name}, marked wrong` : `${name} got it, plus ${info.value}`}>
-          <span class="tname">{name}</span>
-          <span class="pts">{wrong ? `✗ −${info.value}` : `✓ +${info.value}`}</span>
-        </button>
-      {/each}
-    </div>
-  {/if}
-
-  {#if game.penalty && !alone && !(answering && compact)}
-    <div class="wrongs" role="group" aria-label="Wrong answers lose {info.value}">
-      <span class="wlabel">Wrong answer? <span class="faint">−{info.value}</span></span>
-      <div class="wbtns" class:compact style:--n={n}>
-        {#each game.teams as name, i (i)}
-          {@const on = open.wrong.includes(i)}
-          <button class="wbtn" class:on style:--team={teamColor(i)} aria-pressed={on} onclick={() => settled() && onwrong(i)} aria-label="{name} answered wrong">
-            <span aria-hidden="true">✗</span> <span class="wname">{name}</span>
+          <button class="team missed" onclick={() => settled() && onaward(-1)} aria-label={game.penalty ? `Missed, minus ${info.value}` : 'Missed'}>
+            <span class="tname">✗ Missed</span><span class="pts">{game.penalty ? `−${info.value}` : 'no points'}</span>
           </button>
-        {/each}
-      </div>
-    </div>
-  {/if}
+        </div>
+      {:else if answering && compact}
+        <p class="ask">Who got it? <span class="faint">+{info.value}</span></p>
+        <ul class="cells" class:pen={game.penalty} style:--n={n}>
+          {#each game.teams as name, i (i)}
+            {@const wrong = open.wrong.includes(i)}
+            <li class="cell" class:wrong style:--team={teamColor(i)}>
+              <button class="got" disabled={wrong} onclick={() => settled() && onaward(i)} aria-label={wrong ? `${name}, marked wrong` : `${name} got it, plus ${info.value}`}>
+                {#if i < 9}<span class="num" aria-hidden="true">{i + 1}</span>{/if}<span class="cname">{name}</span>
+              </button>
+              {#if game.penalty}
+                <button class="x" class:on={wrong} aria-pressed={wrong} onclick={() => settled() && onwrong(i)} aria-label="{name} answered wrong">✗</button>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      {:else if answering}
+        <p class="ask">Who got it?</p>
+        <div class="teams" class:four={n === 4} style:--n={n}>
+          {#each game.teams as name, i (i)}
+            {@const wrong = open.wrong.includes(i)}
+            <button class="team" class:wrong style:--team={teamColor(i)} disabled={wrong} onclick={() => settled() && onaward(i)} aria-label={wrong ? `${name}, marked wrong` : `${name} got it, plus ${info.value}`}>
+              <span class="tname">{name}</span>
+              <span class="pts">{wrong ? `✗ −${info.value}` : `✓ +${info.value}`}</span>
+            </button>
+          {/each}
+        </div>
+      {/if}
 
-  {#if !answering}
-    <div class="actions"><Button size="lg" onclick={onanswer}>Show answer</Button></div>
-  {:else if !alone}
-    <div class="actions"><Button variant="secondary" onclick={() => settled() && onaward(-1)}>Nobody got it</Button></div>
-  {/if}
+      {#if game.penalty && !alone && !(answering && compact)}
+        <div class="wrongs" role="group" aria-label="Wrong answers lose {info.value}">
+          <span class="wlabel">Wrong answer? <span class="faint">−{info.value}</span></span>
+          <div class="wbtns" class:compact style:--n={n}>
+            {#each game.teams as name, i (i)}
+              {@const on = open.wrong.includes(i)}
+              <button class="wbtn" class:on style:--team={teamColor(i)} aria-pressed={on} onclick={() => settled() && onwrong(i)} aria-label="{name} answered wrong">
+                <span aria-hidden="true">✗</span> <span class="wname">{name}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </div>
+    {#if !answering}
+      <div class="actions"><Button size="lg" onclick={onanswer}>Show answer</Button></div>
+    {:else if !alone}
+      <div class="actions"><Button variant="secondary" onclick={() => settled() && onaward(-1)}>Nobody got it</Button></div>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -222,5 +225,26 @@
   @media (max-width: 699px) { .clue.many .panel { flex: none; height: max(220px, 32vh); min-height: 0; } }
   @media (min-width: 900px) and (orientation: landscape) {
     .actions { align-self: center; width: min(560px, 100%); }
+  }
+  .controls, .picks { display: contents; }
+  /* A phone on its side: the clue or the answer on the left under the header; who got it, the ✗
+     marks and the main button on the right at full height (the teams scroll inside if they
+     cannot all fit, the button never does). */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .clue { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); grid-template-rows: auto minmax(0, 1fr); column-gap: var(--s-3); }
+    .clue > :global(.bar) { grid-column: 1; grid-row: 1; }
+    .panel { grid-column: 1; grid-row: 2; }
+    .controls { grid-column: 2; grid-row: 1 / -1; }
+    .panel, .clue.many .panel { height: auto; min-height: 0; flex: none; padding: var(--s-3); gap: var(--s-2); }
+    .small-clue { font-size: 0.95rem; }
+    .controls { display: flex; flex-direction: column; gap: var(--s-2); min-height: 0; min-width: 0; }
+    .picks { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow-y: auto; margin-top: auto; }
+    .actions { margin-bottom: auto; width: auto; }
+    .teams { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+    .team { min-height: 56px; padding: 4px; }
+    .cells { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+    .cells.pen { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .got { min-height: 44px; }
+    .wbtns.compact { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
   }
 </style>
