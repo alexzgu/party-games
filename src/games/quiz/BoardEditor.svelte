@@ -7,6 +7,7 @@
   import Stepper from '../../components/Stepper.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import AddMore from '../../components/AddMore.svelte';
+  import PinnedPanel from '../../components/PinnedPanel.svelte';
   import { addClues, moreClues, moreShapes, type MoreShape } from './more';
   import type { StreamClue } from './parse';
   import { customQuiz, quizBoards, type QuizBoard } from '../../lib/content';
@@ -74,10 +75,17 @@
     }
   }
 
+  /** The open category's head: another category starts from its top. */
+  let head = $state<HTMLDivElement>();
+  function open(i: number) {
+    ci = i;
+    head?.scrollIntoView({ block: 'nearest' });
+  }
+
   function addCategory() {
     if (!board) return;
     update(edit.addCategory(board));
-    ci = board.categories.length - 1;
+    open(board.categories.length - 1);
     sfx.tap();
   }
 
@@ -170,85 +178,97 @@
     {/snippet}
   </AddMore>
 {:else}
-<Screen title={fresh ? 'New pack' : 'Edit pack'} onback={() => (fresh && board ? (confirm = 'leave') : onback())}>
+<Screen title={fresh ? 'New pack' : 'Edit pack'} onback={() => (fresh && board ? (confirm = 'leave') : onback())} fill={!!board}>
   {#if !board}
     <p class="muted">{fresh ? 'There is no pack being made on this phone.' : 'This pack is no longer on this phone.'}</p>
   {:else}
-    <div class="about">
-      <p class="muted">
-        {#if fresh}Not saved yet{:else if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if board?.shared}Your pack, shared in the Community library: edits go out when you tap Share changes or Fizzwick adds to it{:else}Your pack, on this phone only{/if}
-      </p>
-      {#if builtin && edited}
-        <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
-      {:else if !fresh && !builtin}
-        <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
-      {/if}
-    </div>
-    {#if !fresh}<ExportPack game="quiz" pack={board} />{/if}
-    {#if !fresh}<SharePack game="quiz" pack={board} onshared={() => (board = board && { ...board, shared: true })} />{/if}
-    {#if note}<p class="faint small">{note}</p>{/if}
-
-    <label class="field">
-      <span>Pack name</span>
-      <input type="text" value={board.name} oninput={field('name')} onchange={() => settleName('name')} maxlength="40" autocomplete="off" enterkeyhint="done" />
-    </label>
-    <label class="field">
-      <span>Short description</span>
-      <input type="text" value={board.blurb} oninput={field('blurb')} maxlength="80" autocomplete="off" enterkeyhint="done" placeholder="What it's about" />
-    </label>
-
-    <section class="size" aria-label="Board size">
-      <Stepper bind:value={() => len, setLevels} min={1} max={edit.MAX_LEVELS} label="Levels" />
-      <p class="status" class:warn={gaps.length > 0} role="status">
-        {cats.length} {cats.length === 1 ? 'category' : 'categories'} × {len} {len === 1 ? 'level' : 'levels'} ({len === 1 ? '100' : `100–${len * 100}`} points)
-        {#if gaps.length} · {gaps.length} empty {gaps.length === 1 ? 'tile' : 'tiles'}: saved as a draft, playable once filled{:else} · ready to play{/if}
-      </p>
-    </section>
-
-    <div class="tabs" role="tablist" aria-label="Categories">
-      {#each cats as c, i (i)}
-        <button class="tab" class:on={i === ci} role="tab" aria-selected={i === ci} onclick={() => (ci = i)}>
-          <span class="tname">{c.name.trim() || `Category ${i + 1}`}</span>
-          {#if gapsIn(i)}<span class="badge" aria-label="{gapsIn(i)} empty">{gapsIn(i)}</span>{/if}
-        </button>
-      {/each}
-      <button class="tab add" onclick={addCategory} disabled={cats.length >= edit.MAX_CATEGORIES} aria-label="Add a category">+ Category</button>
-    </div>
-
-    {#if cat}
-      <div class="cat" role="tabpanel" aria-label={cat.name}>
-        <div class="cathead">
-          <label class="field grow">
-            <span>Category {ci + 1} of {cats.length}</span>
-            <input type="text" value={cat.name} oninput={(e) => board && update(edit.renameCategory(board, ci, e.currentTarget.value))} onchange={() => settleName('category')} maxlength="40" autocomplete="off" enterkeyhint="done" />
-          </label>
-          <div class="tools">
-            <button class="tool" onclick={() => move(-1)} disabled={ci === 0} aria-label="Move category left">←</button>
-            <button class="tool" onclick={() => move(1)} disabled={ci >= cats.length - 1} aria-label="Move category right">→</button>
-            <button class="tool" onclick={() => (confirm = 'category')} disabled={cats.length <= 1} aria-label="Remove this category">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+    <!-- Pinned: the pack's details (they fold away) and the category tabs; only the open
+         category's name, tools and clues scroll. -->
+    <PinnedPanel kind="editor" foldId="quiz-details" foldName="details" foldSpoken="pack details" keep="items">
+      {#snippet notice()}{#if note}<p class="faint small">{note}</p>{/if}{/snippet}
+      {#snippet top()}
+        {#if board}
+          <div class="about">
+            <p class="muted">
+              {#if fresh}Not saved yet{:else if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if board?.shared}Your pack, shared in the Community library: edits go out when you tap Share changes or Fizzwick adds to it{:else}Your pack, on this phone only{/if}
+            </p>
+            {#if builtin && edited}
+              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
+            {:else if !fresh && !builtin}
+              <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
+            {/if}
           </div>
-        </div>
+          {#if !fresh}<ExportPack game="quiz" pack={board} />{/if}
+          {#if !fresh}<SharePack game="quiz" pack={board} onshared={() => (board = board && { ...board, shared: true })} />{/if}
 
-        <ol class="clues">
-          {#each cat.clues as k, r (r)}
-            <li class="clue">
-              <span class="val">{value(r)}</span>
-              <div class="inputs">
-                <textarea rows="2" value={k.clue} class:missing={!k.clue.trim()} placeholder="Clue the host reads out"
-                  aria-label="{cat.name} {value(r)} clue"
-                  oninput={(e) => board && update(edit.setClue(board, ci, r, { clue: e.currentTarget.value }))}></textarea>
-                <input type="text" value={k.answer} class:missing={!k.answer.trim()} placeholder="Answer" maxlength="80"
-                  aria-label="{cat.name} {value(r)} answer" autocomplete="off" enterkeyhint="next"
-                  oninput={(e) => board && update(edit.setClue(board, ci, r, { answer: e.currentTarget.value }))} />
-              </div>
-            </li>
-          {/each}
-        </ol>
-        <p class="faint small">Easiest at the top, hardest at the bottom.</p>
-      </div>
-    {/if}
+          <label class="field">
+            <span>Pack name</span>
+            <input type="text" value={board.name} oninput={field('name')} onchange={() => settleName('name')} maxlength="40" autocomplete="off" enterkeyhint="done" />
+          </label>
+          <label class="field">
+            <span>Short description</span>
+            <input type="text" value={board.blurb} oninput={field('blurb')} maxlength="80" autocomplete="off" enterkeyhint="done" placeholder="What it's about" />
+          </label>
+
+          <section class="size" aria-label="Board size">
+            <Stepper bind:value={() => len, setLevels} min={1} max={edit.MAX_LEVELS} label="Levels" />
+            <p class="status" class:warn={gaps.length > 0} role="status">
+              {cats.length} {cats.length === 1 ? 'category' : 'categories'} × {len} {len === 1 ? 'level' : 'levels'} ({len === 1 ? '100' : `100–${len * 100}`} points)
+              {#if gaps.length} · {gaps.length} empty {gaps.length === 1 ? 'tile' : 'tiles'}: saved as a draft, playable once filled{:else} · ready to play{/if}
+            </p>
+          </section>
+        {/if}
+      {/snippet}
+      {#snippet row(toggle)}
+        <div class="tabrow">
+          <div class="tabs" role="tablist" aria-label="Categories">
+            {#each cats as c, i (i)}
+              <button class="tab" class:on={i === ci} role="tab" aria-selected={i === ci} onclick={() => open(i)}>
+                <span class="tname">{c.name.trim() || `Category ${i + 1}`}</span>
+                {#if gapsIn(i)}<span class="badge" aria-label="{gapsIn(i)} empty">{gapsIn(i)}</span>{/if}
+              </button>
+            {/each}
+            <button class="tab add" onclick={addCategory} disabled={cats.length >= edit.MAX_CATEGORIES} aria-label="Add a category">+ Category</button>
+          </div>
+          {@render toggle()}
+        </div>
+      {/snippet}
+
+      {#if cat}
+        <div class="cat" role="tabpanel" aria-label={cat.name}>
+          <div class="cathead" bind:this={head}>
+            <label class="field grow">
+              <span>Category {ci + 1} of {cats.length}</span>
+              <input type="text" value={cat.name} oninput={(e) => board && update(edit.renameCategory(board, ci, e.currentTarget.value))} onchange={() => settleName('category')} maxlength="40" autocomplete="off" enterkeyhint="done" />
+            </label>
+            <div class="tools">
+              <button class="tool" onclick={() => move(-1)} disabled={ci === 0} aria-label="Move category left">←</button>
+              <button class="tool" onclick={() => move(1)} disabled={ci >= cats.length - 1} aria-label="Move category right">→</button>
+              <button class="tool" onclick={() => (confirm = 'category')} disabled={cats.length <= 1} aria-label="Remove this category">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <ol class="clues">
+            {#each cat.clues as k, r (r)}
+              <li class="clue">
+                <span class="val">{value(r)}</span>
+                <div class="inputs">
+                  <textarea rows="2" value={k.clue} class:missing={!k.clue.trim()} placeholder="Clue the host reads out"
+                    aria-label="{cat.name} {value(r)} clue"
+                    oninput={(e) => board && update(edit.setClue(board, ci, r, { clue: e.currentTarget.value }))}></textarea>
+                  <input type="text" value={k.answer} class:missing={!k.answer.trim()} placeholder="Answer" maxlength="80"
+                    aria-label="{cat.name} {value(r)} answer" autocomplete="off" enterkeyhint="next"
+                    oninput={(e) => board && update(edit.setClue(board, ci, r, { answer: e.currentTarget.value }))} />
+                </div>
+              </li>
+            {/each}
+          </ol>
+          <p class="faint small">Easiest at the top, hardest at the bottom.</p>
+        </div>
+      {/if}
+    </PinnedPanel>
   {/if}
 
   {#snippet actions()}
@@ -316,8 +336,11 @@
   .size { display: flex; flex-direction: column; gap: var(--s-2); }
   .status { margin: 0; color: var(--text-dim); font-size: 0.9rem; }
   .status.warn { color: var(--c-pass); }
+  /* The tabs scroll sideways from the screen's left edge up to the details toggle. */
+  .tabrow { display: flex; align-items: center; gap: var(--s-1); padding-bottom: var(--s-3); }
   .tabs {
-    display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--s-4)); padding: 2px var(--s-4);
+    flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+    margin-left: calc(-1 * var(--gutter-l, var(--s-4))); padding: 2px var(--s-1) 2px var(--gutter-l, var(--s-4));
   }
   .tabs::-webkit-scrollbar { display: none; }
   .tab {

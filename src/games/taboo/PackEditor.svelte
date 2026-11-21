@@ -10,6 +10,7 @@
   import SharePack from '../../components/SharePack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import PinnedPanel from '../../components/PinnedPanel.svelte';
   import CardForm from './CardForm.svelte';
   import Wizard from './Wizard.svelte';
   import AddMore from '../../components/AddMore.svelte';
@@ -19,7 +20,7 @@
   import { sfx } from '../../lib/sound';
   import { customTaboo, slugify, tabooPacks, type TabooCard, type TabooPack } from '../../lib/content';
   import { matches, sorted, type SortKey } from '../../lib/listing';
-  import { go } from '../../lib/router.svelte';
+  import { reveal } from '../../lib/panel';
   import { cardId, clean, parseCards } from './cards';
   import { selectPack } from './persist';
   import { MORE_RANGE, moreCards } from './generate';
@@ -72,7 +73,8 @@
     edited = customTaboo.isEdited(plain.id);
     if (isNew) {
       selectPack(plain.id);
-      go(`/taboo/pack?id=${encodeURIComponent(plain.id)}`, true);
+      // Same address as a saved pack, without rebuilding the editor (its details stay shown).
+      history.replaceState(history.state, '', '#/taboo/pack?id=' + encodeURIComponent(plain.id));
     }
   }
 
@@ -173,8 +175,7 @@
     {#snippet item(c: TabooCard)}<span class="txt"><span class="w">{c.word}</span><span class="b">{c.banned.join(' · ')}</span></span>{/snippet}
   </AddMore>
 {:else}
-<Screen title={pack ? (pack.id ? pack.name : 'Make a pack') : 'Pack not found'} accent="var(--c-taboo)" {onback}>
-  {#if pack?.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
+<Screen title={pack ? (pack.id ? pack.name : 'Make a pack') : 'Pack not found'} accent="var(--c-taboo)" {onback} fill={!!pack && !(!pack.id && mode === 'claude')}>
   {#if pack && !pack.id && !reviewing}
     <Segmented label="How to make it" options={MODES} bind:value={mode} />
   {/if}
@@ -183,45 +184,53 @@
   {:else if !pack.id && mode === 'claude'}
     <Wizard taken={otherWords} bind:reviewing onsave={conjured} />
   {:else}
-    <label class="field">
-      <span class="faint">Pack name</span>
-      <input type="text" maxlength="40" autocomplete="off" bind:value={name} onchange={rename} />
-    </label>
-    <p class="status">
-      <span>{pack.cards.length} {pack.cards.length === 1 ? 'card' : 'cards'}</span>
-      {#if !builtin}<span class="tag">{pack.id ? 'yours' : 'new'}</span>{:else if edited}<span class="tag hot">edited</span>{:else}<span class="tag">built-in</span>{/if}
-    </p>
-    {#if pack.id}<ExportPack game="taboo" {pack} />{/if}
-    {#if pack.id}<SharePack game="taboo" {pack} onshared={() => (pack = pack && { ...pack, shared: true })} />{/if}
+    <PinnedPanel kind="editor" label="taboo-cards-h" foldId="taboo-details" foldName="details" foldSpoken="pack details" needed={pack.cards.length === 0} keep="items">
+      {#snippet top()}
+        {#if pack}
+          {#if pack.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
+          <label class="field">
+            <span class="faint">Pack name</span>
+            <input type="text" maxlength="40" autocomplete="off" bind:value={name} onchange={rename} />
+          </label>
+          <p class="status">
+            <span>{pack.cards.length} {pack.cards.length === 1 ? 'card' : 'cards'}</span>
+            {#if !builtin}<span class="tag">{pack.id ? 'yours' : 'new'}</span>{:else if edited}<span class="tag hot">edited</span>{:else}<span class="tag">built-in</span>{/if}
+          </p>
+          {#if pack.id}<ExportPack game="taboo" {pack} />{/if}
+          {#if pack.id}<SharePack game="taboo" {pack} onshared={() => (pack = pack && { ...pack, shared: true })} />{/if}
 
-    <div class="add">
-      <div class="add-head">
-        <h3>{pasting ? 'Paste many' : 'Add a card'}</h3>
-        <button class="link" onclick={() => { pasting = !pasting; pasteNote = ''; pasteBad = []; }}>{pasting ? 'One at a time' : 'Paste many'}</button>
-      </div>
-      {#if pasting}
-        <p class="faint hint">One card per line: the word, a colon, then its five banned words split by commas. For example <i>Pizza: Cheese, Slice, Pepperoni, Italian, Delivery</i></p>
-        <textarea rows="5" bind:value={pasteText} aria-label="Cards to paste, one per line" placeholder="Pizza: Cheese, Slice, Pepperoni, Italian, Delivery"></textarea>
-        <Button variant="secondary" disabled={!pasteText.trim()} onclick={addPasted}>Add these cards</Button>
-      {:else}
-        <CardForm submit="+ Add card" onsave={add} focusId="add-word" />
-      {/if}
-      {#if pasteNote}
-        <p class="note" role="status">{pasteNote}</p>
-        {#if pasteBad.length}<ul class="bad">{#each pasteBad as b, i (i)}<li><b>{b.line}</b> · {b.why}</li>{/each}</ul>{/if}
-      {/if}
-    </div>
-    {#if pack.id && !builtin}<Button variant="secondary" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
+          <div class="add">
+            <div class="add-head">
+              <h3>{pasting ? 'Paste many' : 'Add a card'}</h3>
+              <button class="link" onclick={() => { pasting = !pasting; pasteNote = ''; pasteBad = []; }}>{pasting ? 'One at a time' : 'Paste many'}</button>
+            </div>
+            {#if pasting}
+              <p class="faint hint">One card per line: the word, a colon, then its five banned words split by commas. For example <i>Pizza: Cheese, Slice, Pepperoni, Italian, Delivery</i></p>
+              <textarea rows="5" bind:value={pasteText} aria-label="Cards to paste, one per line" placeholder="Pizza: Cheese, Slice, Pepperoni, Italian, Delivery"></textarea>
+              <Button variant="secondary" disabled={!pasteText.trim()} onclick={addPasted}>Add these cards</Button>
+            {:else}
+              <CardForm submit="+ Add card" onsave={add} focusId="add-word" />
+            {/if}
+            {#if pasteNote}
+              <p class="note" role="status">{pasteNote}</p>
+              {#if pasteBad.length}<ul class="bad">{#each pasteBad as b, i (i)}<li><b>{b.line}</b> · {b.why}</li>{/each}</ul>{/if}
+            {/if}
+          </div>
+          {#if pack.id && !builtin}<Button variant="secondary" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
+        {/if}
+      {/snippet}
+      {#snippet row(toggle)}
+        <ListTools key="taboo:cards" bind:query bind:sort placeholder="Search cards" shown={rows.length} total={pack?.cards.length}>
+          {#snippet title()}<h3 id="taboo-cards-h">Cards</h3>{/snippet}
+          {#snippet extra()}{@render toggle()}{/snippet}
+        </ListTools>
+      {/snippet}
 
-    <div>
-      <ListTools key="taboo:cards" bind:query bind:sort placeholder="Search cards" shown={rows.length} total={pack.cards.length}>
-        {#snippet title()}<h3>Cards</h3>{/snippet}
-      </ListTools>
       <ul class="cards">
         {#each rows as { c, i } (cardId(c) + i)}
-          <li class:fresh={fresh === cardId(c)}>
+          <li class:fresh={fresh === cardId(c)} use:reveal={fresh === cardId(c)}>
             {#if editing === i}
-              <div class="edit">
+              <div class="edit" use:reveal>
                 <CardForm card={c} submit="Save" onsave={(n) => change(i, n)} oncancel={() => (editing = null)} ondelete={() => removeCard(i)} />
               </div>
             {:else}
@@ -235,14 +244,14 @@
       </ul>
       {#if pack.cards.length === 0}<p class="faint">No cards yet. Add one above.</p>
       {:else if rows.length === 0}<p class="faint none">No cards match “{query.trim()}”</p>{/if}
-    </div>
 
-    <!-- At the end of the page, not pinned: neither is the page's main action. -->
-    {#if builtin && edited}
-      <Button variant="secondary" onclick={() => (confirm = 'restore')}>↺ Restore the original cards</Button>
-    {:else if pack.id && !builtin}
-      <Button variant="danger" onclick={() => (confirm = 'delete')}>Delete this pack</Button>
-    {/if}
+      <!-- At the end of the cards, not pinned: neither is the page's main action. -->
+      {#if builtin && edited}
+        <div class="end"><Button variant="secondary" onclick={() => (confirm = 'restore')}>↺ Restore the original cards</Button></div>
+      {:else if pack.id && !builtin}
+        <div class="end"><Button variant="danger" onclick={() => (confirm = 'delete')}>Delete this pack</Button></div>
+      {/if}
+    </PinnedPanel>
   {/if}
 </Screen>
 {/if}
@@ -292,5 +301,6 @@
   .none { text-align: center; padding: var(--s-2) 0; }
   .pen { flex: none; color: var(--text-faint); }
   .edit { padding: var(--s-3); border-radius: var(--r-md); background: var(--surface); border: 2px solid var(--accent); }
+  .end { display: flex; flex-direction: column; margin-top: var(--s-4); }
   .confirm { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-4); }
 </style>

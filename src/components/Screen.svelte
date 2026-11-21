@@ -34,7 +34,7 @@
     split?: boolean;
     /**
      * The page fits the screen: the body takes the room between the header and the actions and
-     * its own parts scroll (a pack page: only the pack list scrolls; components/PackList.svelte).
+     * its own parts scroll (a pack page or a pack editor: only the list scrolls; components/PinnedPanel.svelte).
      * On a screen too short even for that the whole page scrolls, header and actions still pinned.
      */
     fill?: boolean;
@@ -121,6 +121,8 @@
      page: its pinned top, a row of packs, its Add pack row); below that the screen scrolls. */
   .fill { height: 100dvh; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; }
   .fill .body { flex: 1 1 0; padding-bottom: 0; }
+  /* No actions under it: the body stops clear of the home bar. */
+  .fill .body:last-child { padding-bottom: calc(var(--safe-bottom) + var(--s-2)); }
   .fill .actions::before { content: none; }
   .screen :global(:is(.split-side, .split-main)) { display: contents; }
   @media (orientation: landscape) and (max-height: 500px) {

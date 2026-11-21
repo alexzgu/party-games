@@ -39,8 +39,8 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams start shown; which edges of a part scrolling on its own have more behind them), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
-- `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `Popup`, `MenuButton` (a button opening a small menu),
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
+- `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList` and every pack editor), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
@@ -278,6 +278,39 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
     clear of the fades. Adding a player (or a team) scrolls the window to the new row. A shorter
     screen shows fewer rows (down to one), and if it shrinks while a name is being typed, that
     name stays in view. Spectrum and Don't Say It's two team names need no window.
+- **Pack editors** (every game's pack page for one pack; `Screen` with `fill`, `PinnedPanel`, the
+  same layout as the pack pages): the page fits the screen and only the items scroll (words,
+  cards, prompts; Big Board: the open category). Above them, pinned under the header: the pack's
+  details (Community note, status, name, Export, Share, the add form, Restore or Delete where the
+  editor had them there), which fold away, then the items row (title and count, search, sort, the
+  open search bar or sort chips, and at its end "Details" with an arrow, spoken "Hide pack
+  details" or "Show pack details"). The actions stay pinned at the bottom as before (Add more,
+  Restore original, Delete, Paste a list, Add a card, Done). The same hairlines mark the items'
+  top and bottom edges while more is scrolled away that way, and the items keep the same least
+  height before the whole screen scrolls. Folding works as on the pack pages (smooth, `inert`
+  while folded, first 400 ms of taps ignored, read once when the page opens so a keyboard never
+  folds it), with its own choice, one for every editor, kept apart from the setups'; until the
+  phone has made one, the details start shown on a screen 700 px tall or more and folded on a
+  shorter one. While a pack has no items yet (Spectrum, Don't Say It) or a Heads Down. pack is
+  new, the details show whatever was chosen, with no button, so the add form is there; they stay
+  shown for this visit. Shown, the details take at most 45% of the screen's height and scroll on
+  their own past that (a long add form), their edges fading where there is more; not while they
+  are needed. An item opened for editing in place (Spectrum, Don't Say It) and an item just added
+  scroll into view in the list; a field being typed in stays in view if the screen shrinks.
+  Leaving and coming Back finds the items scrolled where they were. Per game:
+  - Spectrum, Don't Say It: details hold name, status, Export, Share and the add form (Don't Say
+    It: its Paste many and Add more too); Don't Say It keeps "Restore the original cards" or
+    "Delete this pack" after the last card, unpinned.
+  - Inn Co Hear Ant, Brain Freeze, Snark Tank: details hold the status line with its small
+    Restore or Delete button, Export, Share, name (Snark Tank: Fill in stock answers too);
+    Snark Tank's finals follow its prompts in the list.
+  - Heads Down.: details hold the built-in note (with Restore), name, icon, Export, Share and
+    Delete; the word box ("Type a word, press Enter", Add, and the Undo line) stays pinned under
+    the Words row, never folded, since typing words in is the page's main job.
+  - Big Board: details hold the status line, Export, Share, name, description and the levels
+    stepper with its line; the category tabs, sideways-scrolling, are the pinned row with
+    Details at its end; the open category's name, move and remove tools and its clues scroll.
+    Opening another tab starts it from its top.
 - **Stacking** (`--z-*` in tokens.css, lowest first): the page's pinned header and actions, things floating over everything without taking taps (confetti,
   flashes, the drag-around timer), full-screen layers (pauses, game menus, the Community packs), a
   pinned bar holding an open popup or menu, popups, the share note.
@@ -520,7 +553,7 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   scored just closes the board. State saved after every step; a reload resumes on the same
   screen. Saves from the 2–4 team version load unchanged; a setup saved with a name for every seat
   and a team count loads as its first that many names.
-- **Pack editor** (`#/quiz/board?id=<id>`): name, short description, levels stepper (adds or
+- **Pack editor** (`#/quiz/board?id=<id>`; layout under Pack editors): name, short description, levels stepper (adds or
   removes the bottom level on every category; removing one with clues asks first), category
   tabs (add up to 8, rename, move left/right, remove), and every clue and answer inline, empty
   ones highlighted. Every change saves at once; a built-in saves this phone's copy under the

@@ -5,6 +5,7 @@
   import SharePack from '../../components/SharePack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import PinnedPanel from '../../components/PinnedPanel.svelte';
   import AddMore from '../../components/AddMore.svelte';
   import WizardItem from './WizardItem.svelte';
   import { customSnark, snarkPacks, type SnarkPack } from '../../lib/content';
@@ -123,37 +124,45 @@
     </AddMore>
   {/if}
 {:else}
-<Screen title={pack?.name ?? 'Pack'} {onback}>
+<Screen title={pack?.name ?? 'Pack'} {onback} fill={!!pack}>
   {#if !pack}
     <p class="muted">This pack is no longer on this device.</p>
   {:else}
-    <div class="about">
-      <p class="muted">{#if builtin}Comes with the app{edited ? ' · edited on this device' : ''}{:else if pack?.shared}Your pack, shared in the Community library: edits go out when you tap Share changes or Fizzwick adds to it{:else}Your pack, on this device only{/if}</p>
-      {#if builtin && edited}
-        <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
-      {:else if !builtin}
-        <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
-      {/if}
-    </div>
-    <ExportPack game="snark" {pack} />
-    <SharePack game="snark" {pack} onshared={() => { if (pack) pack.shared = true; }} />
-    {#if !builtin && missing}
-      <div class="fill">
-        <p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer, so “Give me one” can't help there.</p>
-        <Button variant="secondary" onclick={() => (adding = 'fill')}>🧙 Fill in stock answers</Button>
-      </div>
-    {/if}
-    <label class="name">
-      <span>Pack name</span>
-      <input type="text" bind:value={name} onchange={rename} maxlength="40" autocomplete="off" enterkeyhint="done" />
-    </label>
-    <section class="list" aria-label="Prompts">
-      <ListTools key="snark:prompts" bind:query bind:sort placeholder="Search prompts" shown={shown.length} total={pack.prompts.length}>
-        {#snippet title()}
-          <h3 class="count">{pack?.prompts.length} prompts</h3>
-          <p class="tip">Tap one to change it</p>
-        {/snippet}
-      </ListTools>
+    <PinnedPanel kind="editor" label="snark-items-h" foldId="snark-details" foldName="details" foldSpoken="pack details" keep="items">
+      {#snippet top()}
+        {#if pack}
+          <div class="about">
+            <p class="muted">{#if builtin}Comes with the app{edited ? ' · edited on this device' : ''}{:else if pack?.shared}Your pack, shared in the Community library: edits go out when you tap Share changes or Fizzwick adds to it{:else}Your pack, on this device only{/if}</p>
+            {#if builtin && edited}
+              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
+            {:else if !builtin}
+              <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
+            {/if}
+          </div>
+          <ExportPack game="snark" {pack} />
+          <SharePack game="snark" {pack} onshared={() => { if (pack) pack.shared = true; }} />
+          {#if !builtin && missing}
+            <div class="fill">
+              <p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer, so “Give me one” can't help there.</p>
+              <Button variant="secondary" onclick={() => (adding = 'fill')}>🧙 Fill in stock answers</Button>
+            </div>
+          {/if}
+          <label class="name">
+            <span>Pack name</span>
+            <input type="text" bind:value={name} onchange={rename} maxlength="40" autocomplete="off" enterkeyhint="done" />
+          </label>
+        {/if}
+      {/snippet}
+      {#snippet row(toggle)}
+        <ListTools key="snark:prompts" bind:query bind:sort placeholder="Search prompts" shown={shown.length} total={pack?.prompts.length}>
+          {#snippet title()}
+            <h3 class="count" id="snark-items-h">{pack?.prompts.length} prompts</h3>
+            <p class="tip">Tap one to change it</p>
+          {/snippet}
+          {#snippet extra()}{@render toggle()}{/snippet}
+        </ListTools>
+      {/snippet}
+
       {#if query && !shown.length}<p class="none">No prompts match “{query.trim()}”</p>{/if}
       <ul class="prompts">
         {#each shown as { q, i } (i)}
@@ -161,17 +170,17 @@
           <li><button class="prompt" onclick={() => edit(i)}>{q}{#if stock}<span class="stock">Give me one: {stock}</span>{/if}</button></li>
         {/each}
       </ul>
-    </section>
-    {#if pack.finals?.length}
-      <section class="list" aria-label="Finals">
-        <h3 class="count">{pack.finals.length} {pack.finals.length === 1 ? 'final' : 'finals'} for three-line duels</h3>
-        <ul class="prompts">
-          {#each pack.finals as f (f.prompt)}
-            <li class="final">{f.prompt}<span class="stock">House: {f.house.join(' · ')}</span></li>
-          {/each}
-        </ul>
-      </section>
-    {/if}
+      {#if pack.finals?.length}
+        <section class="list" aria-label="Finals">
+          <h3 class="count">{pack.finals.length} {pack.finals.length === 1 ? 'final' : 'finals'} for three-line duels</h3>
+          <ul class="prompts">
+            {#each pack.finals as f (f.prompt)}
+              <li class="final">{f.prompt}<span class="stock">House: {f.house.join(' · ')}</span></li>
+            {/each}
+          </ul>
+        </section>
+      {/if}
+    </PinnedPanel>
   {/if}
   {#snippet actions()}
     {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = 'more')}>🧙 Add more</Button>{/if}
@@ -222,7 +231,7 @@
   .act { flex: none; white-space: nowrap; }
   .name, .field { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
   .count { color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700; }
-  .list { display: flex; flex-direction: column; }
+  .list { display: flex; flex-direction: column; margin-top: var(--s-5); }
   .tip { margin: 0; color: var(--text-faint); font-size: 0.8rem; }
   .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   .prompts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }

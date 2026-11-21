@@ -5,6 +5,7 @@
   import SharePack from '../../components/SharePack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import PinnedPanel from '../../components/PinnedPanel.svelte';
   import PromptForm from './PromptForm.svelte';
   import AddMore from '../../components/AddMore.svelte';
   import { mergeOnTop } from '../../lib/addMore';
@@ -114,35 +115,42 @@
     {#snippet item(q: string)}<span class="q">{q}</span>{/snippet}
   </AddMore>
 {:else}
-<Screen title={pack?.name ?? 'Pack'} {onback}>
+<Screen title={pack?.name ?? 'Pack'} {onback} fill={!!pack}>
   {#if !pack}
     <p class="muted">This pack is no longer on this phone.</p>
   {:else}
-    <div class="about">
-      <p class="muted">
-        {#if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if pack?.shared}Your pack, shared in the Community library: edits go out when you tap Share changes or Fizzwick adds to it{:else}Your pack, on this phone only{/if}
-      </p>
-      {#if builtin && edited}
-        <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
-      {:else if !builtin}
-        <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
-      {/if}
-    </div>
-    <ExportPack game="quick" {pack} />
-    <SharePack game="quick" {pack} onshared={() => { if (pack) pack.shared = true; }} />
+    <PinnedPanel kind="editor" label="quick-items-h" foldId="quick-details" foldName="details" foldSpoken="pack details" keep="items">
+      {#snippet top()}
+        {#if pack}
+          <div class="about">
+            <p class="muted">
+              {#if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if pack?.shared}Your pack, shared in the Community library: edits go out when you tap Share changes or Fizzwick adds to it{:else}Your pack, on this phone only{/if}
+            </p>
+            {#if builtin && edited}
+              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
+            {:else if !builtin}
+              <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
+            {/if}
+          </div>
+          <ExportPack game="quick" {pack} />
+          <SharePack game="quick" {pack} onshared={() => { if (pack) pack.shared = true; }} />
 
-    <label class="name">
-      <span>Pack name</span>
-      <input type="text" bind:value={name} onchange={rename} maxlength="40" autocomplete="off" enterkeyhint="done" />
-    </label>
+          <label class="name">
+            <span>Pack name</span>
+            <input type="text" bind:value={name} onchange={rename} maxlength="40" autocomplete="off" enterkeyhint="done" />
+          </label>
+        {/if}
+      {/snippet}
+      {#snippet row(toggle)}
+        <ListTools key="quick:prompts" bind:query bind:sort placeholder="Search prompts" shown={shown.length} total={pack?.prompts.length}>
+          {#snippet title()}
+            <h3 class="count" id="quick-items-h">{pack?.prompts.length} {pack?.prompts.length === 1 ? 'prompt' : 'prompts'}</h3>
+            <p class="tip">Each reads “Name 3 …”. Tap one to change it.</p>
+          {/snippet}
+          {#snippet extra()}{@render toggle()}{/snippet}
+        </ListTools>
+      {/snippet}
 
-    <section class="list" aria-label="Prompts">
-      <ListTools key="quick:prompts" bind:query bind:sort placeholder="Search prompts" shown={shown.length} total={pack.prompts.length}>
-        {#snippet title()}
-          <h3 class="count">{pack?.prompts.length} {pack?.prompts.length === 1 ? 'prompt' : 'prompts'}</h3>
-          <p class="tip">Each reads “Name 3 …”. Tap one to change it.</p>
-        {/snippet}
-      </ListTools>
       {#if query && !shown.length}<p class="none">No prompts match “{query.trim()}”</p>{/if}
       <ul class="prompts" bind:this={list}>
         {#each shown as { q, i } (i)}
@@ -151,7 +159,7 @@
           </li>
         {/each}
       </ul>
-    </section>
+    </PinnedPanel>
   {/if}
 
   {#snippet actions()}
@@ -196,7 +204,6 @@
   .act { flex: none; white-space: nowrap; }
   .name { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
   .count { color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700; }
-  .list { display: flex; flex-direction: column; }
   .tip { margin: 0; color: var(--text-faint); font-size: 0.8rem; }
   .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   .prompts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }

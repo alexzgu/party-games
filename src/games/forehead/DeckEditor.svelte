@@ -3,6 +3,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import PinnedPanel from '../../components/PinnedPanel.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
   import SharePack from '../../components/SharePack.svelte';
   import AddMore from '../../components/AddMore.svelte';
@@ -17,6 +18,7 @@
   import { MORE_RANGE, moreWords } from './generate';
   import { itemKey } from './words';
   import { DEFAULT_ICON, nextIcon } from '../../lib/icon';
+  import { reveal } from '../../lib/panel';
 
   // See and edit any deck. Every change saves at once; there is no Save button to forget.
   // Changing a built-in deck saves an edit of it on this phone, which "Restore original" undoes.
@@ -44,6 +46,8 @@
   let input: HTMLInputElement | undefined = $state();
   let query = $state('');
   let sort = $state<SortKey>('suggested');
+  /** The word just added: the list scrolls to it. */
+  let fresh = $state('');
   const words = $derived(findWords(deck.words, query, sort));
 
   /** A new deck is saved, and picked alone for the next round, when its first words arrive (never while empty). */
@@ -70,6 +74,9 @@
     const items = draft.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
     if (!items.length) return;
     deck.words = dedupe([...items.reverse(), ...deck.words]);
+    const first = deck.words[0];
+    fresh = first;
+    setTimeout(() => { if (fresh === first) fresh = ''; }, 1600);
     draft = '';
     query = ''; // a search must not hide the word just added
     sfx.tick();
@@ -136,54 +143,68 @@
     {#snippet item(s: string)}<span class="word">{s}</span>{/snippet}
   </AddMore>
 {:else}
-<Screen title={existing ? (builtin ? 'Built-in pack' : 'Edit pack') : 'New pack'} accent="var(--c-forehead)">
-  {#if !builtin && deck.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
-  {#if builtin}
-    <div class="note" class:edited>
-      {#if edited}
-        <p><b>Edited</b> on this phone. Your changes replace the original everywhere.</p>
-        <Button size="sm" variant={confirmRestore ? 'danger' : 'secondary'} onclick={restore}>
-          {confirmRestore ? 'Tap again to undo all changes' : 'Restore original'}
-        </Button>
-      {:else}
-        <p>Comes with the game. Any change you make saves as your own version; you can restore the original later.</p>
+<Screen title={existing ? (builtin ? 'Built-in pack' : 'Edit pack') : 'New pack'} accent="var(--c-forehead)" fill>
+  <PinnedPanel kind="editor" label="forehead-words-h" foldId="forehead-details" foldName="details" foldSpoken="pack details" needed={!deck.id} keep="items">
+    {#snippet top()}
+      {#if !builtin && deck.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
+      {#if builtin}
+        <div class="note" class:edited>
+          {#if edited}
+            <p><b>Edited</b> on this phone. Your changes replace the original everywhere.</p>
+            <Button size="sm" variant={confirmRestore ? 'danger' : 'secondary'} onclick={restore}>
+              {confirmRestore ? 'Tap again to undo all changes' : 'Restore original'}
+            </Button>
+          {:else}
+            <p>Comes with the game. Any change you make saves as your own version; you can restore the original later.</p>
+          {/if}
+        </div>
       {/if}
-    </div>
-  {/if}
 
-  <section class="stack">
-    <label class="field">
-      <span class="lbl">Name</span>
-      <input type="text" placeholder="e.g. Our Friend Group" bind:value={deck.name} oninput={persist} maxlength="40" />
-    </label>
-    <label class="field">
-      <span class="lbl">Icon</span>
-      <span class="icon">
-        <span class="preview" aria-hidden="true">{deck.emoji || DEFAULT_ICON}</span>
-        <input type="text" inputmode="text" value={deck.emoji} oninput={iconTyped} onfocus={(e) => e.currentTarget.select()}
-          placeholder={DEFAULT_ICON} autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="Pack icon" />
-      </span>
-      <span class="faint hint">Type or paste one emoji or letter</span>
-    </label>
-  </section>
+      <section class="stack">
+        <label class="field">
+          <span class="lbl">Name</span>
+          <input type="text" placeholder="e.g. Our Friend Group" bind:value={deck.name} oninput={persist} maxlength="40" />
+        </label>
+        <label class="field">
+          <span class="lbl">Icon</span>
+          <span class="icon">
+            <span class="preview" aria-hidden="true">{deck.emoji || DEFAULT_ICON}</span>
+            <input type="text" inputmode="text" value={deck.emoji} oninput={iconTyped} onfocus={(e) => e.currentTarget.select()}
+              placeholder={DEFAULT_ICON} autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="Pack icon" />
+          </span>
+          <span class="faint hint">Type or paste one emoji or letter</span>
+        </label>
+      </section>
 
-  <section class="stack">
-    <div class="head">
-      <ListTools key="forehead:words" bind:query bind:sort placeholder="Search words" shown={words.length} total={deck.words.length}>
-        {#snippet title()}<h3>Words <span class="faint n">{deck.words.length}</span></h3>{/snippet}
-      </ListTools>
-    </div>
-    <form class="add" onsubmit={add}>
-      <input type="text" placeholder="Type a word, press Enter" bind:value={draft} bind:this={input} enterkeyhint="done" autocapitalize="words" aria-label="New word" />
-      <Button type="submit" size="sm" disabled={!draft.trim()}>Add</Button>
-    </form>
-    {#if removed}
-      <p class="undo" role="status">Removed “{removed.word}” <button class="link" onclick={undoRemove}>Undo</button></p>
-    {/if}
+      {#if deck.id}<ExportPack game="forehead" pack={deck} />{/if}
+      {#if deck.id}<SharePack game="forehead" pack={deck} onshared={() => (deck.shared = true)} />{/if}
+      {#if deck.id && !builtin}
+        <Button variant={confirmDelete ? 'danger' : 'ghost'} onclick={remove}>{confirmDelete ? 'Tap again to delete this pack' : 'Delete pack'}</Button>
+      {/if}
+    {/snippet}
+    <!-- Typing words in is this page's main job: the box stays pinned, never folded away. -->
+    {#snippet row(toggle)}
+      <div class="stack words">
+        <div class="head">
+          <ListTools key="forehead:words" bind:query bind:sort placeholder="Search words" shown={words.length} total={deck.words.length}>
+            {#snippet title()}<h3 id="forehead-words-h">Words <span class="faint n">{deck.words.length}</span></h3>{/snippet}
+            {#snippet extra()}{@render toggle()}{/snippet}
+          </ListTools>
+        </div>
+        <form class="add" onsubmit={add}>
+          <input type="text" placeholder="Type a word, press Enter" bind:value={draft} bind:this={input} enterkeyhint="done" autocapitalize="words" aria-label="New word" />
+          <Button type="submit" size="sm" disabled={!draft.trim()}>Add</Button>
+        </form>
+        {#if removed}
+          <p class="undo" role="status">Removed “{removed.word}” <button class="link" onclick={undoRemove}>Undo</button></p>
+        {/if}
+      </div>
+    {/snippet}
+
     {#if words.length}
       <ul class="chips">
         {#each words as w (w)}
-          <li class="chip pop-in">
+          <li class="chip pop-in" use:reveal={w === fresh}>
             <span>{w}</span>
             <button aria-label="Remove {w}" onclick={() => removeWord(w)}>
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
@@ -196,13 +217,7 @@
     {:else}
       <p class="faint">No words yet. Add them one by one, or paste a whole list.</p>
     {/if}
-  </section>
-
-  {#if deck.id}<ExportPack game="forehead" pack={deck} />{/if}
-  {#if deck.id}<SharePack game="forehead" pack={deck} onshared={() => (deck.shared = true)} />{/if}
-  {#if deck.id && !builtin}
-    <Button variant={confirmDelete ? 'danger' : 'ghost'} onclick={remove}>{confirmDelete ? 'Tap again to delete this pack' : 'Delete pack'}</Button>
-  {/if}
+  </PinnedPanel>
 
   {#snippet actions()}
     {#if deck.id && !builtin}<Button size="lg" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
@@ -233,6 +248,7 @@
   .add input { flex: 1; }
   /* ListTools brings its own space below; the stack's gap already gives it. */
   .head { margin-bottom: calc(-1 * var(--s-3)); }
+  .words { padding-bottom: var(--s-3); }
   .none { text-align: center; padding: var(--s-2) 0; }
   .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
   .chip { display: flex; align-items: center; gap: 2px; padding-left: var(--s-3); border-radius: var(--r-pill); background: var(--surface); min-height: 44px; }

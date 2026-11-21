@@ -8,12 +8,14 @@
   import SharePack from '../../components/SharePack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import PinnedPanel from '../../components/PinnedPanel.svelte';
   import AddMore from '../../components/AddMore.svelte';
   import { mergeOnTop } from '../../lib/addMore';
   import { afterRun, shareWizardPack } from '../../lib/library';
   import { MORE_RANGE, moreCards } from './generate';
   import { customSpectra, spectrumPacks, type Spectrum, type SpectrumPack } from '../../lib/content';
   import { matches, sorted, type SortKey } from '../../lib/listing';
+  import { reveal } from '../../lib/panel';
   import { cardId } from './state';
 
   let { id, onback }: { id: string; onback: () => void } = $props();
@@ -135,40 +137,47 @@
     {#snippet item(c: Spectrum)}<span class="scale">{c.left} <span class="sep" aria-label="to">↔</span> {c.right}</span>{/snippet}
   </AddMore>
 {:else}
-<Screen title={pack ? pack.name : 'Pack not found'} accent="var(--c-dial)" {onback}>
-  {#if pack?.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
+<Screen title={pack ? pack.name : 'Pack not found'} accent="var(--c-dial)" {onback} fill={!!pack}>
   {#if !pack}
     <p class="muted">This pack is no longer on this phone.</p>
   {:else}
-    <label class="field">
-      <span class="faint">Pack name</span>
-      <input type="text" maxlength="40" autocomplete="off" bind:value={name} onchange={rename} />
-    </label>
-    <p class="status">
-      <span>{pack.cards.length} {pack.cards.length === 1 ? "card" : "cards"}</span>
-      {#if !builtin}<span class="tag">yours</span>{:else if edited}<span class="tag hot">edited</span>{:else}<span class="tag">built-in</span>{/if}
-    </p>
-    <ExportPack game="dial" {pack} />
-    <SharePack game="dial" {pack} onshared={() => (pack = pack && { ...pack, shared: true })} />
+    <PinnedPanel kind="editor" label="dial-cards-h" foldId="dial-details" foldName="details" foldSpoken="pack details" needed={pack.cards.length === 0} keep="items">
+      {#snippet top()}
+        {#if pack?.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
+        <label class="field">
+          <span class="faint">Pack name</span>
+          <input type="text" maxlength="40" autocomplete="off" bind:value={name} onchange={rename} />
+        </label>
+        {#if pack}
+          <p class="status">
+            <span>{pack.cards.length} {pack.cards.length === 1 ? "card" : "cards"}</span>
+            {#if !builtin}<span class="tag">yours</span>{:else if edited}<span class="tag hot">edited</span>{:else}<span class="tag">built-in</span>{/if}
+          </p>
+          <ExportPack game="dial" {pack} />
+          <SharePack game="dial" {pack} onshared={() => (pack = pack && { ...pack, shared: true })} />
+        {/if}
 
-    <form class="add" onsubmit={add}>
-      <div class="pair">
-        <input id="add-left" type="text" maxlength="40" autocomplete="off" placeholder="Left, e.g. Cold" aria-label="New card, left side" bind:value={addLeft} oninput={() => (addError = '')} />
-        <input type="text" maxlength="40" autocomplete="off" placeholder="Right, e.g. Hot" aria-label="New card, right side" bind:value={addRight} oninput={() => (addError = '')} enterkeyhint="done" />
-      </div>
-      <Button type="submit" variant="secondary" disabled={!clean(addLeft) || !clean(addRight)}>+ Add card</Button>
-      {#if addError}<p class="err">{addError}</p>{/if}
-    </form>
+        <form class="add" onsubmit={add}>
+          <div class="pair">
+            <input id="add-left" type="text" maxlength="40" autocomplete="off" placeholder="Left, e.g. Cold" aria-label="New card, left side" bind:value={addLeft} oninput={() => (addError = '')} />
+            <input type="text" maxlength="40" autocomplete="off" placeholder="Right, e.g. Hot" aria-label="New card, right side" bind:value={addRight} oninput={() => (addError = '')} enterkeyhint="done" />
+          </div>
+          <Button type="submit" variant="secondary" disabled={!clean(addLeft) || !clean(addRight)}>+ Add card</Button>
+          {#if addError}<p class="err">{addError}</p>{/if}
+        </form>
+      {/snippet}
+      {#snippet row(toggle)}
+        <ListTools key="dial:cards" bind:query bind:sort placeholder="Search cards" shown={rows.length} total={pack?.cards.length}>
+          {#snippet title()}<h3 id="dial-cards-h">Cards</h3>{/snippet}
+          {#snippet extra()}{@render toggle()}{/snippet}
+        </ListTools>
+      {/snippet}
 
-    <div>
-      <ListTools key="dial:cards" bind:query bind:sort placeholder="Search cards" shown={rows.length} total={pack.cards.length}>
-        {#snippet title()}<h3>Cards</h3>{/snippet}
-      </ListTools>
       <ul class="cards">
         {#each rows as { c, i } (cardId(c) + i)}
-          <li class:fresh={fresh === cardId(c)}>
+          <li class:fresh={fresh === cardId(c)} use:reveal={fresh === cardId(c)}>
             {#if editing === i}
-              <form class="edit" onsubmit={saveEdit}>
+              <form class="edit" onsubmit={saveEdit} use:reveal>
                 <div class="pair">
                   <input type="text" maxlength="40" autocomplete="off" aria-label="Left side" bind:value={editLeft} oninput={() => (editError = '')} />
                   <input type="text" maxlength="40" autocomplete="off" aria-label="Right side" bind:value={editRight} oninput={() => (editError = '')} enterkeyhint="done" />
@@ -194,7 +203,7 @@
       </ul>
       {#if pack.cards.length === 0}<p class="faint">No cards yet. Add one above.</p>
       {:else if rows.length === 0}<p class="faint none">No cards match “{query.trim()}”</p>{/if}
-    </div>
+    </PinnedPanel>
   {/if}
 
   {#snippet actions()}

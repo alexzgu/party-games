@@ -1,11 +1,15 @@
-// The pinned top of a pack page (components/PackList.svelte) and the parts that scroll on their
-// own inside it (components/ScrollWindow.svelte): whether the players or teams start shown, and
-// which edges of a scrolling part have more behind them (for its fades and hairlines).
+// The pinned top of a pack page or a pack editor (components/PinnedPanel.svelte) and the parts
+// that scroll on their own (its scroller, components/ScrollWindow.svelte): whether the part that
+// folds starts shown, which edges of a scrolling part have more behind them (for its fades and
+// hairlines), and bringing an item into view in its scroller.
 import { load, save } from './storage';
 
-/** Under this height (a small phone, any phone on its side) the players and teams start hidden. */
+/** Under this height (a small phone, any phone on its side) the part that folds starts hidden. */
 export const SHORT_SCREEN_PX = 700;
-const KEY = 'setup:panel';
+
+/** Pages sharing one fold choice: the setups (players, teams) and the pack editors (pack details). */
+export type PanelKind = 'setup' | 'editor';
+const KEYS: Record<PanelKind, string> = { setup: 'setup:panel', editor: 'editor:panel' };
 
 /**
  * Shown when the game needs changes there to start (too few players), else the phone's own choice
@@ -16,10 +20,11 @@ export function openAtStart(saved: unknown, screenHeight: number, needed = false
   return typeof saved === 'boolean' ? saved : screenHeight >= SHORT_SCREEN_PX;
 }
 
-/** Read once when a pack page opens, so the keyboard shrinking the screen never folds it. */
-export const panelOpen = (needed: boolean): boolean => openAtStart(load<unknown>(KEY, null), innerHeight, needed);
-/** One choice for every game, kept on the phone. */
-export const savePanelOpen = (open: boolean): void => save(KEY, open);
+/** Read once when the page opens, so the keyboard shrinking the screen never folds it. */
+export const panelOpen = (needed: boolean, kind: PanelKind = 'setup'): boolean =>
+  openAtStart(load<unknown>(KEYS[kind], null), innerHeight, needed);
+/** One choice for every game's pages of that kind, kept on the phone. */
+export const savePanelOpen = (open: boolean, kind: PanelKind = 'setup'): void => save(KEYS[kind], open);
 
 export interface Edges {
   /** Something is scrolled away above. */
@@ -59,4 +64,25 @@ export function watchEdges(el: HTMLElement, on: (e: Edges) => void): () => void 
     kids.disconnect();
     el.removeEventListener('scroll', soon);
   };
+}
+
+/**
+ * Svelte action: scrolls `node` into view in its scroller (as little as needed) when it appears
+ * with `on` true and whenever `on` turns true: an item opened for editing, one just added.
+ */
+export function reveal(node: HTMLElement, on = true) {
+  const show = (now: boolean) => { if (now) requestAnimationFrame(() => nearest(node)); };
+  show(on);
+  return { update: show };
+}
+
+/** Scrolls only `node`'s own scroller (never the page) as little as needed to show it. */
+function nearest(node: HTMLElement) {
+  let box = node.parentElement;
+  while (box && !/(auto|scroll)/.test(getComputedStyle(box).overflowY)) box = box.parentElement;
+  if (!box) return;
+  const a = node.getBoundingClientRect();
+  const b = box.getBoundingClientRect();
+  if (a.top < b.top) box.scrollTop -= b.top - a.top;
+  else if (a.bottom > b.bottom) box.scrollTop += Math.min(a.bottom - b.bottom, a.top - b.top);
 }

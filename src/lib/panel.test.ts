@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { edges, openAtStart, SHORT_SCREEN_PX } from './panel';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { edges, openAtStart, panelOpen, savePanelOpen, SHORT_SCREEN_PX } from './panel';
 
 describe('openAtStart', () => {
   it('keeps the phone’s own choice on any screen', () => {
@@ -27,5 +27,24 @@ describe('edges', () => {
     expect(edges(0.5, 100, 100)).toEqual({ above: false, below: false });
     expect(edges(199.5, 300, 100)).toEqual({ above: true, below: false });
     expect(edges(0, 80, 100)).toEqual({ above: false, below: false });
+  });
+});
+
+describe('panelOpen', () => {
+  const store = new Map<string, string>();
+  beforeEach(() => {
+    store.clear();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) });
+    vi.stubGlobal('innerHeight', 844);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+  it('keeps the setups’ choice apart from the pack editors’', () => {
+    savePanelOpen(false, 'editor');
+    expect(panelOpen(false, 'editor')).toBe(false);
+    expect(panelOpen(false)).toBe(true);
+    savePanelOpen(false);
+    savePanelOpen(true, 'editor');
+    expect(panelOpen(false, 'setup')).toBe(false);
+    expect(panelOpen(false, 'editor')).toBe(true);
   });
 });
