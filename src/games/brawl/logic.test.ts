@@ -112,4 +112,16 @@ describe('Doodle Brawl game', () => {
     expect(L.tick(two, at + 10, seats(), () => ring)).toBe(two);
     expect(L.tick(two, at + 10, seats(['a', 'b']), () => ring).phase).toBe('challenge');
   });
+
+  it('lets a player who left come back, keeps the removed out, and stops waiting for a leaver', () => {
+    const g = submit(submit(start(), 'a'), 'b');
+    const gone = L.leave(g, 'c');
+    expect(L.tick(g, at + 10, seats(), () => ring)).toBe(g);
+    expect(L.tick(gone, at + 10, seats(), () => ring).phase).toBe('challenge');
+    expect(L.join(gone, 'c', 'C', seats()).pid).toBe('c');
+    expect(L.active((L.join(gone, 'c', 'C', seats()) as { game: L.Game }).game)).toHaveLength(3);
+    expect(L.join(L.kick(gone, 'c'), 'c', 'C', seats()).error).toMatch(/removed/);
+    const lobby = { ...L.newGame('room', 'BCDF', L.DEFAULT_SETTINGS), players };
+    expect(L.leave(lobby, 'c').players.map((p) => p.pid)).toEqual(['a', 'b']);
+  });
 });

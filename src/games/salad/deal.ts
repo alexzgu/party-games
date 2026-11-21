@@ -52,6 +52,11 @@ export function redeal(secret: Secret, draft: Draft, index: number, rand: () => 
   };
 }
 
+/** A guess as it reads inside a clue: no closing punctuation, a leading article in lower case ("A talking toaster." → "a talking toaster"). */
+export function asPhrase(guess: string): string {
+  return guess.trim().replace(/[\s.!?,;:]+$/, '').replace(/^(A|An|The)\b/, (w) => w.toLowerCase());
+}
+
 export function sentence(frame: Frame, values: string[]): string {
   return frame.text.split('___').map((part, index) => part + (values[index] ?? '')).join('');
 }

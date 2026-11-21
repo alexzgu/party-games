@@ -5,6 +5,10 @@ export type View = {
   draw?: { id: string; opponent: L.Fighter | null }; done?: boolean;
   vote?: boolean; options?: L.Fighter[]; picks?: L.Pair<L.Fighter | null>; progress?: string[];
   rematch?: boolean;
+  /** Who draws in this phase (late joiners do not until the next round). */
+  artists?: string[];
+  /** In a bout this phone's player fights in: which card is theirs. */
+  side?: L.Side;
 };
 
 export function view(g: L.Game, now: number, pid?: string): View {
@@ -25,6 +29,7 @@ export function view(g: L.Game, now: number, pid?: string): View {
       }
       v.progress = b && g.bouts.filter((x) => x.fighters[g.phase === 'draw' ? 0 : 1])
         .map((x) => x.artists[g.phase === 'draw' ? 0 : 1]);
+      v.artists = g.bouts.map((x) => x.artists[g.phase === 'draw' ? 0 : 1]);
       break;
     }
     case 'title':
@@ -54,6 +59,8 @@ export function view(g: L.Game, now: number, pid?: string): View {
       break;
     case 'over': v.results = g.results; break;
   }
+  const fights = v.cards && pid && b ? b.artists.indexOf(pid) : -1;
+  if (fights >= 0) v.side = fights as L.Side;
   return v;
 }
 

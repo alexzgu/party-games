@@ -39,15 +39,18 @@
 {:else if v.phase === 'challenge'}
   <p>The other artist left their card blank. Draw a challenger anyway.</p>
 {/if}
-<Canvas drawing={draft.drawing} onchange={(drawing) => update({ drawing })} disabled={sent || v.paused || expired} />
-<label>Fighter name
-  <input maxlength={30} placeholder="Nameless" value={draft.name} disabled={sent || v.paused || expired}
+<!-- The challenger's card above takes room the canvas gives back on a short phone. -->
+<div class="pad" style:--draw-chrome={v.draw?.opponent || v.phase === 'challenge' ? '420px' : '350px'}><Canvas drawing={draft.drawing} onchange={(drawing) => update({ drawing })} disabled={sent || v.paused || expired} /></div>
+<!-- Name and Submit share a row, so both stay on screen under the canvas on a small phone. -->
+<div class="send">
+  <input maxlength={30} placeholder="Name your fighter" aria-label="Fighter name" value={draft.name} disabled={sent || v.paused || expired}
     oninput={(e) => update({ name: e.currentTarget.value })} />
-</label>
-<Button disabled={sent || v.paused || expired || !draft.drawing.length} onclick={submit}>{sent ? 'Drawing sent' : 'Submit fighter'}</Button>
+  <Button disabled={sent || v.paused || expired || !draft.drawing.length} onclick={submit}>{sent ? 'Sent' : 'Submit fighter'}</Button>
+</div>
 
 <style>
-  .opponent { display: grid; grid-template-columns: 30% 1fr; align-items: center; gap: var(--s-3); }
-  label { display: grid; gap: var(--s-1); }
-  input { min-height: 44px; }
+  .opponent { display: grid; grid-template-columns: min(30%, 72px) 1fr; align-items: center; gap: var(--s-3); }
+  .pad { display: grid; gap: var(--s-1); }
+  .send { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2); align-items: center; }
+  input { min-height: 44px; min-width: 0; }
 </style>

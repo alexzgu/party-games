@@ -7,11 +7,17 @@
   import type { Drawing } from './ink';
   import type { Side } from './logic';
   import type { View } from './view';
-  let { v, art, online, onvote, ontag }: {
+  let { v, art, online, onvote, ontag, onkick }: {
     v: View; art: Record<string, Drawing>; online?: ReadonlySet<string>;
     onvote?: (side: Side) => void; ontag?: (id: string) => void;
+    /** Host lobby: remove a player (asks first). */
+    onkick?: (pid: string) => void;
   } = $props();
   const name = (id: string) => v.players.find((p) => p.pid === id)?.name ?? 'Artist';
+  const votes = (n: number) => `${n} ${n === 1 ? 'vote' : 'votes'}`;
+  /** Not drawing this phase: joined after the round was dealt. */
+  const watching = (pid: string) => !!v.artists && !v.artists.includes(pid);
+  const tied = (r: NonNullable<View['result']>) => !!r.fighters[0] && !!r.fighters[1] && r.votes[0] === r.votes[1];
 </script>
 
 {#snippet fighter(f: NonNullable<View['cards']>[number])}
@@ -28,8 +34,10 @@
       <li>
         <Avatar name={p.name} color={i} size={36} dim={online ? !online.has(p.pid) : false} />
         <strong>{p.name}</strong>
-        {#if v.progress?.includes(p.pid)}<span>Ready</span>
+        {#if watching(p.pid)}<span>{v.round < 2 ? 'Draws next round' : 'Votes this round'}</span>
+        {:else if v.progress?.includes(p.pid)}<span>Ready</span>
         {:else if online && !online.has(p.pid)}<span>Away</span>{/if}
+        {#if onkick}<button class="remove" aria-label="Remove {p.name}" title="Remove {p.name}" onclick={() => onkick?.(p.pid)}>✕</button>{/if}
       </li>
     {/each}
   </ul>
@@ -37,12 +45,13 @@
   <div class="faceoff">
     {#each v.cards ?? [] as f, i (i)}
       <div class="side">
+        {#if v.side === i}<span class="yours">Yours</span>{/if}
         {@render fighter(f)}
         {#if v.vote && onvote}
           <Button disabled={v.paused} onclick={() => onvote?.(i as Side)}>Vote for {f?.name}</Button>
         {:else if v.result}
           {#if v.result.winner === i}<b class="winner">Winner</b>{/if}
-          <p>{name(v.result.artists[i])} · {v.result.votes[i]} votes · +{v.result.points[i].toLocaleString()} pts</p>
+          <p>{name(v.result.artists[i])} · {votes(v.result.votes[i])} · +{v.result.points[i].toLocaleString()} pts</p>
         {:else if v.phase === 'tag' && v.progress?.length}
           <p>{v.picks?.[i] ? (v.picks[i]?.id === f?.id ? 'Keeping ' : 'Tagging in ') + v.picks[i]?.name : 'Choosing a fighter'}</p>
         {/if}
@@ -52,8 +61,11 @@
   {#if v.phase === 'vote' && (!v.vote || !onvote)}
     <p>{v.progress?.length ?? 0} voted</p>
   {/if}
+  {#if v.phase === 'vote'}<p class="note">A tied vote goes to the challenger (right), who earns an extra tenth.</p>{/if}
+  {#if v.result && tied(v.result)}<p class="note">Tied vote: the challenger’s extra tenth breaks the tie.</p>{/if}
   {#if v.phase === 'tag'}
     {#if v.options && ontag}
+      <p class="note">Keep your fighter{v.side !== undefined && v.cards?.[v.side] ? ` (${v.cards[v.side]?.name})` : ''}: if it wins, +500 bonus. Or tag in another of your fighters the room has seen.</p>
       <Button disabled={v.paused} onclick={() => ontag?.('')}>Keep my fighter</Button>
       {#if v.options.length}<h3>Or tag in a fighter</h3>{/if}
       <div class="gallery">
@@ -100,6 +112,10 @@
   li { display: flex; align-items: center; gap: var(--s-2); background: var(--surface); padding: var(--s-2) var(--s-3); border-radius: var(--r-md); }
   li strong { flex: 1; overflow-wrap: anywhere; }
   .winner { color: var(--accent); }
+  .yours { justify-self: center; padding: 2px 10px; border-radius: var(--r-pill); background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 0.85rem; }
+  .note { color: var(--text-dim); text-align: center; font-size: 0.95rem; }
+  .remove { flex: none; min-width: 44px; min-height: 44px; border-radius: var(--r-pill); background: transparent; color: var(--text-dim); }
+  li span { color: var(--text-dim); }
   @media (min-width: 800px) {
     .faceoff { width: min(100%, 110dvh); }
     .players:not(.scores) { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -3,7 +3,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
-  import Connection from '../../components/room/Connection.svelte';
+  import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import { back, go } from '../../lib/router.svelte';
   import { unlockAudio } from '../../lib/sound';
   import { host } from './host.svelte';
@@ -13,7 +13,6 @@
 
   const openRoom = $derived(host.game ?? loadGame());
   const rejoin = $derived(phone.me?.code && phone.me.joined ? phone.me : null);
-  let connection = $state(false);
 
   function hostHere() {
     unlockAudio();
@@ -31,8 +30,8 @@
   {/if}
 
   <button class="choice" onclick={hostHere}>
-    <b>Host on this screen</b>
-    <span>Show the room code, clues, guesses and scores on a screen everyone can see.</span>
+    <b>{openRoom ? `Host on this screen: room ${openRoom.code}` : 'Host on this screen'}</b>
+    <span>{openRoom ? 'This screen already has a room open; this goes back to it.' : 'Show the room code, clues, guesses and scores on a screen everyone can see.'}</span>
   </button>
   <button class="choice" onclick={() => go('/salad/join')}>
     <b>Join a game</b>
@@ -40,10 +39,8 @@
   </button>
 
   <p class="muted">2–8 players, each on their own phone.</p>
-  <Button variant="ghost" onclick={() => (connection = true)}>Connection settings</Button>
+  <ConnectionLink />
 </Screen>
-
-{#if connection}<Connection onclose={() => (connection = false)} />{/if}
 
 <style>
   .choice {

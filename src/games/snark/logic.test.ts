@@ -176,6 +176,18 @@ describe('joining and reconnecting', () => {
     expect(L.join(k, 'p3', 'Name p3', new Set()).error).toMatch(/removed/);
     expect(L.present(k)).toHaveLength(7);
   });
+  it('a player who left can come back; writing does not wait for them while they are gone', () => {
+    const g = L.startRound(room(3), draw, 0);
+    const gone = L.leave(g, 'p2');
+    expect(L.present(gone).map((p) => p.pid)).toEqual(['p0', 'p1']);
+    let done = gone;
+    for (const p of L.present(done)) for (const i of L.tasksFor(done, p.pid)) done = L.answer(done, p.pid, i, 'x');
+    expect(L.writingDone(done)).toBe(true);
+    const back = L.join(gone, 'p2', 'Name p2', new Set());
+    expect(back.pid).toBe('p2');
+    expect(L.present(back.game)).toHaveLength(3);
+    expect(L.join(L.kick(gone, 'p2'), 'p2', 'Name p2', new Set()).error).toMatch(/removed/);
+  });
   it('late joiners watch until the next round, then play', () => {
     let g = L.startRound(room(3), draw, 0);
     g = L.join(g, 'late', 'Late', new Set()).game;

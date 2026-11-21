@@ -57,7 +57,7 @@
       <Button size="sm" variant="secondary" onclick={() => send({ serial, frame: draft.index, t: 'more', slot: active })}>More words</Button>
     {/if}
     {#if !prepare}
-      <Button size="sm" variant="ghost" onclick={() => send({ serial, frame: draft.index, t: 'skipFrame' })}>Skip frame</Button>
+      <Button size="sm" variant="ghost" onclick={() => send({ serial, frame: draft.index, t: 'skipFrame' })}>Different sentence</Button>
     {/if}
   </div>
   <Button disabled={!complete} onclick={() => send({ serial, frame: draft.index, t: 'publish' })}>

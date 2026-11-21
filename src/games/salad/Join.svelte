@@ -4,10 +4,9 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
-  import Connection from '../../components/room/Connection.svelte';
+  import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import { back } from '../../lib/router.svelte';
   import { CODE_LENGTH, cleanCode } from '../../lib/room/code';
-  import { brokerLabel } from '../../lib/room/broker';
   import { NAME_MAX } from './protocol';
   import Rules from './Rules.svelte';
 
@@ -18,7 +17,6 @@
 
   let code = $state(untrack(() => cleanCode(initialCode)));
   let name = $state(untrack(() => initialName));
-  let connection = $state(false);
   const ready = $derived(code.length === CODE_LENGTH && !!name.trim());
 
   function join(e: SubmitEvent) {
@@ -46,10 +44,8 @@
     <Button type="submit" size="lg" disabled={!ready}>Join</Button>
   </form>
 
-  <Button variant="ghost" onclick={() => (connection = true)}>Matchmaking: {brokerLabel()}</Button>
+  <ConnectionLink />
 </Screen>
-
-{#if connection}<Connection onclose={() => (connection = false)} />{/if}
 
 <style>
   form, label { display: grid; gap: var(--s-2); }

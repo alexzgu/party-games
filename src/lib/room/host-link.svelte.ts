@@ -20,6 +20,8 @@ export interface HostHooks {
   hello(pid: string, name: string, online: ReadonlySet<string>): { pid: string; then: () => void } | { error: string };
   /** Any other message from a welcomed phone, as received; the game checks its shape. */
   message(pid: string, raw: unknown): void;
+  /** The player tapped "Leave room" on their phone: they stop getting turns. */
+  left(pid: string): void;
   /** The room's id is taken on the broker: a new code to try, or null to keep retrying this one. */
   taken(): string | null;
 }
@@ -181,7 +183,12 @@ export class HostLink {
       return;
     }
     const pid = this.pidOf.get(conn);
-    if (pid) this.hooks.message(pid, msg);
+    if (!pid) return;
+    if (msg.t === 'leave') {
+      this.drop(conn);
+      conn.close();
+      this.hooks.left(pid);
+    } else this.hooks.message(pid, msg);
   }
 
   private hello(conn: DataConnection, pid: string, name: string): void {

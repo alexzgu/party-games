@@ -8,10 +8,10 @@
   import PackEditor from './PackEditor.svelte';
   import AddSongs from './AddSongs.svelte';
   import { loadGame, saveGame, loadSetup, saveSetup, loadRawGame, dropGame } from './store';
-  import { endedRecord, newGame, retiredRecord, type GameOptions, type GameState } from './logic';
+  import { endedRecord, newGame, retiredRecord, withRoster, type GameOptions, type GameState } from './logic';
+  import { makeNewPack } from './newpack';
   import { makeDealer, packNames } from './deal';
   import { record } from '../../lib/history';
-  import { customSongs } from '../../lib/content';
   import { demoGame } from './demo';
 
   const demo = route.params.get('demo') ?? '';
@@ -45,10 +45,9 @@
     go('/song/play', true);
   }
 
-  /** A new, empty pack of the player's own, ticked for play, opened straight on "Add songs". */
+  /** A new, empty pack of the player's own, ticked for play, opened straight on "Add songs". Setup removes it again if it is left empty. */
   function newPack() {
-    const id = 'my-songs-' + Date.now().toString(36);
-    customSongs.put({ id, name: 'My songs', blurb: 'Made on this phone', songs: [] });
+    const id = makeNewPack();
     const prefs = loadSetup();
     saveSetup({ ...prefs, packIds: [...new Set([...(prefs.packIds ?? []), id])] });
     go(`/song/pack?id=${encodeURIComponent(id)}`);
@@ -75,7 +74,7 @@
       <AddSongs id={packId} onback={() => back(`/song/pack?id=${encodeURIComponent(packId)}`)} />
     {/key}
   {:else}
-    <Setup saved={game} notice={retired} onstart={start} onresume={() => go('/song/play', true)} onnew={newPack} onedit={(id) => go(`/song/pack?id=${encodeURIComponent(id)}`)} onhome={() => go('/', true)} />
+    <Setup saved={game} notice={retired} onstart={start} onresume={(names) => { if (game) commit(withRoster(game, names)); go('/song/play', true); }} onnew={newPack} onedit={(id) => go(`/song/pack?id=${encodeURIComponent(id)}`)} onhome={() => go('/', true)} />
   {/if}
 </div>
 

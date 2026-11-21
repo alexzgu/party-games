@@ -37,6 +37,11 @@ class HostSession {
       } };
     },
     message: (pid, raw) => this.receive(pid, raw),
+    left: (pid) => {
+      if (!this.game) return;
+      this.commit(L.leave(this.game, pid));
+      this.tick();
+    },
     taken: () => {
       if (!this.game || this.game.phase !== 'lobby' || L.present(this.game).length) return null;
       this.commit({ ...this.game, code: newCode() });

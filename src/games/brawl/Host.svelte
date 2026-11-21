@@ -6,6 +6,7 @@
   import Popup from '../../components/Popup.svelte';
   import Qr from '../../components/room/Qr.svelte';
   import Connection from '../../components/room/Connection.svelte';
+  import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import TapToFinish from '../../components/room/TapToFinish.svelte';
   import Timer from '../../components/room/Timer.svelte';
   import { back, go, route } from '../../lib/router.svelte';
@@ -15,7 +16,7 @@
   import { host } from './host.svelte';
   import { demo, demoArt } from './demo';
   import { view } from './view';
-  import { active, canStart, type Player } from './logic';
+  import { active, canStart } from './logic';
   import Stage from './Stage.svelte';
   import Rules from './Rules.svelte';
   import { phaseLabel } from './labels';
@@ -27,7 +28,14 @@
   let confirm = $state(false);
   let connection = $state(false);
   let brokerChanged = $state(0);
-  let kicking = $state<Player | null>(null);
+  let kicking = $state<{ pid: string; name: string } | null>(null);
+  const playing = $derived(!!v && v.phase !== 'lobby' && v.phase !== 'over');
+  const need = $derived(v ? Math.max(0, 3 - v.players.length) : 3);
+  function rebroker() { brokerChanged++; if (!fixed) host.rebroker(); }
+  function askKick(pid: string) {
+    const p = game && active(game).find((x) => x.pid === pid);
+    if (p) kicking = p;
+  }
   const link = $derived.by(() => {
     void brokerChanged;
     return joinLink('brawl', fixed ? 'BRWK' : game?.code ?? '', brokerSetting());
@@ -51,7 +59,7 @@
 <div class="host">
   <header class="bar">
     <div class="where">
-      <Button size="sm" variant="ghost" label="Back to game menu" onclick={() => fixed ? back('/brawl') : (confirm = true)}>←</Button>
+      <Button size="sm" variant="ghost" label="Back to {gameName('brawl')} (the room stays open)" onclick={() => back('/brawl')}>←</Button>
       <b>{gameName('brawl')}</b>
       {#if v && v.phase !== 'lobby'}<span>Room {fixed ? 'BRWK' : game?.code} · Round {v.round}</span>{/if}
     </div>
@@ -63,7 +71,7 @@
         <Button size="sm" onclick={() => { if (!fixed) host.rematch(); }}>Play again</Button>
       {/if}
       <HowTo><Rules /></HowTo>
-      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)}>{v.phase === 'lobby' || v.phase === 'over' ? 'Close room' : 'End game'}</Button>{/if}
+      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)}>{playing ? 'End game' : 'Close room'}</Button>{/if}
     </div>
   </header>
   {#if v}
@@ -77,20 +85,17 @@
         </div>
         <section>
           <h3>Players · {v.players.length} / 8</h3>
-          <Stage {v} art={{}} online={fixed ? undefined : host.online} />
-          {#if game && !fixed}
-            <div class="kick">
-              {#each active(game) as p (p.pid)}
-                <Button size="sm" variant="secondary" onclick={() => (kicking = p)}>Remove {p.name}</Button>
-              {/each}
-            </div>
+          <Stage {v} art={{}} online={fixed ? undefined : host.online} onkick={fixed ? undefined : askKick} />
+          {#if host.trouble && !fixed}
+            <p role="status">{host.trouble} <Button size="sm" variant="secondary" onclick={() => (connection = true)}>Trouble connecting?</Button></p>
           {/if}
-          {#if host.trouble && !fixed}<p role="status">{host.trouble}</p>{/if}
           <div class="controls">
-            <Button disabled={fixed ? v.players.length < 3 : !game || !canStart(game)} onclick={() => { if (!fixed) host.start(); }}>Start</Button>
+            <Button disabled={fixed ? v.players.length < 3 : !game || !canStart(game)} onclick={() => { if (!fixed) host.start(); }}>
+              {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${v.players.length} players`}
+            </Button>
             <Button variant="secondary" onclick={() => go('/brawl/settings')}>Settings</Button>
-            <Button variant="secondary" onclick={() => (connection = true)}>Connection</Button>
           </div>
+          <ConnectionLink onchange={rebroker} />
         </section>
       </main>
     {:else}
@@ -109,18 +114,19 @@
 </div>
 
 {#if confirm}
-  <Popup title="Close the room?" onclose={() => (confirm = false)}>
-    <p>Everyone will be disconnected.</p>
-    <Button variant="danger" onclick={() => { if (!fixed) host.close(); back('/brawl'); }}>Close room</Button>
-    <Button variant="secondary" onclick={() => (confirm = false)}>Keep playing</Button>
+  <Popup title={playing ? 'End the game?' : 'Close the room?'} onclose={() => (confirm = false)}>
+    <p>This closes room {fixed ? 'BRWK' : game?.code} and sends everyone’s phone back to the start.</p>
+    <Button variant="danger" onclick={() => { if (!fixed) host.close(); back('/brawl'); }}>{playing ? 'End game' : 'Close room'}</Button>
+    <Button variant="secondary" onclick={() => (confirm = false)}>{playing ? 'Keep playing' : 'Keep it open'}</Button>
   </Popup>
 {/if}
 {#if connection}
-  <Connection onclose={() => (connection = false)} onchange={() => { brokerChanged++; if (!fixed) host.rebroker(); }} />
+  <Connection onclose={() => (connection = false)} onchange={rebroker} />
 {/if}
 {#if kicking}
   {@const p = kicking}
   <Popup title="Remove {p.name}?" onclose={() => (kicking = null)}>
+    <p>Their phone leaves the game and can’t rejoin this room.</p>
     <Button variant="danger" onclick={() => { host.kick(p.pid); kicking = null; }}>Remove {p.name}</Button>
     <Button variant="secondary" onclick={() => (kicking = null)}>Cancel</Button>
   </Popup>
@@ -145,7 +151,6 @@
   .stage > :global(div) > :global(p), .stage > :global(div) > :global(h3) { text-align: center; }
   .lobby { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: var(--s-5); }
   section, .qr { display: grid; gap: var(--s-3); }
-  .kick { display: flex; flex-wrap: wrap; gap: var(--s-2); }
   .qr { text-align: center; justify-items: center; }
   .qr strong { color: var(--accent); font: 800 clamp(2rem, 6vw, 4rem)/1 var(--font-display); letter-spacing: 0.18em; }
   @media (max-width: 720px) { .lobby { grid-template-columns: 1fr; } .host { height: auto; min-height: 100dvh; } }

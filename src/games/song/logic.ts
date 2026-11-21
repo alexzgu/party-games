@@ -17,8 +17,8 @@ export type Phase = 'ready' | 'listen' | 'reveal' | 'scores' | 'win';
 
 export type Outcome = { kind: 'point'; scorer: number; points: number } | { kind: 'nobody' };
 
-/** A song played to the end (skipped ones are not): who got it (-1 nobody) and for how many points. */
-export interface PlayedSong { title: string; artist: string; by: number; points: number }
+/** A song played to the end (skipped ones are not): who got it (-1 nobody) and for how many points; `name` keeps a scorer who later left the game. */
+export interface PlayedSong { title: string; artist: string; by: number; points: number; name?: string }
 
 /** Saved-game format. 1 was the YouTube version; those saves cannot carry on (see retiredRecord). */
 export const VERSION = 2;
@@ -133,6 +133,31 @@ export function replaceUpcoming(s: GameState, song: Song | null): GameState {
   return { ...s, upcoming: song, skipped, dealt: withDealt(s.dealt, song) };
 }
 
+/**
+ * A resumed game takes the setup's player list: a name already playing keeps its score, a new
+ * name where an unmatched player sat is that player renamed (score kept), other new names start
+ * at 0, and removed players leave (songs they named stay in the log under their name).
+ */
+export function withRoster(s: GameState, names: string[]): GameState {
+  const same = names.length === s.players.length && names.every((n, i) => n === s.players[i].name);
+  if (same || names.length < MIN_PLAYERS) return s;
+  const from = rosterSources(s.players.map((p) => p.name), names);
+  const to = new Map(from.flatMap((i, j) => (i >= 0 ? [[i, j] as const] : [])));
+  const players = names.map((name, j) => ({ name, score: from[j] >= 0 ? s.players[from[j]].score : 0 }));
+  const log = s.log.map((x) => (x.by < 0 ? x : to.has(x.by) ? { ...x, by: to.get(x.by)! } : { ...x, by: -1, name: s.players[x.by]?.name ?? x.name }));
+  const o = s.outcome;
+  const outcome: Outcome | null = o?.kind === 'point' ? (to.has(o.scorer) ? { ...o, scorer: to.get(o.scorer)! } : { kind: 'nobody' }) : o;
+  return { ...s, players, log, outcome };
+}
+
+/** For each new name, the index of the old player it continues, or -1 for a newcomer. */
+function rosterSources(old: string[], names: string[]): number[] {
+  const key = (n: string) => n.trim().toLowerCase();
+  const from = names.map((n) => old.findIndex((o) => key(o) === key(n)));
+  const taken = new Set(from.filter((i) => i >= 0));
+  return from.map((i, j) => (i < 0 && j < old.length && !taken.has(j) ? (taken.add(j), j) : i));
+}
+
 /** Index of the player who reached the target, or -1. Ties at the top go to the higher score. */
 export function winner(s: GameState): number {
   const top = standings(s)[0];
@@ -180,7 +205,8 @@ export function endedRecord(s: GameState, packs: string[]): Omit<HistoryEntry, '
 const line = (rows: { player: Player }[]) => rows.map((r) => r.player.score).join('–');
 
 function entry(s: GameState, packs: string[], title: string): Omit<HistoryEntry, 'id' | 'at'> {
-  const played = s.log.map((x) => `${x.title} — ${x.artist}: ${x.by >= 0 ? `${s.players[x.by]?.name ?? '?'} +${x.points}` : 'nobody'}`);
+  const scorer = (x: PlayedSong) => (x.by >= 0 ? s.players[x.by]?.name ?? '?' : x.name);
+  const played = s.log.map((x) => `${x.title} — ${x.artist}: ${scorer(x) ? `${scorer(x)} +${x.points}` : 'nobody'}`);
   const skipped = s.skipped.map((x) => `Skipped (its preview would not play): ${x}`);
   return {
     game: 'song',

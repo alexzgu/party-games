@@ -32,7 +32,9 @@
   const now = $derived(fixed ? fixed.now : host.now);
   const left = $derived(game ? timeLeft(game, now) : null);
   const total = $derived(game ? timerLength(game) : 0);
-  const link = $derived(game ? joinLink(game.code, brokerSetting()) : '');
+  let brokerChanged = $state(0);
+  const link = $derived.by(() => { void brokerChanged; return game ? joinLink(game.code, brokerSetting()) : ''; });
+  function rebroker() { brokerChanged++; if (!fixed) host.rebroker(); }
 
   let confirmEnd = $state(false);
   let showConn = $state(false);
@@ -99,7 +101,7 @@
     </button>
     <div class="where">
       {#if game && game.phase !== 'lobby' && game.phase !== 'over'}
-        <b>{roundName(game.round, game.settings.rounds)}</b>
+        <b class="round">{roundName(game.round, game.settings.rounds)}</b>
         <span class="chip" aria-label="Room code {game.code}"><span class="jl">Join: </span><b>{game.code}</b></span>
       {/if}
     </div>
@@ -114,9 +116,9 @@
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg><span class="lbl">Pause</span>
           </button>
         {/if}
-        <button class="tool" onclick={skip} aria-label={skipLabel}>
+        {#if game.phase !== 'scores'}<button class="tool" onclick={skip} aria-label={skipLabel}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 5l9 7-9 7zM16 5h3v14h-3z" fill="currentColor"/></svg><span class="lbl">{skipLabel}</span>
-        </button>
+        </button>{/if}
       {/if}
       <HowTo><Rules /></HowTo>
       {#if game && (game.phase !== 'lobby' || game.players.length)}
@@ -129,7 +131,7 @@
     <div class="trouble fade-in" role="alert">
       {#if host.trouble}
         <span>{host.trouble}</span>
-        <Button size="sm" variant="secondary" onclick={() => (showConn = true)}>Backup broker</Button>
+        <Button size="sm" variant="secondary" onclick={() => (showConn = true)}>Trouble connecting?</Button>
       {:else}
         <span>Opening room {game?.code}…</span>
       {/if}
@@ -140,7 +142,7 @@
     {#if game}
       <TapToFinish>
         {#if game.phase === 'lobby'}
-          <HostLobby {game} {online} {link} onstart={() => host.start()} onkick={(pid) => host.kick(pid)} onsettings={() => go('/snark/settings')} onconnection={() => (showConn = true)} />
+          <HostLobby {game} {online} {link} onstart={() => host.start()} onkick={(pid) => host.kick(pid)} onsettings={() => go('/snark/settings')} onrebroker={rebroker} />
         {:else if game.phase === 'write'}
           <HostWrite {game} {online} {left} {total} />
         {:else if game.phase === 'show' || game.phase === 'vote' || game.phase === 'reveal'}
@@ -183,7 +185,7 @@
   </Popup>
 {/if}
 
-{#if showConn}<Connection onclose={() => (showConn = false)} onchange={() => host.rebroker()} />{/if}
+{#if showConn}<Connection onclose={() => (showConn = false)} onchange={rebroker} />{/if}
 
 <style>
   .host {
@@ -192,7 +194,8 @@
   }
   .bar { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--s-2); min-height: 52px; }
   .where { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--s-3); white-space: nowrap; overflow: hidden; font-family: var(--font-display); font-size: clamp(1rem, 2.2vmin, 1.4rem); }
-  .chip { font-family: var(--font-body); font-size: 0.85em; color: var(--text-dim); padding: 4px 12px; border-radius: var(--r-pill); background: var(--overlay); }
+  .round { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .chip { flex: none; font-family: var(--font-body); font-size: 0.85em; color: var(--text-dim); padding: 4px 12px; border-radius: var(--r-pill); background: var(--overlay); }
   .chip b { color: var(--accent); letter-spacing: 0.12em; }
   .tools { display: flex; align-items: center; gap: var(--s-2); }
   .icon {
@@ -223,4 +226,6 @@
     .chip { padding: 2px 8px; }
     .jl { display: none; }
   }
+  /* A phone as host: the room code matters more than the round's name. */
+  @media (max-width: 400px) { .round { display: none; } }
 </style>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import classic from '../../content/salad/classic.json';
 import * as L from './logic';
+import { asPhrase } from './deal';
 import { matches, normalise } from './match';
 import { readToHost, type Action } from './protocol';
 import { playerView } from './view';
@@ -128,15 +129,36 @@ describe('Word Salad rounds', () => {
     expect(L.rematch(g).players.every((p) => p.score === 0)).toBe(true);
   });
 
-  it('skips missing presenters and gives a disconnected presenter ten seconds to return', () => {
+  it('skips missing presenters and holds a disconnected presenter’s turn, clock stopped, for a minute', () => {
     const solo = new Set(['b']);
     expect(openingTurn(undefined, 0, solo).result?.reason).toBe('offline');
     const onStage = openingTurn();
-    let g = L.tick(onStage, 51_000, solo);
-    expect(L.tick(g, 60_999, solo)).toBe(g);
-    expect(L.tick(g, 60_999, both).offlineSince).toBeNull();
-    g = L.tick(g, 61_000, solo);
+    const start = onStage.deadline! - L.PRESENT_MS;
+    const away = start + 5_000;
+    let g = L.tick(onStage, away, solo);
+    expect(g.offlineSince).toBe(away);
+    expect(L.timeLeft(g, away + 40_000)).toBe(L.PRESENT_MS - 5_000);
+    expect(playerView(g, 'b', away + 40_000)).toMatchObject({ held: true, paused: true, hostPaused: false });
+    expect(send(g, 'b', { t: 'guess', id: 'held', text: L.currentTurn(g).secret!.answer }, away + 1_000)).toBe(g);
+    expect(L.tick(g, away + L.AWAY_MS - 1, solo)).toBe(g);
+    const back = L.tick(g, away + 40_000, both);
+    expect(back.offlineSince).toBeNull();
+    expect(back.deadline).toBe(onStage.deadline! + 40_000);
+    expect(L.timeLeft(back, away + 40_000)).toBe(L.PRESENT_MS - 5_000);
+    g = L.tick(g, away + L.AWAY_MS, solo);
     expect(g.result).toMatchObject({ answer: L.currentTurn(onStage).secret!.answer, reason: 'offline', points: {} });
+  });
+
+  it('lets a player who left come back, but not one the host removed', () => {
+    const g = openingTurn();
+    const gone = L.leave(g, 'b');
+    expect(L.present(gone).map((p) => p.pid)).toEqual(['a']);
+    const rejoined = L.join(gone, 'b', 'B', new Set(['a']));
+    expect(rejoined.pid).toBe('b');
+    expect(L.present(rejoined.game).map((p) => p.pid)).toEqual(['a', 'b']);
+    expect(L.join(L.kick(gone, 'b'), 'b', 'B', new Set()).error).toBeTruthy();
+    const presenterLeft = L.tick(L.leave(g, 'a'), g.deadline! - L.PRESENT_MS + 1_000, both);
+    expect(presenterLeft.result?.reason).toBe('offline');
   });
 
   it('holds the timer and rejects stale, paused and late messages', () => {
@@ -164,6 +186,12 @@ describe('guess matching and phone messages', () => {
     expect(matches('Golden Campfire', secret)).toBe(false);
     expect(matches('pizaz', { ...secret, answer: 'Pizza', also: [] })).toBe(true);
     expect(matches('pixa', { ...secret, answer: 'Pizza', also: [] })).toBe(false);
+  });
+
+  it('reads a guess into a clue without its closing punctuation or a capital article', () => {
+    expect(asPhrase(' A talking toaster. ')).toBe('a talking toaster');
+    expect(asPhrase('The Matrix?!')).toBe('the Matrix');
+    expect(asPhrase('Antman')).toBe('Antman');
   });
 
   it('rejects malformed, oversized and unknown actions', () => {

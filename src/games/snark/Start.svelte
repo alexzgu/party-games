@@ -4,7 +4,7 @@
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Rules from './Rules.svelte';
-  import Connection from '../../components/room/Connection.svelte';
+  import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import { back, go } from '../../lib/router.svelte';
   import { unlockAudio } from '../../lib/sound';
   import { host } from './host.svelte';
@@ -14,7 +14,6 @@
   // Pick a side: this device shows the game to the room, or it is one player's phone.
   const openRoom = host.game ?? loadGame();
   const rejoin = phone.me?.code && phone.me.joined ? phone.me : null;
-  let showConn = $state(false);
 
   function hostHere() {
     unlockAudio();
@@ -40,7 +39,7 @@
   <div class="choices">
     <button class="choice" onclick={hostHere}>
       <span class="emoji" aria-hidden="true">📺</span>
-      <span class="what">Host on this screen</span>
+      <span class="what">{openRoom ? `Host on this screen: room ${openRoom.code}` : 'Host on this screen'}</span>
       <span class="why">A laptop on the TV, or a phone in the middle of the table. It shows the code, the answers and the scores.</span>
     </button>
     <button class="choice" onclick={() => go('/snark/join')}>
@@ -50,10 +49,9 @@
     </button>
   </div>
 
-  <p class="faint note">3 to 8 players, each on their own phone. Phones and the host screen need the internet to find each other. <button class="link" onclick={() => (showConn = true)}>Connection settings</button></p>
+  <p class="faint note">3 to 8 players, each on their own phone. Phones and the host screen need the internet to find each other.</p>
+  <ConnectionLink />
 </Screen>
-
-{#if showConn}<Connection onclose={() => (showConn = false)} />{/if}
 
 <style>
   .banner {
@@ -75,5 +73,4 @@
   .what { font-family: var(--font-display); font-weight: 800; font-size: 1.45rem; color: var(--text); }
   .why { color: var(--text-dim); font-size: 0.95rem; line-height: 1.35; }
   .note { font-size: 0.9rem; line-height: 1.45; }
-  .link { background: none; padding: 0; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 </style>

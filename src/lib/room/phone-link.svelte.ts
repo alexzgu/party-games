@@ -29,6 +29,8 @@ export interface PhoneHooks<Out, V> {
 const DIAL_TIMEOUT = 10000;
 /** Consecutive "no such room" answers (about two minutes of retries) before a phone stops looking. */
 const GIVE_UP_AFTER = 15;
+/** How long a leaving phone keeps its link open, so its goodbye reaches the host. */
+const LEAVE_GRACE = 400;
 
 export function loadMe(game: string): Me | null {
   const m = load<Partial<Me> | null>(`${game}:me`, null);
@@ -44,6 +46,8 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   stopped = $state('');
   trouble = $state('');
   me = $state.raw<Me | null>(null);
+  /** The room the phone is in or last tried; kept after a refusal or the end, so the reason stays with that room's code. */
+  room = $state('');
 
   private peer: Peer | null = null;
   private conn: DataConnection | null = null;
@@ -72,20 +76,26 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     const pid = this.me?.pid ?? newPid();
     this.halt(''); // a fresh peer, on the broker chosen now
     this.setMe({ pid, name, code, joined: false });
+    this.room = code;
     this.view = null;
     this.start();
   }
 
   /** Back into the room this phone was in (after a reload). */
   rejoin(): void {
-    if (this.me?.code && this.link === 'idle') this.start();
+    if (this.me?.code && this.link === 'idle') {
+      this.room = this.me.code;
+      this.start();
+    }
   }
 
-  /** Stops trying and forgets the room (keeps the id and name for next time). */
+  /** Tells the host this player left (so they stop getting turns), stops trying and forgets the room (keeps the id and name for next time). */
   leave(): void {
-    this.halt('');
+    if (this.conn?.open) this.write({ t: 'leave' });
+    this.halt('', LEAVE_GRACE);
     this.link = 'idle';
     this.view = null;
+    this.room = '';
     if (this.me) this.setMe({ ...this.me, code: '', joined: false });
   }
 
@@ -116,7 +126,8 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.connect();
   }
 
-  private halt(why: string): void {
+  /** Stops trying; the old link and peer close now, or after `grace` ms so a last message gets out. */
+  private halt(why: string, grace = 0): void {
     this.stopped = why;
     this.link = 'stopped';
     if (this.retry) clearTimeout(this.retry);
@@ -124,10 +135,12 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.retry = null;
     this.watchdog = null;
     const conn = this.conn;
+    const peer = this.peer;
     this.conn = null;
-    conn?.close();
-    this.peer?.destroy();
     this.peer = null;
+    const shut = () => { conn?.close(); peer?.destroy(); };
+    if (grace && conn) setTimeout(shut, grace);
+    else shut();
   }
 
   private setMe(m: Me): void {

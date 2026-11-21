@@ -13,7 +13,8 @@
   import Avatar from '../../components/room/Avatar.svelte';
   import Timer from '../../components/room/Timer.svelte';
   import Join from './Join.svelte';
-  import Connection from '../../components/room/Connection.svelte';
+  import ConnectionLink from '../../components/room/ConnectionLink.svelte';
+  import Popup from '../../components/Popup.svelte';
   import PhoneWrite from './PhoneWrite.svelte';
   import PhoneVote from './PhoneVote.svelte';
   import PhoneVote3 from './PhoneVote3.svelte';
@@ -35,7 +36,7 @@
   let now = $state(Date.now());
   const left = $derived(fixed ? (fixed.view?.left ?? null) : phone.left(now));
   const routeCode = cleanCode(route.params.get('code') ?? '');
-  let showConn = $state(false);
+  let leaving = $state(false);
   function rebroker() { const me = phone.me; if (me?.code) phone.join(me.code, me.name); }
 
   onMount(() => {
@@ -67,7 +68,7 @@
       <div class="spinner" aria-hidden="true"></div>
       <p class="big">Finding the host screen…</p>
       {#if trouble}<p class="trouble" role="alert">{trouble}</p>{/if}
-      <button class="conn" onclick={() => (showConn = true)}>Connection settings</button>
+      <ConnectionLink onchange={rebroker} />
     </div>
     {#snippet actions()}
       <Button variant="secondary" onclick={() => phone.leave()}>Cancel</Button>
@@ -96,6 +97,7 @@
         {#key `${view.round}:${s.at}`}<PhoneVote3 screen={s} onsend={(v) => send({ t: 'votes', r: view.round, at: s.at, v })} />{/key}
       {:else}
         <PhoneWatch {view} {left} />
+        <button class="leave" onclick={() => (leaving = true)}>Leave room</button>
       {/if}
     </main>
 
@@ -105,10 +107,20 @@
   </div>
 {/if}
 
-{#if showConn}<Connection onclose={() => (showConn = false)} onchange={rebroker} />{/if}
+{#if leaving}
+  <Popup title="Leave room?" onclose={() => (leaving = false)}>
+    <div class="confirm">
+      <p>{view && view.round ? 'You won’t get any more prompts or votes. You can rejoin with the same code and keep your score.' : 'You can rejoin with the same code.'}</p>
+      <Button variant="danger" onclick={() => { leaving = false; if (!fixed) phone.leave(); back('/snark'); }}>Leave room</Button>
+      <Button variant="secondary" onclick={() => (leaving = false)}>Stay</Button>
+    </div>
+  </Popup>
+{/if}
 
 <style>
-  .conn { background: none; color: var(--text-faint); font-size: 0.9rem; min-height: 44px; padding: 0 var(--s-3); text-decoration: underline; text-underline-offset: 3px; }
+  .leave { align-self: center; margin-top: var(--s-4); background: none; color: var(--text-faint); font-size: 0.9rem; min-height: 44px; padding: 0 var(--s-3); }
+  .confirm { display: flex; flex-direction: column; gap: var(--s-2); }
+  .confirm p { margin-bottom: var(--s-2); }
   .phone { min-height: 100dvh; display: flex; flex-direction: column; max-width: 640px; margin: 0 auto;
     padding: calc(var(--safe-top) + var(--s-2)) calc(var(--safe-right) + var(--s-4)) calc(var(--safe-bottom) + var(--s-3)) calc(var(--safe-left) + var(--s-4)); }
   .bar { display: flex; align-items: center; gap: var(--s-3); min-height: 56px; }

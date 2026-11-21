@@ -74,5 +74,10 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes pulse { 50% { opacity: 0.7; } }
+  /* A short phone (and up to 12 names to tap below): a slim record beside its label. */
+  @media (max-height: 760px) and (orientation: portrait) {
+    .stage { aspect-ratio: auto; min-height: 0; height: 120px; flex-direction: row; gap: var(--s-4); }
+    .deck { width: 84px; }
+  }
   @media (prefers-reduced-motion: reduce) { .disc.spin, .disc.wait, .tapme { animation: none; } }
 </style>

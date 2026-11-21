@@ -5,17 +5,17 @@
   import Qr from '../../components/room/Qr.svelte';
   import { MAX_PLAYERS, MIN_PLAYERS, canStart, present, type Game } from './logic';
   import { packNames } from './host.svelte';
-  import { brokerLabel } from '../../lib/room/broker';
+  import ConnectionLink from '../../components/room/ConnectionLink.svelte';
 
   // The room before the game: how to join (QR, address, code), who is in, settings, Start.
-  let { game, online, link, onstart, onkick, onsettings, onconnection }: {
+  let { game, online, link, onstart, onkick, onsettings, onrebroker }: {
     game: Game;
     online: ReadonlySet<string>;
     link: string;
     onstart: () => void;
     onkick: (pid: string) => void;
     onsettings: () => void;
-    onconnection: () => void;
+    onrebroker: () => void;
   } = $props();
 
   const players = $derived(present(game));
@@ -55,7 +55,7 @@
           <li class="pop-in">
             <Avatar name={p.name} color={p.color} size={40} dim={!here} />
             <span class="name">{p.name}{#if !here}<small>away</small>{/if}</span>
-            <button class="kick" aria-label="Remove {p.name}" onclick={() => askKick(p.pid, p.name)}>✕</button>
+            <button class="kick" aria-label="Remove {p.name}" title="Remove {p.name}" onclick={() => askKick(p.pid, p.name)}>✕</button>
           </li>
         {/each}
       </ul>
@@ -70,7 +70,7 @@
     <Button size="lg" disabled={!canStart(game)} onclick={onstart}>
       {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${players.length} players`}
     </Button>
-    <button class="conn" onclick={onconnection}>Matchmaking: {brokerLabel()}</button>
+    <ConnectionLink onchange={onrebroker} />
   </section>
 </div>
 
@@ -116,7 +116,6 @@
   .empty { padding: var(--s-4); border-radius: var(--r-md); border: 2px dashed var(--line-strong); line-height: 1.45; }
   .settings { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4); background: var(--bg-sunk); border-radius: var(--r-md); }
   .sum { flex: 1; color: var(--text-dim); font-size: 0.92rem; line-height: 1.35; }
-  .conn { align-self: center; background: none; color: var(--text-faint); font-size: 0.85rem; min-height: 44px; padding: 0 var(--s-3); }
   .confirm { display: flex; flex-direction: column; gap: var(--s-2); }
   .confirm p { margin-bottom: var(--s-2); }
   @media (max-width: 760px), (max-aspect-ratio: 1/1) {

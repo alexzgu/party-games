@@ -26,6 +26,10 @@
   const remaining = $derived(fixed ? v?.left ?? null : phone.left(now));
   let leaving = $state(false);
   let sent = $state<number | null>(null);
+  const me = $derived(fixed ? v?.players[0] : v?.players.find((p) => p.pid === phone.me?.pid));
+  const roomCode = $derived(fixed ? 'BRWK' : phone.me?.code ?? '');
+  /** Joined after this round's drawings were handed out. */
+  const lateJoiner = $derived(!!v && !v.draw && !!v.artists && !!me && !v.artists.includes(me.pid));
 
   $effect(() => {
     if (fixed) return;
@@ -71,6 +75,13 @@
     {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
     <div class="play">
       {#if !fixed && phone.link !== 'live'}<p role="status">{phone.trouble || 'Reconnecting…'}</p>{/if}
+      {#if me && !v.draw}<p class="me"><b>{me.name}</b> · {me.score.toLocaleString()} pts · Room {roomCode}</p>{/if}
+      {#if v.phase === 'lobby'}
+        <p class="big">You’re in!</p>
+        <p class="muted">The game starts from the host screen. Keep this screen open.</p>
+      {:else if lateJoiner}
+        <p class="muted">{v.round < 2 ? 'You joined after the drawings were handed out: you’ll vote on these bouts and draw next round.' : 'You joined during the last round: you’ll vote on these bouts.'}</p>
+      {/if}
       <div class="heading">
         <div>
           <p>{v.round ? `Round ${v.round} · ` : ''}{phaseLabel(v)}</p>
@@ -94,6 +105,7 @@
 {/if}
 {#if leaving}
   <Popup title="Leave the room?" onclose={() => (leaving = false)}>
+    <p>{v && v.phase !== 'lobby' && v.phase !== 'over' ? 'You won’t get any more turns. You can rejoin with the same code and keep your score.' : 'You can rejoin with the same code.'}</p>
     <Button variant="danger" onclick={() => { phone.leave(); gallery.art = {}; back('/brawl'); }}>Leave</Button>
     <Button variant="secondary" onclick={() => (leaving = false)}>Stay</Button>
   </Popup>
@@ -104,4 +116,7 @@
   .heading { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
   .heading h3 { font-size: clamp(1.25rem, 5vw, 2rem); }
   .heading p { color: var(--text-dim); }
+  .me { color: var(--text-dim); overflow-wrap: anywhere; }
+  .me b { color: var(--accent); font-family: var(--font-display); }
+  .big { font: 800 1.8rem / 1.15 var(--font-display); }
 </style>

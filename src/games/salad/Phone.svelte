@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import Avatar from '../../components/room/Avatar.svelte';
   import Button from '../../components/Button.svelte';
-  import Connection from '../../components/room/Connection.svelte';
+  import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Popup from '../../components/Popup.svelte';
   import Screen from '../../components/Screen.svelte';
@@ -26,14 +26,14 @@
   const fixed = demo !== null ? demoPhone(demo) : null;
   const routeCode = $derived(cleanCode(route.params.get('code') ?? ''));
   const view = $derived(fixed ? fixed.view : phone.view);
-  const differentRoom = $derived(!fixed && !!routeCode && routeCode !== phone.me?.code);
+  // The room this phone is in or was just turned away from (a refusal forgets the code but keeps its reason).
+  const differentRoom = $derived(!fixed && !!routeCode && routeCode !== (phone.me?.code || phone.room));
   const link = $derived(fixed ? fixed.link : differentRoom ? 'idle' : phone.link);
   const player = $derived(view?.players.find((p) => p.pid === view?.you));
   const presenter = $derived(view?.players.find((p) => p.pid === view?.presenter));
   let now = $state(Date.now());
   const left = $derived(fixed ? view?.left ?? null : phone.left(now));
   const turn = $derived(view ? `${view.code}/${view.you}/${view.serial}` : '');
-  let connection = $state(false);
   let leaving = $state(false);
 
   onMount(() => {
@@ -63,8 +63,8 @@
   <Screen title="Joining {phone.me?.code ?? ''}" onback={() => { leave(); back('/salad'); }} backLabel="Cancel">
     <p role="status">Finding the host screen…</p>
     {#if phone.trouble}<p role="alert">{phone.trouble}</p>{/if}
-    <Button variant="ghost" onclick={() => (connection = true)}>Connection settings</Button>
     <Button variant="secondary" onclick={leave}>Cancel</Button>
+    <ConnectionLink onchange={reconnect} />
   </Screen>
 {:else}
   <div class="phone">
@@ -119,15 +119,18 @@
           {#key `${turn}:${view.draft.index}`}
             <PhoneCompose draft={view.draft} guesses={view.guesses} players={view.players} prepare={false} {send} serial={view.serial} />
           {/key}
+          <!-- The presenter reads the guesses to steer the next clue, so they come first. -->
+          <Guesses guesses={view.guesses} players={view.players} />
+          <Clues sentences={view.sentences} />
         {:else}
           <h2>{presenter?.name ?? 'Player'} is presenting</h2>
           {#key turn}
             <PhoneGuess draftKey={turn} persist={!fixed}
               onsend={(text) => send({ serial: view.serial, t: 'guess', text, id: newPid() })} />
           {/key}
+          <Clues sentences={view.sentences} />
+          <Guesses guesses={view.guesses} players={view.players} />
         {/if}
-        <Clues sentences={view.sentences} />
-        <Guesses guesses={view.guesses} players={view.players} />
       {:else if view.phase === 'reveal' && view.result}
         <Reveal result={view.result} players={view.players} presenter={view.presenter} />
       {:else if view.phase === 'scores' || view.phase === 'over'}
@@ -136,16 +139,16 @@
         <Standings players={view.players} final={view.phase === 'over'} you={view.you} />
       {/if}
     </main>
-    {#if view.phase === 'lobby' || view.phase === 'over'}
-      <Button variant="ghost" onclick={() => (leaving = true)}>Leave room</Button>
-    {/if}
-    {#if view.paused}<div class="paused" role="status"><div><h2>Paused</h2><p>Waiting for the host to resume.</p></div></div>{/if}
+    <Button variant="ghost" onclick={() => (leaving = true)}>Leave room</Button>
+    {#if view.held}
+      <div class="paused" role="status"><div><h2>Waiting for {presenter?.name ?? 'the presenter'}</h2><p>Their phone dropped. The clock is stopped until they’re back (up to a minute).</p></div></div>
+    {:else if view.paused}<div class="paused" role="status"><div><h2>Paused</h2><p>Waiting for the host to resume.</p></div></div>{/if}
   </div>
 {/if}
 
-{#if connection}<Connection onclose={() => (connection = false)} onchange={reconnect} />{/if}
 {#if leaving}
   <Popup title="Leave room?" onclose={() => (leaving = false)}>
+    <p>{view && view.phase !== 'lobby' && view.phase !== 'over' ? 'You won’t get any more turns. You can rejoin with the same code.' : 'You can rejoin with the same code.'}</p>
     <Button variant="danger" onclick={() => { leave(); back('/salad'); }}>Leave room</Button>
     <Button variant="secondary" onclick={() => (leaving = false)}>Stay</Button>
   </Popup>

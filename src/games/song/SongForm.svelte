@@ -34,6 +34,15 @@
   let looked = $state(false);
   let error = $state('');
   let deleting = $state(false);
+  // svelte-ignore state_referenced_locally
+  const was = { title, artist, youtube, start };
+  const dirty = $derived(title !== was.title || artist !== was.artist || youtube !== was.youtube || start !== was.start);
+  /** ✕, Escape or a tap outside with unsaved changes (a hand-set start, say) asks first. */
+  let discarding = $state(false);
+  function tryClose() {
+    if (dirty && !discarding) discarding = true;
+    else onclose();
+  }
 
   onMount(() => {
     if (!song.apple) { looked = true; return; }
@@ -48,8 +57,15 @@
   }
 </script>
 
-<Popup title="Edit song" {onclose}>
+<Popup title="Edit song" onclose={tryClose}>
   <form class="form" onsubmit={save} oninput={() => (error = '')}>
+    {#if discarding}
+      <div class="discard" role="alert">
+        <p>Discard your changes to this song?</p>
+        <Button variant="danger" onclick={onclose}>Discard changes</Button>
+        <Button variant="secondary" onclick={() => (discarding = false)}>Keep editing</Button>
+      </div>
+    {/if}
     <div class="source">
       {#if track?.artwork}<img src={art(track.artwork, 120)} alt="" />{:else}<span class="ph" aria-hidden="true">♪</span>{/if}
       <p>
@@ -91,6 +107,8 @@
   .source p { margin: 0; display: flex; flex-direction: column; min-width: 0; }
   .source b { font-family: var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .source span { color: var(--text-faint); font-size: 0.85rem; }
+  .discard { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border-radius: var(--r-md); background: var(--surface); border: 1.5px solid var(--line-strong); }
+  .discard p { margin: 0; font-weight: 700; }
   .error {
     margin: 0; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); font-weight: 600;
     background: color-mix(in srgb, var(--c-bad) 18%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--c-bad) 60%, transparent);

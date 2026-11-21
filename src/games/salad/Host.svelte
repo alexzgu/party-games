@@ -39,6 +39,10 @@
   const skipLabel = $derived(view?.phase === 'pick' ? 'End picking'
     : view?.phase === 'prepare' ? 'End preparation' : view?.phase === 'present' ? 'Skip turn' : '');
   let connection = $state(false);
+  let brokerChanged = $state(0);
+  const link = $derived.by(() => { void brokerChanged; return view ? joinLink('salad', view.code, brokerSetting()) : ''; });
+  // The host's own pause; `view.paused` is also on while a presenter's turn is on hold.
+  const hostPaused = $derived(view?.hostPaused ?? false);
   let ending = $state(false);
   let showPlayers = $state(false);
   let kicking = $state<{ pid: string; name: string } | null>(null);
@@ -70,7 +74,7 @@
 
   function togglePause() {
     if (fixed || !timed) return;
-    if (view?.paused) host.resume();
+    if (hostPaused) host.resume();
     else host.pause();
   }
 
@@ -85,11 +89,16 @@
     if (!fixed) host.end();
     back('/salad');
   }
+
+  function rebroker() {
+    brokerChanged++;
+    if (!fixed) host.rebroker();
+  }
 </script>
 
 <svelte:window onkeydown={keyboard} />
 
-<div class="host" inert={view?.paused ?? false}>
+<div class="host" inert={hostPaused}>
   <header class="bar">
     <div class="where">
       <Button size="sm" variant="ghost" label="Back to game menu" onclick={() => back('/salad')}>←</Button>
@@ -97,7 +106,7 @@
       {#if view && view.phase !== 'lobby'}<span>Room {view.code} · Round {view.round} of 2</span>{/if}
     </div>
     <div class="controls">
-      {#if timed}<Button size="sm" variant="secondary" onclick={togglePause}>{view?.paused ? 'Resume' : 'Pause'}</Button>{/if}
+      {#if timed}<Button size="sm" variant="secondary" onclick={togglePause}>{hostPaused ? 'Resume' : 'Pause'}</Button>{/if}
       {#if view && view.phase !== 'lobby' && view.phase !== 'over'}
         {#if skipLabel}<Button size="sm" variant="secondary" onclick={skip}>{skipLabel}</Button>{/if}
         <Button size="sm" variant="ghost" onclick={() => (showPlayers = true)}>Players</Button>
@@ -110,7 +119,7 @@
   {#if !fixed && host.status !== 'open'}
     <div class="connection" role="status">
       {host.trouble || `Opening room ${game?.code ?? ''}…`}
-      {#if host.trouble}<Button size="sm" variant="secondary" onclick={() => (connection = true)}>Backup broker</Button>{/if}
+      {#if host.trouble}<Button size="sm" variant="secondary" onclick={() => (connection = true)}>Trouble connecting?</Button>{/if}
     </div>
   {/if}
 
@@ -118,9 +127,9 @@
     <TapToFinish>
       {#if view && game}
         {#if view.phase === 'lobby'}
-          <HostLobby players={view.players} {online} code={view.code} link={joinLink('salad', view.code, brokerSetting())}
+          <HostLobby players={view.players} {online} code={view.code} {link}
             packNames={selectedPacks} onstart={() => { if (!fixed) host.start(); }} onkick={(pid) => { if (!fixed) host.kick(pid); }}
-            onsettings={() => go('/salad/settings')} onconnection={() => (connection = true)} />
+            onsettings={() => go('/salad/settings')} onrebroker={rebroker} />
         {:else if view.phase === 'pick' || view.phase === 'prepare'}
           <section class="progress" aria-label="Round progress">
             <div class="headline">
@@ -143,7 +152,7 @@
             <section class="turn" aria-label="Current turn">
               <div class="headline">
                 <div><h2>{presenter?.name ?? 'Player'} is presenting</h2>
-                  <p class="muted">{presenter && !online.has(presenter.pid) ? 'Presenter reconnecting…' : 'Guess on your phone'}</p></div>
+                  <p class="muted" class:away={view.held}>{view.held ? `Waiting for ${presenter?.name ?? 'the presenter'} to reconnect · clock stopped (up to a minute)` : 'Guess on your phone'}</p></div>
                 <Timer left={view.left} total={view.span} paused={view.paused} />
               </div>
               <div class="turn-body">
@@ -184,22 +193,23 @@
   </main>
 </div>
 
-{#if view?.paused}
+{#if hostPaused}
   <div class="paused" role="status">
     <div><h2>Paused</h2><p>The timer has stopped on every phone.</p><Button onclick={togglePause}>Resume</Button></div>
   </div>
 {/if}
 
 {#if connection}
-  <Connection onclose={() => (connection = false)} onchange={() => { if (!fixed) host.rebroker(); }} />
+  <Connection onclose={() => (connection = false)} onchange={rebroker} />
 {/if}
 
 {#if ending}
-  <Popup title="Close room?" onclose={() => (ending = false)}>
+  {@const playing = !!game && game.phase !== 'lobby' && game.phase !== 'over'}
+  <Popup title={playing ? 'End the game?' : 'Close the room?'} onclose={() => (ending = false)}>
     <div class="actions">
-      <p>Players will disconnect from this room.</p>
-      <Button variant="danger" onclick={end}>Close room</Button>
-      <Button variant="secondary" onclick={() => (ending = false)}>Cancel</Button>
+      <p>This closes room {game?.code} and sends everyone’s phone back to the start.</p>
+      <Button variant="danger" onclick={end}>{playing ? 'End game' : 'Close room'}</Button>
+      <Button variant="secondary" onclick={() => (ending = false)}>{playing ? 'Keep playing' : 'Keep it open'}</Button>
     </div>
   </Popup>
 {/if}
@@ -232,6 +242,7 @@
   .bar, .controls, .where { flex-wrap: wrap; }
   .where span { color: var(--text-dim); }
   .connection { padding: var(--s-2) var(--s-3); background: var(--surface); border-radius: var(--r-md); }
+  .away { color: var(--c-pass); font-weight: 700; }
   main { flex: 1; width: 100%; display: grid; justify-items: center; align-content: center; padding: var(--s-4) 0; }
   .progress, .turn, .result, .scores, .actions { width: 100%; display: grid; gap: var(--s-3); min-width: 0; }
   .progress, .scores { max-width: 820px; }

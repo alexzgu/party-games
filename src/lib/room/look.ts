@@ -15,8 +15,11 @@ export function ordinal(n: number): string {
 /** Whole seconds left, rounded up, for countdowns. */
 export const secs = (ms: number | null) => (ms === null ? null : Math.ceil(ms / 1000));
 
-/** The address phones open to join this room, carrying a non-default broker with it. */
+/**
+ * The address phones open to join this room. It always names the host's connection service
+ * (`peer=cloud` for the usual one), so a phone that once used a backup is switched back.
+ */
 export function joinLink(game: string, code: string, broker: string): string {
   const base = location.origin + location.pathname;
-  return `${base}#/${game}/join?code=${code}${broker ? `&peer=${encodeURIComponent(broker)}` : ''}`;
+  return `${base}#/${game}/join?code=${code}&peer=${encodeURIComponent(broker || 'cloud')}`;
 }

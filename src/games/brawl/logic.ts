@@ -17,6 +17,8 @@ export type Game = {
   players: Player[]; kicked: string[]; titles: string[]; bouts: Bout[]; index: number;
   votes: Record<string, Side>; tags: Record<string, string>; shown: Record<string, Fighter[]>;
   rematch: boolean; results: Result[]; deadline: number | null; frozen: number | null;
+  /** Players out by their own choice ("Leave room"), among `kicked` until they come back. */
+  left?: string[];
 };
 
 export const newGame = (id: string, code: string, settings: Settings): Game => ({
@@ -37,6 +39,11 @@ export const afterReload = (g: Game, now: number): Game => g.deadline !== null &
 export function join(g: Game, pid: string, name: string, online: ReadonlySet<string>) {
   name = name.trim().slice(0, 20);
   if (!pid || Object.hasOwn(Object.prototype, pid) || !name) return { error: 'Enter a player name to join.' };
+  const gone = g.left ?? [];
+  if (gone.includes(pid)) {
+    if (active(g).length >= 8) return { error: 'This room is full.' };
+    return { pid, game: { ...g, kicked: g.kicked.filter((x) => x !== pid), left: gone.filter((x) => x !== pid) } };
+  }
   if (g.kicked.includes(pid)) return { error: 'The host removed you from this room.' };
   const own = g.players.find((p) => p.pid === pid);
   if (own) return { pid, game: g };
@@ -47,8 +54,15 @@ export function join(g: Game, pid: string, name: string, online: ReadonlySet<str
 }
 
 export function kick(g: Game, pid: string): Game {
-  return { ...g, kicked: [...g.kicked, pid],
+  return { ...g, kicked: [...g.kicked, pid], left: (g.left ?? []).filter((x) => x !== pid),
     players: g.phase === 'lobby' ? g.players.filter((p) => p.pid !== pid) : g.players };
+}
+
+/** The player chose "Leave room": in the lobby they are simply gone; mid-game out like a removed player, but free to come back. */
+export function leave(g: Game, pid: string): Game {
+  if (!active(g).some((p) => p.pid === pid)) return g;
+  if (g.phase === 'lobby') return { ...g, players: g.players.filter((p) => p.pid !== pid) };
+  return { ...g, kicked: [...g.kicked, pid], left: [...(g.left ?? []), pid] };
 }
 
 function enter(g: Game, phase: Phase, now: number, seconds?: number): Game {

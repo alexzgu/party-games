@@ -3,7 +3,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
-  import Connection from '../../components/room/Connection.svelte';
+  import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import { back } from '../../lib/router.svelte';
   import { cleanCode, isCode } from '../../lib/room/code';
   import { phone } from './player.svelte';
@@ -13,8 +13,9 @@
   // svelte-ignore state_referenced_locally
   let code = $state(cleanCode(initial));
   let name = $state(phone.me?.name ?? '');
-  let connection = $state(false);
-  const ready = $derived(isCode(code) && !!name.trim() && phone.link !== 'joining');
+  // Trying, or connected and waiting for the host's first screen: one Join is enough.
+  const joining = $derived(!fixed && phone.link !== 'idle' && phone.link !== 'stopped');
+  const ready = $derived(isCode(code) && !!name.trim() && !joining);
 </script>
 
 <Screen title="Join {gameName('brawl')}" onback={() => { if (!fixed) phone.leave(); back('/brawl'); }}>
@@ -26,11 +27,11 @@
       e.currentTarget.value = code;
     }} placeholder="ABCD" autocapitalize="characters" autocomplete="off" /></label>
     <label>Your name <input bind:value={name} maxlength={20} autocomplete="nickname" /></label>
-    <button class="join" disabled={!ready}>{phone.link === 'joining' ? 'Joining…' : 'Join'}</button>
-    <Button variant="secondary" onclick={() => (connection = true)}>Connection settings</Button>
+    <button class="join" disabled={!ready}>{joining ? 'Joining…' : 'Join'}</button>
+    {#if joining}<Button variant="secondary" onclick={() => phone.leave()}>Cancel</Button>{/if}
   </form>
+  <ConnectionLink onchange={() => { if (joining && phone.me) phone.join(phone.me.code, phone.me.name); }} />
 </Screen>
-{#if connection}<Connection onclose={() => (connection = false)} />{/if}
 
 <style>
   form, label { display: grid; gap: var(--s-2); }

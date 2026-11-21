@@ -49,7 +49,9 @@ export interface Player {
   score: number;
   /** In the current round. Players who join mid-round watch until the next one starts. */
   active: boolean;
+  /** Out of the game: removed by the host, or `left` by their own choice (they may come back). */
   kicked?: boolean;
+  left?: boolean;
 }
 
 /** A head-to-head prompt: two authors, everyone else votes for one answer. */
@@ -157,7 +159,9 @@ export type JoinResult = { game: Game; pid: string; error?: undefined } | { game
 export function join(g: Game, pid: string, rawName: string, online: ReadonlySet<string>): JoinResult {
   if (pid === HOUSE) return { game: g, error: 'This phone cannot join. Reload the page and try again.' };
   const known = player(g, pid);
-  if (known?.kicked) return { game: g, error: 'The host removed you from this game.' };
+  if (known?.kicked && !known.left) return { game: g, error: 'The host removed you from this game.' };
+  if (known?.left && present(g).length >= MAX_PLAYERS) return { game: g, error: `This game is full (${MAX_PLAYERS} players).` };
+  if (known?.left) return { game: { ...g, players: g.players.map((p) => (p.pid === pid ? { ...p, kicked: false, left: false } : p)) }, pid };
   if (known) return { game: g, pid };
   const name = cleanName(rawName);
   if (!name) return { game: g, error: 'Type your name first.' };
@@ -171,7 +175,13 @@ export function join(g: Game, pid: string, rawName: string, online: ReadonlySet<
 
 /** A kicked player stays on the list, marked, so their phone cannot rejoin this game; screens hide them. */
 export function kick(g: Game, pid: string): Game {
-  return { ...g, players: g.players.map((p) => (p.pid === pid ? { ...p, kicked: true, active: false } : p)) };
+  return { ...g, players: g.players.map((p) => (p.pid === pid ? { ...p, kicked: true, left: false, active: false } : p)) };
+}
+
+/** The player chose "Leave room": out like a removed player (no more prompts or votes), but free to come back. */
+export function leave(g: Game, pid: string): Game {
+  if (!present(g).some((p) => p.pid === pid)) return g;
+  return { ...g, players: g.players.map((p) => (p.pid === pid ? { ...p, kicked: true, left: true } : p)) };
 }
 
 export const canStart = (g: Game) => g.phase === 'lobby' && present(g).length >= MIN_PLAYERS;

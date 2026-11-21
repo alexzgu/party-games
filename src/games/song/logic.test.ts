@@ -135,4 +135,20 @@ describe('Earworm rules', () => {
     expect(r.retiredRecord({ ...old, songsPlayed: 0 }, [])).toBeNull();
     expect(r.retiredRecord(start(), [])).toBeNull();
   });
+
+  it('takes the setup’s players on resume: scores kept by name and by seat on a rename, newcomers at 0, leavers kept in the log', () => {
+    let g = r.award(r.listen(start()), 0); // Maya +3
+    g = r.next(g);
+    g = r.award(r.listen({ ...g, phase: 'ready', song: song(2) }), 2); // Sam +3
+    expect(r.withRoster(g, ['Maya', 'Jordan', 'Sam'])).toBe(g);
+    expect(r.withRoster(g, ['Maya'])).toBe(g);
+    const next = r.withRoster(g, ['Jordan', 'sam', 'Alex']);
+    expect(next.players).toEqual([{ name: 'Jordan', score: 0 }, { name: 'sam', score: 3 }, { name: 'Alex', score: 0 }]);
+    expect(next.outcome).toEqual({ kind: 'point', scorer: 1, points: 3 });
+    expect(next.log.map((x) => [x.by, x.name])).toEqual([[-1, 'Maya'], [1, undefined]]);
+    expect(r.gameRecord(next, []).details?.[0]).toMatch(/Maya \+3/);
+    const renamed = r.withRoster(g, ['Maia', 'Jordan', 'Sam', 'Kim']);
+    expect(renamed.players.map((p) => p.score)).toEqual([3, 0, 3, 0]);
+    expect(renamed.log.map((x) => x.by)).toEqual([0, 2]);
+  });
 });

@@ -10,18 +10,22 @@
   import { unlockMusic } from './audio';
   import { loadPlayers, loadSetup, savePlayers, saveSetup } from './store';
   import { CLIPS, MIN_PLAYERS, POINTS, TARGET_RANGE, standings, type GameState } from './logic';
+  import { dropUntouched } from './newpack';
 
   let { saved, notice = '', onstart, onresume, onnew, onedit, onhome }: {
     saved: GameState | null;
     /** A one-off note (a saved game from the old version could not carry on). */
     notice?: string;
     onstart: (names: string[], opts: { target: number; packIds: string[] }) => void;
-    onresume: () => void;
+    /** Carries on the saved game with this player list. */
+    onresume: (names: string[]) => void;
     onnew: () => void;
     onedit: (packId: string) => void;
     onhome: () => void;
   } = $props();
 
+  // A pack made with "New pack" and left empty is gone again, so it is not ticked with no songs.
+  dropUntouched();
   const prefs = loadSetup();
   let packs = $state.raw(songPacks());
   let names = $state(loadPlayers());
@@ -39,6 +43,10 @@
     : songs === 0 ? 'Pick a pack with songs' : '',
   );
   const inProgress = $derived(saved && saved.phase !== 'win' ? saved : null);
+  const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
+  /** Packs and points to win belong to the game in progress; changes wait for the next one. */
+  const rulesChanged = $derived(!!inProgress && (target !== inProgress.target || !sameSet(selected, inProgress.packIds)));
+  const tooFew = $derived(names.length < MIN_PLAYERS ? `Add ${MIN_PLAYERS - names.length} more player${MIN_PLAYERS - names.length > 1 ? 's' : ''}` : '');
 
   // With a game saved, starting over takes a second tap so nobody wipes the scores by accident.
   let confirming = $state(false);
@@ -68,7 +76,7 @@
         <li>One phone or laptop plays a few seconds of a song. Turn the volume up.</li>
         <li>Everyone shouts the song's title. The host taps whoever said it first.</li>
         <li>Faster is worth more: <b>{POINTS[0]} points</b> on the {CLIPS[0]}-second clip, {POINTS[1]} if it takes {CLIPS[1]} seconds, {POINTS[2]} at {CLIPS[2]}. “Longer” plays more of it.</li>
-        <li>Nobody knows it? Tap “Nobody”. Then the answer shows and the song plays on for a moment.</li>
+        <li>Nobody knows it? Tap “Nobody got it”. Then the answer shows and the song plays on for a moment.</li>
         <li>First to {target} points wins.</li>
       </ol>
       <p>The clips are Apple Music’s 30-second song previews, so this game needs internet. The game picks the catchiest moment of each one by itself. Songs from a clip pack (made on a laptop, then imported with “Import packs”) play from clips kept on this phone, even offline.</p>
@@ -82,6 +90,7 @@
     <div class="resume pop-in" role="status">
       <b>Game in progress</b>
       <span>{top.map((r) => `${r.player.name} ${r.player.score}`).join(' · ')}{inProgress.players.length > 3 ? ' …' : ''}</span>
+      <small>Players added, renamed or removed below join the game when you resume; scores are kept.</small>
     </div>
   {/if}
 
@@ -91,13 +100,14 @@
   <section class="opts" aria-labelledby="opts-h">
     <h3 id="opts-h">Rules</h3>
     <Stepper label="Points to win" bind:value={target} min={TARGET_RANGE[0]} max={TARGET_RANGE[1]} />
+    {#if rulesChanged}<p class="later" role="status">Pack and points-to-win changes apply to the next game. The game in progress keeps its own ({inProgress?.target} to win).</p>{/if}
     <p class="net"><span aria-hidden="true">📶</span> Needs internet: clips are song previews from Apple Music.</p>
   </section>
 </div>
 
   {#snippet actions()}
     {#if inProgress}
-      <Button size="lg" onclick={() => { unlockMusic(); onresume(); }}>Resume game</Button>
+      <Button size="lg" disabled={!!tooFew} onclick={() => { unlockMusic(); onresume($state.snapshot(names)); }}>{tooFew || 'Resume game'}</Button>
       <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!missing}>
         {missing || (confirming ? 'Tap again to end it and start over' : 'Start a new game')}
       </Button>
@@ -119,6 +129,8 @@
   }
   .resume b { font-family: var(--font-display); font-size: 1.2rem; }
   .resume span { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .resume small { color: var(--text-faint); font-size: 0.85rem; line-height: 1.3; }
+  .later { margin: 0; color: var(--c-pass); font-weight: 600; font-size: 0.92rem; }
   .notice { margin: 0; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--surface); border: 1.5px solid var(--line-strong); color: var(--text-dim); }
   .opts { display: flex; flex-direction: column; gap: var(--s-2); }
   .net { color: var(--text-dim); font-size: 0.92rem; display: flex; gap: var(--s-2); align-items: baseline; }

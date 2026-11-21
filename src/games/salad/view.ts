@@ -1,4 +1,4 @@
-import { choicesFor, currentTurn, timeLeft, timerLength, type Game } from './logic';
+import { choicesFor, currentTurn, held, timeLeft, timerLength, type Game } from './logic';
 import type { Secret } from './words';
 
 const label = ({ answer, category, level }: Secret) => ({ answer, category, level });
@@ -15,7 +15,9 @@ export function playerView(g: Game, pid: string, now: number) {
   return {
     code: g.code, phase: g.phase, round: g.round, at: g.at, you: pid, serial: g.serial,
     players: g.players, presenter: onStage ? current.pid : undefined,
-    deadline: g.deadline, left: timeLeft(g, now), span: timerLength(g), paused: g.paused !== null,
+    // `paused` stops every phone's countdown: the host paused, or the presenter's turn is on hold (`held`).
+    deadline: g.deadline, left: timeLeft(g, now), span: timerLength(g), paused: g.paused !== null || held(g),
+    hostPaused: g.paused !== null, held: held(g),
     solved: g.solved, total: g.total,
     progress: g.turns.filter((t) => active.has(t.pid) && (g.phase === 'pick' ? t.secret : t.first)).map((t) => t.pid),
     sentences: g.sentences, guesses: g.guesses.map(({ id, pid, text }) => ({ id, pid, text })),

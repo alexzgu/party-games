@@ -3,7 +3,7 @@
 import Peer, { type PeerJSOption } from 'peerjs';
 import type { Broker } from './broker';
 
-export const BROKER_TROUBLE = "Can't reach the matchmaking service. Check internet, or use the backup broker.";
+export const BROKER_TROUBLE = "Can't reach the online service that links phones to the host. Check the internet, or see Trouble connecting.";
 
 /** Sends a ping this often; a link silent for LINK_TIMEOUT is treated as dropped. */
 export const PING_MS = 2500;

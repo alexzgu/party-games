@@ -137,7 +137,7 @@
       <ListTools key="song:songs" bind:query bind:sort placeholder="Search titles and artists" shown={shown.length} total={pack.songs.length}>
         {#snippet title()}
           <h3 class="count">{pack?.songs.length} {pack?.songs.length === 1 ? 'song' : 'songs'}</h3>
-          <p class="tip">Tap one to change it</p>
+          <p class="tip">Tap one to change it. The game picks each clip’s catchiest moment unless you set a start.</p>
         {/snippet}
       </ListTools>
       {#if query && !shown.length}<p class="none">No songs match “{query.trim()}”</p>{/if}
@@ -149,8 +149,8 @@
             <button class="song" class:fresh={fresh === i} data-i={i} onclick={() => (open = i)}>
               {#if t?.artwork}<img class="art" src={art(t.artwork, 100)} alt="" loading="lazy" />{:else}<span class="art ph" aria-hidden="true">♪</span>{/if}
               <span class="ti">{s.title}</span>
-              <span class="ar">{s.artist}{s.youtube ? ' · video' : ''}{t === null ? ' · not on Apple Music' : ''}{s.clipOnly && !clips.has(songKey(s)) ? ' · clip missing' : ''}</span>
-              <span class="at">{clips.has(songKey(s)) ? 'clip' : typeof s.start === 'number' ? `from ${formatStart(s.start)}` : 'auto'}</span>
+              <span class="ar">{s.artist}{s.youtube ? ' · music video at the reveal' : ''}{t === null ? ' · not on Apple Music' : ''}{s.clipOnly && !clips.has(songKey(s)) ? ' · clip missing' : ''}</span>
+              <span class="at">{clips.has(songKey(s)) ? 'saved clip' : typeof s.start === 'number' ? `starts ${formatStart(s.start)}` : ''}</span>
             </button>
           </li>
         {/each}

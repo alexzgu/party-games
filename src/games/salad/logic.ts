@@ -1,4 +1,4 @@
-import { draftFor, random, redeal, sentence, shuffled, type Draft } from './deal';
+import { asPhrase, draftFor, random, redeal, sentence, shuffled, type Draft } from './deal';
 import { matches, normalise } from './match';
 import { GUESS_MAX, NAME_MAX, type ToHost } from './protocol';
 import { followups, opening, type Secret } from './words';
@@ -8,7 +8,8 @@ export const MAX_PLAYERS = 8;
 export const PICK_MS = 20_000;
 export const PREPARE_MS = 30_000;
 export const PRESENT_MS = 75_000;
-export const OFFLINE_MS = 10_000;
+/** How long a presenter's turn waits, clock stopped, for their phone to come back. */
+export const AWAY_MS = 60_000;
 const REVEAL_MS = 9_000;
 const SCORES_MS = 15_000;
 
@@ -19,7 +20,9 @@ export interface Player {
   seat: number;
   score: number;
   roundPoints: number;
+  /** Out of the game: removed by the host, or `left` by their own choice (they may come back). */
   kicked: boolean;
+  left?: boolean;
 }
 interface Turn {
   pid: string;
@@ -46,6 +49,7 @@ export interface Game {
   serial: number;
   deadline: number | null;
   paused: number | null;
+  /** When the presenter's phone dropped: their turn is on hold, its clock stopped, until they return or AWAY_MS passes. */
   offlineSince: number | null;
   players: Player[];
   order: string[];
@@ -79,12 +83,15 @@ export const currentTurn = (g: Game) => g.turns[g.at];
 export const timerLength = (g: Game) =>
   ({ lobby: 0, pick: PICK_MS, prepare: PREPARE_MS, present: PRESENT_MS, reveal: REVEAL_MS, scores: SCORES_MS, over: 0 })[g.phase];
 export const timeLeft = (g: Game, now: number) =>
-  g.paused ?? (g.deadline === null ? null : Math.max(0, g.deadline - now));
+  g.paused ?? (g.deadline === null ? null : Math.max(0, g.deadline - (g.offlineSince ?? now)));
+/** The presenter's phone is away, so their turn waits. */
+export const held = (g: Game) => g.phase === 'present' && g.offlineSince !== null;
 
 type Join = { game: Game; pid: string; error?: undefined } | { game: Game; error: string; pid?: undefined };
 export function join(g: Game, pid: string, rawName: string, online: ReadonlySet<string>): Join {
   const known = g.players.find((p) => p.pid === pid);
-  if (known?.kicked) return { game: g, error: 'The host removed you from this game.' };
+  if (known?.kicked && !known.left) return { game: g, error: 'The host removed you from this game.' };
+  if (known?.left) return present(g).length >= MAX_PLAYERS ? { game: g, error: 'This room is full.' } : { game: back(g, pid), pid };
   if (known) return { game: g, pid };
   const name = rawName.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
   if (!name) return { game: g, error: 'Type your name first.' };
@@ -97,8 +104,17 @@ export function join(g: Game, pid: string, rawName: string, online: ReadonlySet<
 }
 
 export function kick(g: Game, pid: string): Game {
-  return { ...g, players: g.players.map((p) => p.pid === pid ? { ...p, kicked: true } : p) };
+  return { ...g, players: g.players.map((p) => p.pid === pid ? { ...p, kicked: true, left: false } : p) };
 }
+
+/** The player chose "Leave room": out like a removed player (no more turns), but free to come back. */
+export function leave(g: Game, pid: string): Game {
+  if (!g.players.some((p) => p.pid === pid && !p.kicked)) return g;
+  return { ...g, players: g.players.map((p) => p.pid === pid ? { ...p, kicked: true, left: true } : p) };
+}
+
+const back = (g: Game, pid: string): Game =>
+  ({ ...g, players: g.players.map((p) => p.pid === pid ? { ...p, kicked: false, left: false } : p) });
 
 function advance(g: Game, phase: Phase, now: number): Game {
   const next = { ...g, phase, serial: g.serial + 1, paused: null, offlineSince: null };
@@ -231,12 +247,22 @@ export function tick(g: Game, now: number, online: ReadonlySet<string>): Game {
   if (g.paused !== null) return g;
   const presenter = g.phase === 'present' ? currentTurn(g).pid : null;
   if (presenter !== null && !present(g).some((p) => p.pid === presenter)) return reveal(g, now, 'offline');
-  if (presenter !== null && !online.has(presenter) && g.offlineSince !== null && now - g.offlineSince >= OFFLINE_MS) {
-    return reveal(g, now, 'offline');
-  }
+  if (presenter !== null && !online.has(presenter)) return hold(g, now);
+  if (g.offlineSince !== null) return carryOn(g, now);
   if (ready(g) || (g.deadline !== null && now >= g.deadline)) return step(g, now, online, false);
-  const offlineSince = presenter !== null && !online.has(presenter) ? g.offlineSince ?? now : null;
-  return offlineSince === g.offlineSince ? g : { ...g, offlineSince };
+  return g;
+}
+
+/** The presenter is away: their turn waits, clock stopped, then is given up after AWAY_MS. */
+function hold(g: Game, now: number): Game {
+  if (g.offlineSince === null) return { ...g, offlineSince: now };
+  return now - g.offlineSince >= AWAY_MS ? reveal(g, now, 'offline') : g;
+}
+
+/** The presenter is back: the clock carries on from where it stopped. */
+function carryOn(g: Game, now: number): Game {
+  const away = now - g.offlineSince!;
+  return { ...g, offlineSince: null, deadline: g.deadline === null ? null : g.deadline + away };
 }
 
 export function choicesFor(g: Game, draft: Draft): string[][] {
@@ -264,7 +290,7 @@ function compose(g: Game, turn: Turn, msg: Compose): Game {
   if (draft.values.some((value) => value === null)) return g;
   if (g.phase === 'prepare') return updateTurn(g, { ...turn, first: openingText(draft) });
   const used = draft.values.flatMap((value, i) => draft.frame.slots[i] === 'guess' ? [Number(value)] : []);
-  const words = draft.values.map((value, i) => draft.frame.slots[i] === 'guess' ? g.guesses[Number(value)].text : value!);
+  const words = draft.values.map((value, i) => draft.frame.slots[i] === 'guess' ? asPhrase(g.guesses[Number(value)].text) : value!);
   return updateTurn({
     ...g, sentences: [...g.sentences, sentence(draft.frame, words)], assists: [...new Set([...g.assists, ...used])],
   }, { ...turn, draft: nextDraft(g, turn, draft.index + 1) });
@@ -280,9 +306,8 @@ function guess(g: Game, pid: string, msg: Extract<ToHost, { t: 'guess' }>, now: 
 }
 
 export function fromPhone(g: Game, pid: string, msg: ToHost, now: number): Game {
-  if (g.serial !== msg.serial || g.paused !== null || !present(g).some((p) => p.pid === pid)
-    || (g.deadline !== null && now >= g.deadline)
-    || (g.offlineSince !== null && now - g.offlineSince >= OFFLINE_MS)) return g;
+  if (g.serial !== msg.serial || g.paused !== null || held(g) || !present(g).some((p) => p.pid === pid)
+    || (g.deadline !== null && now >= g.deadline)) return g;
   if (msg.t === 'guess') return g.phase === 'present' ? guess(g, pid, msg, now) : g;
   const turn = g.turns.find((t) => t.pid === pid);
   if (!turn) return g;
@@ -307,9 +332,10 @@ export function resume(g: Game, now: number): Game {
   return g.paused === null ? g : { ...g, deadline: now + g.paused, paused: null, offlineSince: null };
 }
 export function afterReload(g: Game, now: number): Game {
+  const h = g.offlineSince !== null ? carryOn(g, now) : g;
   return {
-    ...g, offlineSince: null,
-    deadline: g.deadline !== null && g.deadline <= now ? now + 12_000 : g.deadline,
+    ...h, offlineSince: null,
+    deadline: h.deadline !== null && h.deadline <= now ? now + 12_000 : h.deadline,
   };
 }
 export function rematch(g: Game): Game {

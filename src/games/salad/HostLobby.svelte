@@ -4,12 +4,12 @@
   import Popup from '../../components/Popup.svelte';
   import Avatar from '../../components/room/Avatar.svelte';
   import Qr from '../../components/room/Qr.svelte';
-  import { brokerLabel } from '../../lib/room/broker';
+  import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import type { PlayerView } from './view';
 
-  let { players, online, code, link, packNames, onstart, onkick, onsettings, onconnection }: {
+  let { players, online, code, link, packNames, onstart, onkick, onsettings, onrebroker }: {
     players: PlayerView['players']; online: ReadonlySet<string>; code: string; link: string; packNames: string[];
-    onstart: () => void; onkick: (pid: string) => void; onsettings: () => void; onconnection: () => void;
+    onstart: () => void; onkick: (pid: string) => void; onsettings: () => void; onrebroker: () => void;
   } = $props();
   const seated = $derived(players.filter((p) => !p.kicked));
   const connected = $derived(seated.filter((p) => online.has(p.pid)).length);
@@ -47,7 +47,7 @@
     <Button size="lg" disabled={connected < 2} onclick={onstart}>
       {connected < 2 ? `Need ${2 - connected} more ${connected === 1 ? 'player' : 'players'}` : `Start with ${connected} players`}
     </Button>
-    <Button variant="ghost" onclick={onconnection}>Matchmaking: {brokerLabel()}</Button>
+    <ConnectionLink onchange={onrebroker} />
   </section>
 </div>
 

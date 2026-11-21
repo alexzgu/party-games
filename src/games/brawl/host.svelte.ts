@@ -32,6 +32,11 @@ class Session {
       } };
     },
     message: (pid, raw) => this.receive(pid, raw),
+    left: (pid) => {
+      if (!this.game) return;
+      this.commit(L.leave(this.game, pid));
+      this.tick();
+    },
     taken: () => {
       if (this.game?.phase !== 'lobby' || this.game.players.length) return null;
       const code = newCode();

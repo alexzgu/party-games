@@ -45,6 +45,8 @@ export function demo(key: string, phone: boolean): View {
     if (phase === 'draw') v.title = title;
   }
   if (phase === 'draw' || phase === 'challenge') v.progress = ['a', 'b'];
+  // "late": Sage joined after the drawings were handed out.
+  if (key === 'late') v.artists = ['b', 'a', 'c'];
   if (phase === 'title' || phase === 'vote' || phase === 'tag' || phase === 'payout') v.title = title;
   if (phase === 'vote' || phase === 'tag' || phase === 'payout') v.cards = [rook, toast];
   if (phase === 'vote') {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import Screen from '../../components/Screen.svelte';
+  import Button from '../../components/Button.svelte';
   import { brawlPacks } from '../../lib/content';
   import { back } from '../../lib/router.svelte';
   import { DRAW_TIMES, type Settings } from './logic';
@@ -34,6 +35,7 @@
       </label>
     {/each}
   </fieldset>
+  {#snippet actions()}<Button size="lg" onclick={() => back('/brawl/host')}>Done</Button>{/snippet}
 </Screen>
 
 <style>

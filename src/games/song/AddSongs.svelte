@@ -4,6 +4,7 @@
   import Button from '../../components/Button.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import Stepper from '../../components/Stepper.svelte';
+  import Popup from '../../components/Popup.svelte';
   import FoundRow from './FoundRow.svelte';
   import { Adder, rematchWanted, toSong, type Item } from './adding';
   import { parsePaste, tidy, wantedKey, youtubeFrom, type Track } from './match';
@@ -60,6 +61,8 @@
 
   const done = $derived(items.filter((i) => i.state === 'done' && i.wanted.kind !== 'playlist').length);
   const total = $derived(items.filter((i) => i.wanted.kind !== 'playlist').length);
+  const found = $derived(items.filter((i) => i.state === 'done' && i.wanted.kind !== 'playlist' && !!i.match?.track).length);
+  let confirmLeave = $state(false);
   const keep = $derived(items.filter((i) => i.keep && i.match?.track?.preview && !i.dup).length);
   const doubts = $derived(items.filter((i) => i.state === 'done' && i.keep && i.match && !i.match.sure).length);
   const eta = $derived(busy && total > done ? apple.etaSeconds(total - done) : 0);
@@ -120,6 +123,12 @@
     onback();
   }
 
+  /** Back with songs ticked but not added: ask, so nobody thinks they are in the pack already. */
+  function tryLeave() {
+    if (keep && !confirmLeave) confirmLeave = true;
+    else leave();
+  }
+
   function save() {
     if (!pack) return;
     const kept = adder.kept();
@@ -149,7 +158,7 @@
   ];
 </script>
 
-<Screen title="Add songs" onback={leave}>
+<Screen title="Add songs" onback={tryLeave}>
   {#if !pack}
     <p class="muted">This pack is no longer on this phone.</p>
   {:else}
@@ -200,7 +209,7 @@
         <div class="status" aria-live="polite">
           <p>
             {#if busy}<span class="dot" aria-hidden="true"></span>{/if}
-            <b>Matched {done} of {total}</b>{#if eta > 20} · about {eta < 90 ? '1 minute' : `${Math.round(eta / 60)} minutes`} left{/if}
+            <b>Looked up {done} of {total} · {found} found</b>{#if eta > 20} · about {eta < 90 ? '1 minute' : `${Math.round(eta / 60)} minutes`} left{/if}
             {#if doubts} · <span class="doubt">{doubts} to check</span>{/if}
           </p>
           {#if busy}
@@ -225,7 +234,19 @@
   {/snippet}
 </Screen>
 
+{#if confirmLeave && pack}
+  <Popup title="Add {keep} {keep === 1 ? 'song' : 'songs'} first?" onclose={() => (confirmLeave = false)}>
+    <div class="confirm">
+      <p>The ticked songs aren’t in “{pack.name}” yet.</p>
+      <Button onclick={save}>Add {keep} {keep === 1 ? 'song' : 'songs'}</Button>
+      <Button variant="secondary" onclick={leave}>Not now (the list stays here for later)</Button>
+    </div>
+  </Popup>
+{/if}
+
 <style>
+  .confirm { display: flex; flex-direction: column; gap: var(--s-2); }
+  .confirm p { margin: 0 0 var(--s-2); }
   .to { margin: 0; color: var(--text-dim); font-weight: 600; }
   .field { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
   textarea { min-height: 9rem; resize: vertical; font: inherit; }

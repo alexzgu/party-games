@@ -58,6 +58,11 @@ class HostSession {
       return { pid: res.pid, then: () => { if (res.game === this.game) this.sendView(res.pid); else this.commit(res.game); } };
     },
     message: (pid, raw) => this.receive(pid, raw),
+    left: (pid) => {
+      if (!this.game) return;
+      this.commit(L.leave(this.game, pid));
+      this.tick();
+    },
     // A brand-new room whose code is taken simply takes another code.
     taken: () => {
       const g = this.game;

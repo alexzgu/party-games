@@ -109,4 +109,12 @@
   @media (min-width: 900px) and (orientation: landscape) {
     .art { width: min(100%, 62dvh); }
   }
+  /* A short phone: smaller art and title so "Undo" stays on screen. */
+  @media (max-height: 760px) and (orientation: portrait) {
+    .art { width: min(64vw, 24dvh, 300px); }
+    .banner { min-height: 44px; padding: 0; }
+    .fit { height: 72px; }
+    .wide + .body .fit { height: 56px; }
+    .body { gap: var(--s-2); }
+  }
 </style>

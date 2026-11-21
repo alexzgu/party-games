@@ -76,10 +76,9 @@
     {/each}
   </div>
 
-  <div class="row">
-    <Button variant="secondary" onclick={nobody}>Nobody got it</Button>
-    <Button variant="ghost" onclick={onskip}>↻ Skip song</Button>
-  </div>
+  <!-- Nobody ends the song (the answer shows); Skip swaps it unheard, so it is only a small link. -->
+  <Button variant="secondary" onclick={nobody}>🤷 Nobody got it</Button>
+  <button class="skip" onclick={onskip}>Skip this song (no points, it isn’t shown)</button>
 </div>
 
 <style>
@@ -104,5 +103,10 @@
   .player span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .grid.three .player { font-size: 1rem; padding: var(--s-2); justify-content: center; text-align: center; }
   .grid.three .player :global(.avatar) { display: none; }
+  @media (max-height: 760px) {
+    .grid.three .player { min-height: var(--tap-min); }
+    .who { margin-top: 0; }
+  }
+  .skip { align-self: center; min-height: 44px; padding: 0 var(--s-3); background: none; border: 0; color: var(--text-dim); font-size: 0.9rem; text-decoration: underline; text-underline-offset: 3px; }
   .player:active { transform: scale(0.96); background: color-mix(in srgb, var(--c-good) 30%, var(--surface)); }
 </style>
