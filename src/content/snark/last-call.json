@@ -1,0 +1,300 @@
+{
+  "id": "last-call",
+  "name": "Last Call",
+  "blurb": "Cheeky late-night prompts, never explicit",
+  "added": "2026-11-20T21:55",
+  "prompts": [
+    "What actually stays in Vegas",
+    "A first message that gets you instantly unmatched",
+    "The worst thing to call out in your sleep",
+    "What your situationship really thinks you are",
+    "A terrible name for a spring break trip",
+    "The worst thing to say during a slow dance",
+    "A terrible name for a romance novel hero",
+    "The worst thing to find in your Venmo history",
+    "A fake ID name nobody would believe",
+    "A terrible name for a 2 a.m. drive-thru combo",
+    "The worst thing to hear from the bathroom at a house party",
+    "Where your friend disappears to at every party",
+    "The worst thing to say when your date reaches for the check",
+    "What your exes would say in a group chat together",
+    "A terrible theme for a couples costume",
+    "The most suspicious thing in a bachelor's fridge",
+    "A bad excuse for why your shirt is on inside out",
+    "What happens on a very sketchy party bus",
+    "The worst way to get caught sneaking out the next morning",
+    "A terrible name for a hookup app",
+    "A bad thing to scream on a mechanical bull",
+    "The worst nickname to earn on a girls' trip",
+    "A pregame ritual that went too far",
+    "The real reason your ex kept your hoodie",
+    "A sign your date is still married",
+    "The worst thing to say when the lights come on at the bar",
+    "A new rule for sleeping over at your crush's place",
+    "The worst thing to be caught doing on a doorbell camera",
+    "What your playlist says about your love life",
+    "The worst answer when your date asks where this is going",
+    "A flirting move that never works",
+    "A rejected name for a wine moms' book club",
+    "The worst thing to find in a hotel minibar",
+    "The worst place to lose your phone at 2 a.m.",
+    "The most dangerous words at a house party",
+    "A terrible sign to hang on your bedroom door",
+    "The worst thing to see on your date's bookshelf",
+    "Something you should never say to a bouncer",
+    "The worst way to say I love you for the first time",
+    "What the guy in the mesh tank top is thinking",
+    "A terrible password to get into a speakeasy",
+    "A bad reason to get back with your ex",
+    "What your friends really say after you leave the party",
+    "The most chaotic thing at a wedding after-party",
+    "A terrible fake name to give at the bar",
+    "The worst text to get from an unknown number at 1 a.m.",
+    "What your camera roll would say in court",
+    "The worst thing to shout during a keg stand",
+    "The worst dare to accept during truth or dare",
+    "What your tequila shot is plotting",
+    "The worst thing to say on a double date",
+    "A red flag you'd ignore for someone really hot",
+    "What your dating app algorithm thinks of you",
+    "An honest description of your type",
+    "A terrible thing to put in a love letter",
+    "A terrible reason to call your ex at midnight",
+    "The worst reply when your partner says we need to talk",
+    "A bad name for a nude beach",
+    "A rejected Valentine's Day card message",
+    "The worst gift to give on a third date",
+    "A terrible house party rule",
+    "The worst moment to start hiccuping",
+    "A cheesy line a romance novel cowboy would say",
+    "An awkward thing to say to your ex's new partner",
+    "The worst way to sneak snacks into a club",
+    "A suspicious thing to say at a wine tasting",
+    "The worst thing to say to your date's cat",
+    "The most humbling thing to happen on a dance floor",
+    "The worst thing to shout while crowd surfing",
+    "The worst song to play on a romantic night in",
+    "A terrible name for a honeymoon suite",
+    "The most embarrassing thing to leave behind at a hotel",
+    "What really happened on the cabin trip",
+    "The worst thing to hear from the next tent at a music festival",
+    "A bad excuse for being three hours late to the pregame",
+    "A terrible name for a breakup playlist",
+    "A sign you're the drunk friend tonight",
+    "A sexy line that sounds terrible out loud",
+    "The real reason there's a sock on the doorknob",
+    "The worst thing to say when you're caught staring"
+  ],
+  "safety": {
+    "What actually stays in Vegas": "A kidney and my dignity",
+    "A first message that gets you instantly unmatched": "Hi, my mom says hi",
+    "The worst thing to call out in your sleep": "Your boss's name",
+    "What your situationship really thinks you are": "A free plus-one",
+    "A terrible name for a spring break trip": "Liver Let Die",
+    "The worst thing to say during a slow dance": "I can still taste my lunch",
+    "A terrible name for a romance novel hero": "Brick Manly",
+    "The worst thing to find in your Venmo history": "Bail, split three ways",
+    "A fake ID name nobody would believe": "Mister Totally Twenty-One",
+    "A terrible name for a 2 a.m. drive-thru combo": "The Regret Meal",
+    "The worst thing to hear from the bathroom at a house party": "Who has a plunger, asking for a friend",
+    "Where your friend disappears to at every party": "Making friends with the dog",
+    "The worst thing to say when your date reaches for the check": "Oh, thank God",
+    "What your exes would say in a group chat together": "Did they do the voice with you too",
+    "A terrible theme for a couples costume": "Landlord and tenant",
+    "The most suspicious thing in a bachelor's fridge": "One lemon and a candle",
+    "A bad excuse for why your shirt is on inside out": "It's a new trend",
+    "What happens on a very sketchy party bus": "Someone's uncle is driving",
+    "The worst way to get caught sneaking out the next morning": "Tripping over their grandma",
+    "A terrible name for a hookup app": "Netflix and Leave",
+    "A bad thing to scream on a mechanical bull": "I'm in love with the bull",
+    "The worst nickname to earn on a girls' trip": "Sir Pukes-a-Lot",
+    "A pregame ritual that went too far": "A shot of soy sauce",
+    "The real reason your ex kept your hoodie": "It's their emotional support hoodie",
+    "A sign your date is still married": "Their ring tan line is glowing",
+    "The worst thing to say when the lights come on at the bar": "Wait, you're who I've been kissing",
+    "A new rule for sleeping over at your crush's place": "Nobody touches the weird pillow",
+    "The worst thing to be caught doing on a doorbell camera": "Practicing your apology speech",
+    "What your playlist says about your love life": "Three breakups and a cowboy phase",
+    "The worst answer when your date asks where this is going": "Probably Applebee's",
+    "A flirting move that never works": "Aggressive winking",
+    "A rejected name for a wine moms' book club": "Chapter One, Glass Four",
+    "The worst thing to find in a hotel minibar": "A note that says we know",
+    "The worst place to lose your phone at 2 a.m.": "A porta-potty",
+    "The most dangerous words at a house party": "Watch this",
+    "A terrible sign to hang on your bedroom door": "Now taking reservations",
+    "The worst thing to see on your date's bookshelf": "How to Fake Your Own Death",
+    "Something you should never say to a bouncer": "I know the owner's mom",
+    "The worst way to say I love you for the first time": "In the middle of a sneeze",
+    "What the guy in the mesh tank top is thinking": "Everyone is staring, as planned",
+    "A terrible password to get into a speakeasy": "Is this a bar",
+    "A bad reason to get back with your ex": "Their mom makes great lasagna",
+    "What your friends really say after you leave the party": "Finally, the good snacks",
+    "The most chaotic thing at a wedding after-party": "Grandpa found the tequila",
+    "A terrible fake name to give at the bar": "Kevin Kevinson",
+    "The worst text to get from an unknown number at 1 a.m.": "Is this still the burner",
+    "What your camera roll would say in court": "Forty blurry pictures of the moon",
+    "The worst thing to shout during a keg stand": "Somebody hold my wig",
+    "The worst dare to accept during truth or dare": "Call your ex on speaker",
+    "What your tequila shot is plotting": "Your 3 a.m. apology tour",
+    "The worst thing to say on a double date": "So which couple breaks up first",
+    "A red flag you'd ignore for someone really hot": "They clap when the plane lands",
+    "What your dating app algorithm thinks of you": "Show them more guys holding fish",
+    "An honest description of your type": "Emotionally unavailable, great hair",
+    "A terrible thing to put in a love letter": "Attached is my credit score",
+    "A terrible reason to call your ex at midnight": "To ask for my blender back",
+    "The worst reply when your partner says we need to talk": "Is this about the boat",
+    "A bad name for a nude beach": "Nothing Beach",
+    "A rejected Valentine's Day card message": "You're tolerable, I guess",
+    "The worst gift to give on a third date": "A framed photo of us",
+    "A terrible house party rule": "Shoes on the bed only",
+    "The worst moment to start hiccuping": "Halfway through a proposal",
+    "A cheesy line a romance novel cowboy would say": "Darlin', my horse likes you",
+    "An awkward thing to say to your ex's new partner": "Good luck with the snoring",
+    "The worst way to sneak snacks into a club": "Inside your hat, visibly",
+    "A suspicious thing to say at a wine tasting": "Can I just get the box",
+    "The worst thing to say to your date's cat": "We'll see who wins tonight",
+    "The most humbling thing to happen on a dance floor": "Dropping it and not getting back up",
+    "The worst thing to shout while crowd surfing": "I'm not wearing a belt",
+    "The worst song to play on a romantic night in": "Baby Shark",
+    "A terrible name for a honeymoon suite": "The Annulment Suite",
+    "The most embarrassing thing to leave behind at a hotel": "Your retainer and your dignity",
+    "What really happened on the cabin trip": "Somebody married the canoe guy",
+    "The worst thing to hear from the next tent at a music festival": "Has anyone seen my husband",
+    "A bad excuse for being three hours late to the pregame": "I was pregaming the pregame",
+    "A terrible name for a breakup playlist": "Songs to Text Them To",
+    "A sign you're the drunk friend tonight": "You're hugging the bouncer",
+    "A sexy line that sounds terrible out loud": "Wanna see my tax returns",
+    "The real reason there's a sock on the doorknob": "Someone lost a bet",
+    "The worst thing to say when you're caught staring": "I was just reading your shirt"
+  },
+  "finals": [
+    {
+      "prompt": "Three terrible names for a dating app",
+      "house": [
+        "Settle",
+        "Swipe Left Forever",
+        "Mom Approved"
+      ]
+    },
+    {
+      "prompt": "Three things you'd hate to hear in a hotel hallway at 3 a.m.",
+      "house": [
+        "Which room has the goat",
+        "The ice machine is mine now",
+        "Room service, open up"
+      ]
+    },
+    {
+      "prompt": "Three signs the party is about to get shut down",
+      "house": [
+        "Someone found the fire extinguisher",
+        "The host is crying",
+        "Uncle brought fireworks"
+      ]
+    },
+    {
+      "prompt": "Three things your ex would put on their dating profile",
+      "house": [
+        "Emotionally available now",
+        "Ask me about my ex",
+        "Loves long walks away"
+      ]
+    },
+    {
+      "prompt": "Three bad things to say in a bachelor party toast",
+      "house": [
+        "Here's to the next one",
+        "I give it two years",
+        "Bride, blink twice"
+      ]
+    },
+    {
+      "prompt": "Three things you shouldn't say on a dance floor",
+      "house": [
+        "Is that my knee",
+        "My back just went",
+        "Can we do the Macarena"
+      ]
+    },
+    {
+      "prompt": "Three excuses for coming home at 6 a.m.",
+      "house": [
+        "I was watering the moon",
+        "Got lost in a Denny's",
+        "Traffic, probably"
+      ]
+    },
+    {
+      "prompt": "Three worst party games for a first date",
+      "house": [
+        "Never Have I Ever: Felonies",
+        "Name My Exes",
+        "Two Truths and a Restraining Order"
+      ]
+    },
+    {
+      "prompt": "Three red flags at a wine tasting",
+      "house": [
+        "They spit, but on you",
+        "Asks for a straw",
+        "Calls every wine juice"
+      ]
+    },
+    {
+      "prompt": "Three things a hot tub would confess",
+      "house": [
+        "I've seen things",
+        "I am mostly soup now",
+        "Please, no more glitter"
+      ]
+    },
+    {
+      "prompt": "Three terrible things to text right after a first date",
+      "house": [
+        "My mom loved you",
+        "So when's the wedding",
+        "Wrong person, ignore"
+      ]
+    },
+    {
+      "prompt": "Three worst things to bring to a sleepover at 30",
+      "house": [
+        "A night guard",
+        "Your tax documents",
+        "A recliner"
+      ]
+    },
+    {
+      "prompt": "Three ways to get kicked out of a wedding",
+      "house": [
+        "Objecting, for fun",
+        "Proposing during the toast",
+        "Hitting on the officiant"
+      ]
+    },
+    {
+      "prompt": "Three signs your blind date is a vampire",
+      "house": [
+        "Orders blood orange everything",
+        "Only meets after sunset",
+        "Bit the waiter"
+      ]
+    },
+    {
+      "prompt": "Three things you should never shout at a music festival",
+      "house": [
+        "Who has my kidney",
+        "I'm forty and proud",
+        "Anyone seen my pants"
+      ]
+    },
+    {
+      "prompt": "Three rejected names for a love potion",
+      "house": [
+        "Mostly Tequila",
+        "Eau de Desperate",
+        "Swipe Right Serum"
+      ]
+    }
+  ]
+}

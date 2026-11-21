@@ -1,0 +1,300 @@
+{
+  "id": "grab-bag",
+  "name": "Grab Bag",
+  "blurb": "A little of everything, for any crowd",
+  "added": "2026-11-20T21:55",
+  "prompts": [
+    "A terrible name for a moving company",
+    "The worst thing to hear from your landlord",
+    "What your rideshare rating says about you",
+    "What your smartwatch is judging you for",
+    "A terrible way to open a eulogy",
+    "A rejected flavor of sparkling water",
+    "A fun fact that would end any conversation",
+    "The worst thing to say when your card gets declined",
+    "What the self-checkout machine thinks of you",
+    "What your group project partner was actually doing",
+    "The worst dish to bring to a potluck",
+    "What your neighbor's dog barks about all night",
+    "A bad name for a hiking trail",
+    "The worst way to find out you've been fired",
+    "What the robot vacuum sees that we don't",
+    "A terrible name for a cat café",
+    "The most dramatic way to quit a job",
+    "A bad excuse for not replying to a text for a week",
+    "The worst thing to put on a vision board",
+    "What raccoons do with all that trash",
+    "A terrible name for a coffee size",
+    "A terrible reason to start a cult",
+    "A bad thing to discover in your family tree",
+    "An oddly specific phobia",
+    "A new rule at the laundromat",
+    "The worst thing to yell at someone running a marathon",
+    "A terrible name for a sandwich",
+    "The most boring superhero origin story",
+    "A warning label that should exist",
+    "The worst thing to find in your new apartment",
+    "What your mom really means when she says maybe",
+    "What the ducks at the park are gossiping about",
+    "A bad name for a tech startup",
+    "The most passive-aggressive note to leave on a fridge",
+    "The worst possible name for a hot sauce",
+    "The worst sound to hear while camping",
+    "A sign your vacation rental is haunted",
+    "A suspicious thing your coworker keeps in their desk",
+    "The worst thing to say after someone shows you their baby",
+    "A terrible plot for a holiday romance movie",
+    "What a medieval knight would think of a drive-thru",
+    "The worst name for a sourdough starter",
+    "The real reason the ice cream machine is always broken",
+    "The worst thing to hear during a home inspection",
+    "What happens to all the socks the dryer eats",
+    "The worst possible subject for a TED talk",
+    "A strange thing to find in a library book",
+    "What your doctor googles after you leave",
+    "A sign you've been working from home too long",
+    "The worst thing to say at your own surprise party",
+    "An unhelpful tip from a home renovation show",
+    "What the lifeguard is daydreaming about",
+    "A terrible name for a kids' TV show",
+    "The worst thing to learn from a DNA test",
+    "A suspicious ingredient in gas station sushi",
+    "A weird thing to see in a stranger's shopping cart",
+    "A terrible slogan for a car dealership",
+    "The worst way to start a new group chat",
+    "What the last slice of pizza is thinking",
+    "A sign your barista secretly hates you",
+    "The worst thing a smoke detector could say at 3 a.m.",
+    "A new excuse to call in sick",
+    "The worst thing to engrave on a wedding ring",
+    "Where all the missing Tupperware lids really go",
+    "A rejected name for a newly discovered dinosaur",
+    "A terrible motivational quote for a gym wall",
+    "The worst place to get stuck for 24 hours",
+    "What a goose is always so angry about",
+    "The worst thing to read in your horoscope",
+    "A bad name for a self-driving car",
+    "A sign your tour guide is making it all up",
+    "What your autocorrect has against you",
+    "A weird thing to have a lifetime supply of",
+    "A new button your microwave desperately needs",
+    "What actually goes on in the teachers' lounge",
+    "An unexpected side effect of a new medication",
+    "A terrible theme for a high school reunion",
+    "What your mail carrier knows about you",
+    "The worst thing to find in a thrift store coat pocket",
+    "An overly specific villain backstory"
+  ],
+  "safety": {
+    "A terrible name for a moving company": "Mostly Unbroken Movers",
+    "The worst thing to hear from your landlord": "I kept a spare key, obviously",
+    "What your rideshare rating says about you": "Slams doors, says thank you",
+    "What your smartwatch is judging you for": "Twelve steps before noon",
+    "A terrible way to open a eulogy": "So, who here owed him money",
+    "A rejected flavor of sparkling water": "A whisper of ham",
+    "A fun fact that would end any conversation": "Sharks are older than trees",
+    "The worst thing to say when your card gets declined": "That's weird, it's my mom's",
+    "What the self-checkout machine thinks of you": "Unexpected item in the bagging area: you",
+    "What your group project partner was actually doing": "Napping, with great focus",
+    "The worst dish to bring to a potluck": "One single cold hot dog",
+    "What your neighbor's dog barks about all night": "The moon owes him money",
+    "A bad name for a hiking trail": "Ankle Snapper Ridge",
+    "The worst way to find out you've been fired": "Your badge just beeps sadly",
+    "What the robot vacuum sees that we don't": "Thirty years of crumbs",
+    "A terrible name for a cat café": "Hairball Bistro",
+    "The most dramatic way to quit a job": "Leaving on a zip line",
+    "A bad excuse for not replying to a text for a week": "I was emotionally buffering",
+    "The worst thing to put on a vision board": "A picture of my ex's new house",
+    "What raccoons do with all that trash": "Run a very small thrift store",
+    "A terrible name for a coffee size": "Medium Rare",
+    "A terrible reason to start a cult": "I just wanted matching outfits",
+    "A bad thing to discover in your family tree": "We're all related to the mailman",
+    "An oddly specific phobia": "Fear of half-open drawers",
+    "A new rule at the laundromat": "No eye contact during folding",
+    "The worst thing to yell at someone running a marathon": "You know cars exist, right",
+    "A terrible name for a sandwich": "The Soggy Surprise",
+    "The most boring superhero origin story": "Bitten by a radioactive accountant",
+    "A warning label that should exist": "May cause a three-hour nap",
+    "The worst thing to find in your new apartment": "A note that just says good luck",
+    "What your mom really means when she says maybe": "No, but in three weeks",
+    "What the ducks at the park are gossiping about": "Gary's bread is stale again",
+    "A bad name for a tech startup": "Bloatr",
+    "The most passive-aggressive note to leave on a fridge": "Enjoy MY yogurt, I guess",
+    "The worst possible name for a hot sauce": "Mild Disappointment",
+    "The worst sound to hear while camping": "Someone unzipping your tent",
+    "A sign your vacation rental is haunted": "The guestbook is signed 1847",
+    "A suspicious thing your coworker keeps in their desk": "Forty packets of ketchup",
+    "The worst thing to say after someone shows you their baby": "Oh, it'll grow into its face",
+    "A terrible plot for a holiday romance movie": "She falls for the snowplow",
+    "What a medieval knight would think of a drive-thru": "Witchcraft, but with fries",
+    "The worst name for a sourdough starter": "Clint Yeastwood",
+    "The real reason the ice cream machine is always broken": "It just needs a day off",
+    "The worst thing to hear during a home inspection": "Huh. That's not a raccoon",
+    "What happens to all the socks the dryer eats": "They start a new life in Florida",
+    "The worst possible subject for a TED talk": "Why I don't return carts",
+    "A strange thing to find in a library book": "A receipt for one goat",
+    "What your doctor googles after you leave": "Is that even a bone",
+    "A sign you've been working from home too long": "You give the cat performance reviews",
+    "The worst thing to say at your own surprise party": "I knew, I just didn't care",
+    "An unhelpful tip from a home renovation show": "Just knock down every wall",
+    "What the lifeguard is daydreaming about": "A pool with no people in it",
+    "A terrible name for a kids' TV show": "Mister Tax Season",
+    "The worst thing to learn from a DNA test": "You're 40% golden retriever",
+    "A suspicious ingredient in gas station sushi": "Something that blinked",
+    "A weird thing to see in a stranger's shopping cart": "Forty lemons and a shovel",
+    "A terrible slogan for a car dealership": "Mostly has wheels",
+    "The worst way to start a new group chat": "Who wants to hear about my dream",
+    "What the last slice of pizza is thinking": "Someone, please, I'm getting cold",
+    "A sign your barista secretly hates you": "They spell your name Ugh",
+    "The worst thing a smoke detector could say at 3 a.m.": "I know what you did",
+    "A new excuse to call in sick": "My horoscope said stay in",
+    "The worst thing to engrave on a wedding ring": "Return if found",
+    "Where all the missing Tupperware lids really go": "A lid-only support group",
+    "A rejected name for a newly discovered dinosaur": "Mediumsaurus",
+    "A terrible motivational quote for a gym wall": "Pain is just your body quitting",
+    "The worst place to get stuck for 24 hours": "A kids' ball pit",
+    "What a goose is always so angry about": "Rent",
+    "The worst thing to read in your horoscope": "Mercury is in retrograde, and so are you",
+    "A bad name for a self-driving car": "The Maybe",
+    "A sign your tour guide is making it all up": "Every building was Lincoln's house",
+    "What your autocorrect has against you": "It's still mad about 2014",
+    "A weird thing to have a lifetime supply of": "Left shoes",
+    "A new button your microwave desperately needs": "Make it hot in the middle",
+    "What actually goes on in the teachers' lounge": "Fight club, but with grading",
+    "An unexpected side effect of a new medication": "Sudden fluency in dolphin",
+    "A terrible theme for a high school reunion": "Who Peaked: A Retrospective",
+    "What your mail carrier knows about you": "You order way too many socks",
+    "The worst thing to find in a thrift store coat pocket": "A note that says you're next",
+    "An overly specific villain backstory": "Someone took his parking spot once"
+  },
+  "finals": [
+    {
+      "prompt": "Three terrible names for a coffee shop",
+      "house": [
+        "Bean There, Regretted That",
+        "Grounds for Divorce",
+        "Mug Shot"
+      ]
+    },
+    {
+      "prompt": "Three things a raccoon would put on its resume",
+      "house": [
+        "Expert lid remover",
+        "Night shift only",
+        "Fluent in trash"
+      ]
+    },
+    {
+      "prompt": "Three signs your houseguest is never leaving",
+      "house": [
+        "They forwarded their mail",
+        "The welcome mat says Greg",
+        "They painted the guest room"
+      ]
+    },
+    {
+      "prompt": "Three worst things to hear from your mechanic",
+      "house": [
+        "Whoa. Okay. Sit down",
+        "Is this car haunted",
+        "I'll just keep it"
+      ]
+    },
+    {
+      "prompt": "Three rejected names for a new planet",
+      "house": [
+        "Planet Gary",
+        "Big Rock Nine",
+        "Pluto Two: The Comeback"
+      ]
+    },
+    {
+      "prompt": "Three things you should never do at an open house",
+      "house": [
+        "Nap in the main bedroom",
+        "Ask where they buried it",
+        "Start unpacking"
+      ]
+    },
+    {
+      "prompt": "Three things a goose would say if it could talk",
+      "house": [
+        "Move",
+        "This is my parking lot",
+        "I bite for sport"
+      ]
+    },
+    {
+      "prompt": "Three bad names for a daycare",
+      "house": [
+        "Tiny Screamers",
+        "Germ Garden",
+        "Little Lungs"
+      ]
+    },
+    {
+      "prompt": "Three terrible slogans for an airline",
+      "house": [
+        "We'll probably land",
+        "Legroom is a privilege",
+        "Seat belts sold separately"
+      ]
+    },
+    {
+      "prompt": "Three excuses for missing your own birthday party",
+      "house": [
+        "Thought it was next year",
+        "My cat said no",
+        "Too busy aging"
+      ]
+    },
+    {
+      "prompt": "Three useless things to bring on a camping trip",
+      "house": [
+        "A lava lamp",
+        "Ten pounds of croutons",
+        "Your landlord"
+      ]
+    },
+    {
+      "prompt": "Three things your dentist says while your mouth is full",
+      "house": [
+        "So, any big plans",
+        "Whoops",
+        "That one's coming out"
+      ]
+    },
+    {
+      "prompt": "Three bad names for a kids' soccer team",
+      "house": [
+        "The Knee Scrapes",
+        "Orange Slice Union",
+        "The Participation Trophies"
+      ]
+    },
+    {
+      "prompt": "Three new rules for the office kitchen",
+      "house": [
+        "Microwaved fish is a crime",
+        "Label your yogurt and feelings",
+        "Unclaimed lunch is public"
+      ]
+    },
+    {
+      "prompt": "Three things a ghost does when nobody's home",
+      "house": [
+        "Reorganizes the spoons",
+        "Watches your streaming queue",
+        "Tries on your shoes"
+      ]
+    },
+    {
+      "prompt": "Three bad flavors for a birthday cake",
+      "house": [
+        "Tuna crunch",
+        "Unsweetened sadness",
+        "Cilantro swirl"
+      ]
+    }
+  ]
+}
