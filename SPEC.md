@@ -235,7 +235,9 @@ team sets a dial to where they think the target is.
   field → "Hide & hand over" → team view: scale + clue, big semicircle dial with a draggable
   needle (pointer events, smooth, light haptic tick every few degrees) → Lock in → (steal) →
   reveal: a cover swings open to show the target, points fly to the team.
-- **Scoring**: dial 0–100, target centre uniform in [4, 96]. Distance ≤ 2.5 → 4 pts, ≤ 7.5 → 3,
+- **Scoring**: dial 0–100, target centre in [4, 96], spread out: the range is cut into five equal
+  parts dealt from a shuffle bag kept across games (each part once before any repeats), and a
+  target sits at least 15 from the previous one when its part allows. Distance ≤ 2.5 → 4 pts, ≤ 7.5 → 3,
   ≤ 12.5 → 2, else 0. Steal correct → 1 pt to the other team. Turns alternate. First to the
   target score wins (win screen with confetti, rematch).
 - Game state saved after every step; reopening resumes.

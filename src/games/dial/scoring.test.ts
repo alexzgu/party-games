@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bandSegments, pointsFor, randomTarget, stealPoints } from './scoring';
+import { bandSegments, MIN_GAP, pointsFor, randomTarget, spreadTarget, stealPoints, TARGET_MAX, TARGET_MIN, ZONES } from './scoring';
 
 describe('pointsFor', () => {
   it('scores each band up to and including its edge', () => {
@@ -37,5 +37,26 @@ describe('bandSegments', () => {
     const edge = bandSegments(4);
     expect(edge[0]).toEqual({ from: 0, to: 1.5, points: 3 });
     expect(edge.every((s) => s.from >= 0 && s.to <= 100)).toBe(true);
+  });
+});
+
+describe('spreadTarget', () => {
+  it('lands inside its part of the dial and inside [4, 96]', () => {
+    const width = (TARGET_MAX - TARGET_MIN) / ZONES;
+    for (let z = 0; z < ZONES; z++) {
+      for (const r of [0, 0.5, 0.999999]) {
+        const t = spreadTarget(z, null, () => r);
+        expect(t).toBeGreaterThanOrEqual(TARGET_MIN + z * width - 0.05);
+        expect(t).toBeLessThanOrEqual(TARGET_MIN + (z + 1) * width + 0.05);
+      }
+    }
+    expect(spreadTarget(0, null, () => 0)).toBe(TARGET_MIN);
+    expect(spreadTarget(ZONES - 1, null, () => 0.999999)).toBe(TARGET_MAX);
+  });
+
+  it('keeps away from the previous target when its part allows', () => {
+    const rolls = [0.1, 0.2, 0.9];
+    const t = spreadTarget(1, 24, () => rolls.shift() ?? 0.9);
+    expect(Math.abs(t - 24)).toBeGreaterThanOrEqual(MIN_GAP);
   });
 });

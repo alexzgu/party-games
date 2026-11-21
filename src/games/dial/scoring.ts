@@ -25,6 +25,23 @@ export function randomTarget(rand: () => number = Math.random): number {
   return Math.round((TARGET_MIN + rand() * (TARGET_MAX - TARGET_MIN)) * 10) / 10;
 }
 
+/**
+ * Plain uniform targets felt predictable at the table: by chance they bunch up, so several cards
+ * in a row land in the same part of the dial. The dial is cut into ZONES equal parts dealt from a
+ * shuffle bag (each part once before any repeats, the last few held back), and inside its part a
+ * target keeps at least MIN_GAP from the previous one.
+ */
+export const ZONES = 5;
+export const MIN_GAP = 15;
+
+export function spreadTarget(zone: number, previous: number | null, rand: () => number = Math.random): number {
+  const width = (TARGET_MAX - TARGET_MIN) / ZONES;
+  const at = () => Math.round((TARGET_MIN + (zone + rand()) * width) * 10) / 10;
+  let t = at();
+  for (let i = 0; i < 12 && previous !== null && Math.abs(t - previous) < MIN_GAP; i++) t = at();
+  return Math.min(TARGET_MAX, Math.max(TARGET_MIN, t));
+}
+
 /** Which side of the needle the target is on; null when the needle sits exactly on it. */
 export function sideOf(target: number, guess: number): Side | null {
   if (Math.abs(target - guess) < EPS) return null;

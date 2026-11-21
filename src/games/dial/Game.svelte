@@ -15,7 +15,7 @@
   import { unlockAudio } from '../../lib/sound';
   import { keepAwake } from '../../lib/wakelock';
   import { drawCard } from './deck';
-  import { randomTarget } from './scoring';
+  import { nextTarget } from './targets';
   import { clearGame, loadConfig, loadGame, saveGame } from './persist';
   import { demoGame, demoItems } from './demo';
   import { summarize, summarizeEarly } from './summary';
@@ -60,7 +60,7 @@
   function openReader(g: Game) {
     const card = drawCard(g.packIds, g.played);
     if (!card) return;
-    set(beginRound(g, card, randomTarget()));
+    set(beginRound(g, card, nextTarget()));
     readerOpen = true;
   }
 
