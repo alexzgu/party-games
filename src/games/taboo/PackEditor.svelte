@@ -1,19 +1,27 @@
 <script lang="ts">
   // One pack's cards, editable: rename, add one card or paste many, change or delete a card.
   // Every change saves at once. A built-in pack saves as this phone's edit of it (with
-  // "Restore original"); the player's own packs can be deleted. With no id this is a new pack,
-  // saved (and ticked in setup) on its first change.
+  // "Restore original"); the player's own packs can be deleted and get "🧙 Add more". With no id
+  // this is a new pack ("Make a pack"), saved (and ticked in setup) on its first change; it can
+  // instead be asked of the wizard.
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import CardForm from './CardForm.svelte';
+  import Wizard from './Wizard.svelte';
+  import AddMore from '../../components/AddMore.svelte';
+  import Segmented from '../../components/Segmented.svelte';
+  import { hasKey } from '../../lib/claude';
+  import { mergeOnTop } from '../../lib/addMore';
+  import { sfx } from '../../lib/sound';
   import { customTaboo, slugify, tabooPacks, type TabooCard, type TabooPack } from '../../lib/content';
   import { matches, sorted, type SortKey } from '../../lib/listing';
   import { go } from '../../lib/router.svelte';
   import { cardId, clean, parseCards } from './cards';
   import { selectPack } from './persist';
+  import { MORE_RANGE, moreCards } from './generate';
 
   let { id, onback }: { id: string | null; onback: () => void } = $props();
 
@@ -124,6 +132,29 @@
     confirm = null;
   }
 
+  /** A new pack: typed card by card, or asked of the wizard. */
+  const MODES = [{ value: 'write' as const, label: 'Write my own' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
+  let mode = $state<'write' | 'claude'>(hasKey() ? 'claude' : 'write');
+  /** The wizard's cards are on screen for review: the mode switch is hidden. */
+  let reviewing = $state(false);
+  /** Every word on the phone except this pack's: a word is never in two packs. */
+  const otherWords = () => tabooPacks().filter((p) => p.id !== pack?.id).flatMap((p) => p.cards.map((c) => c.word));
+
+  function conjured(n: string, theme: string, cards: TabooCard[]) {
+    if (!pack) return;
+    save({ ...pack, name: clean(n) || 'My pack', blurb: `Conjured by Fizzwick: ${theme.trim()}`, cards: $state.snapshot(cards) });
+    sfx.correct();
+  }
+
+  /** "🧙 Add more" is open in place of the editor. */
+  let adding = $state(false);
+  function addMore(kept: TabooCard[]) {
+    if (pack) save({ ...pack, cards: mergeOnTop(pack.cards, $state.snapshot(kept), cardId) });
+    query = '';
+    adding = false;
+    sfx.correct();
+  }
+
   function deletePack() {
     if (pack?.id) customTaboo.remove(pack.id);
     confirm = null;
@@ -131,9 +162,21 @@
   }
 </script>
 
-<Screen title={pack ? pack.name : 'Pack not found'} accent="var(--c-taboo)" {onback}>
+{#if adding && pack}
+  {@const p = $state.snapshot(pack)}
+  <AddMore name={p.name} noun="cards" range={MORE_RANGE} steerHint="e.g. more about food, easier" accent="var(--c-taboo)"
+    ask={(o) => moreCards(p, otherWords(), o)} keyOf={cardId} onadd={addMore} onclose={() => (adding = false)}>
+    {#snippet item(c: TabooCard)}<span class="txt"><span class="w">{c.word}</span><span class="b">{c.banned.join(' · ')}</span></span>{/snippet}
+  </AddMore>
+{:else}
+<Screen title={pack ? (pack.id ? pack.name : 'Make a pack') : 'Pack not found'} accent="var(--c-taboo)" {onback}>
+  {#if pack && !pack.id && !reviewing}
+    <Segmented label="How to make it" options={MODES} bind:value={mode} />
+  {/if}
   {#if !pack}
     <p class="muted">This pack is no longer on this phone.</p>
+  {:else if !pack.id && mode === 'claude'}
+    <Wizard taken={otherWords} bind:reviewing onsave={conjured} />
   {:else}
     <label class="field">
       <span class="faint">Pack name</span>
@@ -162,6 +205,7 @@
         {#if pasteBad.length}<ul class="bad">{#each pasteBad as b, i (i)}<li><b>{b.line}</b> · {b.why}</li>{/each}</ul>{/if}
       {/if}
     </div>
+    {#if pack.id && !builtin}<Button variant="secondary" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
 
     <div>
       <ListTools key="taboo:cards" bind:query bind:sort placeholder="Search cards" shown={rows.length} total={pack.cards.length}>
@@ -195,6 +239,7 @@
     {/if}
   {/if}
 </Screen>
+{/if}
 
 {#if confirm === 'restore'}
   <Popup title="Restore original?" onclose={() => (confirm = null)}>

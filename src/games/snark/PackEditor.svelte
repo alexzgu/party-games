@@ -4,13 +4,19 @@
   import ExportPack from '../../components/ExportPack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import AddMore from '../../components/AddMore.svelte';
+  import WizardItem from './WizardItem.svelte';
   import { customSnark, snarkPacks, type SnarkPack } from '../../lib/content';
   import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
   import { findPrompts } from './find';
+  import { fillStock, MORE_RANGE, moreItems, toFill } from './generate';
+  import { addItems, addStock, itemKey, missingStock, packTexts, removePrompt, setPrompt, type SnarkItem, type Stock } from './pack';
 
-  // One pack, every prompt listed: rename, add, edit, delete; every change saves at once.
-  // Editing a built-in saves this device's copy under the same id; "Restore original" drops it.
+  // One pack, every prompt listed with its stock answer: rename, add, edit, delete; every change
+  // saves at once. Editing a built-in saves this device's copy under the same id; "Restore
+  // original" drops it. The player's own packs get "🧙 Add more" and, when some prompts have no
+  // stock answer (pasted or older packs), "🧙 Fill in stock answers".
   let { id, onback }: { id: string; onback: () => void } = $props();
 
   // svelte-ignore state_referenced_locally
@@ -23,6 +29,7 @@
   let name = $state(initial?.name ?? '');
   let open = $state<number | 'new' | null>(null);
   let draft = $state('');
+  let stockDraft = $state('');
   let problem = $state('');
   let confirm = $state<'' | 'restore' | 'delete'>('');
   let query = $state('');
@@ -46,6 +53,7 @@
   function edit(i: number | 'new') {
     open = i;
     draft = i === 'new' || !pack ? '' : pack.prompts[i];
+    stockDraft = i === 'new' || !pack ? '' : pack.safety?.[pack.prompts[i]] ?? '';
     problem = '';
   }
 
@@ -55,8 +63,7 @@
     const text = draft.trim().replace(/\s+/g, ' ');
     if (!text) { problem = 'Type a prompt first.'; return; }
     if (pack.prompts.some((q, i) => i !== open && q.toLowerCase() === text.toLowerCase())) { problem = 'That prompt is already in this pack.'; return; }
-    const prompts = open === 'new' ? [text, ...pack.prompts] : pack.prompts.map((q, i) => (i === open ? text : q));
-    persist({ ...pack, prompts });
+    persist(setPrompt(pack, open, text, stockDraft.trim().replace(/\s+/g, ' ')));
     open = null;
     query = '';
     sfx.correct();
@@ -64,8 +71,19 @@
 
   function remove(i: number) {
     if (!pack) return;
-    persist({ ...pack, prompts: pack.prompts.filter((_, k) => k !== i) });
+    persist(removePrompt(pack, i));
     open = null;
+  }
+
+  /** "🧙 Add more" or "🧙 Fill in stock answers", open in place of the editor. */
+  let adding = $state<'' | 'more' | 'fill'>('');
+  const missing = $derived(pack ? missingStock(pack).length : 0);
+  const otherTexts = () => snarkPacks().filter((p) => p.id !== id).flatMap(packTexts);
+  function added(next: SnarkPack) {
+    persist(next);
+    query = '';
+    adding = '';
+    sfx.correct();
   }
 
   function restore() {
@@ -83,6 +101,23 @@
   }
 </script>
 
+{#if adding && pack}
+  {@const p = $state.snapshot(pack) as SnarkPack}
+  {#if adding === 'more'}
+    <AddMore name={p.name} noun="prompts" range={MORE_RANGE} steerHint="e.g. more about work, sillier"
+      ask={(o) => moreItems(p, otherTexts(), o)} keyOf={itemKey} onadd={(kept: SnarkItem[]) => added(addItems(p, kept))} onclose={() => (adding = '')}>
+      {#snippet item(i: SnarkItem)}<WizardItem {i} />{/snippet}
+    </AddMore>
+  {:else}
+    {@const n = toFill(p).length}
+    <AddMore title="🧙 Fill in stock answers" name={p.name} noun="stock answers" range={null} steerHint="e.g. sillier, shorter"
+      cta="✨ Write {n} stock {n === 1 ? 'answer' : 'answers'}" ask={(o) => fillStock(p, o)} keyOf={itemKey}
+      onadd={(kept: Stock[]) => added(addStock(p, kept))} onclose={() => (adding = '')}>
+      {#snippet size()}<p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer for “Give me one”.{missing > n ? ` Fizzwick does ${n} at a time.` : ''}</p>{/snippet}
+      {#snippet item(i: Stock)}<WizardItem {i} />{/snippet}
+    </AddMore>
+  {/if}
+{:else}
 <Screen title={pack?.name ?? 'Pack'} {onback}>
   {#if !pack}
     <p class="muted">This pack is no longer on this device.</p>
@@ -96,6 +131,12 @@
       {/if}
     </div>
     <ExportPack game="snark" {pack} />
+    {#if !builtin && missing}
+      <div class="fill">
+        <p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer, so “Give me one” can't help there.</p>
+        <Button variant="secondary" onclick={() => (adding = 'fill')}>🧙 Fill in stock answers</Button>
+      </div>
+    {/if}
     <label class="name">
       <span>Pack name</span>
       <input type="text" bind:value={name} onchange={rename} maxlength="40" autocomplete="off" enterkeyhint="done" />
@@ -110,15 +151,28 @@
       {#if query && !shown.length}<p class="none">No prompts match “{query.trim()}”</p>{/if}
       <ul class="prompts">
         {#each shown as { q, i } (i)}
-          <li><button class="prompt" onclick={() => edit(i)}>{q}</button></li>
+          {@const stock = pack.safety?.[q]}
+          <li><button class="prompt" onclick={() => edit(i)}>{q}{#if stock}<span class="stock">Give me one: {stock}</span>{/if}</button></li>
         {/each}
       </ul>
     </section>
+    {#if pack.finals?.length}
+      <section class="list" aria-label="Finals">
+        <h3 class="count">{pack.finals.length} {pack.finals.length === 1 ? 'final' : 'finals'} for three-line duels</h3>
+        <ul class="prompts">
+          {#each pack.finals as f (f.prompt)}
+            <li class="final">{f.prompt}<span class="stock">House: {f.house.join(' · ')}</span></li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
   {/if}
   {#snippet actions()}
+    {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = 'more')}>🧙 Add more</Button>{/if}
     {#if pack}<Button size="lg" onclick={() => edit('new')}>+ Add a prompt</Button>{/if}
   {/snippet}
 </Screen>
+{/if}
 
 {#if pack && open !== null}
   {@const index = open}
@@ -127,6 +181,10 @@
       <label class="field">
         <span>Prompt</span>
         <textarea bind:value={draft} rows="3" maxlength="140" oninput={() => (problem = '')} placeholder="A terrible name for a boat"></textarea>
+      </label>
+      <label class="field">
+        <span>Stock answer for “Give me one” (optional)</span>
+        <input type="text" bind:value={stockDraft} maxlength="80" autocomplete="off" placeholder="The Unsinkable II" />
       </label>
       {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
       <Button type="submit">{index === 'new' ? 'Add prompt' : 'Save prompt'}</Button>
@@ -163,6 +221,10 @@
   .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   .prompts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   .prompt { width: 100%; min-height: 56px; text-align: left; padding: var(--s-2) var(--s-4); border-radius: var(--r-md); border: 1.5px solid var(--line); background: var(--surface); font-weight: 600; line-height: 1.3; }
+  .stock { display: block; margin-top: 2px; font-size: 0.85rem; font-weight: 500; color: var(--text-faint); }
+  .fill { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border-radius: var(--r-md); border: 1.5px dashed var(--line-strong); }
+  .fill p { margin: 0; }
+  .final { padding: var(--s-2) var(--s-4); border-radius: var(--r-md); background: var(--surface); font-weight: 600; line-height: 1.3; }
   .prompt:active { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
   .form { display: flex; flex-direction: column; gap: var(--s-2); }
   .form p { margin-bottom: var(--s-2); }

@@ -24,6 +24,7 @@
     onclose,
     size,
     cta = '',
+    title = '🧙 Add more',
     accent,
   }: {
     /** The pack's name, shown on the screen. */
@@ -43,6 +44,8 @@
     size?: Snippet;
     /** The ask button's words, when not "Conjure N more …". */
     cta?: string;
+    /** The screen's title, when not "🧙 Add more" (Snark Tank's "🧙 Fill in stock answers"). */
+    title?: string;
     accent?: string;
   } = $props();
 
@@ -86,7 +89,7 @@
   }
 </script>
 
-<Screen title="🧙 Add more" {accent} onback={leave} backLabel="Back to the pack">
+<Screen {title} {accent} onback={leave} backLabel="Back to the pack">
   <p class="to">To “{name}”</p>
   {#if phase === 'form' && !keyed}
     <MagicWords intro={WANTS} />

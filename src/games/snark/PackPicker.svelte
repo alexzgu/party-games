@@ -58,7 +58,7 @@
       <button class="tile make" onclick={onmake}>
         <span class="spark" aria-hidden="true">✨</span>
         <span class="name wide">Make a pack</span>
-        <span class="blurb">Paste a list of prompts</span>
+        <span class="blurb">Paste a list or ask the wizard</span>
       </button>
     </li>
   </ul>

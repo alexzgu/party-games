@@ -375,7 +375,12 @@ beside them watching for slips.
 - **Setup**: two team names (editable, `--c-team-a` / `--c-team-b`, default Loudmouths vs
   Mimes), turn length 45/60/90 s (default 60), play until a points target (default 15, 5–50)
   or a number of rounds (default 5; a round is one turn per team), "Skips cost a point"
-  (default off), packs (search/sort; a › on each opens its editor; "+ Make a pack").
+  (default off), packs (search/sort; a › on each opens its editor; "+ Make a pack": write the
+  cards one by one or ask the wizard for a theme, 10–60 cards, default 30, reviewed before saving).
+  The player's own packs have "🧙 Add more" in their editor (5–40 cards, default 15). Wizard cards
+  follow the pack editor's rules (exactly five banned words, none containing the word or inside
+  it); a word any Don't Say It pack on the phone has is never offered; cards that fail are dropped
+  unseen.
 - **Turn**: hand-off ("Pick a describer… someone from the other team sits next to them") →
   the word as large as it fits (`FitText`), its five banned words under it, a clock and a bar.
   Got it +1 (chime), Skip 0 or −1, Buzz −1 (red flash, buzzer); each button ignores taps for
@@ -482,7 +487,17 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   `<site>#/snark/join?code=ABCD`, players with colours (✕ removes, after a confirm), settings
   summary, Start (3+). Settings (`#/snark/settings`): rounds 2 or 3, seconds to write
   45/75/90/120 (default 75), seconds to vote 10/15/20/30 (default 15), packs (search/sort, editor,
-  paste a pack). 3 rounds = round 1, round 2 (double points), final; 2 rounds = round 1, final.
+  "Make a pack": paste a list or ask the wizard). The wizard takes a theme (or a tap-to-use
+  suggestion such as Office life or Roommates) and 10–60 prompts (default 30); each prompt comes
+  with a stock answer, and about one final per five prompts comes with three house lines, all
+  reviewed before saving. The player's own packs have "🧙 Add more" (5–40 prompts, default 15,
+  finals likewise) and, while some prompts lack a stock answer (pasted or older packs), "🧙 Fill in
+  stock answers" (up to 40 at a time). The editor shows each prompt's stock answer (editable with
+  the prompt; it moves with a reworded prompt and goes with a deleted one) and lists the finals.
+  Wizard lines that break the Snark rules (prompts 3–14 words, stock answers 1–8 words, finals
+  starting "Three" with three house lines of 1–6 words and 40 characters) or repeat a prompt or
+  final of any Snark pack on the phone are dropped unseen.
+  3 rounds = round 1, round 2 (double points), final; 2 rounds = round 1, final.
 - **Head-to-head rounds**: one prompt per player, each to exactly two players (a shuffled ring:
   prompt i to seats i and i+1), so everyone answers two (80 characters, Done; the host shows who
   is still writing). Writing ends when every present player is done, or the timer. Then each
