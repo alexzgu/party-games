@@ -11,6 +11,7 @@ import {
   type Spectrum, type SpectrumPack, type TabooCard, type TabooPack, type WordDeck,
 } from './content';
 import { MAX_ITEM_CHARS, MAX_WORDS_PER_ITEM } from '../games/forehead/words';
+import { DEFAULT_ICON, oneIcon } from './icon';
 import { parsePair } from '../games/dial/generate';
 import { cardId as spectrumId } from '../games/dial/state';
 import { checkCard } from '../games/gibberish/parse';
@@ -37,6 +38,9 @@ const UNIT: Record<PackGameId, string> = {
   forehead: 'words', dial: 'cards', gibberish: 'cards', quiz: 'clues', quick: 'prompts', snark: 'prompts', taboo: 'cards',
 };
 
+/** What a game's items are called on screen: plural, and one of them ("words", "word"). */
+export const unitOf = (game: PackGameId, n = 2): string => (n === 1 ? UNIT[game].slice(0, -1) : UNIT[game]);
+
 const NOT_A_PACK_FILE = `This isn't a ${APP.name} pack file.`;
 
 // ---- Writing
@@ -53,6 +57,15 @@ function plain(game: PackGameId, p: AnyPack): Record<string, unknown> {
     [field]: (p as unknown as Record<Field, unknown>)[field],
     ...(safety ? { safety } : {}), ...(finals ? { finals } : {}),
   };
+}
+
+/** The name of a game's items field in a pack ('words', 'cards', …). */
+export const itemsField = (game: PackGameId): Field => FIELD[game];
+
+/** A pack's items, and the fields beside them a file keeps (emoji; Snark Tank's stock answers and finals). */
+export function packParts(game: PackGameId, p: AnyPack): { items: unknown[]; extra: Record<string, unknown> } {
+  const { [FIELD[game]]: items, id: _id, name: _name, blurb: _blurb, ...extra } = plain(game, p);
+  return { items: items as unknown[], extra };
 }
 
 export function exportFile(game: PackGameId, packs: readonly AnyPack[]): string {
@@ -204,8 +217,8 @@ function readPack(game: PackGameId, raw: unknown): ReadPack {
     const why = sizeProblem(b);
     return why ? { problem: `“${name}” cannot be played: ${why}.` } : { pack: tidyBoard(b), skipped: got.skipped };
   }
-  const emoji = text(raw.emoji);
-  const extra = game === 'forehead' ? { emoji: emoji && emoji.length <= 16 ? emoji : '🃏' }
+  // Any one character is an icon (older files have one of the 14 the picker used to offer).
+  const extra = game === 'forehead' ? { emoji: oneIcon(text(raw.emoji)) || DEFAULT_ICON }
     : game === 'snark' ? snarkExtras(raw, got.items as string[]) : {};
   return { pack: { ...base, ...extra, [FIELD[game]]: got.items } as unknown as AnyPack, skipped: got.skipped };
 }
@@ -265,7 +278,7 @@ function readData(data: unknown, game: PackGameId): ReadResult | { error: string
 
 // ---- Saving on this phone
 
-interface PackStore { saved(): AnyPack[]; put(p: AnyPack): void; isBuiltin(id: string): boolean; names(): string[] }
+interface PackStore { saved(): AnyPack[]; put(p: AnyPack): void; isBuiltin(id: string): boolean; names(): string[]; builtins(): readonly AnyPack[] }
 const STORES: Record<PackGameId, PackStore> = {
   forehead: customDecks, dial: customSpectra, gibberish: customGibberish, quiz: customQuiz,
   quick: customQuick, snark: customSnark, taboo: customTaboo,
@@ -273,6 +286,12 @@ const STORES: Record<PackGameId, PackStore> = {
 
 /** Every pack saved on this phone for a game: the player's own and their edits of built-ins. */
 export const savedPacks = (game: PackGameId): AnyPack[] => STORES[game].saved();
+
+/** True for a built-in pack's id (an edit of one is saved under it). */
+export const isBuiltinPack = (game: PackGameId, id: string): boolean => STORES[game].isBuiltin(id);
+
+/** A game's built-in packs as shipped. */
+export const builtinPacks = (game: PackGameId): readonly AnyPack[] => STORES[game].builtins();
 
 /** `id`, or `id-2`, `id-3`, … : the first that `taken` does not claim. */
 export function freshId(id: string, taken: (id: string) => boolean): string {

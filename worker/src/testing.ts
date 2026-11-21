@@ -1,5 +1,8 @@
-// Test doubles: a fake env with an in-memory Limits object. Only tests import this file.
-import type { DurableObjectNamespaceLike, Env, ExecutionContextLike } from './env';
+// Test doubles: a fake env with an in-memory Limits object and a Library object on Node's own
+// in-memory SQLite. Only tests import this file.
+import { DatabaseSync } from 'node:sqlite';
+import type { DurableObjectNamespaceLike, Env, ExecutionContextLike, SqlStorageLike, SqlValue } from './env';
+import { Library } from './libraryObject';
 import { Limits } from './limitsObject';
 
 /** Obvious fakes: never a real key or phrase. */
@@ -21,8 +24,32 @@ export function fakeNamespace(): DurableObjectNamespaceLike {
   };
 }
 
+/** A Durable Object's `sql` on an in-memory SQLite database: rows for statements that return them. */
+export function fakeSql(): SqlStorageLike {
+  const db = new DatabaseSync(':memory:');
+  return {
+    exec<T>(query: string, ...bindings: SqlValue[]) {
+      const st = db.prepare(query);
+      const rows = st.columns().length ? st.all(...bindings) : (st.run(...bindings), []);
+      return { toArray: () => rows as T[] };
+    },
+  };
+}
+
+/** A namespace whose one object is a Library on `sql` (a fresh in-memory database by default). */
+export function fakeLibrary(sql: SqlStorageLike = fakeSql()): DurableObjectNamespaceLike {
+  const object = new Library({ storage: { sql } });
+  return {
+    idFromName: (name: string) => name,
+    get: () => ({ fetch: (input: string, init?: RequestInit) => object.fetch(new Request(input, init)) }),
+  };
+}
+
 export function fakeEnv(over: Partial<Env> = {}): Env {
-  return { ANTHROPIC_API_KEY: FAKE_KEY, PARTY_PHRASES: FAKE_PHRASES, ALLOWED_ORIGINS: `${SITE},http://localhost:5173`, LIMITS: fakeNamespace(), ...over };
+  return {
+    ANTHROPIC_API_KEY: FAKE_KEY, PARTY_PHRASES: FAKE_PHRASES, ALLOWED_ORIGINS: `${SITE},http://localhost:5173`,
+    LIMITS: fakeNamespace(), LIBRARY: fakeLibrary(), ...over,
+  };
 }
 
 /** A context whose waitUntil work can be awaited with `settle()`. */

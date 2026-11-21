@@ -3,15 +3,15 @@
 import { load, save } from './storage';
 import type { Secret } from '../games/salad/words';
 
-export interface WordDeck { id: string; name: string; emoji: string; blurb: string; words: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+export interface WordDeck { id: string; name: string; emoji: string; blurb: string; words: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
 export interface Spectrum { left: string; right: string }
-export interface SpectrumPack { id: string; name: string; blurb: string; cards: Spectrum[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+export interface SpectrumPack { id: string; name: string; blurb: string; cards: Spectrum[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
 export interface GibberishCard { phrase: string; answer: string; hint: string }
-export interface GibberishPack { id: string; name: string; blurb: string; cards: GibberishCard[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+export interface GibberishPack { id: string; name: string; blurb: string; cards: GibberishCard[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
 export interface QuizClue { clue: string; answer: string }
 /** One column of a Big Board: its clues run easiest (top row) to hardest. */
 export interface QuizCategory { name: string; clues: QuizClue[] }
-export interface QuizBoard { id: string; name: string; blurb: string; categories: QuizCategory[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+export interface QuizBoard { id: string; name: string; blurb: string; categories: QuizCategory[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
 
 const wordFiles = import.meta.glob<WordDeck>('../content/forehead/*.json', { eager: true, import: 'default' });
 const gibberishFiles = import.meta.glob<GibberishPack>('../content/gibberish/*.json', { eager: true, import: 'default' });
@@ -38,7 +38,7 @@ const builtinSpectra = ordered(Object.values(dialFiles).flatMap((f) => ('packs' 
  * Packs saved on this phone. A pack whose id matches a built-in is an edit of that built-in:
  * it replaces it everywhere until restored. Any other id is the player's own pack (`custom`).
  */
-function customStore<T extends { id: string; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }>(key: string, builtin: T[]) {
+function customStore<T extends { id: string; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }>(key: string, builtin: T[]) {
   const builtinIds = new Set(builtin.map((b) => b.id));
   // An own pack (custom: true) whose id a later built-in also uses stays the player's own,
   // under a new id, so it is never mistaken for an edit and "restored" away.
@@ -58,12 +58,16 @@ function customStore<T extends { id: string; custom?: boolean; /** When the pack
       const items = stored().filter((x) => x.id !== item.id);
       const own = !builtinIds.has(item.id);
       const added = item.added ?? (own ? new Date().toISOString() : undefined);
-      save(key, [{ ...item, custom: own, ...(added ? { added } : {}) }, ...items]);
+      // Only the player's own pack can be marked shared, never an edit of a built-in.
+      const { shared, ...rest } = item;
+      save(key, [{ ...rest, custom: own, ...(added ? { added } : {}), ...(own && shared === true ? { shared } : {}) }, ...items]);
     },
     remove(id: string) {
       save(key, stored().filter((x) => x.id !== id));
     },
     isBuiltin: (id: string) => builtinIds.has(id),
+    /** The built-in packs as shipped. */
+    builtins: (): readonly T[] => builtin,
     /** Every pack name in use for this game: the built-ins' and the packs saved here. */
     names: (): string[] => [...builtin, ...stored()].map((x) => String((x as { name?: unknown }).name ?? '')),
     /** True when a built-in pack has been edited on this phone. */
@@ -121,14 +125,14 @@ export function dedupe(words: string[]): string[] {
 
 // Don't Say It (taboo): each card is a word to describe and the five words the describer may not say.
 export interface TabooCard { word: string; banned: string[] }
-export interface TabooPack { id: string; name: string; blurb: string; cards: TabooCard[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+export interface TabooPack { id: string; name: string; blurb: string; cards: TabooCard[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
 const tabooFiles = import.meta.glob<TabooPack>('../content/taboo/*.json', { eager: true, import: 'default' });
 const builtinTaboo = ordered(Object.values(tabooFiles), ['classic', 'pop-culture', 'after-dark']);
 export const customTaboo = customStore<TabooPack>('custom:taboo', builtinTaboo);
 export const tabooPacks = (): TabooPack[] => merged(customTaboo.saved(), builtinTaboo);
 
 // Brain Freeze: "Name 3 …" prompts, stored without the lead-in ("things you'd find in a fridge").
-export interface QuickPack { id: string; name: string; blurb: string; prompts: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+export interface QuickPack { id: string; name: string; blurb: string; prompts: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
 const quickFiles = import.meta.glob<QuickPack>('../content/quick/*.json', { eager: true, import: 'default' });
 const builtinQuick = ordered(Object.values(quickFiles), ['classic', 'pop-culture', 'after-dark']);
 export const customQuick = customStore<QuickPack>('custom:quick', builtinQuick);
@@ -143,7 +147,7 @@ export interface SnarkPack {
   safety?: Record<string, string>;
   /** Finals for three-line duels. */
   finals?: SnarkFinal[];
-  custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string }
+  custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
 const snarkFiles = import.meta.glob<SnarkPack>('../content/snark/*.json', { eager: true, import: 'default' });
 const builtinSnark = ordered(Object.values(snarkFiles), ['classic', 'after-dark']);
 export const customSnark = customStore<SnarkPack>('custom:snark', builtinSnark);

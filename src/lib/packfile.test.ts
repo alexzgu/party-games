@@ -70,6 +70,9 @@ describe('pack files', () => {
   it('drops the items that fail the game\'s own checks, with a count', () => {
     const forehead = readFile(file('forehead', [{ id: 'x', name: 'X', blurb: '', emoji: '🎉', words: ['Good', '', 42, 'Far Too Many Words Here', 'good'] }]), 'forehead');
     expect(forehead).toEqual({ packs: [{ id: 'x', name: 'X', blurb: '', emoji: '🎉', words: ['Good'] }], skipped: 4, problems: [] });
+    // Any one character is an icon: a joined emoji or a flag stays whole, more is cut to the first, none is the default.
+    const icons = ['👩‍🚀', '🇯🇵', 'Q', 'AB', '', 42].map((emoji) => readFile(file('forehead', [{ id: 'x', name: 'X', emoji, words: ['Good'] }]), 'forehead'));
+    expect(icons.map((r) => ('packs' in r ? (r.packs[0] as { emoji: string }).emoji : r.error))).toEqual(['👩‍🚀', '🇯🇵', 'Q', 'A', '🃏', '🃏']);
     const taboo = readFile(file('taboo', [{ ...SAMPLES.taboo, cards: [...(SAMPLES.taboo as { cards: unknown[] }).cards, { word: 'Beach', banned: ['Sand', 'Sun'] }] }]), 'taboo');
     expect(taboo).toMatchObject({ packs: [SAMPLES.taboo], skipped: 1 });
   });

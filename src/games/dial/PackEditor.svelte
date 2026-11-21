@@ -9,6 +9,7 @@
   import ListTools from '../../components/ListTools.svelte';
   import AddMore from '../../components/AddMore.svelte';
   import { mergeOnTop } from '../../lib/addMore';
+  import { afterRun, shareWizardPack } from '../../lib/library';
   import { MORE_RANGE, moreCards } from './generate';
   import { customSpectra, spectrumPacks, type Spectrum, type SpectrumPack } from '../../lib/content';
   import { matches, sorted, type SortKey } from '../../lib/listing';
@@ -103,8 +104,9 @@
   /** "🧙 Add more" is open in place of the editor. */
   let adding = $state(false);
   const otherCards = () => spectrumPacks().filter((p) => p.id !== id).flatMap((p) => p.cards);
-  function addMore(kept: Spectrum[]) {
-    if (pack) save({ ...pack, cards: mergeOnTop(pack.cards, kept, cardId) });
+  function addMore(kept: Spectrum[], byPass: boolean) {
+    if (pack) save(afterRun({ ...pack, cards: mergeOnTop(pack.cards, kept, cardId) }, byPass, false));
+    if (pack) void shareWizardPack('dial', pack, byPass);
     query = '';
     adding = false;
   }
@@ -133,6 +135,7 @@
   </AddMore>
 {:else}
 <Screen title={pack ? pack.name : 'Pack not found'} accent="var(--c-dial)" {onback}>
+  {#if pack?.shared}<p class="muted">Shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it.</p>{/if}
   {#if !pack}
     <p class="muted">This pack is no longer on this phone.</p>
   {:else}

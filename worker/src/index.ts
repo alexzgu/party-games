@@ -1,17 +1,21 @@
 // The wizard server: a friend's phone trades a party phrase for a session token (POST /redeem),
 // then uses the server as its Anthropic base URL (POST /v1/messages). The server checks the
 // token and the request, reserves the daily allowance, and forwards the request with its own
-// key, streaming the answer back. Nothing here logs a phrase, token, key or body.
+// key, streaming the answer back. /library/… is the community pack library (libraryRoutes.ts).
+// Nothing here logs a phrase, token, key or body.
 import { clientOf } from './address';
 import { deriveKeys, type Keys } from './crypto';
 import type { Env, ExecutionContextLike } from './env';
 import { corsHeaders, errorResponse, limitResponse, originAllowed, parseOrigins, preflight } from './http';
+import { library } from './libraryRoutes';
 import { limit } from './limitsObject';
-import { currentPhraseIds, guessesFrom, matchGuesses, MAX_PHRASE_LENGTH } from './phrase';
-import { newSession, signToken, tokenFrom, verifyToken, type Verdict } from './token';
+import { checkPass, REASON } from './pass';
+import { guessesFrom, matchGuesses, MAX_PHRASE_LENGTH } from './phrase';
+import { newSession, signToken } from './token';
 import { apiVersion, checkBetas, checkMessageBody, MAX_BODY_BYTES, readLimited } from './validate';
 
 export { Limits } from './limitsObject';
+export { Library } from './libraryObject';
 
 const ANTHROPIC_MESSAGES = 'https://api.anthropic.com/v1/messages';
 const MAX_REDEEM_BYTES = 1024;
@@ -23,21 +27,6 @@ type Cors = Record<string, string>;
  * failed after sending, may have run, so it stays counted.
  */
 export const unbilled = (status: number) => (status >= 400 && status < 500) || status === 529;
-
-type Problem = Exclude<Verdict, { ok: true }>['reason'];
-const SESSION_PROBLEM: Record<Problem, string> = {
-  malformed: 'This phone has no valid wizard pass. Say the magic words again.',
-  signature: 'This phone has no valid wizard pass. Say the magic words again.',
-  expired: 'The wizard pass has expired. Say the magic words again.',
-  revoked: 'Those magic words no longer work.',
-};
-
-/**
- * `x-wizard-reason` tells the app which words to use: on 401 `expired`, `revoked` or `invalid`;
- * on 429 `guesses`, `redeems`, `phone` or `party`; on 500 `server`.
- */
-const REASON = 'x-wizard-reason';
-const reasonFor = (p: Problem) => (p === 'expired' || p === 'revoked' ? p : 'invalid');
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContextLike): Promise<Response> {
@@ -56,6 +45,7 @@ async function handle(request: Request, env: Env, ctx: ExecutionContextLike, cor
   const allowed = parseOrigins(env.ALLOWED_ORIGINS);
   const origin = request.headers.get('origin');
   const path = new URL(request.url).pathname;
+  if (path === '/library' || path.startsWith('/library/')) return library(request, env, path, cors);
   if (path !== '/redeem' && path !== '/v1/messages') return errorResponse(404, 'not_found_error', 'Nothing here.', cors);
   if (request.method === 'OPTIONS') return preflight(request, allowed);
   // A browser on another site gets nothing; tools without an Origin still meet every other check.
@@ -96,9 +86,8 @@ async function redeem(request: Request, env: Env, keys: Keys, cors: Cors): Promi
 }
 
 async function messages(request: Request, env: Env, ctx: ExecutionContextLike, keys: Keys, cors: Cors): Promise<Response> {
-  const pids = await currentPhraseIds(keys, env.PARTY_PHRASES);
-  const verdict = await verifyToken(keys.session, tokenFrom(request.headers), Date.now(), pids);
-  if (!verdict.ok) return errorResponse(401, 'authentication_error', SESSION_PROBLEM[verdict.reason], { ...cors, [REASON]: reasonFor(verdict.reason) });
+  const verdict = await checkPass(request, env, keys, cors);
+  if (!verdict.ok) return verdict.response;
   const raw = await readLimited(request, MAX_BODY_BYTES);
   if (raw === null) return errorResponse(413, 'request_too_large', `Requests here are limited to ${MAX_BODY_BYTES / 1024} KB.`, cors);
   const body = checkMessageBody(raw);

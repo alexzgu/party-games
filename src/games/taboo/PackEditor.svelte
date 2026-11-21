@@ -22,6 +22,7 @@
   import { cardId, clean, parseCards } from './cards';
   import { selectPack } from './persist';
   import { MORE_RANGE, moreCards } from './generate';
+  import { afterRun, shareWizardPack } from '../../lib/library';
 
   let { id, onback }: { id: string | null; onback: () => void } = $props();
 
@@ -140,16 +141,18 @@
   /** Every word on the phone except this pack's: a word is never in two packs. */
   const otherWords = () => tabooPacks().filter((p) => p.id !== pack?.id).flatMap((p) => p.cards.map((c) => c.word));
 
-  function conjured(n: string, theme: string, cards: TabooCard[]) {
+  function conjured(n: string, theme: string, cards: TabooCard[], byPass: boolean) {
     if (!pack) return;
-    save({ ...pack, name: clean(n) || 'My pack', blurb: `Conjured by Fizzwick: ${theme.trim()}`, cards: $state.snapshot(cards) });
+    save(afterRun({ ...pack, name: clean(n) || 'My pack', blurb: `Conjured by Fizzwick: ${theme.trim()}`, cards: $state.snapshot(cards) }, byPass, true));
+    if (pack) void shareWizardPack('taboo', $state.snapshot(pack), byPass);
     sfx.correct();
   }
 
   /** "🧙 Add more" is open in place of the editor. */
   let adding = $state(false);
-  function addMore(kept: TabooCard[]) {
-    if (pack) save({ ...pack, cards: mergeOnTop(pack.cards, $state.snapshot(kept), cardId) });
+  function addMore(kept: TabooCard[], byPass: boolean) {
+    if (pack) save(afterRun({ ...pack, cards: mergeOnTop(pack.cards, $state.snapshot(kept), cardId) }, byPass, false));
+    if (pack) void shareWizardPack('taboo', $state.snapshot(pack), byPass);
     query = '';
     adding = false;
     sfx.correct();
@@ -170,6 +173,7 @@
   </AddMore>
 {:else}
 <Screen title={pack ? (pack.id ? pack.name : 'Make a pack') : 'Pack not found'} accent="var(--c-taboo)" {onback}>
+  {#if pack?.shared}<p class="muted">Shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it.</p>{/if}
   {#if pack && !pack.id && !reviewing}
     <Segmented label="How to make it" options={MODES} bind:value={mode} />
   {/if}

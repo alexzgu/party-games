@@ -6,6 +6,7 @@
   import ExportPack from '../../components/ExportPack.svelte';
   import AddMore from '../../components/AddMore.svelte';
   import { mergeOnTop } from '../../lib/addMore';
+  import { afterRun, shareWizardPack } from '../../lib/library';
   import type { SortKey } from '../../lib/listing';
   import { customDecks, dedupe, slugify, wordDecks, type WordDeck } from '../../lib/content';
   import { back, go } from '../../lib/router.svelte';
@@ -14,20 +15,28 @@
   import { findWords } from './find';
   import { MORE_RANGE, moreWords } from './generate';
   import { itemKey } from './words';
+  import { DEFAULT_ICON, nextIcon } from '../../lib/icon';
 
   // See and edit any deck. Every change saves at once; there is no Save button to forget.
   // Changing a built-in deck saves an edit of it on this phone, which "Restore original" undoes.
   let { id }: { id: string } = $props();
 
-  const EMOJIS = ['🃏', '✨', '🎉', '🔥', '🍿', '🎤', '🐶', '🍔', '🌴', '🏆', '🎸', '👻', '💼', '🚀'];
-
   const openId = untrack(() => id); // the page is re-created for another id
   const existing = wordDecks().find((d) => d.id === openId);
   const builtin = customDecks.isBuiltin(openId);
-  let deck = $state<WordDeck>(existing ?? { id: '', name: '', emoji: '🃏', blurb: '', words: [] });
+  let deck = $state<WordDeck>(existing ?? { id: '', name: '', emoji: DEFAULT_ICON, blurb: '', words: [] });
   let edited = $state(customDecks.isEdited(openId));
-  /** A built-in deck's own icon stays pickable. */
-  const emojis = existing?.emoji && !EMOJIS.includes(existing.emoji) ? [existing.emoji, ...EMOJIS] : EMOJIS;
+  /**
+   * The pack's icon: one character (an emoji, a flag or a letter). What is typed or pasted is cut
+   * to its first character, and replaces the icon already there (`nextIcon`); an empty box means
+   * the default icon. Focusing the box selects what is there too.
+   */
+  function iconTyped(e: Event & { currentTarget: HTMLInputElement }) {
+    const one = nextIcon(deck.emoji, e.currentTarget.value);
+    e.currentTarget.value = one;
+    deck.emoji = one || DEFAULT_ICON;
+    persist();
+  }
   let draft = $state('');
   let confirmDelete = $state(false);
   let confirmRestore = $state(false);
@@ -104,12 +113,13 @@
 
   /** "🧙 Add more" is open in place of the editor. */
   let adding = $state(false);
-  function addMore(kept: string[]) {
-    deck.words = mergeOnTop(deck.words, kept, itemKey);
+  function addMore(kept: string[], byPass: boolean) {
+    deck = afterRun({ ...$state.snapshot(deck), words: mergeOnTop(deck.words, kept, itemKey) }, byPass, false);
     query = '';
     adding = false;
     sfx.correct();
     persist();
+    void shareWizardPack('forehead', $state.snapshot(deck), byPass);
   }
 
   function claude() {
@@ -126,6 +136,7 @@
   </AddMore>
 {:else}
 <Screen title={existing ? (builtin ? 'Built-in pack' : 'Edit pack') : 'New pack'} accent="var(--c-forehead)">
+  {#if !builtin && deck.shared}<p class="muted">Shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it.</p>{/if}
   {#if builtin}
     <div class="note" class:edited>
       {#if edited}
@@ -144,11 +155,15 @@
       <span class="lbl">Name</span>
       <input type="text" placeholder="e.g. Our Friend Group" bind:value={deck.name} oninput={persist} maxlength="40" />
     </label>
-    <div class="emojis" role="radiogroup" aria-label="Pack icon">
-      {#each emojis as e (e)}
-        <button role="radio" aria-checked={deck.emoji === e} class:on={deck.emoji === e} onclick={() => { deck.emoji = e; persist(); }}>{e}</button>
-      {/each}
-    </div>
+    <label class="field">
+      <span class="lbl">Icon</span>
+      <span class="icon">
+        <span class="preview" aria-hidden="true">{deck.emoji || DEFAULT_ICON}</span>
+        <input type="text" inputmode="text" value={deck.emoji} oninput={iconTyped} onfocus={(e) => e.currentTarget.select()}
+          placeholder={DEFAULT_ICON} autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="Pack icon" />
+      </span>
+      <span class="faint hint">Type or paste one emoji or letter</span>
+    </label>
   </section>
 
   <section class="stack">
@@ -204,9 +219,13 @@
   .note b { color: var(--accent); }
   .field { display: flex; flex-direction: column; gap: var(--s-1); }
   .lbl { font-weight: 600; color: var(--text-dim); font-size: 0.92rem; }
-  .emojis { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
-  .emojis button { aspect-ratio: 1; min-height: 44px; border-radius: var(--r-sm); border: 2px solid transparent; background: var(--surface); font-size: 1.4rem; }
-  .emojis .on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
+  .icon { display: flex; align-items: center; gap: var(--s-3); }
+  .preview {
+    flex: none; width: 64px; height: 64px; display: grid; place-items: center; border-radius: var(--r-md);
+    background: var(--surface); font-size: 2.4rem; line-height: 1; overflow: hidden;
+  }
+  .icon input { flex: 1; min-width: 0; font-size: 1.4rem; }
+  .hint { font-size: 0.88rem; }
   .n { font-family: var(--font-body); font-weight: 500; font-size: 0.95rem; }
   .add { display: flex; gap: var(--s-2); align-items: center; }
   .add input { flex: 1; }

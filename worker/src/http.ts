@@ -19,8 +19,11 @@ export function corsHeaders(origin: string | null, allowed: string[]): Record<st
   return { 'Access-Control-Allow-Origin': origin as string, 'Access-Control-Expose-Headers': EXPOSED, Vary: 'Origin' };
 }
 
-/** The answer to a browser's preflight: 204 for an allowed origin (its asked-for headers allowed), else 403. */
-export function preflight(request: Request, allowed: string[]): Response {
+/**
+ * The answer to a browser's preflight: 204 for an allowed origin (its asked-for headers and
+ * `methods` allowed), else 403.
+ */
+export function preflight(request: Request, allowed: string[], methods = 'POST, OPTIONS'): Response {
   const origin = request.headers.get('origin');
   if (!originAllowed(origin, allowed)) return new Response(null, { status: 403, headers: { Vary: 'Origin' } });
   const asked = request.headers.get('access-control-request-headers') ?? '';
@@ -30,7 +33,7 @@ export function preflight(request: Request, allowed: string[]): Response {
     status: 204,
     headers: {
       'Access-Control-Allow-Origin': origin as string,
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': methods,
       'Access-Control-Allow-Headers': headers,
       'Access-Control-Max-Age': '86400',
       Vary: 'Origin, Access-Control-Request-Headers',

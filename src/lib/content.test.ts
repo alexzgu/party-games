@@ -7,6 +7,7 @@ import { tabooPacks } from './content';
 import { quickPacks } from './content';
 import { brawlPacks, saladPacks, snarkPacks } from './content';
 import { cardId, cardProblems } from '../games/taboo/cards';
+import { isIcon } from './icon';
 import { normalise } from '../games/salad/match';
 import { categories, followups, leaksAnswer, levels, opening, shared, type Secret } from '../games/salad/words';
 
@@ -35,7 +36,7 @@ describe('Heads Down. decks', () => {
     const decks = wordDecks();
     packBasics(decks, problems);
     for (const d of decks) {
-      if (!d.emoji?.trim()) problems.push(`${d.id}: missing emoji`);
+      if (!isIcon(d.emoji)) problems.push(`${d.id}: emoji must be exactly one character`);
       if (d.words.length < 20) problems.push(`${d.id}: only ${d.words.length} words (need 20+)`);
       const seen = new Set<string>();
       for (const w of d.words) {

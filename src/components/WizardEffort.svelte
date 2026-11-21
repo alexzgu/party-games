@@ -4,11 +4,16 @@
   import { EFFORTS, modelFor } from '../lib/wizard';
   import { sfx } from '../lib/sound';
   import { haptic } from '../lib/haptics';
+  import { libraryOn, sharesPacks, SHARED_NOTE } from '../lib/library';
+  import { route } from '../lib/router.svelte';
 
   // "How hard Fizzwick tries": picks the model on the page where a pack is made. Three tiles
   // (emoji over a short name) like Segmented, since the names are too long for one pill row.
   const current = $derived(modelFor(settings.model));
   const hint = $derived(EFFORTS.find((e) => e.id === current)?.hint ?? '');
+  // Every wizard form has this box, so it also says, once, that what Fizzwick makes is shared:
+  // only for a game in the Community library (the page's first address part) on a phone with a pass.
+  const shared = $derived(sharesPacks() && libraryOn(route.path.split('/').filter(Boolean)[0] ?? ''));
 
   function pick(id: string) {
     if (id === settings.model) return;
@@ -31,6 +36,7 @@
       {/each}
     </div>
     <p class="hint faint">{hint}</p>
+    {#if shared}<p class="hint faint shared">{SHARED_NOTE}</p>{/if}
   </div>
 {/if}
 
@@ -48,4 +54,5 @@
   .on { background: var(--accent); color: var(--on-accent); }
   .emoji { font-size: 1.3rem; }
   .hint { margin: 0; font-size: 0.9rem; }
+  .shared { font-size: 0.82rem; }
 </style>

@@ -9,7 +9,7 @@ import { SERVER_TROUBLE, WIZARD_SERVER } from './wizardServer';
 export class ClaudeError extends Error {}
 
 /** True when the wizard goes through the server: no key of its own, but the magic words were said. */
-function viaPass(): boolean {
+export function viaPass(): boolean {
   return !settings.apiKey.trim() && !!WIZARD_SERVER && settings.wizardPass.trim().length > 0;
 }
 

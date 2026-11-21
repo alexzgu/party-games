@@ -9,6 +9,7 @@
   import type { TabooCard } from '../../lib/content';
   import { sfx } from '../../lib/sound';
   import { cardId } from './cards';
+  import { passedSoFar } from '../../lib/library';
   import { generateCards, MAKE_RANGE, THEME_CHIPS } from './generate';
 
   // "🧙 Ask the wizard" on a new pack: a theme and a size, then Fizzwick's cards stream into
@@ -16,7 +17,8 @@
   let { taken, reviewing = $bindable(false), onsave }: {
     taken: () => string[];
     reviewing?: boolean;
-    onsave: (name: string, theme: string, cards: TabooCard[]) => void;
+    /** `byPass`: every card came through a magic-words pass, so the pack may be shared. */
+    onsave: (name: string, theme: string, cards: TabooCard[], byPass: boolean) => void;
   } = $props();
 
   let theme = $state('');
@@ -28,7 +30,10 @@
   let ctrl: AbortController | null = null;
   onDestroy(() => ctrl?.abort());
 
+  /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
+  let byPass = false;
   async function run() {
+    byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     if (!name.trim()) name = theme.trim().replace(/^\w/, (c) => c.toUpperCase()).slice(0, 40);
     reviewing = true;
@@ -84,7 +89,7 @@
   {#if items.length === 0 && streaming}
     <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” cards…</p>
   {/if}
-  <Triage {items} keyOf={cardId} {streaming} onsave={(kept) => onsave(name, theme, kept)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+  <Triage {items} keyOf={cardId} {streaming} onsave={(kept) => onsave(name, theme, kept, byPass)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
     {#snippet item(c: TabooCard)}<span class="txt"><span class="w">{c.word}</span><span class="b">{c.banned.join(' · ')}</span></span>{/snippet}
   </Triage>
 {/if}

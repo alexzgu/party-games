@@ -19,6 +19,7 @@ What it does:
   tokens, at most 64 KB, no betas and no model fallback, so each request is one model run),
   counts the request against the daily allowance, then forwards it with the server's key
   (never following a redirect) and streams the answer back.
+- `/library/…` is the Community pack library (below).
 - Everything else is 404. Only the published site and local dev may call it from a browser.
 - It logs nothing: no words, passes, keys or request bodies.
 
@@ -72,6 +73,62 @@ Cloudflare caps a whole account's Worker requests (100,000 a day) and Durable Ob
 and writes per day, resetting at 00:00 UTC; someone sending that much traffic stops the wizard
 for everyone until then, passes included. Nothing in the Worker prevents that; the Workers
 Paid plan, or turning the wizard off, does.
+
+## The Community library
+
+Packs Fizzwick makes on a phone with a pass are published here automatically; anyone can browse
+them, preview one and import it; starring needs a pass. They are kept for good, in a second
+SQLite-backed Durable Object, `Library` (`src/libraryObject.ts`, migration `v2`; the counters'
+`Limits` object is untouched). It stores each pack's game, name, description, item count, items,
+times, stars and a hidden flag, plus a one-way label of the pass that published it and that
+phone's id for the pack (so an "Add more" updates the same entry); stars are kept as
+(pack, pass label) pairs, one per pass per pack. Nothing else about the phone is stored.
+
+| Route | Who | What |
+|---|---|---|
+| `POST /library/packs` | pass | Publish `{game, name, blurb, localId, items, extra}`, or update the entry this pass made with that `localId`. `game`: forehead, dial, gibberish, quick, quiz, taboo or snark; name 1–60 characters, description up to 140; items rebuilt from that game's own fields only (`src/lib/libraryShape.ts`, shared with the app; anything else is dropped), at most 400 (Big Board: 8 categories of 10 tiles) and 64 KB with `extra` (a Heads Down. icon, kept only when it is exactly one character of at most 32 UTF-16 units, `src/lib/icon.ts`; Snark Tank stock answers for its own prompts and finals of exactly three house lines, both checked). A broken item is a 400. |
+| `GET /library/packs?game=&q=&sort=stars\|new&page=` | anyone | 30 a page, hidden packs left out: id, game, name, description, count, stars, times, and `more`. `q` matches the name or description (any case, plain text), looking through the first 2,000 packs of the order; pages stop at 100. Most stars first, newest among equals; `sort=new` newest first. With a pass, each pack also says whether that pass starred it. |
+| `GET /library/packs/:id` | anyone | The whole pack, for preview and import. |
+| `POST` / `DELETE /library/packs/:id/star` | pass | Star it, or take the star back; answers the new count. The same vote again writes nothing. |
+| `GET /library/export?after=` | anyone | Every pack not hidden, with its items, for your backups (everything in it is public anyway), 16 a page in the order they were first shared: `{"packs": [...], "next": "<cursor>"}`; ask again with `after=<next>` until `next` is `null`. A page stays near 1 MB at most. |
+| `POST /library/packs/:id/hide` | `LIBRARY_ADMIN` | Body exactly `{"hidden": true}`, or `{"hidden": false}` to show it again; any other body changes nothing (over 256 bytes: 413). |
+
+Limits: 40 publishes (new or updated) per pass per UTC day, and 600 per day from everyone
+together; past either the server answers 429 with `x-wizard-reason: library`. A pass label is
+per pass, so a friend who says the words again gets a new one (and their next "Add more"
+starts a new entry); the 20 passes a day per address keep that bounded, and the same holds for
+stars.
+
+**Backups.** The export comes a page at a time; this, in your own terminal, follows every page
+and writes one file (put the server's address in place of `<the server's address>`):
+
+```sh
+node -e '
+const base = process.argv[1], packs = [];
+(async () => {
+  let after = "";
+  do {
+    const page = await (await fetch(base + "/library/export" + (after ? "?after=" + after : ""))).json();
+    packs.push(...page.packs);
+    after = page.next || "";
+  } while (after);
+  console.log(JSON.stringify({ packs }));
+})();' https://<the server's address> > jerkbox-library-$(date +%F).json
+```
+
+**Hiding a pack.** Hiding is off until you add the optional secret `LIBRARY_ADMIN`: in
+`~/Projects/party_games/worker`, run `npx wrangler@4.165.0 secret put LIBRARY_ADMIN` and type a
+long random value (one word, no spaces; your password manager can make one) when it asks. Keep it
+in your password manager; never paste it into a chat. Then, in your own terminal, with the pack's
+id (from the export):
+
+```sh
+curl -s -X POST -H "Authorization: Bearer <your LIBRARY_ADMIN>" -d '{"hidden": true}' https://<the server's address>/library/packs/<id>/hide
+```
+
+Send `-d '{"hidden": false}'` instead to show it again. Without the secret, every hide is refused. A hidden
+pack disappears from the list, the preview and the export, and stays hidden when its phone
+updates it.
 
 ## Setting it up (the owner, once)
 
@@ -135,23 +192,31 @@ The server takes its model list and token cap from `src/lib/wizard.ts` when it i
 deployed. After those change (e.g. a new effort level), run `npx wrangler@4.165.0 deploy` again
 from this folder, or the new choice gets "That model is not available here."
 
+The Community library exists only once a deploy that includes it has run (it creates the
+`Library` object, migration `v2`). Until then the app's Community list says the library is
+having trouble, and each wizard pack saved through a pass leaves the note "Couldn't share to the
+library".
+
 If you open the dev site from a phone on your Wi-Fi (`http://192.168.x.x:5173`), add that
 address to `ALLOWED_ORIGINS` in `wrangler.toml` and redeploy.
 
 ## For developers
 
-- Code: `src/index.ts` (routes), `phrase.ts` (normalising, splitting a try into guesses, matching), `token.ts`, `validate.ts`, `http.ts` (CORS,
+- Code: `src/index.ts` (routes), `pass.ts` (checking a pass), `library.ts` (what a shared pack
+  may hold, list requests), `libraryRoutes.ts` (the `/library` routes), `libraryObject.ts` (the
+  Durable Object storing packs and stars in SQLite), `phrase.ts` (normalising, splitting a try into guesses, matching), `token.ts`, `validate.ts`, `http.ts` (CORS,
   errors), `address.ts` (which address and network a guess counts against, from
   `cf-connecting-ip`, stored only as one-way labels), `limits.ts` (pure counters),
   `limitsObject.ts` (the Durable Object storing them; it runs one request at a time, so each
   check-and-count is atomic).
 - Checks from the repo root: `npm run worker:check` (types) and `npm test` (the worker's tests
-  run with the app's, against a fake env, fake key and fake phrases, with no network).
+  run with the app's, against a fake env, fake key and fake phrases, with no network; the
+  library runs on Node's own in-memory SQLite in place of the Durable Object's).
 - The phone uses the Anthropic SDK with this server as `baseURL`. SDK 1.10 sends the pass as
   `Authorization: Bearer <pass>`; `x-api-key` is accepted too. The server forwards with
   `x-api-key: <server key>` and drops the phone's pass.
 - On 401 and 429 from its own checks the server sets `x-wizard-reason` (401: `expired`,
-  `revoked`, `invalid`; 429: `guesses`, `redeems`, `phone`, `party`) so the app can say which
+  `revoked`, `invalid`; 429: `guesses`, `redeems`, `phone`, `party`, `library`) so the app can say which
   it was. A 429 from Anthropic itself is passed on without one, and the app says Fizzwick is
   busy, not that the allowance is used up. Only `revoked`
   means the words changed; `invalid` (a pass signed with a replaced key, or junk) and `expired`

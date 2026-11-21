@@ -12,6 +12,7 @@
   import { sfx } from '../../lib/sound';
   import * as edit from './board';
   import { loadNewBoard, newBoardId, pickBoard, saveNewBoard } from './store';
+  import { afterRun, shareWizardPack } from '../../lib/library';
 
   // One board, every tile editable in place: name, blurb, categories (add, remove, rename,
   // reorder), levels (added or removed on every category at once) and each clue and answer.
@@ -102,10 +103,11 @@
     if (!shapes.includes(shape)) shape = shapes[0];
     adding = true;
   }
-  function addMore(kept: StreamClue[]) {
+  function addMore(kept: StreamClue[], byPass: boolean) {
     if (!board) return;
     const at = board.categories.length;
-    update(addClues(board, shape, kept));
+    update(afterRun(addClues(board, shape, kept), byPass, false));
+    void shareWizardPack('quiz', board, byPass);
     if (shape === 'category') ci = Math.min(at, board.categories.length - 1);
     adding = false;
     sfx.correct();
@@ -130,12 +132,13 @@
   function saveNew() {
     if (!board) return;
     const clean = edit.tidyBoard(board);
-    const newId = newBoardId(clean.name);
-    customQuiz.put({ ...clean, id: newId });
+    const saved = { ...clean, id: newBoardId(clean.name) };
+    customQuiz.put(saved); // with the draft's share mark, for a later Add more
+    void shareWizardPack('quiz', saved, true); // the draft is marked only when its run was through a pass
     saveNewBoard(null);
-    pickBoard(newId);
+    pickBoard(saved.id);
     sfx.correct();
-    onsaved(newId);
+    onsaved(saved.id);
   }
 
   function discard() {
@@ -172,7 +175,7 @@
   {:else}
     <div class="about">
       <p class="muted">
-        {#if fresh}Not saved yet{:else if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else}Your pack, on this phone only{/if}
+        {#if fresh}Not saved yet{:else if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if board?.shared}Your pack, shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it{:else}Your pack, on this phone only{/if}
       </p>
       {#if builtin && edited}
         <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>

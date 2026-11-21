@@ -8,7 +8,8 @@
   import PasteList from '../../components/PasteList.svelte';
   import BoardPreview from './BoardPreview.svelte';
   import type { QuizBoard } from '../../lib/content';
-  import { hasKey, WANTS } from '../../lib/claude';
+  import { hasKey, viaPass, WANTS } from '../../lib/claude';
+  import { afterRun } from '../../lib/library';
   import MagicWords from '../../components/MagicWords.svelte';
   import { sfx } from '../../lib/sound';
   import { blankBoard, DEFAULT_CATEGORIES, DEFAULT_LEVELS, emptyTiles, MAX_CATEGORIES, MAX_LEVELS } from './board';
@@ -52,8 +53,14 @@
 
   const TOPICS = ['Movies', '2000s throwback', 'Food & drink', 'Science', 'Sports', 'Geography', 'Music', 'The internet'];
 
-  function make(b: QuizBoard, note = '') {
-    saveNewBoard(b);
+  /** Whether the board on screen is being written through a magic-words pass (taken as Fizzwick starts). */
+  let byPass = false;
+  /** The draft as kept: marked shared only when Fizzwick wrote it through a pass. */
+  const draft = (b: QuizBoard, wizard: boolean): QuizBoard => afterRun(b, wizard && byPass, true);
+
+  /** Opens `b` in the editor; `wizard` for a board Fizzwick wrote. */
+  function make(b: QuizBoard, note = '', wizard = false) {
+    saveNewBoard(draft(b, wizard));
     onmade(b, note);
   }
 
@@ -61,18 +68,19 @@
     if (!topic.trim() || streaming) return;
     error = '';
     streaming = true;
+    byPass = viaPass();
     live = emptyBoardFor(topic, cats, len);
     ctrl = new AbortController();
     const signal = ctrl.signal;
     try {
       const done = await generateBoard({
         topic, cats, levels: len, signal,
-        onBoard: (b) => { live = b; saveNewBoard(b); sfx.tick(); },
+        onBoard: (b) => { live = b; saveNewBoard(draft(b, true)); sfx.tick(); },
       });
       live = done;
       if (signal.aborted) return;
       if (emptyTiles(done).length === cats * len) error = 'No usable clues came back. Try again or try another topic.';
-      else { sfx.correct(); make(done); }
+      else { sfx.correct(); make(done, '', true); }
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -84,7 +92,7 @@
   /** Stops Claude and opens what came so far (or drops it when nothing did). */
   function stop() {
     ctrl?.abort();
-    if (live && emptyTiles(live).length < cats * len) make(live, 'Stopped early: fill in the empty tiles or remove what you do not need.');
+    if (live && emptyTiles(live).length < cats * len) make(live, 'Stopped early: fill in the empty tiles or remove what you do not need.', true);
     else live = null;
   }
 
@@ -118,7 +126,7 @@
           {#if !keyed}<MagicWords intro={WANTS} />{/if}
           <div class="row">
             {#if keyed}<Button variant="secondary" size="sm" onclick={ask}>Try again</Button>{/if}
-            {#if filled}<Button variant="ghost" size="sm" onclick={() => live && make(live)}>Open what came</Button>{/if}
+            {#if filled}<Button variant="ghost" size="sm" onclick={() => live && make(live, '', true)}>Open what came</Button>{/if}
           </div>
         </div>
       {/if}

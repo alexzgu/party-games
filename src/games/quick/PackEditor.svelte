@@ -7,6 +7,7 @@
   import PromptForm from './PromptForm.svelte';
   import AddMore from '../../components/AddMore.svelte';
   import { mergeOnTop } from '../../lib/addMore';
+  import { afterRun, shareWizardPack } from '../../lib/library';
   import { MORE_RANGE, morePrompts } from './generate';
   import { promptKey } from './logic';
   import { tick } from 'svelte';
@@ -82,8 +83,9 @@
   /** "🧙 Add more" is open in place of the editor. */
   let adding = $state(false);
   const otherPrompts = () => quickPacks().filter((p) => p.id !== id).flatMap((p) => p.prompts);
-  function addMore(kept: string[]) {
-    if (pack) persist({ ...pack, prompts: mergeOnTop(pack.prompts, kept, promptKey) });
+  function addMore(kept: string[], byPass: boolean) {
+    if (pack) persist(afterRun({ ...pack, prompts: mergeOnTop(pack.prompts, kept, promptKey) }, byPass, false));
+    if (pack) void shareWizardPack('quick', $state.snapshot(pack), byPass);
     query = '';
     adding = false;
     sfx.correct();
@@ -117,7 +119,7 @@
   {:else}
     <div class="about">
       <p class="muted">
-        {#if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else}Your pack, on this phone only{/if}
+        {#if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if pack?.shared}Your pack, shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it{:else}Your pack, on this phone only{/if}
       </p>
       {#if builtin && edited}
         <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>

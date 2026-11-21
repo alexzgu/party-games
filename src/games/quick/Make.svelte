@@ -13,6 +13,7 @@
   import { generatePrompts, THEME_CHIPS } from './generate';
   import { parsePasted } from './parse';
   import { promptKey } from './logic';
+  import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
 
   // "Make a pack": paste a list, or pick a theme and watch Claude's prompts stream in; drop the
   // duds, save as a pack.
@@ -53,7 +54,10 @@
     reviewing = true;
   }
 
+  /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
+  let byPass = false;
   async function run() {
+    byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     if (!packName.trim()) packName = theme.trim().replace(/^\w/, (c) => c.toUpperCase());
     reviewing = true;
@@ -94,16 +98,24 @@
     return id;
   }
 
+  /** What the wizard made, or the pack it added to, goes to the Community library whole. */
+  const passMade = () => mode === 'claude' && byPass; // pasted items were not made through a pass
+  const share = (pack: QuickPack) => void shareWizardPack('quick', pack, passMade());
+
   function save(kept: string[]) {
     if (destPack) {
       const have = new Set(destPack.prompts.map(promptKey));
-      customQuick.put({ ...destPack, prompts: [...destPack.prompts, ...kept.filter((p) => !have.has(promptKey(p)))] });
+      const pack = afterRun({ ...destPack, prompts: [...destPack.prompts, ...kept.filter((p) => !have.has(promptKey(p)))] }, passMade(), false);
+      customQuick.put(pack);
+      share(pack);
       onsaved(destPack.id);
     } else {
       const name = packName.trim() || 'My pack';
       const id = uniqueId(name);
       const blurb = mode === 'paste' ? 'Pasted list' : `Conjured by Fizzwick: ${theme.trim() || name}`;
-      customQuick.put({ id, name, blurb, prompts: [...kept] });
+      const pack = afterRun<QuickPack>({ id, name, blurb, prompts: [...kept] }, passMade(), true);
+      customQuick.put(pack);
+      share(pack);
       onsaved(id);
     }
     sfx.correct();

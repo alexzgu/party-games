@@ -10,6 +10,7 @@
   import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
   import { findPrompts } from './find';
+  import { afterRun, shareWizardPack } from '../../lib/library';
   import { fillStock, MORE_RANGE, moreItems, toFill } from './generate';
   import { addItems, addStock, itemKey, missingStock, packTexts, removePrompt, setPrompt, type SnarkItem, type Stock } from './pack';
 
@@ -79,8 +80,11 @@
   let adding = $state<'' | 'more' | 'fill'>('');
   const missing = $derived(pack ? missingStock(pack).length : 0);
   const otherTexts = () => snarkPacks().filter((p) => p.id !== id).flatMap(packTexts);
-  function added(next: SnarkPack) {
-    persist(next);
+  /** What the wizard added (prompts, or stock answers) is saved, then the whole pack is shared (when made through a pass). */
+  function added(next: SnarkPack, byPass: boolean) {
+    const marked = afterRun(next, byPass, false);
+    persist(marked);
+    void shareWizardPack('snark', marked, byPass);
     query = '';
     adding = '';
     sfx.correct();
@@ -105,14 +109,14 @@
   {@const p = $state.snapshot(pack) as SnarkPack}
   {#if adding === 'more'}
     <AddMore name={p.name} noun="prompts" range={MORE_RANGE} steerHint="e.g. more about work, sillier"
-      ask={(o) => moreItems(p, otherTexts(), o)} keyOf={itemKey} onadd={(kept: SnarkItem[]) => added(addItems(p, kept))} onclose={() => (adding = '')}>
+      ask={(o) => moreItems(p, otherTexts(), o)} keyOf={itemKey} onadd={(kept: SnarkItem[], byPass: boolean) => added(addItems(p, kept), byPass)} onclose={() => (adding = '')}>
       {#snippet item(i: SnarkItem)}<WizardItem {i} />{/snippet}
     </AddMore>
   {:else}
     {@const n = toFill(p).length}
     <AddMore title="🧙 Fill in stock answers" name={p.name} noun="stock answers" range={null} steerHint="e.g. sillier, shorter"
       cta="✨ Write {n} stock {n === 1 ? 'answer' : 'answers'}" ask={(o) => fillStock(p, o)} keyOf={itemKey}
-      onadd={(kept: Stock[]) => added(addStock(p, kept))} onclose={() => (adding = '')}>
+      onadd={(kept: Stock[], byPass: boolean) => added(addStock(p, kept), byPass)} onclose={() => (adding = '')}>
       {#snippet size()}<p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer for “Give me one”.{missing > n ? ` Fizzwick does ${n} at a time.` : ''}</p>{/snippet}
       {#snippet item(i: Stock)}<WizardItem {i} />{/snippet}
     </AddMore>
@@ -123,7 +127,7 @@
     <p class="muted">This pack is no longer on this device.</p>
   {:else}
     <div class="about">
-      <p class="muted">{#if builtin}Comes with the app{edited ? ' · edited on this device' : ''}{:else}Your pack, on this device only{/if}</p>
+      <p class="muted">{#if builtin}Comes with the app{edited ? ' · edited on this device' : ''}{:else if pack?.shared}Your pack, shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it{:else}Your pack, on this device only{/if}</p>
       {#if builtin && edited}
         <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
       {:else if !builtin}

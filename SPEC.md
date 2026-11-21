@@ -37,12 +37,13 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `library` (the Community library), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
 - `src/components/` — `Screen` (page frame: back button, title, sticky actions), `Popup`,
   `HowTo` (the "?" header button that opens a game's rules), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
-  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (Import packs, Export my packs),
-  `ExportPack` (Export pack).
+  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (Import packs, Export my packs, Community packs),
+  `ExportPack` (Export pack), `Community` and `CommunityItems` (browse, preview, import and star
+  Community packs), `ShareNote` (the note a failed Community share leaves).
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
   to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
@@ -120,7 +121,7 @@ pack is one whole board). Code, routes and storage keys keep their older names (
 
 **Import and export** (`src/lib/packfile.ts`, buttons in `PackFile` and `ExportPack`): a pack file
 is JSON, `{"jerkBox": 1, "game": "<game id>", "packs": [...]}`, each pack as stored (id, name,
-emoji for Heads Down., blurb, items) without `custom` and `added`; named
+icon (`emoji`, any one character) for Heads Down., blurb, items) without `custom` and `added`; named
 `<game>-<pack id or my-packs>.jerkbox.txt` (JSON inside, plain-text type so Chrome on Android
 can share it; import also takes `.json`). "Export pack" sits in every pack editor (built-ins
 included); "Import packs" and "Export my packs" (every pack made or edited on this phone; hidden
@@ -137,6 +138,35 @@ name ("Movies (2)") when one already has its name. A pack just made is likewise 
 another game says which game to open; one of a game taken out of the app (`RETIRED_GAMES` in
 `src/app.config.ts`) says so by name, even when it is too big to read ("Earworm is no longer in
 Jerk Box."); anything else says it isn't a pack file.
+
+**Community library** (`src/lib/library.ts`; server routes `/library/…` in `worker/`, see
+`worker/README.md`): packs Fizzwick makes on any phone with a magic-words pass are shared
+automatically, whole, the moment they are saved, and again after "🧙 Add more" (Snark Tank: also
+"Fill in stock answers"), so friends need not remember to. Only what the wizard wrote through a
+pass is shared (decided as each run starts): anything made with the host's own key or an invite
+link never is, even once the phone has a pass, nor is a built-in pack or its edit. Each own pack
+keeps that decision with it: it is marked for sharing only when a wizard run through a pass made
+it (a Big Board draft keeps the mark when saved), and loses the mark for good once a run not
+through a pass adds to it, or when it started pasted, typed by hand or imported. A pack is shared
+only while it has the mark and the run that just added to it went through a pass; hand edits keep
+the mark. Pack files never carry it. The same pass and pack
+update one entry. Sharing never holds up saving; when it fails the page shows a small note,
+"Couldn't share to the library". Each wizard form says once, in small text, "Packs Fizzwick
+makes are shared in the Community library." Shared packs stay for good (the owner can hide one).
+"🌍 Community packs" sits beside "Import packs" under every pack list and opens over it (the
+address gains `?community=1`, so Back closes it): a search of pack names and descriptions only
+(not the items), Most stars (then newest) or Newest, 30 at a time with "Show more"; each row
+shows name, description, item count and ★ stars. Tapping a pack shows everything in it (Snark
+Tank: with its stock answers and finals). Everything fetched is rebuilt from each game's own
+fields first (`src/lib/libraryShape.ts`, the same rules the server stores by).
+"Import" saves it through the pack-file import above (same checks, fresh id and name, ticked on
+its own) and leaves out items a built-in pack already has in games whose items must be new
+across packs (Spectrum, Inn Co Hear Ant, Brain Freeze, Don't Say It, Snark Tank). Browsing and
+importing are open to anyone; starring (one star per pass per pack, tap again to take it back)
+needs the magic words, and without them the star is a hint that opens the magic words box; a
+pass the server refuses (expired, or the words changed) is forgotten and the box comes back.
+Loading, empty, offline and server-trouble states are said in plain words. Without a wizard
+server (`WIZARD_SERVER` empty) there is no Community entry.
 
 ## Shared behaviour
 
@@ -192,6 +222,7 @@ shout clues; the holder tilts down for "got it", up for "pass".
   do nothing; in a Tap round tilting does nothing. A Tilt round on a phone that cannot feel
   motion takes taps instead, so it can always be played (`accepts` in `round.ts`).
   "Edit" (in the packs header, before the search and sort toggles) opens the pack list: open any pack to see, edit or restore its words.
+  Between its name and its words, a pack's icon is a box that takes one character, typed or pasted ("Type or paste one emoji or letter"), shown large beside it: anything longer is cut to its first character as a person sees it (`oneIcon` in `src/lib/icon.ts`: a flag, a skin-toned or joined emoji like 👩‍🚀, or an accented letter is one), and an empty box means the default 🃏. Pack files and the Community library carry the icon (the library keeps it only when it is exactly one character); older packs keep theirs. No other game's packs have an icon.
   On the player's own packs (not built-ins), "🧙 Add more" (`AddMore`, `src/lib/addMore.ts`) asks how many (10–80, default 20) and for an optional steer, then the wizard writes more in the pack's spirit (the request carries its name, description and every word, so none repeats); they stream into `Triage` for review and the kept ones go on top. No wizard: the magic-words box in place of the form.
 - **Start tap**: `unlockAudio()`, `requestMotion()` (iOS prompt), sample gravity for the sign fix
   (`axisSignFromLookingAt`) and for where the page's top is (below), `keepAwake(true)`, and on
@@ -260,6 +291,8 @@ shout clues; the holder tilts down for "got it", up for "pass".
   real data. The file goes to a laptop lab server when the page is served from one, else to
   share / download.
 
+Community: wizard packs and Add more are shared; "🌍 Community packs" is on the Packs screen; imported words are kept even when a built-in pack has them.
+
 ## Game 2 — Spectrum (`dial`)
 
 Wavelength-genre. Two teams. Each round one player of the active team (the reader) secretly
@@ -290,6 +323,8 @@ team sets a dial to where they think the target is.
   screens split the same way. Nothing scrolls, and turning the phone re-fits the page at once.
 - Game state saved after every step; reopening resumes.
 
+Community: wizard packs and Add more are shared; "🌍 Community packs" is under the pack list on setup; scales a built-in pack has are left out on import.
+
 ## Game 3 — Inn Co Hear Ant (`gibberish`)
 
 Mad Gab / Incoherent-genre. Each card is a phrase of real but unrelated words that, said
@@ -304,6 +339,8 @@ aloud, sounds like something well known ("Eye Scream" → Ice Cream).
   reader taps that player's name → point, answer revealed big with a chime. Time runs out or
   "Nobody" → answer revealed, no point. Skip draws a new card without penalty.
 - Scoreboard between cards; first to the target wins (win screen, rematch). State saved.
+
+Community: wizard packs and Add more are shared; "🌍 Community packs" is under the pack tiles on setup; answers a built-in pack has are left out on import.
 
 ## Game 4 — Big Board (`quiz`)
 
@@ -366,6 +403,8 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   pack in the editor, kept in storage (`quiz:new-board`) until "Save pack" (or "Save as a
   draft" with empty tiles), which picks it on setup.
 
+Community: a board Fizzwick wrote is shared when it is first saved from the editor, and again after Add more; "🌍 Community packs" is under the pack list; the preview lists every category's clues and answers.
+
 ## Game 5 — Don't Say It (`taboo`)
 
 Taboo-genre. Two teams take turns; one player describes the word on the card to their team
@@ -404,6 +443,8 @@ beside them watching for slips.
 - **Packs**: `src/content/taboo/*.json` (Classic 150, Pop Culture 100, After Dark 60). Paste
   lines `Word: one, two, three, four, five` in the pack editor to add many.
 
+Community: wizard packs and Add more are shared; "🌍 Community packs" is on setup under "Make a pack"; words a built-in pack has are left out on import.
+
 ## Game 6 — Brain Freeze (`quick`)
 
 Name-three-under-pressure genre. Pass the phone round; whoever is up reveals a prompt and has a
@@ -432,6 +473,8 @@ few seconds to name three things that fit it out loud; the room judges.
   round again, shuffled, never starting with the one just played.
 - **Content**: `src/content/quick/*.json`, `{"prompts": ["things you'd find in a fridge", …]}`
   stored without the "Name 3" lead-in. Built-ins: Classic (200), Pop Culture (120), After Dark (80).
+
+Community: wizard packs and Add more are shared; "🌍 Community packs" is under the pack tiles on setup; prompts a built-in pack has are left out on import.
 
 ## Hosting
 
@@ -517,6 +560,8 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   `#/snark/join?demo=join|lobby|late|write|wait|vote|voted|vote-own|vote3|voted3|reveal|reveal3|scores|over|duel-write|duel-vote|duel-reveal`.
 - **Packs**: `src/content/snark/*.json`, `{"prompts": [...]}`, 3–14 words (Classic 200, After
   Dark 80); optional `safety` and `finals`, below.
+
+Community: wizard packs, Add more and Fill in stock answers are shared with their stock answers and finals, and imported with them; "🌍 Community packs" is in the game settings; prompts a built-in pack has are left out on import.
 
 ### Snark Tank: Quiplash 3 options (`snark`, on by setting; defaults unchanged)
 

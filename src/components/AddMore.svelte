@@ -8,6 +8,7 @@
   import MagicWords from './MagicWords.svelte';
   import { hasKey, WANTS } from '../lib/claude';
   import { EMPTY_HANDED, type MoreRun } from '../lib/addMore';
+  import { passedSoFar } from '../lib/library';
 
   // "🧙 Add more", opened from a pack editor in place of it: how many and an optional steer, then
   // the wizard's new items stream into Triage for review; the kept ones go on top of the pack.
@@ -38,7 +39,8 @@
     ask: (o: MoreRun<T>) => Promise<number>;
     keyOf: (t: T) => string;
     item: Snippet<[T]>;
-    onadd: (kept: T[]) => void;
+    /** `byPass`: everything on this screen came through a magic-words pass, so the pack may be shared. */
+    onadd: (kept: T[], byPass: boolean) => void;
     onclose: () => void;
     /** Shown in place of the count stepper. */
     size?: Snippet;
@@ -60,7 +62,11 @@
   const keyed = $derived(hasKey());
   onDestroy(() => ctrl?.abort());
 
+  /** Whether every run behind the items on screen went through a pass. */
+  let byPass = false;
+
   async function run() {
+    byPass = passedSoFar(byPass, items.length);
     error = '';
     streaming = true;
     phase = 'review';
@@ -116,7 +122,7 @@
     {#if streaming && items.length === 0}
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring more {noun}…</p>
     {/if}
-    <Triage {items} {keyOf} {streaming} onsave={onadd} oncancel={cancel} onmore={range && keyed ? run : undefined} {item} />
+    <Triage {items} {keyOf} {streaming} onsave={(kept: T[]) => onadd(kept, byPass)} oncancel={cancel} onmore={range && keyed ? run : undefined} {item} />
   {/if}
 </Screen>
 

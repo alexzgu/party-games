@@ -14,6 +14,7 @@
   import { parsePrompts as parse } from './prompts';
   import { generateItems, MAKE_RANGE, THEME_CHIPS } from './generate';
   import { addItems, itemKey, packTexts, type SnarkItem } from './pack';
+  import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
   import WizardItem from './WizardItem.svelte';
 
   // "Make a pack": paste a list, one prompt per line (numbers, bullets and quotes dropped), or pick
@@ -47,7 +48,10 @@
     onsaved(id);
   }
 
+  /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
+  let byPass = false;
   async function run() {
+    byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     if (!name.trim()) name = theme.trim().replace(/^\w/, (c) => c.toUpperCase()).slice(0, 40);
     reviewing = true;
@@ -75,7 +79,9 @@
   function save(kept: SnarkItem[]) {
     const n = name.trim() || 'My prompts';
     const id = newId(n);
-    customSnark.put(addItems({ id, name: n, blurb: `Conjured by Fizzwick: ${theme.trim()}`, prompts: [] }, $state.snapshot(kept) as SnarkItem[]));
+    const pack = afterRun(addItems({ id, name: n, blurb: `Conjured by Fizzwick: ${theme.trim()}`, prompts: [] }, $state.snapshot(kept) as SnarkItem[]), byPass, true);
+    customSnark.put(pack);
+    void shareWizardPack('snark', pack, byPass);
     sfx.correct();
     onsaved(id);
   }

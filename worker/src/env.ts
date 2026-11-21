@@ -8,7 +8,14 @@ export interface Env {
   PARTY_PHRASES: string;
   /** Plain var: comma-separated origins allowed to call from a browser. */
   ALLOWED_ORIGINS: string;
+  /**
+   * Optional secret: lets the owner hide a library pack (POST /library/packs/:id/hide). Unset,
+   * that route always refuses.
+   */
+  LIBRARY_ADMIN?: string;
   LIMITS: DurableObjectNamespaceLike;
+  /** The community pack library (libraryObject.ts). */
+  LIBRARY: DurableObjectNamespaceLike;
 }
 
 export interface DurableObjectStubLike {
@@ -27,6 +34,23 @@ export interface DurableObjectStorageLike {
 
 export interface DurableObjectStateLike {
   storage: DurableObjectStorageLike;
+}
+
+/** A SQL value Cloudflare binds: no booleans, so flags are 0 or 1. */
+export type SqlValue = string | number | null;
+
+/** What `sql.exec` returns: the rows of a SELECT (or RETURNING), none for other statements. */
+export interface SqlCursorLike<T> {
+  toArray(): T[];
+}
+
+/** A SQLite-backed Durable Object's storage (`ctx.storage.sql`). */
+export interface SqlStorageLike {
+  exec<T = Record<string, SqlValue>>(query: string, ...bindings: SqlValue[]): SqlCursorLike<T>;
+}
+
+export interface SqlStateLike {
+  storage: { sql: SqlStorageLike };
 }
 
 export interface ExecutionContextLike {

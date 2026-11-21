@@ -7,6 +7,7 @@
   import History from './pages/History.svelte';
   import Crashed from './pages/Crashed.svelte';
   import Joined from './pages/Joined.svelte';
+  import ShareNote from './components/ShareNote.svelte';
   import { acceptInvite } from './lib/join';
 
   // Games load on demand; the service worker has them cached, so this is instant offline too.
@@ -65,3 +66,5 @@
 {:else}
   <Home />
 {/if}
+
+<ShareNote />

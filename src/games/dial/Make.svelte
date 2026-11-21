@@ -14,6 +14,7 @@
   import { generatePairs, parsePastedPairs, THEME_CHIPS } from './generate';
   import { cardId } from './state';
   import { selectPack } from './persist';
+  import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
 
   let { onback, onuse, initial = [] }: { onback: () => void; onuse: (packId: string) => void; initial?: Spectrum[] } = $props();
 
@@ -55,7 +56,10 @@
 
   const mine = $derived(step === 'save' ? customSpectra.all() : []);
 
+  /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
+  let byPass = false;
   async function run(avoid: Spectrum[]) {
+    byPass = passedSoFar(byPass, items.length);
     error = '';
     streaming = true;
     controller = new AbortController();
@@ -121,18 +125,23 @@
   function saveNew() {
     const name = packName.trim() || 'My pack';
     const blurb = mode === 'paste' ? 'Pasted list' : `Conjured by Fizzwick: ${theme || name}`;
-    const pack: SpectrumPack = { id: `my-${slugify(name)}-${Date.now().toString(36)}`, name, blurb, cards: kept, custom: true };
+    const pack = afterRun<SpectrumPack>({ id: `my-${slugify(name)}-${Date.now().toString(36)}`, name, blurb, cards: kept, custom: true }, passMade(), true);
     customSpectra.put(pack);
     finish(pack);
   }
 
   function addTo(p: SpectrumPack) {
-    const pack = { ...p, cards: merge(p.cards, kept) };
+    const pack = afterRun({ ...p, cards: merge(p.cards, kept) }, passMade(), false);
     customSpectra.put(pack);
     finish(pack);
   }
 
+  /** Whether these cards came through a pass (pasted ones never did). */
+  const passMade = () => mode === 'claude' && byPass;
+
   function finish(pack: SpectrumPack) {
+    // What the wizard made, or the pack it added to, goes to the Community library whole.
+    void shareWizardPack('dial', pack, passMade());
     selectPack(pack.id);
     savedPack = pack;
     items = [];

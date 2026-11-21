@@ -12,6 +12,7 @@
   import { sfx } from '../../lib/sound';
   import { generateCards, THEME_CHIPS } from './generate';
   import { answerKey, parsePastedCards } from './parse';
+  import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
 
   // "Make a pack": paste a list, or pick a theme and watch Claude's cards stream in; drop the
   // duds, save as a pack.
@@ -53,7 +54,10 @@
     reviewing = true;
   }
 
+  /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
+  let byPass = false;
   async function run() {
+    byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     if (!packName.trim()) packName = theme.trim().replace(/^\w/, (c) => c.toUpperCase());
     reviewing = true;
@@ -94,17 +98,25 @@
     return id;
   }
 
+  /** What the wizard made, or the pack it added to, goes to the Community library whole. */
+  const passMade = () => mode === 'claude' && byPass; // pasted items were not made through a pass
+  const share = (pack: GibberishPack) => void shareWizardPack('gibberish', pack, passMade());
+
   function save(kept: GibberishCard[]) {
     const cards = kept.map((c) => ({ ...c }));
     if (destPack) {
       const have = new Set(destPack.cards.map(answerKey));
-      customGibberish.put({ ...destPack, cards: [...destPack.cards, ...cards.filter((c) => !have.has(answerKey(c)))] });
+      const pack = afterRun({ ...destPack, cards: [...destPack.cards, ...cards.filter((c) => !have.has(answerKey(c)))] }, passMade(), false);
+      customGibberish.put(pack);
+      share(pack);
       onsaved(destPack.id);
     } else {
       const name = packName.trim() || 'My pack';
       const id = uniqueId(name);
       const blurb = mode === 'paste' ? 'Pasted list' : `Conjured by Fizzwick: ${theme.trim() || name}`;
-      customGibberish.put({ id, name, blurb, cards });
+      const pack = afterRun<GibberishPack>({ id, name, blurb, cards }, passMade(), true);
+      customGibberish.put(pack);
+      share(pack);
       onsaved(id);
     }
     sfx.correct();

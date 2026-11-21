@@ -7,7 +7,8 @@
   import PasteList from '../../components/PasteList.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import WizardEffort from '../../components/WizardEffort.svelte';
-  import { customDecks, dedupe, slugify, wordDecks } from '../../lib/content';
+  import { customDecks, dedupe, slugify, wordDecks, type WordDeck } from '../../lib/content';
+  import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
   import { hasKey, WANTS } from '../../lib/claude';
   import MagicWords from '../../components/MagicWords.svelte';
   import { back } from '../../lib/router.svelte';
@@ -50,7 +51,10 @@
     phase = 'triage';
   }
 
+  /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
+  let byPass = false;
   async function run() {
+    byPass = passedSoFar(byPass, items.length);
     error = '';
     streaming = true;
     phase = 'triage';
@@ -73,16 +77,22 @@
 
   function save(kept: string[]) {
     let id = target;
+    let saved: WordDeck;
+    const run = mode === 'claude' && byPass; // pasted words were not made through a pass
     if (targetDeck) {
       // On top, like words typed in the deck editor: the list reads newest first.
-      customDecks.put({ ...targetDeck, words: dedupe([...kept, ...targetDeck.words]) });
+      saved = afterRun({ ...targetDeck, words: dedupe([...kept, ...targetDeck.words]) }, run, false);
+      customDecks.put(saved);
     } else {
       const fromPaste = mode === 'paste';
       const typed = (fromPaste ? deckName.trim() : titleCase(theme.trim())).slice(0, 40) || (fromPaste ? 'My pack' : 'Wizard pack');
       const name = freshName(typed, (n) => wordDecks().some((d) => d.name.toLowerCase() === n)); // never two tiles alike
       id = 'my-' + slugify(name) + '-' + Date.now().toString(36);
-      customDecks.put({ id, name, emoji: fromPaste ? '📝' : '✨', blurb: fromPaste ? 'Pasted list' : 'Conjured by Fizzwick', words: dedupe(kept) });
+      saved = afterRun<WordDeck>({ id, name, emoji: fromPaste ? '📝' : '✨', blurb: fromPaste ? 'Pasted list' : 'Conjured by Fizzwick', words: dedupe(kept) }, run, true);
+      customDecks.put(saved);
     }
+    // What the wizard made, or the pack it added to, goes to the Community library whole.
+    if (kept.length) void shareWizardPack('forehead', saved, run);
     // A new pack is played on its own; words added to a pack keep the packs already picked.
     if (kept.length && !targetDeck) prefs.deckIds = [id];
     else if (kept.length && !prefs.deckIds.includes(id)) prefs.deckIds = [id, ...prefs.deckIds];

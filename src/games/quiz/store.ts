@@ -54,6 +54,11 @@ function validNewBoard(x: unknown): QuizBoard | null {
   return ok && !sizeProblem(b) ? b : null;
 }
 
+/**
+ * The board waiting to be saved. It keeps its share mark (`shared`, set by `afterRun` in
+ * src/lib/library.ts when Fizzwick wrote it through a magic-words pass), and saving keeps it on
+ * the saved board, so a board written with the host's own key stays private for good.
+ */
 export const loadNewBoard = (): QuizBoard | null => validNewBoard(load<unknown>(NEW_BOARD, null));
 export const saveNewBoard = (b: QuizBoard | null): void => (b ? save(NEW_BOARD, b) : remove(NEW_BOARD));
 

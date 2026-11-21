@@ -4,6 +4,7 @@
 # never written here or anywhere in the repo):
 #   ANTHROPIC_API_KEY  the separate, spend-limited Anthropic key the server uses
 #   PARTY_PHRASES      the accepted magic words, one phrase per line
+#   LIBRARY_ADMIN      optional: lets the owner hide a community library pack (README.md)
 name = "jerkbox-wizard"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
@@ -17,7 +18,17 @@ ALLOWED_ORIGINS = "https://alexzgu.github.io,http://localhost:5173,http://localh
 name = "LIMITS"
 class_name = "Limits"
 
+# The community pack library: shared packs and stars (libraryObject.ts).
+[[durable_objects.bindings]]
+name = "LIBRARY"
+class_name = "Library"
+
 # SQLite-backed Durable Object: the kind the free plan includes.
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Limits"]
+
+# Added later for the library; a migration tag, once deployed, is never edited.
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Library"]
