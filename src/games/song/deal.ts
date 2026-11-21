@@ -34,19 +34,27 @@ export function makeDealer(packIds: string[], unplayable: readonly string[] = []
     total: bags.reduce((n, b) => n + b.size, 0),
     /** The song plays from a clip on this phone. */
     hasClip: (song: Song) => clips.has(songKey(song)),
-    /** A song not in `dealt` (songs used this game) when one is left, else any playable song. */
-    next(dealt: readonly string[] = []): Song | null {
+    /**
+     * A song not in `dealt` (songs used this game, oldest first) when one is left; once all
+     * were used, the least recently used one. Never one in `avoid` (the songs on screen now)
+     * unless nothing else can play; null only when no song can.
+     */
+    next(dealt: readonly string[] = [], avoid: readonly (Song | null | undefined)[] = []): Song | null {
       const used = new Set(dealt);
-      let song: Song | undefined;
+      const held = new Set(avoid.flatMap((s) => (s ? [songKey(s)] : [])));
+      const ok = (k: string) => !used.has(k) && !skip.has(k) && !held.has(k);
       for (let i = 0; i < MAX_TRIES; i++) {
-        song = draw();
-        if (!song || (!used.has(songKey(song)) && !skip.has(songKey(song)))) return song ?? null;
+        const song = draw();
+        if (!song) return null;
+        if (ok(songKey(song))) return song;
       }
-      // Most songs are skipped (no internet, clips only): any playable one, unheard first.
-      const left = packs.flatMap((p) => p.songs).filter((s) => !skip.has(songKey(s)));
-      const fresh = left.filter((s) => !used.has(songKey(s)));
-      const from = fresh.length ? fresh : left;
-      return from[Math.floor(Math.random() * from.length)] ?? null;
+      // Most songs are skipped or used: an unused playable one, else the least recently used.
+      const left = [...new Map(packs.flatMap((p) => p.songs).map((s) => [songKey(s), s])).values()].filter((s) => !skip.has(songKey(s)));
+      const fresh = left.filter((s) => ok(songKey(s)));
+      if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)];
+      const age = (s: Song) => dealt.indexOf(songKey(s));
+      const others = left.filter((s) => !held.has(songKey(s))).sort((a, b) => age(a) - age(b));
+      return others[0] ?? left[0] ?? null;
     },
     /** Never deal this song again in this game (its preview would not play). */
     drop(key: string) {

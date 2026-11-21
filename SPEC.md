@@ -108,7 +108,11 @@ pack editor's or the paste route's; Big Board: 1–8 categories × 1–10 clues,
 pasted board); drops what fails and says how many; leaves out a pack with nothing usable; and
 saves each pack as the player's own, ticked (Big Board: picked), under a fresh id (`-2`, `-3`, …)
 when a built-in or a pack on the phone already has its id, so nothing is overwritten. A file of
-another game says which game to open; anything else says it isn't a pack file.
+another game says which game to open; anything else says it isn't a pack file. An Earworm pack's
+songs from the YouTube version that still need an Apple Music match travel apart, as
+`"legacySongs": [{"title", "artist"}]`, and come back as such (so "Rematch saved songs" offers
+them on the other phone); a file that has them among its `songs`, with no Apple track, is read
+the same way.
 
 ## Shared behaviour
 
@@ -370,7 +374,10 @@ previews (iTunes Search API: no key, open to any site); packs (`src/content/song
 only title, artist, Apple track id and, optionally, a clip start and a YouTube video id for the
 reveal. Nothing plays hidden: there is no video while guessing. It is the only game that needs
 internet; without it the ready screen says so ("No internet" or "Can't reach Apple Music") with
-Try again. Songs from a clip pack (below) play without it.
+Try again. Only a connection problem waits there (offline, a download with no answer, or Apple's
+lookup failing); a song whose preview Apple refuses (403, 404), will not decode, or cannot play
+because the browser has no Web Audio is skipped like one with no preview ("That song wouldn't
+play, so here's another."). Songs from a clip pack (below) play without it.
 
 - **Clip packs** (`scripts/clip-songs.mjs` on the owner's laptop; `clipfile.ts`, `clips.ts`): a
   pack file that also carries a 12-second clip of each song, cut with yt-dlp and ffmpeg from the
@@ -404,7 +411,10 @@ Try again. Songs from a clip pack (below) play without it.
 - **Start**: every song in the chosen packs is looked up in batched calls (`lookup` takes 50 ids a
   call; answers are kept on the phone for a week); songs Apple has no preview for are left out.
   Each song's preview is downloaded and decoded just before it is needed (the next one during
-  the reveal), so Play answers at once and the clip starts on the exact second.
+  the reveal), so Play answers at once and the clip starts on the exact second. Songs are dealt
+  from per-pack bags (what a phone has heard is remembered across games) and never twice in a
+  game; once every playable song has been used (rematches carry on the same list), the one used
+  longest ago comes back, never the song on screen unless it is the only one left.
 - **Round**: ready screen ("Song N", one big Play button) → Play plays the 2-second clip → listen
   screen: a record spins while the clip plays, with a ring for its progress; "Again" replays,
   "Longer" replays from the start at 5 s then 10 s. Naming it is worth 3 / 2 / 1 points at
@@ -431,14 +441,19 @@ Try again. Songs from a clip pack (below) play without it.
   finished game, `finished: false` when a game with something scored is thrown away; songs
   whose preview would not play are listed in its details.
 - **Pack editor**: every song with its art; tap one to change its title and artist, the clip
-  start (the preview's loudness drawn as bars: tap to place the start, ▶ 2 / 5 / 10 s to hear it,
-  "Auto" to let the game pick again) and an optional YouTube link for the reveal. "+ Add songs"
-  opens the adding screen.
+  start (the preview's loudness drawn as bars: tap to place the start, at most 19.5 s, ▶ 2 / 5 /
+  10 s to hear it, "Auto" to let the game pick again) and an optional YouTube link for the
+  reveal. "+ Add songs" opens the adding screen. A pack with songs from the YouTube version
+  says they need a match; "Rematch saved songs" on Add songs puts them in the list, and each
+  leaves the pack's to-match list once it is added or turns out to be in the pack already.
 - **Add songs** (one screen per pack; nothing is saved until "Add N songs"): Paste (one per line,
   any mix of YouTube links in every form, Apple Music song links, Spotify song links
   (`open.spotify.com/track/…`, with or without `/intl-xx/` and `?si=…`, or `spotify:track:…`),
   "Title - Artist" or "Artist - Title", numbered or bulleted lists, tables from a chat), Playlist (a YouTube playlist link: an
-  off-screen IFrame API player reads up to 200 video ids and is never played), or 🧙 Ask the
+  off-screen IFrame API player reads up to 200 video ids and is never played; a playlist YouTube
+  will not list (private, deleted or empty) becomes a line saying "That YouTube playlist can't be
+  read: it may be private or empty", pasting it again retries, and the list goes on; YouTube not
+  loading at all, or being offline, pauses the list), or 🧙 Ask the
   wizard (a theme, a count and "How hard Fizzwick tries"; "Fizzwick is conjuring … songs" while
   "Title | Artist" lines stream in through `streamLines`; without the wizard the screen shows
   `NOT_HERE` and how to ask any chatbot app and paste the answer). Every line goes through the
@@ -456,7 +471,10 @@ Try again. Songs from a clip pack (below) play without it.
   spotify.link short link one saying to open it and copy the long link (a web page may not read
   where it redirects). Results stream into a review list ("Matched 12 of 40", about how
   long is left): art, ▶ preview, keep or drop, "Check this match" on doubtful ones, "Wrong match?
-  Pick another" listing the other results, and songs already in the pack marked. The YouTube id a
+  Pick another" listing the other results, and songs already in the pack, or kept on another
+  line, marked "Already in this pack" (the mark is worked out again whenever a line is kept,
+  dropped or re-picked: unticking one line frees its repeat to be ticked, and picking another song
+  for a kept line passes its old song to the first line set aside as its repeat). The YouTube id a
   line came from is kept for the reveal. Apple allows about 20 calls a minute, so calls go one by
   one through a queue that keeps under it. The review list survives a reload.
 - State saved after every step; a reload resumes on the same screen (the clip waits for a tap).

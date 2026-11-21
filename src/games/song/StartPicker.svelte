@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { ClipPlayer, autoStart, loadPreview, unlockMusic } from './audio';
-  import { analyse, latestStart, loudnessBars, mixDown } from './pick';
-  import { formatStart } from './edit';
+  import { analyse, loudnessBars, mixDown } from './pick';
+  import { formatStart, latestHandStart } from './edit';
   import { CLIPS } from './logic';
   import type { Track } from './match';
 
@@ -48,7 +48,7 @@
   function place(e: PointerEvent) {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-    start = Math.round(Math.min(f * duration, latestStart(duration)) * 10) / 10;
+    start = Math.round(Math.min(f * duration, latestHandStart(duration)) * 10) / 10;
     hear(CLIPS[0]);
   }
 
@@ -56,7 +56,7 @@
     const d = e.key === 'ArrowLeft' ? -0.5 : e.key === 'ArrowRight' ? 0.5 : 0;
     if (!d) return;
     e.preventDefault();
-    start = Math.round(Math.min(Math.max(0, at + d), latestStart(duration)) * 10) / 10;
+    start = Math.round(Math.min(Math.max(0, at + d), latestHandStart(duration)) * 10) / 10;
   }
 
   function hear(seconds: number) {

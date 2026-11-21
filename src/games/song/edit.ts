@@ -4,6 +4,7 @@
 import type { Song } from '../../lib/content';
 import { youtubeFrom } from './match';
 import { MAX_START } from './logic';
+import { latestStart } from './pick';
 
 export interface SongDraft { title: string; artist: string; youtube: string; start: number | null }
 
@@ -27,6 +28,9 @@ export function checkSong(d: SongDraft, base: Song, others: Song[]): { song: Son
   if (youtube) song.youtube = youtube;
   return { song, error: '' };
 }
+
+/** The latest start the clip picker offers: the longest clip fits in the preview, and a pack may save it (MAX_START). */
+export const latestHandStart = (duration: number): number => Math.min(MAX_START, latestStart(duration));
 
 /** 12.4 → "0:12.4", 65 → "1:05". */
 export function formatStart(s: number): string {

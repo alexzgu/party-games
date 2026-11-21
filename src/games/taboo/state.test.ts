@@ -6,7 +6,7 @@ import {
   finishTurn, fixMark, markCard, newGame, nextTurn, rematch, restore, scores, scoresBefore, startTurn, tiedAtEnd, timeUp,
   type Config, type Game,
 } from './state';
-import { summarize, summarizeEarly } from './summary';
+import { summarize, summarizeEarly, winLine } from './summary';
 
 const card = (word: string): TabooCard => ({ word, banned: ['a', 'b', 'c', 'd', 'e'] });
 const cfg = (patch: Partial<Config> = {}): Config => ({
@@ -119,6 +119,16 @@ describe('resume', () => {
 });
 
 describe('history', () => {
+  it('counts rounds and words on the win screen in plain English', () => {
+    const one = play(nextTurn(play(newGame(cfg({ goal: 1 })), ['got'])), []);
+    expect(one.phase).toBe('win');
+    expect(winLine(one)).toBe('1 round · 1 word guessed · first to 1');
+    let two = play(newGame(cfg({ mode: 'rounds', rounds: 2 })), ['got', 'got']);
+    for (const marks of [['got'], [], []] as const) two = play(nextTurn(two), [...marks]);
+    expect(two.phase).toBe('win');
+    expect(winLine(two)).toBe('2 rounds · 3 words guessed · 2-round game');
+  });
+
   it('records the winner first with one line per turn', () => {
     const e = summarize(demoGame('win')!, ['Classic']);
     expect(e.title).toBe('Loudmouths beat Mimes 3–2');

@@ -25,7 +25,7 @@
   const playable = $derived(!!t?.preview && !item.dup);
   const label = $derived(
     item.state !== 'done' ? (item.state === 'matching' ? 'Finding it…' : 'Waiting…')
-    : item.wanted.kind === 'playlist' ? `Playlist: ${m?.why?.replace(/^a playlist of /, '') ?? ''}`
+    : item.wanted.kind === 'playlist' ? (m?.retry ? m.why ?? '' : `Playlist: ${m?.why?.replace(/^a playlist of /, '') ?? ''}`)
     : item.wanted.kind === 'skip' ? item.wanted.why.charAt(0).toUpperCase() + item.wanted.why.slice(1)
     : item.dup ? 'Already in this pack'
     : !t ? `Not found (${m?.why ?? 'no match'})`

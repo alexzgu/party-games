@@ -18,7 +18,10 @@ export function pendingPreview<K, T = Prepared | null>(
   return request;
 }
 
-/** A missing preview is a result. A failed request leaves the song eligible for retry. */
+/**
+ * A missing or unplayable preview is a result (null: the song is skipped). Only a connection
+ * problem (offline, no answer, or Apple's lookup failing) throws, leaving the song for retry.
+ */
 export async function preparePreview(
   song: Song,
   lookup: (song: Song) => Promise<Track | null>,
@@ -32,10 +35,16 @@ export async function preparePreview(
     if (!navigator.onLine) throw new NetError('offline', true);
     const updated = await refresh();
     if (!updated?.preview) return null;
-    if (updated.preview !== track.preview) return prepare(song, updated);
-    if (error instanceof DOMException && error.name === 'EncodingError') return null;
-    throw error;
+    if (updated.preview === track.preview) return skipUnlessConnection(error);
+    return prepare(song, updated).catch(skipUnlessConnection);
   }
+}
+
+/** A preview that failed for the song's own reason (refused, undecodable, no Web Audio) is skipped. */
+function skipUnlessConnection(error: unknown): null {
+  if (!navigator.onLine) throw new NetError('offline', true);
+  if (error instanceof NetError) throw error;
+  return null;
 }
 
 /** A song ready to play, from its clip on this phone or from Apple's preview. */

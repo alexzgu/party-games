@@ -153,14 +153,20 @@ export interface SongPack { id: string; name: string; blurb: string; songs: Song
 const songFiles = import.meta.glob<SongPack>('../content/song/*.json', { eager: true, import: 'default' });
 const builtinSongs = ordered(Object.values(songFiles), ['2000s-bangers', '2010s-hits', 'throwbacks']);
 export const customSongs = customStore<SongPack>('custom:songs', builtinSongs);
+/** A saved pack's songs that can play, and the YouTube-era ones (saved apart or still among its songs) that need an Apple Music match. */
+export function splitSongs(pack: Pick<SongPack, 'songs' | 'legacySongs'>): { songs: Song[]; legacySongs: LegacySong[] } {
+  const songs: Song[] = [];
+  const legacySongs = [...(pack.legacySongs ?? [])];
+  for (const song of pack.songs) {
+    if ((Number.isSafeInteger(song.apple) && song.apple! > 0) || (song.clipOnly === true && !!song.youtube)) songs.push(song);
+    else legacySongs.push({ title: song.title, artist: song.artist });
+  }
+  return { songs, legacySongs };
+}
+
 export function songPacks(): SongPack[] {
   const saved = customSongs.saved().map((pack) => {
-    const songs: Song[] = [];
-    const legacySongs = [...(pack.legacySongs ?? [])];
-    for (const song of pack.songs) {
-      if ((Number.isSafeInteger(song.apple) && song.apple! > 0) || (song.clipOnly === true && !!song.youtube)) songs.push(song);
-      else legacySongs.push({ title: song.title, artist: song.artist });
-    }
+    const { songs, legacySongs } = splitSongs(pack);
     if (!legacySongs.length) return pack;
     // A YouTube-only edit must not hide the shipped Apple Music songs.
     return { ...pack, songs: songs.length ? songs : customSongs.original(pack.id)?.songs ?? [], legacySongs };

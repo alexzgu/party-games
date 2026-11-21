@@ -8,6 +8,7 @@ import { loadAutoStart, saveAutoStart } from './store';
 import { fitStart, mixDown, pickStart } from './pick';
 import type { Song } from '../../lib/content';
 import type { Track } from './match';
+import { NetError } from './itunes';
 
 let ctx: AudioContext | null = null;
 
@@ -48,11 +49,14 @@ function kept(key: string, make: () => Promise<AudioBuffer>): Promise<AudioBuffe
   return p;
 }
 
-/** A preview, downloaded and decoded. */
+/**
+ * A preview, downloaded and decoded. No answer at all is a NetError (the connection); a refused
+ * file (HTTP error) or one that will not decode is a plain error (this song's file).
+ */
 export function loadPreview(url: string): Promise<AudioBuffer> {
   return kept(url, async () => {
     let res: Response;
-    try { res = await fetch(url); } catch { throw new Error('no answer'); }
+    try { res = await fetch(url); } catch { throw new NetError('no answer'); }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return music().decodeAudioData(await res.arrayBuffer());
   });

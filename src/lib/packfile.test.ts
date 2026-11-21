@@ -41,6 +41,17 @@ describe('pack files', () => {
     expect(readFile(file('snark', [broken]), 'snark')).toEqual({ packs: [full], skipped: 0, problems: [] });
   });
 
+  it('carries Earworm songs still needing an Apple match, so the other phone can rematch them', () => {
+    const old = { title: 'Old Song', artist: 'An Artist' };
+    const saved = { ...SAMPLES.song, songs: [...(SAMPLES.song as { songs: object[] }).songs, { ...old, youtube: 'abcdefghijk', start: 60 }], legacySongs: [{ title: 'Older', artist: 'Someone' }], custom: true } as AnyPack;
+    const want = { ...SAMPLES.song, legacySongs: [{ title: 'Older', artist: 'Someone' }, old] };
+    expect(readFile(exportFile('song', [saved]), 'song')).toEqual({ packs: [want], skipped: 0, problems: [] });
+    // A file written before they were kept apart, and a pack of nothing but such songs.
+    expect(readFile(file('song', [saved]), 'song')).toEqual({ packs: [want], skipped: 0, problems: [] });
+    const onlyOld = { id: 'old', name: 'Old', blurb: '', songs: [{ ...old, youtube: 'abcdefghijk' }] };
+    expect(readFile(file('song', [onlyOld]), 'song')).toEqual({ packs: [{ id: 'old', name: 'Old', blurb: '', songs: [], legacySongs: [old] }], skipped: 0, problems: [] });
+  });
+
   it('names the file after the game and the pack', () => {
     expect(fileName('forehead', 'our-trip')).toBe('heads-down-our-trip.jerkbox.txt');
     expect(fileName('quiz')).toBe('big-board-my-packs.jerkbox.txt');

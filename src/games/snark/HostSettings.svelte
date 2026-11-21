@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import PackPicker from './PackPicker.svelte';
   import { snarkPacks } from '../../lib/content';
   import { ANSWER_CHOICES, VOTE_CHOICES, type FinalStyle } from './logic';
-  import { loadSettings, saveSettings } from './store';
+  import { loadSettings } from './store';
   import { host } from './host.svelte';
 
   // The room's settings, changed from the lobby: rounds, timers and prompt packs. Saved on
@@ -22,10 +23,11 @@
   let selected = $state(s.packIds.filter((id) => packs.some((p) => p.id === id)));
   const locked = host.game !== null && host.game.phase !== 'lobby';
 
+  // Saves (on this device, and into the lobby's game) whenever a choice changes. host.settings
+  // reads and writes host.game, so it runs untracked: tracking it would re-run this on its own write.
   $effect(() => {
     const next = { rounds, answerSecs, voteSecs, packIds: $state.snapshot(selected), final };
-    saveSettings(next);
-    host.settings(next);
+    untrack(() => host.settings(next));
   });
   // Duels need finals; packs without any borrow Classic's (logic falls back to the 3-vote final if there are none at all).
   const ownFinals = $derived(packs.some((p) => selected.includes(p.id) && p.finals?.length));

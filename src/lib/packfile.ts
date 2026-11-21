@@ -6,8 +6,8 @@
 // nothing on the phone uses yet, so an import never overwrites a pack.
 import { APP, gameName, GAMES, type PackGameId } from '../app.config';
 import {
-  customDecks, customGibberish, customQuick, customQuiz, customSnark, customSongs, customSpectra, customTaboo, slugify,
-  type GibberishCard, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkFinal, type SnarkPack, type Song,
+  customDecks, customGibberish, customQuick, customQuiz, customSnark, customSongs, customSpectra, customTaboo, slugify, splitSongs,
+  type GibberishCard, type LegacySong, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkFinal, type SnarkPack, type Song,
   type SongPack, type Spectrum, type SpectrumPack, type TabooCard, type TabooPack, type WordDeck,
 } from './content';
 import { MAX_ITEM_CHARS, MAX_WORDS_PER_ITEM } from '../games/forehead/words';
@@ -43,14 +43,19 @@ const NOT_A_PACK_FILE = `This isn't a ${APP.name} pack file.`;
 
 // ---- Writing
 
-/** The pack as it goes in a file: id, name, emoji (Heads Down. only), blurb and items (Snark Tank: stock answers and finals too, when it has them). */
+/**
+ * The pack as it goes in a file: id, name, emoji (Heads Down. only), blurb and items (Snark Tank:
+ * stock answers and finals too, when it has them; Earworm: the songs that can play, and apart from
+ * them, as `legacySongs`, the YouTube-era songs that still need an Apple Music match).
+ */
 function plain(game: PackGameId, p: AnyPack): Record<string, unknown> {
   const field = FIELD[game];
   const { safety, finals } = game === 'snark' ? (p as SnarkPack) : {};
+  const { songs, legacySongs } = game === 'song' ? splitSongs(p as SongPack) : { songs: null, legacySongs: [] };
   return {
     id: p.id, name: p.name, ...(game === 'forehead' ? { emoji: (p as WordDeck).emoji } : {}), blurb: p.blurb,
-    [field]: (p as unknown as Record<Field, unknown>)[field],
-    ...(safety ? { safety } : {}), ...(finals ? { finals } : {}),
+    [field]: songs ?? (p as unknown as Record<Field, unknown>)[field],
+    ...(safety ? { safety } : {}), ...(finals ? { finals } : {}), ...(legacySongs.length ? { legacySongs } : {}),
   };
 }
 
@@ -159,6 +164,20 @@ function song(x: unknown, kept: Song[], opts: ReadOptions): Song | null {
   return checkSong(draft, { title: x.title, artist: x.artist, youtube, clipOnly: true }, kept).song;
 }
 
+/** A song from before Apple Music tracks (no `apple`, not clip-only): kept to be rematched, not played. */
+const isLegacy = (x: unknown): boolean => isObj(x) && x.apple === undefined && x.clipOnly !== true;
+
+function legacySong(x: unknown): LegacySong | null {
+  if (!isObj(x)) return null;
+  const title = text(x.title);
+  const artist = text(x.artist);
+  return title && artist ? { title, artist } : null;
+}
+
+/** An Earworm pack's songs still needing an Apple Music match: its `legacySongs`, and any such song among its songs (older files). */
+const legacySongs = (raw: Record<string, unknown>, songs: unknown[]): LegacySong[] =>
+  keep([...(Array.isArray(raw.legacySongs) ? raw.legacySongs : []), ...songs.filter(isLegacy)], legacySong, (s) => `${s.title}|${s.artist}`.toLowerCase()).items;
+
 function taboo(x: unknown): TabooCard | null {
   if (!isObj(x) || typeof x.word !== 'string' || !Array.isArray(x.banned) || !x.banned.every((b) => typeof b === 'string')) return null;
   const card = tidyTaboo({ word: x.word, banned: x.banned as string[] });
@@ -210,10 +229,12 @@ type ReadPack = { pack: AnyPack; skipped: number } | { problem: string };
 function readPack(game: PackGameId, raw: unknown, opts: ReadOptions): ReadPack {
   if (!isObj(raw)) return { problem: 'One pack in the file is damaged.' };
   const name = text(raw.name).slice(0, 40) || 'My pack';
-  const list = raw[FIELD[game]];
-  if (!Array.isArray(list)) return { problem: `“${name}” has no ${UNIT[game]} in it.` };
+  const all = raw[FIELD[game]];
+  if (!Array.isArray(all)) return { problem: `“${name}” has no ${UNIT[game]} in it.` };
+  const legacy = game === 'song' ? legacySongs(raw, all) : [];
+  const list = game === 'song' ? all.filter((x) => !isLegacy(x)) : all;
   const got = items(game, list, opts);
-  if (!got.usable && got.skipped) return { problem: `None of the ${UNIT[game]} in “${name}” could be used.` };
+  if (!got.usable && got.skipped && !legacy.length) return { problem: `None of the ${UNIT[game]} in “${name}” could be used.` };
   const base = { id: slugify(text(raw.id) || name), name, blurb: text(raw.blurb).slice(0, 80) };
   if (game === 'quiz') {
     const b = { ...base, categories: got.items as QuizCategory[] };
@@ -222,7 +243,8 @@ function readPack(game: PackGameId, raw: unknown, opts: ReadOptions): ReadPack {
   }
   const emoji = text(raw.emoji);
   const extra = game === 'forehead' ? { emoji: emoji && emoji.length <= 16 ? emoji : '🃏' }
-    : game === 'snark' ? snarkExtras(raw, got.items as string[]) : {};
+    : game === 'snark' ? snarkExtras(raw, got.items as string[])
+    : legacy.length ? { legacySongs: legacy } : {};
   return { pack: { ...base, ...extra, [FIELD[game]]: got.items } as unknown as AnyPack, skipped: got.skipped };
 }
 

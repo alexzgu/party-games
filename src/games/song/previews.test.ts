@@ -36,6 +36,27 @@ describe('Earworm preview preparation', () => {
     await expect(preparePreview(song, async () => track, async () => null)).resolves.toBeNull();
   });
 
+  // A preview that answers but will not play is this song's problem, not the connection's:
+  // the song is skipped (null) instead of leaving the room on "Try again".
+  it.each([
+    ['answers 404', new Error('HTTP 404')],
+    ['answers 403', new Error('HTTP 403')],
+    ['will not decode', new DOMException('bad', 'NotSupportedError')],
+    ['has no Web Audio', new ReferenceError('AudioContext is not defined')],
+  ])('skips a song whose preview %s', async (_, failure) => {
+    vi.stubGlobal('navigator', { onLine: true });
+    vi.mocked(prepare).mockRejectedValue(failure);
+    await expect(preparePreview(song, async () => track, async () => track)).resolves.toBeNull();
+    await expect(preparePreview(song, async () => track, async () => ({ ...track, preview: 'newer' }))).resolves.toBeNull();
+  });
+
+  it('keeps a song for retry when its preview download gets no answer', async () => {
+    vi.stubGlobal('navigator', { onLine: true });
+    vi.mocked(prepare).mockRejectedValue(new NetError('no answer'));
+    await expect(preparePreview(song, async () => track, async () => track)).rejects.toBeInstanceOf(NetError);
+    await expect(preparePreview(song, async () => track, async () => ({ ...track, preview: 'newer' }))).rejects.toBeInstanceOf(NetError);
+  });
+
   it('shares in-flight preparation and removes both fulfilled and rejected entries', async () => {
     const pending = new Map<number, Promise<Prepared | null>>();
     const load = vi.fn().mockResolvedValueOnce(ready).mockRejectedValueOnce(new Error('offline'));

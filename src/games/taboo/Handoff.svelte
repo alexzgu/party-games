@@ -72,6 +72,8 @@
       var(--bg);
   }
   header { display: flex; align-items: center; gap: var(--s-2); }
+  /* The scoreboard takes the room the menu leaves, and no more: long team names shorten inside it. */
+  .grow { flex: 1; min-width: 0; }
   .menu {
     flex: none; width: 48px; height: 48px; border-radius: var(--r-pill); border: 0;
     background: var(--surface); color: var(--text-dim); display: grid; place-items: center;

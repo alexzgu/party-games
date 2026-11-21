@@ -34,6 +34,9 @@ declare global {
   interface Window { YT?: YTNamespace; onYouTubeIframeAPIReady?: () => void }
 }
 
+/** YouTube answered but will not list the playlist (private, deleted or empty): not a connection problem. */
+export class PlaylistError extends Error {}
+
 let loading: Promise<YTNamespace> | null = null;
 
 /** The API, loaded once; rejects when YouTube cannot be reached, so a retry can try again. */
@@ -68,7 +71,9 @@ export function loadYouTube(): Promise<YTNamespace> {
 
 /**
  * The video ids in a playlist (up to 200). A player is made off screen just to ask YouTube for
- * the list; it is never played and is destroyed as soon as the ids are in.
+ * the list; it is never played and is destroyed as soon as the ids are in. Rejects with a
+ * PlaylistError when YouTube's player loaded but gives no videos (an error, or none in time);
+ * a failure to load YouTube at all is a plain Error (the connection).
  */
 export async function readPlaylist(list: string): Promise<string[]> {
   const YT = await loadYouTube();
@@ -81,7 +86,7 @@ export async function readPlaylist(list: string): Promise<string[]> {
   let player: YTPlayer | null = null;
   try {
     return await new Promise<string[]>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('timeout')), LOAD_TIMEOUT_MS);
+      const timer = setTimeout(() => reject(new PlaylistError('no videos')), LOAD_TIMEOUT_MS);
       const read = () => {
         const ids = player?.getPlaylist();
         if (ids?.length) { clearTimeout(timer); resolve(ids.slice(0, PLAYLIST_MAX)); }
@@ -92,7 +97,7 @@ export async function readPlaylist(list: string): Promise<string[]> {
         events: {
           onReady: () => player?.cuePlaylist({ list, listType: 'playlist' }),
           onStateChange: (e) => { if (e.data === CUED) read(); },
-          onError: () => { clearTimeout(timer); reject(new Error('playlist')); },
+          onError: () => { clearTimeout(timer); reject(new PlaylistError('playlist')); },
         },
       });
     });

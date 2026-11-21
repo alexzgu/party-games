@@ -3,6 +3,7 @@
 // host to keep, drop or re-pick. Knows nothing about screens, so the tests drive it with fakes.
 import type { LegacySong, Song } from '../../lib/content';
 import { matchWanted, wantedKey, type Match, type MatchDeps, type Track, type Wanted } from './match';
+import { PlaylistError } from './youtube';
 
 export interface Item {
   key: string;
@@ -15,7 +16,7 @@ export interface Item {
 }
 
 export interface AdderDeps extends MatchDeps {
-  /** A YouTube playlist's video ids. */
+  /** A YouTube playlist's video ids; a PlaylistError when YouTube will not list it. */
   readPlaylist(list: string): Promise<string[]>;
 }
 
@@ -85,20 +86,29 @@ export class Adder {
 
   toggle(key: string): void {
     const it = this.items.find((i) => i.key === key);
-    if (!it?.match?.track?.preview) return;
+    if (!it?.match?.track?.preview || it.dup) return;
     it.keep = !it.keep;
+    this.markDups();
     this.changed?.();
   }
 
-  /** "Wrong match? Pick another": the chosen track replaces the match, which joins the others. */
+  /**
+   * "Wrong match? Pick another": the chosen track replaces the match, which joins the others.
+   * A kept row's old song passes to the first row that was set aside as its repeat.
+   */
   choose(key: string, track: Track): void {
     const it = this.items.find((i) => i.key === key);
     if (!it?.match) return;
     const old = it.match.track;
+    const wasKept = it.keep;
     const others = [...(old ? [old] : []), ...it.match.others.filter((t) => t.id !== track.id)];
     it.match = { ...it.match, track, others, sure: true, why: undefined };
+    it.keep = false;
     it.dup = this.isDup(track, it);
     it.keep = !!track.preview && !it.dup;
+    const heir = wasKept && old && this.items.find((o) => o !== it && o.dup && o.match?.track?.id === old.id);
+    if (heir) { heir.dup = false; heir.keep = true; }
+    this.markDups();
     this.changed?.();
   }
 
@@ -107,8 +117,24 @@ export class Adder {
     return this.items.filter((i) => i.keep && i.match?.track?.preview && !i.dup);
   }
 
+  /**
+   * Lines whose song will be in the pack once saved: kept, or matched to a song already there
+   * (or kept on another row). A saved song needing a rematch is settled by these.
+   */
+  settled(): Set<string> {
+    return new Set(this.items.filter((i) => i.state === 'done' && i.match?.track && (i.keep || i.dup)).map((i) => i.key));
+  }
+
+  /** In the pack already, or the same track as another row that is kept. */
   private isDup(t: Track, self: Item): boolean {
     return this.existing.some((s) => s.apple === t.id) || this.items.some((o) => o !== self && o.state === 'done' && o.keep && o.match?.track?.id === t.id);
+  }
+
+  /** After any row's keep or track changes, every unkept row's mark is worked out again (a kept row is never a repeat). */
+  private markDups() {
+    for (const o of this.items) {
+      if (o.state === 'done' && !o.keep) o.dup = !!o.match?.track && this.isDup(o.match.track, o);
+    }
   }
 
   private async pump() {
@@ -142,12 +168,24 @@ export class Adder {
     it.dup = m.track ? this.isDup(m.track, it) : false;
     // Doubtful matches start kept but marked, so the host looks at them; misses start dropped.
     it.keep = !!m.track?.preview && !it.dup;
+    this.markDups();
   }
 
-  /** A playlist line becomes one line per video in it. */
+  /**
+   * A playlist line becomes one line per video in it. One YouTube will not list stays as a
+   * skipped line, marked for retry, and the list goes on; only a connection problem pauses it.
+   */
   private async expand(it: Item) {
     if (it.wanted.kind !== 'playlist') return;
-    const ids = [...new Set(await this.deps.readPlaylist(it.wanted.list))];
+    let ids: string[];
+    try {
+      ids = [...new Set(await this.deps.readPlaylist(it.wanted.list))];
+    } catch (e) {
+      if (!(e instanceof PlaylistError) || navigator.onLine === false) throw e;
+      it.state = 'done';
+      it.match = { line: it.wanted.line, track: null, others: [], sure: false, why: 'That YouTube playlist can’t be read: it may be private or empty', retry: true };
+      return;
+    }
     it.state = 'done';
     it.match = { line: it.wanted.line, track: null, others: [], sure: false, why: `a playlist of ${ids.length} videos` };
     const at = this.items.indexOf(it);

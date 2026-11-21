@@ -37,7 +37,7 @@ export interface GameState {
   step: number;
   outcome: Outcome | null;
   songsPlayed: number;
-  /** Songs used this game (played or skipped, by songKey), so none comes up twice. */
+  /** Songs used this game (played or skipped, by songKey), oldest first, so none comes up twice and, once all were used, the oldest comes back first. */
   dealt: string[];
   /** Songs Apple had no preview for, for the history entry. */
   skipped: string[];
@@ -68,7 +68,8 @@ export function newGame(names: string[], opts: GameOptions, first: Song | null):
 /** A song's identity for dealing (and for its clip on this phone): its Apple track id, or "yt:<video id>" for a clip-only song. */
 export const songKey = (s: Pick<Song, 'apple' | 'youtube'>) => (s.apple ? String(s.apple) : `yt:${s.youtube ?? ''}`);
 
-const withDealt = (dealt: string[], song: Song | null) => (song && !dealt.includes(songKey(song)) ? [...dealt, songKey(song)] : dealt);
+/** `dealt` with this song moved to the end, as the newest. */
+const withDealt = (dealt: string[], song: Song | null) => (song ? [...dealt.filter((k) => k !== songKey(song)), songKey(song)] : dealt);
 
 /** Play was tapped: the room hears the shortest clip. */
 export function listen(s: GameState): GameState {

@@ -90,8 +90,8 @@
       // No internet: the songs with clips on this phone still play.
       if (!clips.size || !dealer.clipsOnly()) { net = connectionProblem(e); return; }
       note = 'No internet, so only the songs saved on this phone play.';
-      if (game.song && !dealer.hasClip(game.song) && (game.phase === 'ready' || game.phase === 'listen')) step(rules.replaceSong(game, dealer.next(game.dealt)));
-      if (game.upcoming && !dealer.hasClip(game.upcoming)) step(rules.setUpcoming(game, dealer.next(game.dealt)));
+      if (game.song && !dealer.hasClip(game.song) && (game.phase === 'ready' || game.phase === 'listen')) step(rules.replaceSong(game, dealer.next(game.dealt, [game.upcoming])));
+      if (game.upcoming && !dealer.hasClip(game.upcoming)) step(rules.setUpcoming(game, dealer.next(game.dealt, [game.song])));
     }
     net = 'ok';
     if (!game.song && game.phase === 'ready') step(rules.replaceSong(game, dealer.next(game.dealt)));
@@ -155,7 +155,7 @@
         readyNext = key;
       } else {
         dealer.drop(rules.songKey(song));
-        step(rules.replaceUpcoming(game, dealer.next(game.dealt)));
+        step(rules.replaceUpcoming(game, dealer.next(game.dealt, [game.song])));
         void preload();
       }
     } catch {
@@ -168,7 +168,7 @@
     console.warn(`Earworm: nothing playable for song ${rules.songKey(song)}; skipped.`);
     dealer.drop(rules.songKey(song));
     if (game.phase !== 'ready' && game.phase !== 'listen') return;
-    step(rules.replaceSong(game, dealer.next(game.dealt), true));
+    step(rules.replaceSong(game, dealer.next(game.dealt, [game.upcoming]), true));
     note = game.song ? 'That song wouldn’t play, so here’s another.' : 'No more songs that play here. Pick other packs.';
     void loadCurrent();
   }
@@ -217,7 +217,7 @@
   }
 
   function reveal(next: GameState) {
-    step(rules.setUpcoming(next, game.upcoming ?? dealer.next(next.dealt)));
+    step(rules.setUpcoming(next, game.upcoming ?? dealer.next(next.dealt, [next.song])));
     hearIt();
     void preload();
   }
@@ -235,8 +235,8 @@
 
   /** Another song, back on the ready screen: nobody is asked who named one the room has not heard. */
   function skipSong() {
-    const s = dealer.next(game.dealt);
-    if (!s) { note = 'No other songs in these packs.'; return; }
+    const s = dealer.next(game.dealt, [game.song, game.upcoming]);
+    if (!s || keyOf(s) === keyOf(game.song)) { note = 'No other songs in these packs.'; return; }
     note = '';
     player.stop();
     step(rules.replaceSong(game, s));
@@ -245,6 +245,7 @@
 
   function next() {
     stopMusic();
+    const heard = game.song;
     const n = rules.next(game);
     if (n.phase === 'win') {
       sfx.win();
@@ -252,7 +253,7 @@
       if (!demo) record(rules.gameRecord(n, packNames(n.packIds)));
     }
     step(n);
-    if (n.phase === 'ready' && !n.song) step(rules.replaceSong(n, dealer.next(n.dealt)));
+    if (n.phase === 'ready' && !n.song) step(rules.replaceSong(n, dealer.next(n.dealt, [heard])));
     if (game.phase === 'ready') void loadCurrent();
   }
 
@@ -264,7 +265,7 @@
 
   function rematch() {
     const r = rules.rematch(game);
-    step(r.song ? r : rules.replaceSong(r, dealer.next(r.dealt)));
+    step(r.song ? r : rules.replaceSong(r, dealer.next(r.dealt, [game.song])));
     void loadCurrent();
   }
 

@@ -4,7 +4,8 @@
   import { onMount } from 'svelte';
   import Button from '../../components/Button.svelte';
   import Confetti from './Confetti.svelte';
-  import { other, roundNo, scores, type Game, type TeamIndex } from './state';
+  import { other, scores, type Game, type TeamIndex } from './state';
+  import { winLine } from './summary';
   import { teamColor } from './look';
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
@@ -15,7 +16,6 @@
   const w = $derived((game.winner ?? 0) as TeamIndex);
   const l = $derived(other(w));
   const s = $derived(scores(game));
-  const got = $derived(game.turns.reduce((n, t) => n + t.cards.filter((c) => c.mark === 'got').length, 0));
   let confetti = $state(true);
 
   onMount(() => {
@@ -36,7 +36,7 @@
     <div class="row lose pop-in" style:animation-delay="440ms" style:--team={teamColor(l)}><span>{game.names[l]}</span><b>{s[l]}</b></div>
   </div>
   <p class="faint pop-in" style:animation-delay="560ms">
-    {roundNo(game)} rounds · {got} words guessed · {game.mode === 'score' ? `first to ${game.goal}` : `${game.rounds}-round game`}
+    {winLine(game)}
   </p>
   <div class="actions pop-in" style:animation-delay="680ms">
     <Button size="lg" onclick={onrematch}>Rematch</Button>

@@ -123,7 +123,8 @@
     if (!pack) return;
     const kept = adder.kept();
     const fresh = kept.map((i) => toSong(i, tidy)).filter((s) => !!s);
-    const matched = new Set(kept.map((i) => i.key));
+    // A saved song needing a match leaves that list once it is kept or was already in the pack.
+    const matched = adder.settled();
     const remaining = pack.legacySongs?.filter((song) => !matched.has(wantedKey(rematchWanted(song))));
     const { custom: _, ...plain } = pack;
     customSongs.put({ ...plain, songs: [...fresh, ...pack.songs], legacySongs: remaining });

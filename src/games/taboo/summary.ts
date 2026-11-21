@@ -1,7 +1,7 @@
 // History entries for a game: a finished one (who beat whom), or one ended before anyone won
 // (the scores as they stood, the turn in play included). Both list one line per turn.
 import type { HistoryEntry } from '../../lib/history';
-import { other, scores, turnScore, type Game, type Mark, type Turn } from './state';
+import { other, roundNo, scores, turnScore, type Game, type Mark, type Turn } from './state';
 
 export type GameSummary = Omit<HistoryEntry, 'id' | 'at'>;
 
@@ -17,6 +17,14 @@ function turnLine(g: Game, t: Turn, n: number): string {
 }
 
 const lines = (g: Game) => g.turns.map((t, i) => turnLine(g, t, i + 1));
+
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/** The win screen's line: "2 rounds · 7 words guessed · first to 10". */
+export function winLine(g: Game): string {
+  const got = g.turns.reduce((n, t) => n + t.cards.filter((c) => c.mark === 'got').length, 0);
+  return `${count(roundNo(g), 'round', 'rounds')} · ${count(got, 'word', 'words')} guessed · ${g.mode === 'score' ? `first to ${g.goal}` : `${g.rounds}-round game`}`;
+}
 
 export function summarize(g: Game, packNames: string[]): GameSummary {
   const s = scores(g);

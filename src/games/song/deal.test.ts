@@ -22,6 +22,25 @@ describe('Earworm dealer', () => {
     for (let i = 0; i < 30; i++) expect(songKey(dealer.next([])!)).not.toBe(dropped);
   });
 
+  it('once every song was used this game, deals the least recently used one that is not playing', () => {
+    const keys = pack.songs.map(songKey);
+    const dealer = makeDealer([pack.id]);
+    for (let i = 0; i < 10; i++) {
+      // dealt is oldest first; the newest (being revealed) must not come straight back.
+      const dealt = [...keys.slice(i + 1), ...keys.slice(0, i + 1)];
+      const current = pack.songs.find((x) => songKey(x) === dealt[dealt.length - 1])!;
+      expect(songKey(dealer.next(dealt, [current])!)).toBe(dealt[0]);
+    }
+  });
+
+  it('deals the song playing now only when it is the last playable one, and null when none is', () => {
+    const keys = pack.songs.map(songKey);
+    const dealer = makeDealer([pack.id], keys.slice(1));
+    expect(songKey(dealer.next(keys, [pack.songs[0]])!)).toBe(keys[0]);
+    dealer.drop(keys[0]);
+    expect(dealer.next(keys)).toBeNull();
+  });
+
   it('keeps YouTube-era songs available to rematch and out of the playable count', () => {
     const storage = new Map<string, string>();
     vi.stubGlobal('localStorage', {

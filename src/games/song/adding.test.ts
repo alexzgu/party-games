@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Adder, toSong, type AdderDeps } from './adding';
-import { parsePaste, tidy, type Track } from './match';
+import { Adder, rematchWanted, toSong, type AdderDeps } from './adding';
+import { parsePaste, tidy, wantedKey, type Track } from './match';
 import { spotifyTitle } from './spotify';
+import { PlaylistError } from './youtube';
 
 const T = (id: number, title: string, artist: string, preview = `https://p/${id}.m4a`): Track =>
   ({ id, title, artist, album: title, artwork: '', preview, link: '', released: '' });
@@ -72,6 +73,22 @@ describe('Add songs review list', () => {
     expect(a.kept()).toHaveLength(1);
   });
 
+  it('skips a playlist YouTube will not list, marked for retry, and goes on with the rest', async () => {
+    const readPlaylist = vi.fn<AdderDeps['readPlaylist']>()
+      .mockRejectedValueOnce(new PlaylistError('playlist'))
+      .mockResolvedValueOnce(['vvvvvvvvvv1']);
+    const a = new Adder(fakeDeps({ readPlaylist }), [], () => {});
+    a.add(parsePaste('https://www.youtube.com/playlist?list=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG\nHey Ya! - Outkast'));
+    await until(a);
+    expect(a.error).toBe('');
+    expect(a.items[0]).toMatchObject({ state: 'done', match: { track: null, retry: true, why: 'That YouTube playlist can’t be read: it may be private or empty' } });
+    expect(a.kept().map((i) => i.match?.track?.id)).toEqual([2]);
+    // Pasting it again tries it again.
+    expect(a.add(parsePaste('https://www.youtube.com/playlist?list=PLx0sYbCqOb8TBPRdmBHs5Iftvv9TPboYG'))).toBe(1);
+    await until(a);
+    expect(a.kept().map((i) => i.match?.track?.id)).toEqual([3, 2]);
+  });
+
   it.each(['saving', 'leaving'])('detaches the draft writer when %s during a lookup', async (action) => {
     let finish!: (track: Track) => void;
     const pending = new Promise<Track>((resolve) => { finish = resolve; });
@@ -101,6 +118,34 @@ describe('Add songs review list', () => {
     expect(a.items[0].match?.others.map((t) => t.id)).toContain(2);
     a.toggle(it.key);
     expect(a.kept()).toEqual([]);
+  });
+
+  it('recomputes the "already in the list" mark when another row changes', async () => {
+    const a = new Adder(fakeDeps(), [], () => {});
+    a.add(parsePaste('Hey Ya! - Outkast\nhttps://music.apple.com/us/album/hey-ya/79?i=2'));
+    await until(a);
+    const [first, second] = a.items;
+    expect([first.keep, first.dup, second.keep, second.dup]).toEqual([true, false, false, true]);
+    // Unticking the first lets the host keep the second instead.
+    a.toggle(first.key);
+    expect(a.items[1].dup).toBe(false);
+    a.toggle(second.key);
+    expect(a.kept().map((i) => i.key)).toEqual([second.key]);
+    expect(a.items[0].dup).toBe(true);
+    // Picking another song for a kept row hands its old song to the row that was its repeat.
+    a.toggle(second.key);
+    a.toggle(first.key);
+    a.choose(first.key, library[3]);
+    expect(a.kept().map((i) => i.match?.track?.id)).toEqual([4, 2]);
+    expect(a.items.map((i) => i.dup)).toEqual([false, false]);
+  });
+
+  it('settles a saved song whose rematch is already in the pack, so it stops asking for one', async () => {
+    const a = new Adder(fakeDeps(), [{ apple: 2, title: 'Hey Ya!', artist: 'Outkast' }], () => {});
+    a.add([rematchWanted({ title: 'Hey Ya!', artist: 'Outkast' }), rematchWanted({ title: 'Toxic', artist: 'Britney Spears' }), rematchWanted({ title: 'Nothing At All', artist: 'Nobody' })]);
+    await until(a);
+    expect(a.kept().map((i) => i.match?.track?.id)).toEqual([1]);
+    expect([...a.settled()]).toEqual([wantedKey(rematchWanted({ title: 'Hey Ya!', artist: 'Outkast' })), wantedKey(rematchWanted({ title: 'Toxic', artist: 'Britney Spears' }))]);
   });
 
   it('pauses on a network failure without losing the line, and carries on when asked', async () => {

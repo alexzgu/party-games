@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { checkSong, formatStart } from './edit';
+import { checkSong, formatStart, latestHandStart } from './edit';
+import { MAX_START } from './logic';
 
 describe('editing a song', () => {
   const base = { title: 'Toxic', artist: 'Britney Spears', apple: 251948354 };
@@ -10,6 +11,12 @@ describe('editing a song', () => {
     expect(checkSong(draft, base, [other])).toEqual({ song: base, error: '' });
     expect(checkSong({ ...draft, youtube: 'https://youtu.be/LOZuxwVk7TU?si=x' }, base, []).song).toEqual({ ...base, youtube: 'LOZuxwVk7TU' });
     expect(checkSong({ ...draft, youtube: 'LOZuxwVk7TU' }, base, []).song?.youtube).toBe('LOZuxwVk7TU');
+  });
+
+  it('lets the clip picker go no later than a pack may save', () => {
+    expect(latestHandStart(30)).toBe(MAX_START);
+    expect(latestHandStart(31)).toBe(MAX_START);
+    expect(latestHandStart(25)).toBe(15);
   });
 
   it('keeps a start set by hand inside the preview, and none for automatic', () => {

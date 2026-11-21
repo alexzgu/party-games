@@ -13,6 +13,12 @@ describe('Earworm rules', () => {
     expect(g.dealt).toEqual(['1001']);
   });
 
+  it('keeps dealt songs oldest first, moving a song dealt again to the end', () => {
+    let g = r.setUpcoming(start(), song(2));
+    g = r.replaceUpcoming(g, song(1));
+    expect(g.dealt).toEqual(['1002', '1001']);
+  });
+
   it('scores 3, 2 or 1 by clip length, and Longer stops at the longest clip', () => {
     let g = r.listen(start());
     expect([r.clipSeconds(g), r.pointsNow(g)]).toEqual([2, 3]);
