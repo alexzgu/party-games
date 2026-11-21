@@ -5,6 +5,10 @@
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import PromptForm from './PromptForm.svelte';
+  import AddMore from '../../components/AddMore.svelte';
+  import { mergeOnTop } from '../../lib/addMore';
+  import { MORE_RANGE, morePrompts } from './generate';
+  import { promptKey } from './logic';
   import { tick } from 'svelte';
   import { findPrompts } from './find';
   import { matches, type SortKey } from '../../lib/listing';
@@ -75,6 +79,16 @@
     open = null;
   }
 
+  /** "🧙 Add more" is open in place of the editor. */
+  let adding = $state(false);
+  const otherPrompts = () => quickPacks().filter((p) => p.id !== id).flatMap((p) => p.prompts);
+  function addMore(kept: string[]) {
+    if (pack) persist({ ...pack, prompts: mergeOnTop(pack.prompts, kept, promptKey) });
+    query = '';
+    adding = false;
+    sfx.correct();
+  }
+
   function restore() {
     customQuick.restore(id);
     pack = customQuick.original(id) ?? null;
@@ -90,6 +104,13 @@
   }
 </script>
 
+{#if adding && pack}
+  {@const p = $state.snapshot(pack)}
+  <AddMore name={p.name} noun="prompts" range={MORE_RANGE} steerHint="e.g. more about food, easier"
+    ask={(o) => morePrompts(p, otherPrompts(), o)} keyOf={promptKey} onadd={addMore} onclose={() => (adding = false)}>
+    {#snippet item(q: string)}<span class="q">{q}</span>{/snippet}
+  </AddMore>
+{:else}
 <Screen title={pack?.name ?? 'Pack'} {onback}>
   {#if !pack}
     <p class="muted">This pack is no longer on this phone.</p>
@@ -130,9 +151,11 @@
   {/if}
 
   {#snippet actions()}
+    {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
     {#if pack}<Button size="lg" onclick={() => (open = 'new')}>+ Add a prompt</Button>{/if}
   {/snippet}
 </Screen>
+{/if}
 
 {#if pack && open !== null}
   {@const index = open}
@@ -180,6 +203,7 @@
   .row.fresh { animation: fresh 1.6s var(--ease-out); }
   @keyframes fresh { from { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--surface)); } }
   .row:active { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
+  .q { font-weight: 700; }
   .confirm { display: flex; flex-direction: column; gap: var(--s-2); }
   .confirm p { margin: 0 0 var(--s-2); }
 </style>

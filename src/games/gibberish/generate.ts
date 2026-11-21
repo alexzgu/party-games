@@ -1,7 +1,8 @@
 // "Make with Claude" for Inn Co Hear Ant: the prompt carries the quality bar, and each streamed
 // line becomes a card the moment it arrives.
 import { streamLines } from '../../lib/claude';
-import type { GibberishCard } from '../../lib/content';
+import type { GibberishCard, GibberishPack } from '../../lib/content';
+import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
 import { answerKey, parseLine } from './parse';
 
 export const THEME_CHIPS = ['Movies', 'Famous people', 'Food & drink', 'Songs', 'TV shows', 'Brands', 'Places', 'Sayings', 'Animals', '2000s throwback'];
@@ -58,5 +59,30 @@ export async function generateCards(opts: {
       seen.add(answerKey(card));
       opts.onCard(card);
     },
+  });
+}
+
+/** "🧙 Add more" on a pack: how many cards to ask for. */
+export const MORE_RANGE = { start: 10, min: 5, max: 30, step: 5 };
+
+/** The category most of the pack's cards share, for a card that comes without one. */
+function usualHint(cards: readonly GibberishCard[]): string {
+  const n = new Map<string, number>();
+  for (const c of cards) if (c.hint) n.set(c.hint, (n.get(c.hint) ?? 0) + 1);
+  return [...n].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+}
+
+/**
+ * More cards on top of `pack`, never with an answer of its cards, of those already written this
+ * time or of `others` (every other pack's cards: an answer is never in two packs).
+ */
+export function moreCards(pack: GibberishPack, others: readonly GibberishCard[], run: MoreRun<GibberishCard>): Promise<number> {
+  const have = [...run.avoid, ...pack.cards];
+  const hint = usualHint(pack.cards);
+  return streamMore({
+    system: SYSTEM,
+    prompt: morePrompt({ name: pack.name, blurb: pack.blurb, have: have.map((c) => c.answer), others: others.map((c) => c.answer), listed: 'their answers' }, run, 'cards'),
+    count: run.count, maxTokens: 4000, read: (line) => parseLine(line, hint), keyOf: answerKey,
+    taken: [...have, ...others, ...EXAMPLES.map((e) => parseLine(e)!)].map(answerKey), onItem: run.onItem, signal: run.signal,
   });
 }

@@ -1,6 +1,8 @@
 // "Ask Claude" for Brain Freeze: the system prompt carries the quality bar, and each streamed
 // line becomes a prompt the moment it arrives.
 import { streamLines } from '../../lib/claude';
+import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
+import type { QuickPack } from '../../lib/content';
 import { promptKey } from './logic';
 import { cleanPrompt, promptError } from './parse';
 
@@ -44,5 +46,26 @@ export async function generatePrompts(opts: { theme: string; existing: string[];
       seen.add(promptKey(p));
       opts.onPrompt(p);
     },
+  });
+}
+
+/** "🧙 Add more" on a pack: how many prompts to ask for. */
+export const MORE_RANGE = { start: 15, min: 5, max: 40, step: 5 };
+
+const readPrompt = (line: string) => {
+  const p = cleanPrompt(line);
+  return p && !promptError(p, []) ? p : null;
+};
+
+/**
+ * More prompts on top of `pack`, never one of its prompts, of those already written this time or
+ * of `others` (every other pack's prompts: a prompt is never in two packs).
+ */
+export function morePrompts(pack: QuickPack, others: readonly string[], run: MoreRun<string>): Promise<number> {
+  const have = [...run.avoid, ...pack.prompts];
+  return streamMore({
+    system: SYSTEM,
+    prompt: morePrompt({ name: pack.name, blurb: pack.blurb, have, others }, run, 'prompts'),
+    count: run.count, maxTokens: 3000, read: readPrompt, keyOf: promptKey, taken: [...have, ...others].map(promptKey), onItem: run.onItem, signal: run.signal,
   });
 }

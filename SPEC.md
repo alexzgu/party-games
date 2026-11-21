@@ -192,6 +192,7 @@ shout clues; the holder tilts down for "got it", up for "pass".
   do nothing; in a Tap round tilting does nothing. A Tilt round on a phone that cannot feel
   motion takes taps instead, so it can always be played (`accepts` in `round.ts`).
   "Edit" (in the packs header, before the search and sort toggles) opens the pack list: open any pack to see, edit or restore its words.
+  On the player's own packs (not built-ins), "🧙 Add more" (`AddMore`, `src/lib/addMore.ts`) asks how many (10–80, default 20) and for an optional steer, then the wizard writes more in the pack's spirit (the request carries its name, description and every word, so none repeats); they stream into `Triage` for review and the kept ones go on top. No wizard: the magic-words box in place of the form.
 - **Start tap**: `unlockAudio()`, `requestMotion()` (iOS prompt), sample gravity for the sign fix
   (`axisSignFromLookingAt`) and for where the page's top is (below), `keepAwake(true)`, and on
   Android try fullscreen + landscape lock (guarded; iOS has neither). Both samples are read
@@ -268,7 +269,7 @@ team sets a dial to where they think the target is.
 - **Setup**: two team names (editable), points to win (default 10), packs (multi-select),
   optional "steal" rule: the other team then guesses whether the target is left or right of
   the needle for 1 point. Entry to "Make a pack" (paste a list or ask the wizard). Each pack row
-  has a separate › that opens the pack editor.
+  has a separate › that opens the pack editor; on the player's own packs, "🧙 Add more" as in Heads Down. (5–40 cards, default 10; never a scale any pack on the phone has).
 - **Teams**: Early Birds (`--c-team-a`, warm orange) vs Night Owls (`--c-team-b`, blue), on the
   dark theme: team colour as glow, border and name, never a full bright fill. The scoreboard
   is a face-off; the hand-off shows round, both scores and the rival.
@@ -296,7 +297,7 @@ aloud, sounds like something well known ("Eye Scream" → Ice Cream).
 
 - **Setup**: player names (3+; add/remove; remembered), packs (multi-select), seconds per card
   (off/20/30/45/60, default 30), points to win (default 5). Entry to "Make a pack" (paste a list or ask the wizard).
-  A pencil on each pack tile opens the pack editor (giveaway check applies to edits).
+  A pencil on each pack tile opens the pack editor (giveaway check applies to edits); on the player's own packs, "🧙 Add more" as in Heads Down. (5–30 cards, default 10; never an answer any pack on the phone has; a card without a category takes the pack's most common one).
 - **Card**: the reader rotates each card. Hand-off screen ("X reads — everyone else, eyes off the
   phone") → reader view: the phrase huge, a "Show category" button the reader may read out,
   answer hidden until press-and-hold, countdown ring. When someone shouts the answer the
@@ -351,7 +352,7 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   removes the bottom level on every category; removing one with clues asks first), category
   tabs (add up to 8, rename, move left/right, remove), and every clue and answer inline, empty
   ones highlighted. Every change saves at once; a built-in saves this phone's copy under the
-  same id (Edited tag, "Restore original"); own packs can be deleted.
+  same id (Edited tag, "Restore original"); own packs can be deleted. On own packs, "🧙 Add more" asks the wizard for a new category (as tall as the others) or a harder level (one clue per category), whichever still fits 8 × 10, with an optional steer; each clue is reviewed and a dropped one stays an empty tile.
 - **Make a pack** (`#/quiz/make`): Blank (name, categories 1–8 × levels 1–10, default 5 × 5),
   Paste (a "# Category" line then "clue | answer" lines, easiest first; tolerant of other
   headings, list markers, tables, "Q:/A:", value columns and "Category | level | clue | answer"
@@ -404,8 +405,9 @@ Name-three-under-pressure genre. Pass the phone round; whoever is up reveals a p
 few seconds to name three things that fit it out loud; the room judges.
 
 - **Setup**: player names (2+; add/remove; remembered, and a first visit borrows Inn Co Hear
-  Ant's list), packs (search/sort; a pencil on each opens its editor; "Make a pack": paste a
-  list or ask the wizard), seconds on the clock 5/7/10 (default 5), points to win (default 7, 3–15),
+  Ant's list), packs (search/sort; a pencil on each opens its editor, where the player's own packs
+  have "🧙 Add more" as in Heads Down.: 5–40 prompts, default 15, never one any pack on the phone has;
+  "Make a pack": paste a list or ask the wizard), seconds on the clock 5/7/10 (default 5), points to win (default 7, 3–15),
   Steal (default on).
 - **Turn**: hand-off ("Pass the phone to Maya"; the last turn's result and a scoreboard strip in
   seating order above it) → "I'm Maya, show my prompt" reveals "Name 3 …" huge (`FitText`) and

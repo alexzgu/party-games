@@ -4,12 +4,16 @@
   import Button from '../../components/Button.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
+  import AddMore from '../../components/AddMore.svelte';
+  import { mergeOnTop } from '../../lib/addMore';
   import type { SortKey } from '../../lib/listing';
   import { customDecks, dedupe, slugify, wordDecks, type WordDeck } from '../../lib/content';
   import { back, go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
   import { findWords } from './find';
+  import { MORE_RANGE, moreWords } from './generate';
+  import { itemKey } from './words';
 
   // See and edit any deck. Every change saves at once; there is no Save button to forget.
   // Changing a built-in deck saves an edit of it on this phone, which "Restore original" undoes.
@@ -98,6 +102,16 @@
     sfx.tick();
   }
 
+  /** "🧙 Add more" is open in place of the editor. */
+  let adding = $state(false);
+  function addMore(kept: string[]) {
+    deck.words = mergeOnTop(deck.words, kept, itemKey);
+    query = '';
+    adding = false;
+    sfx.correct();
+    persist();
+  }
+
   function claude() {
     // A built-in only becomes an edit once words are actually added (MakeDeck saves it).
     if (!builtin) persist();
@@ -105,6 +119,12 @@
   }
 </script>
 
+{#if adding}
+  <AddMore name={deck.name} noun="words" range={MORE_RANGE} accent="var(--c-forehead)" steerHint="e.g. more 90s ones, harder"
+    ask={(o) => moreWords($state.snapshot(deck), o)} keyOf={(s: string) => s} onadd={addMore} onclose={() => (adding = false)}>
+    {#snippet item(s: string)}<span class="word">{s}</span>{/snippet}
+  </AddMore>
+{:else}
 <Screen title={existing ? (builtin ? 'Built-in pack' : 'Edit pack') : 'New pack'} accent="var(--c-forehead)">
   {#if builtin}
     <div class="note" class:edited>
@@ -168,11 +188,14 @@
   {/if}
 
   {#snippet actions()}
+    {#if deck.id && !builtin}<Button size="lg" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
     <Button size="lg" variant="secondary" onclick={claude} disabled={!deck.name.trim() && !deck.words.length}>📋 Paste a list</Button>
   {/snippet}
 </Screen>
+{/if}
 
 <style>
+  .word { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
   .note {
     display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); padding: var(--s-3) var(--s-4);
     border-radius: var(--r-md); background: var(--surface); color: var(--text-dim); font-size: 0.95rem;

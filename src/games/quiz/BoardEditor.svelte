@@ -4,6 +4,10 @@
   import ExportPack from '../../components/ExportPack.svelte';
   import Popup from '../../components/Popup.svelte';
   import Stepper from '../../components/Stepper.svelte';
+  import Segmented from '../../components/Segmented.svelte';
+  import AddMore from '../../components/AddMore.svelte';
+  import { addClues, moreClues, moreShapes, type MoreShape } from './more';
+  import type { StreamClue } from './parse';
   import { customQuiz, quizBoards, type QuizBoard } from '../../lib/content';
   import { sfx } from '../../lib/sound';
   import * as edit from './board';
@@ -89,6 +93,24 @@
     if (board !== before) ci += dir;
   }
 
+  /** "🧙 Add more" is open in place of the editor: a new category or a harder level. */
+  let adding = $state(false);
+  const shapes = $derived(board && !fresh && !builtin ? moreShapes(board) : []);
+  let shape = $state<MoreShape>('category');
+  const SHAPE_LABELS: Record<MoreShape, string> = { category: 'A new category', level: 'A harder level' };
+  function openMore() {
+    if (!shapes.includes(shape)) shape = shapes[0];
+    adding = true;
+  }
+  function addMore(kept: StreamClue[]) {
+    if (!board) return;
+    const at = board.categories.length;
+    update(addClues(board, shape, kept));
+    if (shape === 'category') ci = Math.min(at, board.categories.length - 1);
+    adding = false;
+    sfx.correct();
+  }
+
   function restore() {
     if (id === null) return;
     customQuiz.restore(id);
@@ -130,6 +152,20 @@
   }
 </script>
 
+{#if adding && board}
+  {@const b = board}
+  <AddMore name={b.name} noun="clues" steerHint="e.g. more about the 90s, harder"
+    cta={shape === 'category' ? '✨ Conjure a new category' : '✨ Conjure a harder level'}
+    ask={(o) => moreClues(b, shape, o)} keyOf={(k: StreamClue) => `${k.level}|${k.category}`} onadd={addMore} onclose={() => (adding = false)}>
+    {#snippet size()}
+      <Segmented label="What to add" options={shapes.map((v) => ({ value: v, label: SHAPE_LABELS[v] }))} bind:value={shape} />
+      <p class="faint small">{shape === 'category' ? `${edit.levels(b)} clues, easiest first` : `One clue for each of the ${b.categories.length} categories, at ${(edit.levels(b) + 1) * 100}`}</p>
+    {/snippet}
+    {#snippet item(k: StreamClue)}
+      <span class="more"><span class="where">{k.category} · {k.level * 100}</span><span>{k.clue}</span><b>→ {k.answer}</b></span>
+    {/snippet}
+  </AddMore>
+{:else}
 <Screen title={fresh ? 'New pack' : 'Edit pack'} onback={() => (fresh && board ? (confirm = 'leave') : onback())}>
   {#if !board}
     <p class="muted">{fresh ? 'There is no pack being made on this phone.' : 'This pack is no longer on this phone.'}</p>
@@ -214,10 +250,12 @@
     {#if board && fresh}
       <Button size="lg" onclick={saveNew}>{gaps.length ? 'Save as a draft' : 'Save pack'}</Button>
     {:else}
+      {#if shapes.length}<Button size="lg" variant="secondary" onclick={openMore}>🧙 Add more</Button>{/if}
       <Button size="lg" onclick={onback}>Done</Button>
     {/if}
   {/snippet}
 </Screen>
+{/if}
 
 {#if board && confirm === 'restore'}
   <Popup title="Restore original?" onclose={() => (confirm = '')}>
@@ -304,6 +342,8 @@
   textarea { min-height: 64px; resize: vertical; line-height: 1.35; }
   .inputs input { font-weight: 700; }
   .missing { border-color: color-mix(in srgb, var(--c-pass) 60%, var(--line-strong)); }
+  .more { display: flex; flex-direction: column; gap: 2px; }
+  .where { color: var(--text-faint); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; }
   .confirm { display: flex; flex-direction: column; gap: var(--s-2); }
   .confirm p { margin: 0 0 var(--s-2); }
 </style>

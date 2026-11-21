@@ -1,7 +1,8 @@
 // "Make with Claude" for Spectrum: asks for one `Left | Right` card per line and turns each
 // streamed line into a card, tolerating the list markers, quotes and odd separators models add.
 import { streamLines } from '../../lib/claude';
-import type { Spectrum } from '../../lib/content';
+import type { Spectrum, SpectrumPack } from '../../lib/content';
+import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
 import { cardId } from './state';
 import { dropNumberCells, pastedLines } from '../../lib/paste';
 
@@ -97,6 +98,24 @@ export function generatePairs(opts: GenerateOptions): Promise<void> {
       const card = parsePair(line);
       if (card) opts.onPair(card);
     },
+  });
+}
+
+/** "🧙 Add more" on a pack: how many cards to ask for. */
+export const MORE_RANGE = { start: 10, min: 5, max: 40, step: 5 };
+
+const asLine = (c: Spectrum) => `${c.left} | ${c.right}`;
+
+/**
+ * More cards on top of `pack`, never one of its cards, of those already written this time or of
+ * `others` (every other pack's cards: a scale is never in two packs).
+ */
+export function moreCards(pack: SpectrumPack, others: readonly Spectrum[], run: MoreRun<Spectrum>): Promise<number> {
+  const have = [...run.avoid, ...pack.cards];
+  return streamMore({
+    system: SYSTEM,
+    prompt: morePrompt({ name: pack.name, blurb: pack.blurb, have: have.map(asLine), others: others.map(asLine) }, run, 'cards'),
+    count: run.count, maxTokens: 3000, read: parsePair, keyOf: cardId, taken: [...have, ...others].map(cardId), onItem: run.onItem, signal: run.signal,
   });
 }
 

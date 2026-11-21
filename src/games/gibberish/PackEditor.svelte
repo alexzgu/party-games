@@ -5,6 +5,10 @@
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import CardForm from './CardForm.svelte';
+  import AddMore from '../../components/AddMore.svelte';
+  import { mergeOnTop } from '../../lib/addMore';
+  import { MORE_RANGE, moreCards } from './generate';
+  import { answerKey } from './parse';
   import { tick } from 'svelte';
   import { cardMatches, findCards } from './find';
   import type { SortKey } from '../../lib/listing';
@@ -75,6 +79,16 @@
     open = null;
   }
 
+  /** "🧙 Add more" is open in place of the editor. */
+  let adding = $state(false);
+  const otherCards = () => gibberishPacks().filter((p) => p.id !== id).flatMap((p) => p.cards);
+  function addMore(kept: GibberishCard[]) {
+    if (pack) persist({ ...pack, cards: mergeOnTop(pack.cards, kept, answerKey) });
+    query = '';
+    adding = false;
+    sfx.correct();
+  }
+
   function restore() {
     customGibberish.restore(id);
     pack = customGibberish.original(id) ?? null;
@@ -90,6 +104,19 @@
   }
 </script>
 
+{#if adding && pack}
+  {@const p = $state.snapshot(pack)}
+  <AddMore name={p.name} noun="cards" range={MORE_RANGE} steerHint="e.g. more movies, harder"
+    ask={(o) => moreCards(p, otherCards(), o)} keyOf={answerKey} onadd={addMore} onclose={() => (adding = false)}>
+    {#snippet item(c: GibberishCard)}
+      <span class="it">
+        <span class="ph">{c.phrase}</span>
+        <span class="an">→ {c.answer}</span>
+        {#if c.hint}<span class="hi">{c.hint}</span>{/if}
+      </span>
+    {/snippet}
+  </AddMore>
+{:else}
 <Screen title={pack?.name ?? 'Pack'} {onback}>
   {#if !pack}
     <p class="muted">This pack is no longer on this phone.</p>
@@ -134,9 +161,11 @@
   {/if}
 
   {#snippet actions()}
+    {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
     {#if pack}<Button size="lg" onclick={() => (open = 'new')}>+ Add a card</Button>{/if}
   {/snippet}
 </Screen>
+{/if}
 
 {#if pack && open !== null}
   {@const index = open}
@@ -188,6 +217,7 @@
   .ph { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; line-height: 1.15; }
   .an { color: var(--text-dim); font-weight: 600; }
   .hi { color: var(--text-faint); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .it { display: flex; flex-direction: column; }
   .confirm { display: flex; flex-direction: column; gap: var(--s-2); }
   .confirm p { margin: 0 0 var(--s-2); }
 </style>

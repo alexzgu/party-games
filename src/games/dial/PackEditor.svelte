@@ -7,6 +7,9 @@
   import ExportPack from '../../components/ExportPack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import AddMore from '../../components/AddMore.svelte';
+  import { mergeOnTop } from '../../lib/addMore';
+  import { MORE_RANGE, moreCards } from './generate';
   import { customSpectra, spectrumPacks, type Spectrum, type SpectrumPack } from '../../lib/content';
   import { matches, sorted, type SortKey } from '../../lib/listing';
   import { cardId } from './state';
@@ -97,6 +100,15 @@
     if (n !== pack.name) save({ ...pack, name: n });
   }
 
+  /** "🧙 Add more" is open in place of the editor. */
+  let adding = $state(false);
+  const otherCards = () => spectrumPacks().filter((p) => p.id !== id).flatMap((p) => p.cards);
+  function addMore(kept: Spectrum[]) {
+    if (pack) save({ ...pack, cards: mergeOnTop(pack.cards, kept, cardId) });
+    query = '';
+    adding = false;
+  }
+
   function restore() {
     customSpectra.restore(id);
     pack = find();
@@ -113,6 +125,13 @@
   }
 </script>
 
+{#if adding && pack}
+  {@const p = pack}
+  <AddMore name={p.name} noun="cards" range={MORE_RANGE} accent="var(--c-dial)" steerHint="e.g. more about food, spicier"
+    ask={(o) => moreCards(p, otherCards(), o)} keyOf={cardId} onadd={addMore} onclose={() => (adding = false)}>
+    {#snippet item(c: Spectrum)}<span class="scale">{c.left} <span class="sep" aria-label="to">↔</span> {c.right}</span>{/snippet}
+  </AddMore>
+{:else}
 <Screen title={pack ? pack.name : 'Pack not found'} accent="var(--c-dial)" {onback}>
   {#if !pack}
     <p class="muted">This pack is no longer on this phone.</p>
@@ -177,10 +196,12 @@
     {#if pack && builtin && edited}
       <Button variant="secondary" onclick={() => (confirm = 'restore')}>↺ Restore original</Button>
     {:else if pack && !builtin}
+      <Button size="lg" onclick={() => (adding = true)}>🧙 Add more</Button>
       <Button variant="danger" onclick={() => (confirm = 'delete')}>Delete this pack</Button>
     {/if}
   {/snippet}
 </Screen>
+{/if}
 
 {#if confirm === 'restore'}
   <Popup title="Restore original?" onclose={() => (confirm = null)}>
@@ -226,5 +247,7 @@
   .pen { color: var(--text-faint); }
   .edit { padding: var(--s-3); border-radius: var(--r-md); background: var(--surface); border: 2px solid var(--accent); }
   .edit-actions { display: flex; align-items: center; gap: var(--s-2); }
+  .scale { font-weight: 600; }
+  .sep { color: var(--accent); padding: 0 2px; }
   .confirm { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-4); }
 </style>

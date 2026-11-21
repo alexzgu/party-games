@@ -1,5 +1,7 @@
 // "Make with Claude" for Heads Down: a theme in, recognisable party words streamed out.
 import { streamLines } from '../../lib/claude';
+import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
+import type { WordDeck } from '../../lib/content';
 import { cleanLine, itemKey } from './words';
 
 export const THEME_CHIPS = [
@@ -8,7 +10,7 @@ export const THEME_CHIPS = [
   'Office life', 'Dog breeds', 'Dance moves', 'Cartoons',
 ];
 
-const SYSTEM = `You write cards for Heads Down, a Heads Up-style party game. One player holds the phone to their forehead without seeing the card; friends shout clues until they guess it.
+export const SYSTEM = `You write cards for Heads Down, a Heads Up-style party game. One player holds the phone to their forehead without seeing the card; friends shout clues until they guess it.
 
 Write items that a group of adults in their 20s at a house party would instantly recognise and could clue within a few seconds: well-known names, titles, things, places and phrases. Mix easy and medium; skip anything obscure, niche or that needs explaining.
 
@@ -54,5 +56,18 @@ export async function generateWords(o: GenerateOptions): Promise<void> {
       n++;
       o.onItem(item);
     },
+  });
+}
+
+/** "🧙 Add more" on a pack: how many words to ask for. */
+export const MORE_RANGE = { start: 20, min: 10, max: 80, step: 10 };
+
+/** More words on top of `deck`, never one of its words or of those already written this time. */
+export function moreWords(deck: WordDeck, run: MoreRun<string>): Promise<number> {
+  const have = [...run.avoid, ...deck.words];
+  return streamMore({
+    system: SYSTEM,
+    prompt: morePrompt({ name: deck.name, blurb: deck.blurb, have }, run, 'items'),
+    count: run.count, maxTokens: 4000, read: cleanLine, keyOf: itemKey, taken: have.map(itemKey), onItem: run.onItem, signal: run.signal,
   });
 }

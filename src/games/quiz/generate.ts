@@ -33,7 +33,8 @@ export function buildPrompt(topic: string, cats: number, levels: number): string
   return `Topic: ${t}\nWrite a board of ${cats} ${cats === 1 ? 'category' : 'categories'} with ${levels} ${levels === 1 ? 'level' : 'levels'} each: ${cats * levels} lines in all, levels numbered 1 to ${levels}.`;
 }
 
-const key = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+/** Text compared loosely: case and spacing ignored. */
+export const key = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
 const words = (s: string) => key(s).split(/[^a-z0-9]+/).filter((w) => w.length > 2);
 
 /** True when the clue names its own answer (every longer word of the answer appears in it). */
