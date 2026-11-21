@@ -187,7 +187,8 @@ describe('browsing and importing', () => {
 
   it('rebuilds a fetched pack from its known fields only, before anything reads it', async () => {
     let deep: unknown = 'x';
-    for (let i = 0; i < 5000; i++) deep = [deep];
+    // Deep enough to show nothing walks it; Node 22 (the deploy's test run) can't JSON-encode 5,000 levels.
+    for (let i = 0; i < 1000; i++) deep = [deep];
     const pack = { id: 'AAAAAAAAAAAA', game: 'dial', name: 'Road Trip', blurb: 'Snacks', count: 1, stars: 0, created: 1, updated: 2, owner: 'nope',
       items: [{ left: 'Bad snack', right: 'Good snack', deep }], extra: { deep } };
     server(() => new Response(JSON.stringify({ pack }), { headers: { 'content-type': 'application/json' } }));
