@@ -11,8 +11,10 @@
   // Change one song: the title and artist players see, where its clip starts, and an optional
   // YouTube video for the reveal. The Apple Music track (the sound) stays; a wrong one is
   // deleted here and added again from "Add songs".
-  let { song, others, onsave, ondelete, onclose }: {
+  let { song, others, hasClip = false, onsave, ondelete, onclose }: {
     song: Song;
+    /** It plays from a clip on this phone (a clip pack), cut at its moment when the pack was made. */
+    hasClip?: boolean;
     /** The pack's other songs, so a title is never in it twice. */
     others: Song[];
     onsave: (song: Song) => void;
@@ -34,6 +36,7 @@
   let deleting = $state(false);
 
   onMount(() => {
+    if (!song.apple) { looked = true; return; }
     lookup(song.apple).then((t) => (track = t), () => (track = null)).finally(() => (looked = true));
   });
 
@@ -50,7 +53,8 @@
     <div class="source">
       {#if track?.artwork}<img src={art(track.artwork, 120)} alt="" />{:else}<span class="ph" aria-hidden="true">♪</span>{/if}
       <p>
-        {#if track}<b>{track.title}</b><span>{track.artist} · Apple Music</span>
+        {#if song.clipOnly}<b>Clip only</b><span>Not on Apple Music; it plays from its clip {hasClip ? 'on this phone' : 'in its clip pack, which this phone doesn’t have'}.</span>
+        {:else if track}<b>{track.title}</b><span>{track.artist} · Apple Music{hasClip ? ' · plays from its clip on this phone' : ''}</span>
         {:else if looked}<b>Not found on Apple Music</b><span>Delete it and add it again from “Add songs”.</span>
         {:else}<b>Looking it up…</b><span>&nbsp;</span>{/if}
       </p>
@@ -63,11 +67,13 @@
       <span>Artist</span>
       <input type="text" bind:value={artist} maxlength="60" autocomplete="off" />
     </label>
-    {#if looked}<StartPicker {track} bind:start />{/if}
-    <label>
-      <span>YouTube video for the reveal (optional)</span>
-      <input type="text" inputmode="url" bind:value={youtube} placeholder="https://youtu.be/…" autocomplete="off" autocapitalize="off" spellcheck="false" />
-    </label>
+    {#if looked && !song.clipOnly}<StartPicker {track} bind:start />{/if}
+    {#if !song.clipOnly}
+      <label>
+        <span>YouTube video for the reveal (optional)</span>
+        <input type="text" inputmode="url" bind:value={youtube} placeholder="https://youtu.be/…" autocomplete="off" autocapitalize="off" spellcheck="false" />
+      </label>
+    {/if}
     {#if error}<p class="error" role="alert">{error}</p>{/if}
     <Button type="submit" size="lg" guardMs={0}>Save song</Button>
     <Button variant={deleting ? 'danger' : 'ghost'} guardMs={0} onclick={() => (deleting ? ondelete() : (deleting = true))}>

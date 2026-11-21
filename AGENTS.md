@@ -113,6 +113,19 @@ song pack.
    the song). Then publish and confirm as in steps 6 and 7, and name the songs you were least sure
    matched the right recording.
 
+**Clip packs** (only when the owner asks for one): `npm run clip:songs -- <pack>` cuts a 12-second
+clip of every song from its YouTube video (yt-dlp and ffmpeg, on this laptop) and writes one file,
+`~/Data/party_games/clips/<pack-id>.clips.jerkbox.txt`, holding the pack and its clips. `<pack>` is
+a built-in pack (`src/content/song/<id>.json`), an exported `.jerkbox.txt` pack file, or a
+"Title - Artist" / link list. It finds a video when a song has none and starts each clip on the
+moment the game would play from Apple's preview; `--at "Title=1:23"` sets a clip by hand. Network
+domains: `www.youtube.com`, `*.youtube.com`, `*.googlevideo.com`, `i.ytimg.com`, `itunes.apple.com`,
+`*.itunes.apple.com`, `*.mzstatic.com` (inside the agent sandbox also set `NODE_USE_ENV_PROXY=1`).
+Check every `?` line of its report, then tell the owner the file's path: they import it on the host
+phone with "Import packs" on Earworm setup, once. **A clip file holds copies of the recordings:
+never commit it, put it in `public/` or the built site, or post it anywhere public.** It stays in
+`~/Data`; `.gitignore` refuses `*.clips.jerkbox.txt` as a backstop.
+
 ### Don't Say It packs (`taboo/`)
 
 Two teams; the describer gets their team to say the word without saying it or any of the five

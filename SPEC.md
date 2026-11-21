@@ -103,7 +103,7 @@ when there are none) sit under every pack list: Heads Down.'s "Packs" screen (Ed
 Spectrum and Don't Say It setup under "Make a pack", the pack tiles of Inn Co Hear Ant, Brain
 Freeze and Earworm setup, Big Board's pack list, and Snark Tank's game settings. Export uses the
 share sheet when the browser can share the file, else a download. Import reads a file of at most
-1 MB and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
+1 MB (an Earworm clip pack: 40 MB) and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
 pack editor's or the paste route's; Big Board: 1–8 categories × 1–10 clues, cut and padded like a
 pasted board); drops what fails and says how many; leaves out a pack with nothing usable; and
 saves each pack as the player's own, ticked (Big Board: picked), under a fresh id (`-2`, `-3`, …)
@@ -370,7 +370,34 @@ previews (iTunes Search API: no key, open to any site); packs (`src/content/song
 only title, artist, Apple track id and, optionally, a clip start and a YouTube video id for the
 reveal. Nothing plays hidden: there is no video while guessing. It is the only game that needs
 internet; without it the ready screen says so ("No internet" or "Can't reach Apple Music") with
-Try again.
+Try again. Songs from a clip pack (below) play without it.
+
+- **Clip packs** (`scripts/clip-songs.mjs` on the owner's laptop; `clipfile.ts`, `clips.ts`): a
+  pack file that also carries a 12-second clip of each song, cut with yt-dlp and ffmpeg from the
+  song's YouTube video (its `youtube`, else the best of a search: the artist's own channel,
+  "- Topic" or VEVO, about the Apple track's length, never live, cover, remix, karaoke or sped up;
+  the next result is tried when Apple's preview is not in the first). The clip starts on the
+  moment the game would play from the preview: Apple's preview is found in the full recording
+  (mono 1 kHz samples, normalised cross-correlation by FFT, `align.ts`; sure at 0.4, or at 0.2
+  when 2.5 times every other offset), plus the pack's `start` or the game's own pick; about 30% in
+  when it is not found; `--at "Title=1:23"` (or a `clipAt` field in the input) sets it by hand.
+  AAC 128 kbps stereo in .m4a, no tags, 0.03 s fade in, 0.5 s fade out. The file is
+  `{"jerkBox": 1, "game": "song", "packs": [the pack], "clips": {"<song key>": {"youtube", "at",
+  "seconds", "type": "audio/mp4", "data": base64}}}` (song key: the Apple track id, or
+  `yt:<video id>` for a song Apple lacks, marked `"clipOnly": true` and kept only when its clip is
+  in the file). It holds copies of recordings, so it goes to `~/Data/party_games/clips/`, never
+  into the repo, the site or anywhere public (`.gitignore` refuses `*.clips.jerkbox.txt`).
+  "Import packs" on Earworm setup takes it (up to 40 MB, 300 clips of up to 1 MB and 30 s, each
+  an MP4): the pack is saved as the player's own like any pack file and its clips go into
+  IndexedDB (`jerkbox-clips`, per pack and song key, no titles), with a request that the browser
+  keep them; the message says how many were saved. A song with a clip plays from it (decoded
+  once, clip from 0, same 2 / 5 / 10 s and 10-second reveal) with no Apple lookup or preview;
+  one without plays Apple's preview as before; one whose clip will not decode falls back to the
+  preview. A clip-only song is dealt only on a phone that has its clip. Offline, with clips among
+  the chosen packs, only those songs are dealt ("No internet, so only the songs saved on this
+  phone play."). The pack editor shows "N clips on this phone · 5.6 MB", marks songs that play
+  from a clip, and deleting the pack deletes its clips. Built-in packs never carry clips: the
+  content gate still requires an Apple track for every built-in song.
 
 - **Setup**: players (2+, remembered), packs (multi-select; pencil opens the pack editor; "New
   pack" makes an empty own pack and opens "Add songs"), points to win (default 10, 3–30).

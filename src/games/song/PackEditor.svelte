@@ -12,6 +12,8 @@
   import { formatStart } from './edit';
   import type { SortKey } from '../../lib/listing';
   import { customSongs, songPacks, type Song, type SongPack } from '../../lib/content';
+  import { removeClips, sizeText, storedClips } from './clips';
+  import { songKey } from './logic';
   import { sfx } from '../../lib/sound';
 
   // One pack, every song listed: rename, edit, delete, and "Add songs". Every change saves at
@@ -35,11 +37,19 @@
   let fresh = $state<number | null>(null);
   let list = $state<HTMLUListElement>();
   const shown = $derived(pack ? findSongs(pack.songs, query, sort) : []);
+  /** This pack's clips on this phone (song key → bytes), from a clip pack. */
+  let clips = $state(new Map<string, number>());
+  const clipLine = $derived.by(() => {
+    const mine = (pack?.songs ?? []).map(songKey).filter((k) => clips.has(k));
+    if (!mine.length) return '';
+    return `${mine.length} ${mine.length === 1 ? 'clip' : 'clips'} on this phone · ${sizeText(mine.reduce((n, k) => n + clips.get(k)!, 0))}`;
+  });
 
   onMount(() => {
-    const ids = pack?.songs.map((s) => s.apple) ?? [];
+    const ids = pack?.songs.flatMap((s) => (s.apple ? [s.apple] : [])) ?? [];
     tracks = cachedTracks(ids);
     if (ids.some((x) => !tracks.has(x))) lookupMany(ids).then((m) => (tracks = m), () => {});
+    if (!builtin) storedClips(id).then((m) => (clips = m));
   });
 
   function persist(next: SongPack) {
@@ -90,6 +100,7 @@
 
   function deletePack() {
     customSongs.remove(id);
+    void removeClips(id);
     confirm = '';
     onback();
   }
@@ -116,6 +127,8 @@
       <input type="text" bind:value={name} onchange={rename} maxlength="40" autocomplete="off" enterkeyhint="done" />
     </label>
 
+    {#if clipLine}<p class="muted clips">{clipLine}</p>{/if}
+
     {#if pack.legacySongs?.length}
       <p class="muted">Some saved songs need an Apple Music match. Open Add songs to rematch them.</p>
     {/if}
@@ -131,13 +144,13 @@
       {#if !pack.songs.length}<p class="none">No songs yet. Add some: paste links or a list, read a YouTube playlist, or ask the wizard.</p>{/if}
       <ul class="songs" bind:this={list}>
         {#each shown as { s, i } (i)}
-          {@const t = tracks.get(s.apple)}
+          {@const t = s.apple ? tracks.get(s.apple) : undefined}
           <li>
             <button class="song" class:fresh={fresh === i} data-i={i} onclick={() => (open = i)}>
               {#if t?.artwork}<img class="art" src={art(t.artwork, 100)} alt="" loading="lazy" />{:else}<span class="art ph" aria-hidden="true">♪</span>{/if}
               <span class="ti">{s.title}</span>
-              <span class="ar">{s.artist}{s.youtube ? ' · video' : ''}{t === null ? ' · not on Apple Music' : ''}</span>
-              <span class="at">{typeof s.start === 'number' ? `from ${formatStart(s.start)}` : 'auto'}</span>
+              <span class="ar">{s.artist}{s.youtube ? ' · video' : ''}{t === null ? ' · not on Apple Music' : ''}{s.clipOnly && !clips.has(songKey(s)) ? ' · clip missing' : ''}</span>
+              <span class="at">{clips.has(songKey(s)) ? 'clip' : typeof s.start === 'number' ? `from ${formatStart(s.start)}` : 'auto'}</span>
             </button>
           </li>
         {/each}
@@ -154,6 +167,7 @@
   {@const index = open}
   <SongForm
     song={pack.songs[index]}
+    hasClip={clips.has(songKey(pack.songs[index]))}
     others={pack.songs.filter((_, i) => i !== index)}
     onsave={saveSong}
     ondelete={() => deleteSong(index)}
@@ -183,6 +197,7 @@
   .about { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: 44px; }
   .about p { margin: 0; }
   .act { flex: none; white-space: nowrap; }
+  .clips { margin: 0; }
   .name { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
   .count { color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700; }
   .list { display: flex; flex-direction: column; }

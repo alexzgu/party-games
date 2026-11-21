@@ -10,53 +10,8 @@
 // The report (✓ sure, ? check it, ✗ dropped, with the other candidates) goes to stderr.
 // Apple allows about 20 calls a minute, so 40 songs take a few minutes. Needs internet.
 import { readFileSync, writeFileSync } from 'node:fs';
-import { matchWanted, parsePaste, tidy, toTrack } from '../src/games/song/match.ts';
-import { makeLimiter, batches } from '../src/games/song/limit.ts';
-
-const API = 'https://itunes.apple.com';
-const apple = makeLimiter(18, 60_000);
-const log = (...a) => console.error(...a);
-
-async function getJson(url) {
-  for (let attempt = 0; ; attempt++) {
-    const res = await fetch(url).catch((e) => ({ ok: false, status: 0, why: e.cause?.code ?? e.message }));
-    if (res.ok) return res.json();
-    if (attempt < 2 && (res.status === 0 || res.status === 403 || res.status === 429 || res.status >= 500)) {
-      log(`  (${res.status || res.why}; waiting 30 s)`);
-      await new Promise((r) => setTimeout(r, 30_000));
-      continue;
-    }
-    throw new Error(`${url}: HTTP ${res.status || res.why}`);
-  }
-}
-const appleJson = (url) => apple.run(() => getJson(url));
-const tracksOf = (j) => (j.results ?? []).map(toTrack).filter(Boolean);
-
-const known = new Map();
-async function lookupMany(ids) {
-  const missing = ids.filter((id) => !known.has(id));
-  for (const group of batches(missing, 50)) {
-    const found = tracksOf(await appleJson(`${API}/lookup?id=${group.join(',')}&country=US`));
-    for (const id of group) known.set(id, found.find((t) => t.id === id) ?? null);
-  }
-  return ids.map((id) => known.get(id));
-}
-
-const deps = {
-  search: async (term) => tracksOf(await appleJson(`${API}/search?term=${encodeURIComponent(term.toLowerCase())}&entity=song&limit=25&country=US`)),
-  artistSongs: async (artist) => {
-    const found = await appleJson(`${API}/search?term=${encodeURIComponent(artist.toLowerCase())}&entity=musicArtist&limit=1&country=US`);
-    const id = found.results?.[0]?.artistId;
-    return id ? tracksOf(await appleJson(`${API}/lookup?id=${id}&entity=song&limit=200&country=US`)) : [];
-  },
-  lookup: async (id) => (await lookupMany([id]))[0],
-  oembed: async (id) => {
-    const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${id}`)}&format=json`);
-    if (!res.ok) return null;
-    const j = await res.json();
-    return { title: j.title, author: j.author_name ?? '' };
-  },
-};
+import { matchWanted, parsePaste, tidy } from '../src/games/song/match.ts';
+import { deps, known, log, lookupMany } from './apple.mjs';
 
 const show = (t) => (t ? `${t.title} — ${t.artist} [${t.id}${t.preview ? '' : ', NO PREVIEW'}] (${t.album})` : '—');
 

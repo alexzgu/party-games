@@ -112,6 +112,16 @@ describe('Earworm rules', () => {
     expect(r.validSetup({ target: 12, packIds: ['a'] })).toEqual({ target: 12, packIds: ['a'] });
   });
 
+  it('a clip-only song (no Apple track) is known by its video and survives a reload; an unmarked one does not', () => {
+    const only: Song = { title: 'Unreleased', artist: 'A Friend', youtube: 'zyxwvutsrqp', clipOnly: true };
+    expect(r.songKey(only)).toBe('yt:zyxwvutsrqp');
+    expect(r.songKey(song(2))).toBe(String(song(2).apple));
+    const g = r.listen({ ...start(), song: only });
+    expect(r.validGame(JSON.parse(JSON.stringify(g)))?.song).toEqual(only);
+    expect(r.validGame({ ...g, song: { title: 'Old', artist: 'X', youtube: 'zyxwvutsrqp' } })).toBeNull();
+    expect(r.validGame({ ...g, song: { ...only, youtube: 'short' } })).toBeNull();
+  });
+
   it('a game saved by the YouTube version is refused, but its scores still reach History', () => {
     const old = { ...r.next(r.award(r.listen(start(10)), 1)), v: 1, song: { title: 'Toxic', artist: 'Britney Spears', youtube: 'LOZuxwVk7TU', start: 69 } };
     expect(r.validGame(JSON.parse(JSON.stringify(old)))).toBeNull();

@@ -7,7 +7,13 @@
   import { importMessage, importPacks, MAX_FILE_BYTES, PACK_FILE_ACCEPT, packFile, savedPacks } from '../lib/packfile';
   import { shareOrDownload } from '../lib/share';
 
-  let { game, onimported }: { game: PackGameId; onimported?: (ids: string[]) => void } = $props();
+  let { game, onimported, read, maxBytes = MAX_FILE_BYTES }: {
+    game: PackGameId;
+    onimported?: (ids: string[]) => void;
+    /** A game's own importer (Earworm: pack files that also carry clips); the plain pack import otherwise. */
+    read?: (content: string) => Promise<{ error: string } | { ids: string[]; message: string }>;
+    maxBytes?: number;
+  } = $props();
 
   let input: HTMLInputElement | undefined = $state();
   // svelte-ignore state_referenced_locally
@@ -21,14 +27,20 @@
     const f = e.currentTarget.files?.[0];
     e.currentTarget.value = ''; // the same file can be picked again
     if (!f) return;
-    if (f.size > MAX_FILE_BYTES) return say('That file is too big to be a pack file.', true);
+    if (f.size > maxBytes) return say('That file is too big to be a pack file.', true);
     let content: string;
     try { content = await f.text(); } catch { return say('That file could not be read.', true); }
-    const r = importPacks(game, content);
+    if (read) say('Importing…');
+    const r = read ? await read(content) : plain(content);
     if ('error' in r) return say(r.error, true);
-    say(importMessage(game, r));
+    say(r.message);
     mine = savedPacks(game).length;
-    onimported?.(r.saved.map((p) => p.id));
+    onimported?.(r.ids);
+  }
+
+  function plain(content: string): { error: string } | { ids: string[]; message: string } {
+    const r = importPacks(game, content);
+    return 'error' in r ? r : { ids: r.saved.map((p) => p.id), message: importMessage(game, r) };
   }
 
   async function exportMine() {

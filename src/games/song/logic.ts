@@ -65,8 +65,8 @@ export function newGame(names: string[], opts: GameOptions, first: Song | null):
   };
 }
 
-/** A song's identity for dealing: its Apple track id. */
-export const songKey = (s: Pick<Song, 'apple'>) => String(s.apple);
+/** A song's identity for dealing (and for its clip on this phone): its Apple track id, or "yt:<video id>" for a clip-only song. */
+export const songKey = (s: Pick<Song, 'apple' | 'youtube'>) => (s.apple ? String(s.apple) : `yt:${s.youtube ?? ''}`);
 
 const withDealt = (dealt: string[], song: Song | null) => (song && !dealt.includes(songKey(song)) ? [...dealt, songKey(song)] : dealt);
 
@@ -206,8 +206,9 @@ export const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
 export const MAX_START = 19.5;
 export const isSong = (x: unknown): x is Song => {
   const k = x as Song | null;
+  const clipOnly = k?.apple === undefined && k?.clipOnly === true && typeof k.youtube === 'string';
   return !!k && typeof k.title === 'string' && k.title !== '' && typeof k.artist === 'string'
-    && Number.isInteger(k.apple) && k.apple > 0
+    && ((Number.isInteger(k.apple) && k.apple! > 0) || clipOnly)
     && (k.start === undefined || num(k.start, 0, MAX_START))
     && (k.youtube === undefined || (typeof k.youtube === 'string' && YOUTUBE_ID.test(k.youtube)));
 };

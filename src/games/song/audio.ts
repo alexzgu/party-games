@@ -1,6 +1,7 @@
 // Plays clips of Apple's 30-second previews through Web Audio. A preview is fetched and decoded
 // once (Apple's preview files allow this from any site), so a clip starts on the exact second,
-// replays instantly, and the clip picker can read the samples. iPhones only start sound inside
+// replays instantly, and the clip picker can read the samples. A clip imported with a clip pack
+// (clips.ts) is decoded the same way from the bytes on the phone. iPhones only start sound inside
 // a tap: call unlockMusic() in the tap that leads to sound.
 import { unlockAudio } from '../../lib/sound';
 import { loadAutoStart, saveAutoStart } from './store';
@@ -32,24 +33,34 @@ export function unlockMusic(): void {
 const buffers = new Map<string, Promise<AudioBuffer>>();
 const KEEP_BUFFERS = 6;
 
-/** A preview, downloaded and decoded (kept in memory for the last few songs). */
-export function loadPreview(url: string): Promise<AudioBuffer> {
-  const hit = buffers.get(url);
+/** A decoded sound by key, made once and kept in memory for the last few songs. */
+function kept(key: string, make: () => Promise<AudioBuffer>): Promise<AudioBuffer> {
+  const hit = buffers.get(key);
   if (hit) {
-    buffers.delete(url);
-    buffers.set(url, hit);
+    buffers.delete(key);
+    buffers.set(key, hit);
     return hit;
   }
-  const p = (async () => {
+  const p = make();
+  buffers.set(key, p);
+  p.catch(() => buffers.delete(key));
+  while (buffers.size > KEEP_BUFFERS) buffers.delete(buffers.keys().next().value!);
+  return p;
+}
+
+/** A preview, downloaded and decoded. */
+export function loadPreview(url: string): Promise<AudioBuffer> {
+  return kept(url, async () => {
     let res: Response;
     try { res = await fetch(url); } catch { throw new Error('no answer'); }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return music().decodeAudioData(await res.arrayBuffer());
-  })();
-  buffers.set(url, p);
-  p.catch(() => buffers.delete(url));
-  while (buffers.size > KEEP_BUFFERS) buffers.delete(buffers.keys().next().value!);
-  return p;
+  });
+}
+
+/** A clip stored on this phone (`key`: its song key), decoded. The bytes are copied: decoding takes them over. */
+export function loadClip(key: string, bytes: ArrayBuffer): Promise<AudioBuffer> {
+  return kept(`clip:${key}`, () => music().decodeAudioData(bytes.slice(0)));
 }
 
 /** A song ready to play: its decoded preview and the second its clip starts at. */

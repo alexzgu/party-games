@@ -5,6 +5,8 @@
   import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
   import { findPacks } from './find';
+  import { importSongFile } from './clips';
+  import { MAX_CLIP_FILE_BYTES } from './clipfile';
 
   // Multi-select pack tiles. Tapping a tile ticks it; the pencil opens the pack to see, edit or
   // delete its songs. Search and sort only change what is shown: hidden ticks still count.
@@ -68,7 +70,7 @@
       </button>
     </li>
   </ul>
-  <PackFile game="song" onimported={imported} />
+  <PackFile game="song" onimported={imported} read={importSongFile} maxBytes={MAX_CLIP_FILE_BYTES} />
 </section>
 
 <style>

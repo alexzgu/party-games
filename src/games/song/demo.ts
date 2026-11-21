@@ -13,7 +13,7 @@ const SONGS: Song[] = [
 const ART = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g" x2="1" y2="1"><stop offset="0" stop-color="#ff5fa2"/><stop offset="1" stop-color="#5b3df5"/></linearGradient></defs><rect width="100" height="100" fill="url(#g)"/><circle cx="50" cy="50" r="30" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>');
 
 const track = (s: Song): Track => ({
-  id: s.apple, title: s.title, artist: s.artist, album: '', artwork: ART, preview: '', released: '',
+  id: s.apple ?? 0, title: s.title, artist: s.artist, album: '', artwork: ART, preview: '', released: '',
   link: `https://music.apple.com/us/song/${s.apple}`,
 });
 

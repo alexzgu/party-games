@@ -19,6 +19,7 @@ import { cleanPrompt, promptError } from '../games/quick/parse';
 import { promptProblem } from '../games/snark/prompts';
 import { ANSWER_MAX, LINE_MAX } from '../games/snark/logic';
 import { checkSong } from '../games/song/edit';
+import { songKey, YOUTUBE_ID } from '../games/song/logic';
 import { cardId as tabooId, cardProblems, tidy as tidyTaboo } from '../games/taboo/cards';
 
 export const FORMAT = 1;
@@ -142,13 +143,20 @@ function snarkExtras(raw: Record<string, unknown>, prompts: string[]): Partial<S
   return { ...(stock ? { safety: stock } : {}), ...(finals.length ? { finals } : {}) };
 }
 
-function song(x: unknown, kept: Song[]): Song | null {
+/** What a reader may know beyond the packs: the songs (by songKey) whose clips came in the same file. */
+export interface ReadOptions { clips?: ReadonlySet<string> }
+
+function song(x: unknown, kept: Song[], opts: ReadOptions): Song | null {
   if (!isObj(x) || typeof x.title !== 'string' || typeof x.artist !== 'string') return null;
-  // The Apple Music track is what the room hears; a song without one cannot be played.
-  if (typeof x.apple !== 'number' || !Number.isSafeInteger(x.apple) || x.apple <= 0) return null;
   const start = typeof x.start === 'number' && Number.isFinite(x.start) && x.start >= 0 ? x.start : null;
   const youtube = typeof x.youtube === 'string' ? x.youtube : '';
-  return checkSong({ title: x.title, artist: x.artist, youtube, start }, { title: x.title, artist: x.artist, apple: x.apple }, kept).song;
+  const draft = { title: x.title, artist: x.artist, youtube, start };
+  if (typeof x.apple === 'number' && Number.isSafeInteger(x.apple) && x.apple > 0) {
+    return checkSong(draft, { title: x.title, artist: x.artist, apple: x.apple }, kept).song;
+  }
+  // The Apple Music track is what the room hears; without one, only a clip in the same file can play it.
+  if (x.clipOnly !== true || !YOUTUBE_ID.test(youtube) || !opts.clips?.has(songKey({ youtube }))) return null;
+  return checkSong(draft, { title: x.title, artist: x.artist, youtube, clipOnly: true }, kept).song;
 }
 
 function taboo(x: unknown): TabooCard | null {
@@ -183,7 +191,7 @@ function board(raw: unknown[]): Kept<QuizCategory> & { clues: number } {
   return { items, skipped, clues };
 }
 
-function items(game: PackGameId, raw: unknown[]): Kept<unknown> & { usable: number } {
+function items(game: PackGameId, raw: unknown[], opts: ReadOptions): Kept<unknown> & { usable: number } {
   const done = <T>(k: Kept<T>) => ({ ...k, usable: k.items.length });
   switch (game) {
     case 'forehead': return done(keep(raw, word, (w) => w.toLowerCase()));
@@ -191,7 +199,7 @@ function items(game: PackGameId, raw: unknown[]): Kept<unknown> & { usable: numb
     case 'gibberish': return done(keep(raw, gibberish));
     case 'quick': return done(keep(raw, quick));
     case 'snark': return done(keep(raw, snark, (q) => q.toLowerCase()));
-    case 'song': return done(keep(raw, song));
+    case 'song': return done(keep(raw, (x, kept: Song[]) => song(x, kept, opts)));
     case 'taboo': return done(keep(raw, taboo, tabooId));
     case 'quiz': { const b = board(raw); return { items: b.items, skipped: b.skipped, usable: b.clues }; }
   }
@@ -199,12 +207,12 @@ function items(game: PackGameId, raw: unknown[]): Kept<unknown> & { usable: numb
 
 type ReadPack = { pack: AnyPack; skipped: number } | { problem: string };
 
-function readPack(game: PackGameId, raw: unknown): ReadPack {
+function readPack(game: PackGameId, raw: unknown, opts: ReadOptions): ReadPack {
   if (!isObj(raw)) return { problem: 'One pack in the file is damaged.' };
   const name = text(raw.name).slice(0, 40) || 'My pack';
   const list = raw[FIELD[game]];
   if (!Array.isArray(list)) return { problem: `“${name}” has no ${UNIT[game]} in it.` };
-  const got = items(game, list);
+  const got = items(game, list, opts);
   if (!got.usable && got.skipped) return { problem: `None of the ${UNIT[game]} in “${name}” could be used.` };
   const base = { id: slugify(text(raw.id) || name), name, blurb: text(raw.blurb).slice(0, 80) };
   if (game === 'quiz') {
@@ -222,9 +230,20 @@ export interface ReadResult { packs: AnyPack[]; /** Items dropped across all pac
 
 /** A pack file's packs for `game`, or a plain-words reason it cannot be imported. */
 export function readFile(content: string, game: PackGameId): ReadResult | { error: string } {
-  if (content.length > MAX_FILE_BYTES) return { error: 'That file is too big to be a pack file.' };
-  let data: unknown;
-  try { data = JSON.parse(content); } catch { return { error: NOT_A_PACK_FILE }; }
+  if (content.length > MAX_FILE_BYTES) return { error: TOO_BIG };
+  const data = parseFile(content);
+  return data === null ? { error: NOT_A_PACK_FILE } : readData(data, game);
+}
+
+export const TOO_BIG = 'That file is too big to be a pack file.';
+
+/** The file's JSON, or null when it is not JSON at all. */
+export function parseFile(content: string): unknown {
+  try { return JSON.parse(content); } catch { return null; }
+}
+
+/** The packs for `game` in a parsed pack file, or a plain-words reason it cannot be imported. */
+export function readData(data: unknown, game: PackGameId, opts: ReadOptions = {}): ReadResult | { error: string } {
   if (!isObj(data) || typeof data.jerkBox !== 'number' || typeof data.game !== 'string' || !Array.isArray(data.packs)) return { error: NOT_A_PACK_FILE };
   if (data.jerkBox > FORMAT) return { error: `This pack file is from a newer ${APP.name}. Go back to the main menu, wait a moment for the update, then try again.` };
   if (data.game !== game) {
@@ -236,7 +255,7 @@ export function readFile(content: string, game: PackGameId): ReadResult | { erro
   const problems: string[] = [];
   let skipped = 0;
   for (const raw of data.packs.slice(0, MAX_PACKS)) {
-    const r = readPack(game, raw);
+    const r = readPack(game, raw, opts);
     if ('problem' in r) problems.push(r.problem);
     else { packs.push(r.pack); skipped += r.skipped; }
   }

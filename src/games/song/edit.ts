@@ -20,6 +20,8 @@ export function checkSong(d: SongDraft, base: Song, others: Song[]): { song: Son
   const youtube = !link ? '' : /^[A-Za-z0-9_-]{11}$/.test(link) ? link : youtubeFrom(link)?.video ?? null;
   if (youtube === null) return fail('That doesn’t look like a link to one YouTube video. Leave it empty if there isn’t one.');
   if (others.some((s) => s.title.toLowerCase() === title.toLowerCase() && s.artist.toLowerCase() === artist.toLowerCase())) return fail(`${title} is already in this pack.`);
+  // A clip-only song's video is how this phone finds its clip, so it stays.
+  if (base.clipOnly) return { song: { title, artist, youtube: base.youtube, clipOnly: true }, error: '' };
   const song: Song = { title, artist, apple: base.apple };
   if (d.start !== null) song.start = Math.round(Math.min(Math.max(0, d.start), MAX_START) * 10) / 10;
   if (youtube) song.youtube = youtube;

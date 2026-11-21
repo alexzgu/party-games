@@ -134,15 +134,18 @@ export const quickPacks = (): QuickPack[] => merged(customQuick.saved(), builtin
 
 // Earworm (song): clips of Apple Music's 30-second previews, played on the host phone; a pack
 // holds only titles, artists, Apple track ids and, optionally, a clip start and a YouTube video.
+// A clip pack made on a laptop also brings its own clips, kept on the host phone (games/song/clips.ts).
 export interface Song {
   title: string;
   artist: string;
-  /** Apple Music track id: its 30-second preview is what the room hears. */
-  apple: number;
+  /** Apple Music track id: its 30-second preview is what the room hears. Absent only on a `clipOnly` song. */
+  apple?: number;
   /** Seconds into the preview where the clip starts; without it the game picks the moment itself. */
   start?: number;
   /** 11-character YouTube video id, shown (never hidden) at the reveal only. */
   youtube?: string;
+  /** Apple has no track for it: it plays only from a clip imported on this phone, found by its YouTube id. */
+  clipOnly?: true;
 }
 /** A saved YouTube-era song that still needs an Apple Music match. */
 export type LegacySong = Pick<Song, 'title' | 'artist'>;
@@ -155,7 +158,7 @@ export function songPacks(): SongPack[] {
     const songs: Song[] = [];
     const legacySongs = [...(pack.legacySongs ?? [])];
     for (const song of pack.songs) {
-      if (Number.isSafeInteger(song.apple) && song.apple > 0) songs.push(song);
+      if ((Number.isSafeInteger(song.apple) && song.apple! > 0) || (song.clipOnly === true && !!song.youtube)) songs.push(song);
       else legacySongs.push({ title: song.title, artist: song.artist });
     }
     if (!legacySongs.length) return pack;

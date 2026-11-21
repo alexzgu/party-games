@@ -13,7 +13,8 @@
     "test:content": "vitest run src/lib/content.test.ts",
     "list": "node scripts/list-content.mjs",
     "check:songs": "node scripts/check-songs.mjs",
-    "match:songs": "node scripts/match-songs.mjs"
+    "match:songs": "node scripts/match-songs.mjs",
+    "clip:songs": "node scripts/clip-songs.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
