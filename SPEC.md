@@ -77,12 +77,16 @@ Three routes, in the order the owner chose to rely on them:
    "More" sends the items already kept so the wizard avoids repeats.
 4. **The magic words** (second way in, kept apart from invite links): a small Cloudflare Worker
    in `worker/` (setup in `worker/README.md`) holds its own, spend-capped Anthropic key and a few
-   shared party phrases as secrets the owner enters in Cloudflare. A friend types a phrase in
-   the magic-words box; the server checks it (case, punctuation and spacing ignored; guessing is a game of its own, so guesses are limited only far
-   above human pace: 60 a minute per address, an IPv4 address or an IPv6 /64, and 600 a minute
+   shared party phrases as secrets the owner enters in Cloudflare. A friend types a word or a
+   few in the magic-words box; the server checks them (case, punctuation, symbols and spacing
+   ignored; each distinct word is a guess, and so is the whole phrase when there are two or
+   more words, at most 12 per try, and any one matching a magic word lets the phone in, so a
+   phrase of several words still works typed whole; guessing is a game of its own, so guesses
+   are limited only far above human pace: 60 a minute per address, an IPv4 address or an IPv6 /64, and 600 a minute
    overall, with a separate 100 a minute (10 per network) for addresses with no guess in the last
-   minute so a flood cannot lock friends out for long; right ones
-   are given back and limited to 20 per address per day; `worker/README.md` has the numbers)
+   minute so a flood cannot lock friends out for long; every guess of a try is counted before
+   checking, only as many as the address has left are checked, and a right try gives all of
+   its guesses back; right tries are limited to 20 per address per day; `worker/README.md` has the numbers)
    and returns a 30-day pass, kept in `settings.wizardPass`, never in a URL or an invite
    link. The phone then uses the server as its API address with the pass in place of a key and
    without model fallback; the server allows only the app's own requests (models from

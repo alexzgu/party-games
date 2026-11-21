@@ -1,18 +1,37 @@
-// Party phrases: what a friend types is normalised, then compared with each phrase in the
-// PARTY_PHRASES secret through HMAC digests, never as text.
+// Party phrases: what a friend types is normalised and split into guesses, each compared with
+// each phrase in the PARTY_PHRASES secret through HMAC digests, never as text.
 import { hmac, sameBytes, toBase64url, type Keys } from './crypto';
+import { LIMITS } from './limits';
 
 /** The longest phrase anyone may type; longer input is refused before any work. */
 export const MAX_PHRASE_LENGTH = 200;
 
-/** Lowercase, punctuation dropped, runs of spaces made one, ends trimmed. */
+/**
+ * Lowercase; apostrophes dropped ("don't" is "dont"); other punctuation and symbols split words
+ * ("red,blue" is "red blue"); runs of spaces made one, ends trimmed.
+ */
 export function normalisePhrase(text: string): string {
   return text
     .normalize('NFKC')
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/['\u2019]/g, '')
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * The guesses in what a friend typed: the whole normalised phrase first when it has two or more
+ * words (so a stored phrase of several words still matches), then each distinct word in order;
+ * at most `LIMITS.guessesPerSubmission`, the rest ignored. "I aM noT!!!?? drunk." gives
+ * "i am not drunk", "i", "am", "not", "drunk". Nothing to check gives none.
+ */
+export function guessesFrom(typed: string): string[] {
+  const whole = normalisePhrase(typed);
+  const words = whole ? whole.split(' ') : [];
+  const out = new Set<string>(words.length > 1 ? [whole] : []);
+  for (const w of words) out.add(w);
+  return [...out].slice(0, LIMITS.guessesPerSubmission);
 }
 
 /**
@@ -40,16 +59,18 @@ export async function currentPhraseIds(keys: Keys, secret: string | undefined): 
 }
 
 /**
- * The phrase id when `typed` matches an accepted phrase, else null. Every accepted phrase is
- * compared in full, with no early exit, so the time taken does not hint at which one is close.
+ * The id of the accepted phrase that one of `guesses` (normalised, from `guessesFrom`) matches,
+ * else null; when several match, the earliest guess wins. Every guess is compared with every
+ * accepted phrase in full, with no early exit, so the time taken does not hint at which is close.
  */
-export async function matchPhrase(keys: Keys, typed: string, secret: string | undefined): Promise<string | null> {
-  const normalised = normalisePhrase(typed);
-  const digest = await hmac(keys.phrase, normalised);
-  let found: string | null = null;
+export async function matchGuesses(keys: Keys, guesses: string[], secret: string | undefined): Promise<string | null> {
+  const digests = await Promise.all(guesses.filter((g) => g).map((g) => hmac(keys.phrase, g)));
+  const hits: (string | null)[] = digests.map(() => null);
   for (const phrase of parsePhrases(secret)) {
     const candidate = await hmac(keys.phrase, phrase);
-    if (sameBytes(digest, candidate) && normalised) found = toBase64url(candidate.slice(0, 12));
+    digests.forEach((d, i) => {
+      if (sameBytes(d, candidate)) hits[i] = toBase64url(candidate.slice(0, 12));
+    });
   }
-  return found;
+  return hits.find((h) => h !== null) ?? null;
 }

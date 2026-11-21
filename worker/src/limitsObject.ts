@@ -8,16 +8,19 @@ import {
 } from './limits';
 
 export type LimitOp =
-  /** `address` and `network` are labels from address.ts. */
-  | { op: 'guess'; address: string; network: string }
-  /** The guess taken at `at` (`fresh` as the guess reply said) was right: give it back and count a redemption instead. */
-  | { op: 'redeemed'; address: string; network: string; at: number; fresh?: boolean }
+  /** `address` and `network` are labels from address.ts; `count` guesses (default 1) in one submission. */
+  | { op: 'guess'; address: string; network: string; count?: number }
+  /**
+   * The submission taken at `at` (`fresh` and `count` as the guess reply said, `count` its
+   * `granted`) was right: give its guesses back and count a redemption instead.
+   */
+  | { op: 'redeemed'; address: string; network: string; at: number; fresh?: boolean; count?: number }
   | { op: 'spend'; session: string }
   /** Give back a reservation made on UTC day `day`. */
   | { op: 'unspend'; session: string; day: string };
 
-/** `at` and `fresh` answer a guess (for `redeemed`), `day` a spend (for `unspend`). */
-export type LimitReply = { ok: true; at?: number; fresh?: boolean; day?: string } | { ok: false; retryAfter: number; scope: Scope };
+/** `at`, `fresh` and `granted` (how many guesses were counted) answer a guess (for `redeemed`), `day` a spend (for `unspend`). */
+export type LimitReply = { ok: true; at?: number; fresh?: boolean; granted?: number; day?: string } | { ok: false; retryAfter: number; scope: Scope };
 
 const refused = (r: { retryAfter: number; scope: Scope }): LimitReply => ({ ok: false, retryAfter: r.retryAfter, scope: r.scope });
 
@@ -45,12 +48,12 @@ export class Limits {
       const stored = await storage.get<Partial<GuessState>>('guesses');
       const state = stored ?? emptyGuesses();
       if (op.op === 'guess') {
-        const r = takeGuess(state, op.address, now, op.network);
+        const r = takeGuess(state, op.address, now, op.network, op.count ?? 1);
         if (!r.ok) return refused(r);
         await storage.put('guesses', r.state);
-        return { ok: true, at: now, fresh: r.fresh };
+        return { ok: true, at: now, fresh: r.fresh, granted: r.granted };
       }
-      await this.keep('guesses', stored, refundGuess(state, op.address, op.at, { network: op.network, fresh: op.fresh === true }));
+      await this.keep('guesses', stored, refundGuess(state, op.address, op.at, { network: op.network, fresh: op.fresh === true, count: op.count ?? 1 }));
       const r = takeRedeem(await storage.get<RedeemState>('redeems'), op.address, now);
       if (!r.ok) return refused(r);
       await storage.put('redeems', r.state);

@@ -95,6 +95,39 @@ describe('guess limits', () => {
     expect(takeGuess(old, 'a', T0 + 1).state).toEqual({ everyone: [T0, T0 + 1], byAddress: { a: [T0, T0 + 1] }, fresh: [], freshByNetwork: {} });
     expect(refundGuess(old, 'a', T0)).toEqual(emptyGuesses());
   });
+  it('counts every guess of a submission, and only as many as the address has left', () => {
+    const r = takeGuess(emptyGuesses(), 'a', T0, 'a', 5);
+    expect(r).toMatchObject({ ok: true, fresh: false, granted: 5 });
+    expect(r.state.byAddress.a).toHaveLength(5);
+    expect(r.state.everyone).toHaveLength(5);
+    const nearly = guesses(emptyGuesses(), 'a', LIMITS.guessesPerAddress - 2).state;
+    const partial = takeGuess(nearly, 'a', T0, 'a', 5);
+    expect(partial).toMatchObject({ ok: true, granted: 2 });
+    expect(partial.state.byAddress.a).toHaveLength(LIMITS.guessesPerAddress);
+    const none = takeGuess(partial.state, 'a', T0, 'a', 5);
+    expect(none.ok).toBe(false);
+    if (!none.ok) expect(none.scope).toBe('address');
+    expect(takeGuess(emptyGuesses(), 'a', T0, 'a', 50)).toMatchObject({ ok: true, granted: LIMITS.guessesPerSubmission });
+  });
+  it('gives back every guess of a right submission', () => {
+    const { state } = guesses(emptyGuesses(), 'a', 3);
+    const r = takeGuess(state, 'a', T0 + 1, 'a', 5);
+    expect(refundGuess(r.state, 'a', T0 + 1, { network: 'a', fresh: false, count: 5 })).toEqual(state);
+  });
+  it('lets a fresh address check a whole submission once everyone is used up, within the fresh allowances, and gives it all back', () => {
+    let s = emptyGuesses();
+    for (let i = 0; i < LIMITS.guessesEveryone; i++) s = guesses(s, `addr${i}`, 1).state;
+    const friend = takeGuess(s, 'friend', T0, 'home', 4);
+    expect(friend).toMatchObject({ ok: true, fresh: true, granted: 4 });
+    expect(refundGuess(friend.state, 'friend', T0, { network: 'home', fresh: true, count: 4 })).toEqual(s);
+    // Wrong, so kept: the network has freshPerNetwork - 4 left, and the next phone there gets only those.
+    const next = takeGuess(friend.state, 'friend2', T0, 'home', LIMITS.guessesPerSubmission);
+    expect(next).toMatchObject({ ok: true, fresh: true, granted: LIMITS.freshPerNetwork - 4 });
+    // With room for fewer ordinary guesses than the submission holds, a fresh address takes fresh ones instead.
+    const almost = { ...s, everyone: s.everyone.slice(1) };
+    expect(takeGuess(almost, 'friend', T0, 'home', 4)).toMatchObject({ ok: true, fresh: true, granted: 4 });
+    expect(takeGuess(almost, 'addr1', T0, 'addr1', 4)).toMatchObject({ ok: true, fresh: false, granted: 1 });
+  });
   it('takes back a right guess', () => {
     const { state } = guesses(emptyGuesses(), 'a', 1);
     expect(refundGuess(state, 'a', T0)).toEqual(emptyGuesses());

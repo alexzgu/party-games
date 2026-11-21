@@ -12,7 +12,7 @@ export type Redeemed =
 /** What the phone says when the wizard server itself failed (it answers 5xx, `x-wizard-reason: server` for a crash). */
 export const SERVER_TROUBLE = "Fizzwick's tower is having trouble. Try again in a little while.";
 
-/** Sends the words to the server once; never retried, so a wrong guess counts once. `signal` cancels it. */
+/** Sends the words to the server once; never retried, so a wrong try counts once (the server counts each word as a guess). `signal` cancels it. */
 export async function redeemPhrase(phrase: string, server = WIZARD_SERVER, signal?: AbortSignal): Promise<Redeemed> {
   let res: Response;
   try {

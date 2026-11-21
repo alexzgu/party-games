@@ -66,7 +66,8 @@ describe('wizard server', () => {
   it('limits wrong guesses: one past the limit from one address gets 429 with Retry-After', async () => {
     const env = fakeEnv();
     const statuses = [];
-    for (let i = 0; i <= LIMITS.guessesPerAddress; i++) statuses.push((await redeem(env, `wrong guess ${i}`)).status);
+    // One word per try, so one guess each (several words count one guess per word; see below).
+    for (let i = 0; i <= LIMITS.guessesPerAddress; i++) statuses.push((await redeem(env, `wrong${i}`)).status);
     expect(statuses).toEqual([...Array(LIMITS.guessesPerAddress).fill(401), 429]);
     const limited = await redeem(env, 'test phrase one');
     expect(limited.status).toBe(429);
@@ -82,6 +83,43 @@ describe('wizard server', () => {
     for (let i = 0; i < 3; i++) expect((await redeem(env, 'test phrase two')).status).toBe(200);
     expect((await redeem(env, 'nope')).status).toBe(401);
     expect((await redeem(env, 'nope')).status).toBe(429);
+  });
+
+  it("treats each word as a guess: the owner's example gets in when any one word is a magic word", async () => {
+    const env = fakeEnv({ PARTY_PHRASES: 'drunk' });
+    expect((await redeem(env, 'I aM noT!!!?? drunk.')).status).toBe(200);
+    // Right, so all five guesses (four words and the whole phrase) were given back.
+    for (let i = 0; i < LIMITS.guessesPerAddress; i++) expect((await redeem(env, `nope${i}`)).status).toBe(401);
+    expect((await redeem(env, 'nope')).status).toBe(429);
+    // Wrong, it counts five: 55 more single words reach the limit.
+    const other = fakeEnv({ PARTY_PHRASES: 'drunk' });
+    expect((await redeem(other, 'I aM noT!!!?? sober.')).status).toBe(401);
+    for (let i = 0; i < LIMITS.guessesPerAddress - 5; i++) expect((await redeem(other, `nope${i}`)).status).toBe(401);
+    expect((await redeem(other, 'drunk')).status).toBe(429);
+  });
+
+  it('counts at most 12 guesses from one submission, and checks only as many as the address has left', async () => {
+    const env = fakeEnv({ PARTY_PHRASES: 'drunk' });
+    expect((await redeem(env, Array.from({ length: 20 }, (_, i) => `w${i}`).join(' '))).status).toBe(401);
+    for (let i = 0; i < LIMITS.guessesPerAddress - LIMITS.guessesPerSubmission; i++) expect((await redeem(env, `nope${i}`)).status).toBe(401);
+    expect((await redeem(env, 'nope')).status).toBe(429);
+    // Three left: "zzz yyy drunk", "zzz" and "yyy" are checked and counted; "drunk" is not reached.
+    const short = fakeEnv({ PARTY_PHRASES: 'drunk' });
+    for (let i = 0; i < LIMITS.guessesPerAddress - 3; i++) await redeem(short, `nope${i}`);
+    expect((await redeem(short, 'zzz yyy drunk')).status).toBe(401);
+    expect((await redeem(short, 'drunk')).status).toBe(429);
+    // Four left: all four are checked, the last one is right, and all four are given back.
+    const enough = fakeEnv({ PARTY_PHRASES: 'drunk' });
+    for (let i = 0; i < LIMITS.guessesPerAddress - 4; i++) await redeem(enough, `nope${i}`);
+    expect((await redeem(enough, 'zzz yyy drunk')).status).toBe(200);
+    for (let i = 0; i < 4; i++) expect((await redeem(enough, `again${i}`)).status).toBe(401);
+    expect((await redeem(enough, 'drunk')).status).toBe(429);
+  });
+
+  it('counts nothing for punctuation alone', async () => {
+    const env = fakeEnv();
+    for (let i = 0; i <= LIMITS.guessesPerAddress; i++) expect((await redeem(env, '?!.')).status).toBe(401);
+    expect((await redeem(env, 'test phrase one')).status).toBe(200);
   });
 
   it('counts IPv6 guesses by /64, so new addresses in the same /64 get no more', async () => {

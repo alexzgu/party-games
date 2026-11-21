@@ -7,7 +7,7 @@ import { deriveKeys, type Keys } from './crypto';
 import type { Env, ExecutionContextLike } from './env';
 import { corsHeaders, errorResponse, limitResponse, originAllowed, parseOrigins, preflight } from './http';
 import { limit } from './limitsObject';
-import { currentPhraseIds, matchPhrase, MAX_PHRASE_LENGTH } from './phrase';
+import { currentPhraseIds, guessesFrom, matchGuesses, MAX_PHRASE_LENGTH } from './phrase';
 import { newSession, signToken, tokenFrom, verifyToken, type Verdict } from './token';
 import { apiVersion, checkBetas, checkMessageBody, MAX_BODY_BYTES, readLimited } from './validate';
 
@@ -78,12 +78,17 @@ async function redeem(request: Request, env: Env, keys: Keys, cors: Cors): Promi
   if (typeof phrase !== 'string' || !phrase.trim() || phrase.length > MAX_PHRASE_LENGTH) {
     return errorResponse(400, 'invalid_request_error', 'Send {"phrase": "<the magic words>"}.', cors);
   }
+  // Each word is a guess, and so is the whole phrase; only punctuation is nothing to check or count.
+  const guesses = guessesFrom(phrase);
+  if (!guesses.length) return errorResponse(401, 'authentication_error', 'Those are not the magic words.', cors);
   const who = await clientOf(request.headers.get('cf-connecting-ip'));
-  const slot = await limit(env.LIMITS, { op: 'guess', ...who });
+  const slot = await limit(env.LIMITS, { op: 'guess', ...who, count: guesses.length });
   if (!slot.ok) return limitResponse('Too many wrong guesses. Wait, then try again.', slot.retryAfter, { ...cors, [REASON]: 'guesses' });
-  const pid = await matchPhrase(keys, phrase, env.PARTY_PHRASES);
+  // With fewer guesses left than the submission holds, only the first `granted` are checked.
+  const granted = slot.granted ?? 1;
+  const pid = await matchGuesses(keys, guesses.slice(0, granted), env.PARTY_PHRASES);
   if (!pid) return errorResponse(401, 'authentication_error', 'Those are not the magic words.', cors);
-  const counted = await limit(env.LIMITS, { op: 'redeemed', ...who, at: slot.at ?? 0, fresh: slot.fresh === true });
+  const counted = await limit(env.LIMITS, { op: 'redeemed', ...who, at: slot.at ?? 0, fresh: slot.fresh === true, count: granted });
   if (!counted.ok) return limitResponse('The magic words were said too often from here today.', counted.retryAfter, { ...cors, [REASON]: 'redeems' });
   const session = newSession(pid, Date.now());
   const token = await signToken(keys.session, session);

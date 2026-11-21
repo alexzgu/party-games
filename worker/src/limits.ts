@@ -10,6 +10,9 @@ export const LIMITS = {
   // together before it is checked; a right one is given back. When everyone's guesses are used
   // up (a stranger flooding wrong guesses), an address with no guess in the last minute may still
   // try, within the `fresh` allowances, so friends who say the right words are not locked out.
+  // One submission is several guesses: each word, plus the whole phrase (see phrase.ts).
+  /** Guesses checked from one submission at most; the rest of its words are ignored. */
+  guessesPerSubmission: 12,
   /** Guesses allowed from one address per window; past it, nothing from there is checked. */
   guessesPerAddress: 60,
   guessAddressWindowMs: 60_000,
@@ -58,7 +61,7 @@ export interface RedeemState {
 
 export type Scope = 'address' | 'everyone' | 'redeems' | 'session' | 'party';
 /** A refusal carries the state unchanged: nothing to store. */
-export type Taken<S> = { ok: true; state: S; fresh?: boolean } | { ok: false; state: S; retryAfter: number; scope: Scope };
+export type Taken<S> = { ok: true; state: S; fresh?: boolean; granted?: number } | { ok: false; state: S; retryAfter: number; scope: Scope };
 
 export const emptyGuesses = (): GuessState => ({ everyone: [], byAddress: {}, fresh: [], freshByNetwork: {} });
 
@@ -103,39 +106,59 @@ function everyoneWait(s: GuessState, mine: number[], net: number[], now: number)
   return { retryAfter: Math.min(ordinary, freshHere) };
 }
 
+/** A guess count as a whole number from 1 to `guessesPerSubmission`. */
+const guessCount = (n: number) => Math.min(Math.max(1, Math.floor(Number.isFinite(n) ? n : 1)), LIMITS.guessesPerSubmission);
+
 /**
- * Counts a guess before the phrase is checked, so guesses at the same moment cannot slip past
- * the limit; `refundGuess` takes it back when the phrase was right. An address over its own
- * limit gets nothing. When everyone's guesses are used up, an address with no guess in the
- * last hour still gets one, as long as its network and everyone together have fresh guesses
- * left; `fresh` says it was one of those. `network` defaults to the address itself.
+ * Counts up to `count` guesses (one submission) before they are checked, so guesses at the same
+ * moment cannot slip past the limit; `granted` says how many were counted, and only those are
+ * checked. `refundGuess` takes them back when one was right. An address over its own limit gets
+ * nothing. When everyone's guesses are used up (or have less room than the submission), an
+ * address with no guess in the last minute still gets its guesses as fresh ones, as many as its
+ * network and everyone together have fresh guesses left; `fresh` says so. A submission's guesses
+ * are all ordinary or all fresh. `network` defaults to the address itself.
  */
-export function takeGuess(state: Partial<GuessState>, address: string, now: number, network = address): Taken<GuessState> {
+export function takeGuess(state: Partial<GuessState>, address: string, now: number, network = address, count = 1): Taken<GuessState> {
   const s = pruneGuesses(state, now);
+  const want = guessCount(count);
   const mine = s.byAddress[address] ?? [];
   const recent = mine.filter((t) => t > now - LIMITS.guessAddressWindowMs);
-  if (recent.length >= LIMITS.guessesPerAddress) return { ok: false, state: s, retryAfter: opensIn(recent, LIMITS.guessesPerAddress, LIMITS.guessAddressWindowMs, now), scope: 'address' };
+  const addressLeft = LIMITS.guessesPerAddress - recent.length;
+  if (addressLeft <= 0) return { ok: false, state: s, retryAfter: opensIn(recent, LIMITS.guessesPerAddress, LIMITS.guessAddressWindowMs, now), scope: 'address' };
   const net = s.freshByNetwork[network] ?? [];
-  const room = s.everyone.length < LIMITS.guessesEveryone;
-  const fresh = !room && mine.length === 0 && net.length < LIMITS.freshPerNetwork && s.fresh.length < LIMITS.freshEveryone;
-  if (!room && !fresh) return { ok: false, state: s, ...everyoneWait(s, mine, net, now), scope: 'everyone' };
+  const ordinary = Math.max(0, Math.min(want, addressLeft, LIMITS.guessesEveryone - s.everyone.length));
+  const freshLeft = mine.length === 0 ? Math.max(0, Math.min(want, addressLeft, LIMITS.freshPerNetwork - net.length, LIMITS.freshEveryone - s.fresh.length)) : 0;
+  const fresh = ordinary < want && freshLeft > ordinary;
+  const granted = fresh ? freshLeft : ordinary;
+  if (granted === 0) return { ok: false, state: s, ...everyoneWait(s, mine, net, now), scope: 'everyone' };
+  const times = Array<number>(granted).fill(now);
   return {
     ok: true,
     fresh,
+    granted,
     state: {
-      everyone: [...s.everyone, now],
-      byAddress: { ...s.byAddress, [address]: [...mine, now] },
-      fresh: fresh ? [...s.fresh, now] : s.fresh,
-      freshByNetwork: fresh ? { ...s.freshByNetwork, [network]: [...net, now] } : s.freshByNetwork,
+      everyone: [...s.everyone, ...times],
+      byAddress: { ...s.byAddress, [address]: [...mine, ...times] },
+      fresh: fresh ? [...s.fresh, ...times] : s.fresh,
+      freshByNetwork: fresh ? { ...s.freshByNetwork, [network]: [...net, ...times] } : s.freshByNetwork,
     },
   };
 }
 
-/** Takes back the guess `takeGuess` counted at `at` for `address` (and, when it was `fresh`, for its network). */
-export function refundGuess(state: Partial<GuessState>, address: string, at: number, from: { network: string; fresh: boolean } = { network: address, fresh: false }): GuessState {
+/**
+ * Takes back the `count` guesses (default 1) `takeGuess` counted at `at` for `address` (and, when
+ * they were `fresh`, for its network).
+ */
+export function refundGuess(state: Partial<GuessState>, address: string, at: number, from: { network: string; fresh: boolean; count?: number } = { network: address, fresh: false }): GuessState {
+  const n = guessCount(from.count ?? 1);
   const without = (times: number[]) => {
-    const i = times.lastIndexOf(at);
-    return i < 0 ? times : [...times.slice(0, i), ...times.slice(i + 1)];
+    const out = [...times];
+    for (let k = 0; k < n; k++) {
+      const i = out.lastIndexOf(at);
+      if (i < 0) break;
+      out.splice(i, 1);
+    }
+    return out;
   };
   const dropFrom = (m: Record<string, number[]>, key: string) => {
     const left = without(m[key] ?? []);

@@ -45,7 +45,7 @@
   <div class="stack magic">
     <p class="muted small">{hasServer ? intro : "🧙 Fizzwick the Wizard is not on this phone yet. Ask the host."}</p>
     <div class="words">
-      <input type={show ? 'text' : 'password'} placeholder={hasServer ? 'The magic words' : "For the host: the wizard's key"} autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"
+      <input type={show ? 'text' : 'password'} placeholder={hasServer ? 'The magic words: a word or a few' : "For the host: the wizard's key"} autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"
         maxlength="400" bind:value={words} oninput={() => (note = '')} onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void say(); } }} aria-label={hasServer ? 'Magic words' : "The host's key"} />
       <button type="button" class="show" onclick={() => (show = !show)} aria-pressed={show}>{show ? 'Hide' : 'Show'}</button>
     </div>
