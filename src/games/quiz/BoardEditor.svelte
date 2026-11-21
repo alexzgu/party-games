@@ -2,6 +2,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
+  import SharePack from '../../components/SharePack.svelte';
   import Popup from '../../components/Popup.svelte';
   import Stepper from '../../components/Stepper.svelte';
   import Segmented from '../../components/Segmented.svelte';
@@ -175,7 +176,7 @@
   {:else}
     <div class="about">
       <p class="muted">
-        {#if fresh}Not saved yet{:else if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if board?.shared}Your pack, shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it{:else}Your pack, on this phone only{/if}
+        {#if fresh}Not saved yet{:else if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if board?.shared}Your pack, shared in the Community library: edits go out when you tap Share changes or Fizzwick adds to it{:else}Your pack, on this phone only{/if}
       </p>
       {#if builtin && edited}
         <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
@@ -184,6 +185,7 @@
       {/if}
     </div>
     {#if !fresh}<ExportPack game="quiz" pack={board} />{/if}
+    {#if !fresh}<SharePack game="quiz" pack={board} onshared={() => (board = board && { ...board, shared: true })} />{/if}
     {#if note}<p class="faint small">{note}</p>{/if}
 
     <label class="field">

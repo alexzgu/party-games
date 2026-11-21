@@ -278,7 +278,7 @@ function readData(data: unknown, game: PackGameId): ReadResult | { error: string
 
 // ---- Saving on this phone
 
-interface PackStore { saved(): AnyPack[]; put(p: AnyPack): void; isBuiltin(id: string): boolean; names(): string[]; builtins(): readonly AnyPack[] }
+interface PackStore { saved(): AnyPack[]; put(p: AnyPack): void; markShared(id: string): boolean; isBuiltin(id: string): boolean; names(): string[]; builtins(): readonly AnyPack[] }
 const STORES: Record<PackGameId, PackStore> = {
   forehead: customDecks, dial: customSpectra, gibberish: customGibberish, quiz: customQuiz,
   quick: customQuick, snark: customSnark, taboo: customTaboo,
@@ -286,6 +286,13 @@ const STORES: Record<PackGameId, PackStore> = {
 
 /** Every pack saved on this phone for a game: the player's own and their edits of built-ins. */
 export const savedPacks = (game: PackGameId): AnyPack[] => STORES[game].saved();
+
+/** The player's own pack as saved on this phone (never a built-in or its edit), or undefined. */
+export const ownPack = (game: PackGameId, id: string): AnyPack | undefined =>
+  STORES[game].isBuiltin(id) ? undefined : STORES[game].saved().find((p) => p.id === id);
+
+/** Marks the player's own saved pack as shared, changing nothing else; false when it is gone. */
+export const markPackShared = (game: PackGameId, id: string): boolean => STORES[game].markShared(id);
 
 /** True for a built-in pack's id (an edit of one is saved under it). */
 export const isBuiltinPack = (game: PackGameId, id: string): boolean => STORES[game].isBuiltin(id);

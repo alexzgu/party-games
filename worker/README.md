@@ -76,8 +76,9 @@ Paid plan, or turning the wizard off, does.
 
 ## The Community library
 
-Packs Fizzwick makes on a phone with a pass are published here automatically; anyone can browse
-them, preview one and import it; starring needs a pass. They are kept for good, in a second
+Packs Fizzwick makes on a phone with a pass are published here automatically, and a player can
+share any of their own packs by hand from its editor (with a pass, through the same publish
+route); anyone can browse them, preview one and import it; starring needs a pass. They are kept for good, in a second
 SQLite-backed Durable Object, `Library` (`src/libraryObject.ts`, migration `v2`; the counters'
 `Limits` object is untouched). It stores each pack's game, name, description, item count, items,
 times, stars, a hidden flag and the sharing phone's username (when it sent a good one), plus a one-way label of the pass that published it and that

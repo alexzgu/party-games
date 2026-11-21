@@ -39,7 +39,7 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `library` (the Community library), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `library` (the Community library), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
 - `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PackList` (every pack game's pack list on setup), `Popup`,
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
@@ -145,16 +145,43 @@ Jerk Box."); anything else says it isn't a pack file.
 `worker/README.md`): packs Fizzwick makes on any phone with a magic-words pass are shared
 automatically, whole, the moment they are saved, and again after "🧙 Add more" (Snark Tank: also
 "Fill in stock answers"), so friends need not remember to. Only what the wizard wrote through a
-pass is shared (decided as each run starts): anything made with the host's own key or an invite
-link never is, even once the phone has a pass, nor is a built-in pack or its edit. Each own pack
-keeps that decision with it: it is marked for sharing only when a wizard run through a pass made
-it (a Big Board draft keeps the mark when saved), and loses the mark for good once a run not
-through a pass adds to it, or when it started pasted, typed by hand or imported. A pack is shared
-only while it has the mark and the run that just added to it went through a pass; hand edits keep
-the mark. Pack files never carry it. The same pass and pack
-update one entry. Sharing never holds up saving; when it fails the page shows a small note,
-"Couldn't share to the library". Each wizard form says once, in small text, "Packs Fizzwick
-makes are shared in the Community library." Shared packs stay for good (the owner can hide one).
+pass is shared by itself (decided as each run starts): anything made with the host's own key or an
+invite link never is, even once the phone has a pass, nor is a built-in pack or its edit. Each own
+pack keeps that decision with it: it is marked for sharing when a wizard run through a pass made it
+(a Big Board draft keeps the mark when saved) or when it is shared by hand (below), and loses the
+mark once a run not through a pass adds to it; one that started pasted, typed by hand or imported
+has no mark until it is shared by hand. A pack is shared by itself only while it has the mark and
+the run that just added to it went through a pass; hand edits keep the mark. Pack files never
+carry it. The same pass and pack update one entry. Sharing never holds up saving; when it fails
+the page shows a small note, "Couldn't share to the library". Each wizard form says once, in
+small text, "Packs Fizzwick makes are shared in the Community library." Shared packs stay for
+good (the owner can hide one).
+**Sharing by hand** (`SharePack`, `canShare`, `shareStatus`, `shareProblem`): every pack editor of
+a game with the library shows "🌍 Share to Community" under "Export pack" for the phone's own saved
+packs (pasted, typed by hand, imported from a file or made by Fizzwick), never for a built-in pack
+or its edit, nor for a pack imported from the Community library (marked `fromLibrary` when
+imported; packs imported before the mark existed cannot be told apart). The first share of a pack
+asks once, in place: "Anyone can see and import it. Your username, <name>, shows on it." with
+"Share it" and "Cancel". Without a pass, the magic words box opens right there ("Sharing needs the
+magic words. Say the ones the host told you:", with "Not now") and the share goes ahead once they
+are said; a phone on the host's own key is told sharing needs the magic words. A pack the library
+would not take is a disabled button with the reason under it: no name, a Big Board with empty
+tiles ("Fill the 3 empty tiles first."), nothing in it, more than 400 items or over 64 KB (the
+server's own limits, `libraryShape.ts`). A refused share says why in plain words (`failureWords`:
+offline, pass ran out (the box comes back), today's sharing limit, too big, server trouble). What
+goes, and what the button compares, is always the pack as saved on the phone (each editor saves on
+every change), never the editor's own copy. Once the library takes it, the saved pack is marked
+shared in place, nothing else in it changed (a pack deleted meanwhile stays deleted), so it then
+behaves like a shared wizard pack; the button is a quiet "✓ Shared in Community", and after any
+change it reads "Share changes", under "Shared in Community · changed since". The phone keeps, for
+each pack the library took, a fingerprint of the version it took and the id the library knows it
+by (`shareLog.svelte.ts`, noted on every share that lands, Fizzwick's included; a pack moved off a
+new built-in's id keeps both, so its next share updates the same entry). A pack marked for
+sharing with no such record (Fizzwick's automatic share failed, or it was shared before records
+were kept) says "This phone has no record of sharing it." over "Share now", asking nothing
+first; while any share of the pack is on its way the button reads "Sharing…" and waits. The
+editor's status line says "shared in the Community library: edits go out when you tap Share
+changes or Fizzwick adds to it".
 Each share (and each update) carries the phone's username at that moment; the server keeps it only
 when it is a username by the same rules as the phone's (tidied, 1–24 characters) and otherwise
 stores the pack without one. Packs shared before usernames have none.

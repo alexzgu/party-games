@@ -4,6 +4,7 @@
   import Button from '../../components/Button.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
+  import SharePack from '../../components/SharePack.svelte';
   import AddMore from '../../components/AddMore.svelte';
   import { mergeOnTop } from '../../lib/addMore';
   import { afterRun, shareWizardPack } from '../../lib/library';
@@ -136,7 +137,7 @@
   </AddMore>
 {:else}
 <Screen title={existing ? (builtin ? 'Built-in pack' : 'Edit pack') : 'New pack'} accent="var(--c-forehead)">
-  {#if !builtin && deck.shared}<p class="muted">Shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it.</p>{/if}
+  {#if !builtin && deck.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
   {#if builtin}
     <div class="note" class:edited>
       {#if edited}
@@ -198,6 +199,7 @@
   </section>
 
   {#if deck.id}<ExportPack game="forehead" pack={deck} />{/if}
+  {#if deck.id}<SharePack game="forehead" pack={deck} onshared={() => (deck.shared = true)} />{/if}
   {#if deck.id && !builtin}
     <Button variant={confirmDelete ? 'danger' : 'ghost'} onclick={remove}>{confirmDelete ? 'Tap again to delete this pack' : 'Delete pack'}</Button>
   {/if}

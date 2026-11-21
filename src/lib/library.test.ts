@@ -1,7 +1,8 @@
 // The Community library's phone side without a browser: a fake fetch and a fake pass only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { settings } from './settings.svelte';
-import { afterRun, getPack, importLibraryPack, listPacks, onLibraryNote, passedSoFar, SHARE_FAILED, shareWizardPack, starPack, type LibraryFull } from './library';
+import { afterRun, canShare, failureWords, getPack, importLibraryPack, listPacks, onLibraryNote, packPrint, passedSoFar, publishPack, SHARE_FAILED, shareByHand, shareProblem, shareStatus, shareStatusNow, shareWizardPack, starPack, type LibraryFull } from './library';
+import { lastShared, noteShared } from './shareLog.svelte';
 import { WIZARD_SERVER } from './wizardServer';
 import { setUsername } from './username';
 import { customDecks, customQuick, customQuiz, quizBoards, type QuickPack, type QuizBoard, type SnarkPack, type SpectrumPack, type WordDeck } from './content';
@@ -247,5 +248,153 @@ describe('browsing and importing', () => {
     const r = importLibraryPack('forehead', shared({ game: 'forehead', items: ['Shrek', 'Pizza'], extra: { emoji: '📺' } }));
     if ('error' in r) throw new Error(r.error);
     expect(r.saved[0]).toMatchObject({ name: 'Road Trip', emoji: '📺', words: ['Shrek', 'Pizza'] });
+  });
+});
+
+describe('sharing a pack by hand', () => {
+  beforeEach(() => {
+    const mem = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => mem.set(k, v), removeItem: (k: string) => mem.delete(k) });
+  });
+  const own: WordDeck = { id: 'my-hand-deck', name: 'Hand made', emoji: '✨', blurb: 'Typed in', words: ['Shrek', 'Pizza'], custom: true };
+  const board = (clue: string): QuizBoard => ({ id: 'my-board', name: 'Board', blurb: '', custom: true,
+    categories: [{ name: 'Food', clues: [{ clue: 'Round, cheesy, sliced.', answer: 'Pizza' }, { clue, answer: 'Taco' }] }] });
+  const saved = (id: string) => customDecks.all().find((d) => d.id === id);
+  const sentBody = (fetch: ReturnType<typeof server>, n = 0) => JSON.parse(String(fetch.mock.calls[n][1]?.body));
+  /** A server whose answer waits until `answer()` is called. */
+  function slowServer() {
+    let answer = () => {};
+    const fetch = vi.fn(() => new Promise<Response>((done) => { answer = () => done(Response.json({ id: 'AAAAAAAAAAAA', created: true })); }));
+    vi.stubGlobal('fetch', fetch);
+    return { fetch, answer: () => answer() };
+  }
+
+  it("is offered for the phone's own packs only: never a built-in, its edit, a library import or an unsaved pack", () => {
+    expect(canShare('forehead', own)).toBe(true);
+    expect(canShare('forehead', { ...own, shared: true })).toBe(true);
+    expect(canShare('forehead', { ...customDecks.builtins()[0], custom: false })).toBe(false);
+    expect(canShare('forehead', { ...own, id: 'movies', words: ['Edited'] })).toBe(false);
+    expect(canShare('forehead', { ...own, fromLibrary: true })).toBe(false);
+    expect(canShare('forehead', { ...own, id: '' })).toBe(false);
+    expect(canShare('salad', own)).toBe(false);
+  });
+
+  it('marks a pack imported from the library, so it is never offered again; a pack file import is', () => {
+    const r = importLibraryPack('forehead', { id: 'AAAAAAAAAAAA', game: 'forehead', name: 'From the library', blurb: '', count: 1, stars: 0, created: 0, updated: 0, items: ['Shrek'], extra: {} });
+    if ('error' in r) throw new Error(r.error);
+    expect([r.saved[0].fromLibrary, canShare('forehead', r.saved[0])]).toEqual([true, false]);
+    const file = importPacks('forehead', exportFile('forehead', [r.saved[0]]));
+    if ('error' in file) throw new Error(file.error);
+    expect([file.saved[0].fromLibrary, canShare('forehead', file.saved[0])]).toEqual([undefined, true]);
+  });
+
+  it('tells a pack never marked, one marked but never taken, one on its way, the version taken and one changed since', () => {
+    const shared = { ...own, shared: true };
+    const taken = { print: packPrint('forehead', shared), localId: shared.id };
+    expect(shareStatus('forehead', own, undefined)).toBe('new');
+    expect(shareStatus('forehead', shared, undefined)).toBe('unsent');
+    expect(shareStatus('forehead', shared, taken, true)).toBe('sending');
+    expect(shareStatus('forehead', shared, taken)).toBe('current');
+    // Only what the library gets counts: the phone's own fields do not.
+    expect(shareStatus('forehead', { ...shared, added: '2026-11-21T10:00' }, taken)).toBe('current');
+    expect(shareStatus('forehead', { ...shared, words: ['Shrek', 'Pizza', 'Tacos'] }, taken)).toBe('changed');
+    expect(shareStatus('forehead', { ...shared, name: 'Renamed' }, taken)).toBe('changed');
+    expect(shareStatus('forehead', { ...shared, id: 'movies' }, undefined)).toBe('off');
+  });
+
+  it('says why a pack cannot go to the library as it is', () => {
+    expect(shareProblem('forehead', own)).toBeNull();
+    expect(shareProblem('forehead', { ...own, name: ' ' })).toBe('Give the pack a name first.');
+    expect(shareProblem('forehead', { ...own, words: [] })).toBe('Add at least one word first.');
+    expect(shareProblem('forehead', { ...own, words: Array.from({ length: 401 }, (_, i) => `Word ${i}`) })).toBe('Too big for the Community library: 400 words at most.');
+    expect(shareProblem('quick', { id: 'my-q', name: 'Q', blurb: '', prompts: Array.from({ length: 380 }, (_, i) => `${i} ${'y'.repeat(190)}`) })).toBe('Too big for the Community library: 64 KB at most.');
+    expect(shareProblem('quiz', board('Folded, crunchy shell.'))).toBeNull();
+    expect(shareProblem('quiz', board(' '))).toBe('Fill the empty tile first.');
+  });
+
+  it('sends and fingerprints the pack as saved, not as an editor shows it, and marks only the saved pack', async () => {
+    settings.wizardPass = PASS;
+    const fetch = server();
+    customDecks.put({ ...own, id: 'my-saved-deck', name: 'Hand made' });
+    customDecks.put({ ...own, id: 'my-other-deck', name: 'Other' }); // on top, so the order shows
+    const onScreen = { ...own, id: 'my-saved-deck', name: 'Hand made  ', words: ['Not saved yet'] };
+    expect(shareStatusNow('forehead', onScreen.id)).toBe('new');
+    expect((await publishPack('forehead', onScreen)).ok).toBe(true);
+    expect(sentBody(fetch)).toMatchObject({ name: 'Hand made', items: ['Shrek', 'Pizza'], localId: 'my-saved-deck' });
+    expect((await shareByHand('forehead', 'my-saved-deck')).ok).toBe(true);
+    expect(customDecks.all().map((d) => [d.id, d.shared])).toEqual([['my-other-deck', undefined], ['my-saved-deck', true]]);
+    expect(saved('my-saved-deck')).toMatchObject({ name: 'Hand made', words: ['Shrek', 'Pizza'] });
+    expect(shareStatusNow('forehead', 'my-saved-deck')).toBe('current');
+    customDecks.put({ ...saved('my-saved-deck')!, words: ['Shrek'] });
+    expect(shareStatusNow('forehead', 'my-saved-deck')).toBe('changed');
+  });
+
+  it('leaves a pack deleted while its share was on its way deleted, and an edit made meanwhile kept', async () => {
+    settings.wizardPass = PASS;
+    customDecks.put({ ...own, id: 'my-gone-deck' });
+    let slow = slowServer();
+    const gone = shareByHand('forehead', 'my-gone-deck');
+    expect(shareStatusNow('forehead', 'my-gone-deck')).toBe('sending');
+    customDecks.remove('my-gone-deck');
+    slow.answer();
+    expect((await gone).ok).toBe(true);
+    expect(saved('my-gone-deck')).toBeUndefined();
+
+    customDecks.put({ ...own, id: 'my-busy-deck' });
+    slow = slowServer();
+    const busy = shareByHand('forehead', 'my-busy-deck');
+    customDecks.put({ ...own, id: 'my-busy-deck', words: ['Edited meanwhile'] });
+    slow.answer();
+    await busy;
+    expect(saved('my-busy-deck')).toMatchObject({ words: ['Edited meanwhile'], shared: true });
+    expect(shareStatusNow('forehead', 'my-busy-deck')).toBe('changed');
+  });
+
+  it('never claims a wizard pack is in the library before the library took it', async () => {
+    settings.wizardPass = PASS;
+    const wizard = afterRun<WordDeck>({ id: 'my-wizard-deck', name: 'Wizard', emoji: '✨', blurb: '', words: ['Shrek'] }, true, true);
+    customDecks.put(wizard);
+    const slow = slowServer();
+    const going = shareWizardPack('forehead', wizard, true);
+    expect(shareStatusNow('forehead', wizard.id)).toBe('sending');
+    slow.answer();
+    expect(await going).toBe(true);
+    expect(shareStatusNow('forehead', wizard.id)).toBe('current');
+
+    const offline = afterRun<WordDeck>({ ...wizard, id: 'my-offline-deck' }, true, true);
+    customDecks.put(offline);
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('offline'); }));
+    expect(await shareWizardPack('forehead', offline, true)).toBe(false);
+    expect(shareStatusNow('forehead', offline.id)).toBe('unsent');
+  });
+
+  it("keeps the library's id for a pack moved off a new built-in's id, so a share updates the same entry", async () => {
+    settings.wizardPass = PASS;
+    const fetch = server();
+    // Shared under an id a later app version gives a built-in pack: the own pack moves to 'my-movies'.
+    const early = { ...own, id: 'movies', shared: true };
+    localStorage.setItem('hr:custom:decks', JSON.stringify([early]));
+    noteShared('forehead', 'movies', { print: packPrint('forehead', early), localId: 'movies' });
+    expect(customDecks.all().map((d) => d.id)).toEqual(['my-movies']);
+    expect([lastShared('forehead', 'movies'), lastShared('forehead', 'my-movies')?.localId]).toEqual([undefined, 'movies']);
+    expect(shareStatusNow('forehead', 'my-movies')).toBe('current');
+    expect((await shareByHand('forehead', 'my-movies')).ok).toBe(true);
+    expect(sentBody(fetch).localId).toBe('movies');
+  });
+
+  it('says what went wrong in plain words', async () => {
+    settings.wizardPass = PASS;
+    customDecks.put({ ...own, id: 'my-refused-deck' });
+    server(() => new Response('', { status: 429 }));
+    expect(await shareByHand('forehead', 'my-refused-deck')).toEqual({ ok: false, reason: 'limited' });
+    expect(shareStatusNow('forehead', 'my-refused-deck')).toBe('new');
+    expect(saved('my-refused-deck')?.shared).toBeUndefined();
+    expect(failureWords('limited', 'share')).toMatch(/today/);
+    server(() => new Response('', { status: 413 }));
+    expect(await shareByHand('forehead', 'my-refused-deck')).toEqual({ ok: false, reason: 'big' });
+    expect(failureWords('big', 'share')).toMatch(/too big.*64 KB/);
+    expect(failureWords('pass', 'share')).toBe("Fizzwick's pass ran out. Say the magic words again to share packs.");
+    expect(await shareByHand('forehead', 'my-no-such-deck')).toEqual({ ok: false, reason: 'missing' });
+    expect(failureWords('missing', 'share')).toBe('This pack is no longer on this phone.');
   });
 });

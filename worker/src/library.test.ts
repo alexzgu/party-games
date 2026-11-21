@@ -1,6 +1,7 @@
 // What a published pack may hold and what a list request may ask, without the server around them.
 import { describe, expect, it } from 'vitest';
 import { checkList, checkPublish, LIBRARY } from './library';
+import { SHAPE } from '../../src/lib/libraryShape';
 
 const pack = (over: Record<string, unknown> = {}) => JSON.stringify({ game: 'forehead', name: 'Cartoons', blurb: 'Saturday mornings', localId: 'my-cartoons', items: ['SpongeBob', 'Shrek'], ...over });
 const problem = (over: Record<string, unknown>) => {
@@ -85,6 +86,8 @@ describe('checkPublish', () => {
     expect(problem({ items: [...many, 'One more'] })).toMatch(/at most 400 items/);
     const long = Array.from({ length: 380 }, (_, i) => `${i} ${'y'.repeat(190)}`);
     expect(problem({ game: 'quick', items: long })).toMatch(/limited to 64 KB/);
+    // The phone checks the same caps before a player shares a pack by hand (src/lib/library.ts shareProblem).
+    expect([SHAPE.itemsMax, SHAPE.bytesMax]).toEqual([LIBRARY.itemsMax, LIBRARY.itemsBytes]);
   });
 });
 

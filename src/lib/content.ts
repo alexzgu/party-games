@@ -1,17 +1,30 @@
 // Built-in packs (bundled JSON, precached for offline play) merged with packs players
 // make or edit on the phone (saved in localStorage). An edit of a built-in replaces it in place.
 import { load, save } from './storage';
+import { moveShared } from './shareLog.svelte';
 import type { Secret } from '../games/salad/words';
 
-export interface WordDeck { id: string; name: string; emoji: string; blurb: string; words: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
+/** What a pack saved on this phone carries beside its content; pack files never carry it. */
+export interface PackMeta {
+  /** The player's own pack, not an edit of a built-in. */
+  custom?: boolean;
+  /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */
+  added?: string;
+  /** Shared to the Community library: by the wizard (src/lib/library.ts `afterRun`) or with Share. */
+  shared?: boolean;
+  /** Imported from the Community library, so it is someone else's shared pack and never shared again from here. */
+  fromLibrary?: boolean;
+}
+
+export interface WordDeck extends PackMeta { id: string; name: string; emoji: string; blurb: string; words: string[] }
 export interface Spectrum { left: string; right: string }
-export interface SpectrumPack { id: string; name: string; blurb: string; cards: Spectrum[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
+export interface SpectrumPack extends PackMeta { id: string; name: string; blurb: string; cards: Spectrum[] }
 export interface GibberishCard { phrase: string; answer: string; hint: string }
-export interface GibberishPack { id: string; name: string; blurb: string; cards: GibberishCard[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
+export interface GibberishPack extends PackMeta { id: string; name: string; blurb: string; cards: GibberishCard[] }
 export interface QuizClue { clue: string; answer: string }
 /** One column of a Big Board: its clues run easiest (top row) to hardest. */
 export interface QuizCategory { name: string; clues: QuizClue[] }
-export interface QuizBoard { id: string; name: string; blurb: string; categories: QuizCategory[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
+export interface QuizBoard extends PackMeta { id: string; name: string; blurb: string; categories: QuizCategory[] }
 
 const wordFiles = import.meta.glob<WordDeck>('../content/forehead/*.json', { eager: true, import: 'default' });
 const gibberishFiles = import.meta.glob<GibberishPack>('../content/gibberish/*.json', { eager: true, import: 'default' });
@@ -38,15 +51,17 @@ const builtinSpectra = ordered(Object.values(dialFiles).flatMap((f) => ('packs' 
  * Packs saved on this phone. A pack whose id matches a built-in is an edit of that built-in:
  * it replaces it everywhere until restored. Any other id is the player's own pack (`custom`).
  */
-function customStore<T extends { id: string; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }>(key: string, builtin: T[]) {
+function customStore<T extends { id: string } & PackMeta>(key: string, builtin: T[], game: string) {
   const builtinIds = new Set(builtin.map((b) => b.id));
   // An own pack (custom: true) whose id a later built-in also uses stays the player's own,
-  // under a new id, so it is never mistaken for an edit and "restored" away.
+  // under a new id, so it is never mistaken for an edit and "restored" away. What the Community
+  // library knows of it goes with it (shareLog.svelte.ts), so a later share updates the same entry.
   const stored = (): T[] => {
     const items = load<T[]>(key, []);
     if (!items.some((x) => x.custom && builtinIds.has(x.id))) return items;
     const moved = items.map((x) => (x.custom && builtinIds.has(x.id) ? { ...x, id: 'my-' + x.id } : x));
     save(key, moved);
+    for (const x of items) if (x.custom && builtinIds.has(x.id)) moveShared(game, x.id, 'my-' + x.id);
     return moved;
   };
   return {
@@ -61,6 +76,16 @@ function customStore<T extends { id: string; custom?: boolean; /** When the pack
       // Only the player's own pack can be marked shared, never an edit of a built-in.
       const { shared, ...rest } = item;
       save(key, [{ ...rest, custom: own, ...(added ? { added } : {}), ...(own && shared === true ? { shared } : {}) }, ...items]);
+    },
+    /**
+     * Marks the player's own saved pack as shared to the Community library, in place and with
+     * nothing else changed; false when there is no such pack (deleted meanwhile, or a built-in).
+     */
+    markShared(id: string): boolean {
+      const items = stored();
+      if (builtinIds.has(id) || !items.some((x) => x.id === id)) return false;
+      save(key, items.map((x) => (x.id === id ? { ...x, shared: true } : x)));
+      return true;
     },
     remove(id: string) {
       save(key, stored().filter((x) => x.id !== id));
@@ -87,10 +112,10 @@ function merged<T extends { id: string }>(saved: T[], builtin: T[]): T[] {
   return [...own, ...builtin.map((b) => byId.get(b.id) ?? b)];
 }
 
-export const customDecks = customStore<WordDeck>('custom:decks', builtinDecks);
-export const customSpectra = customStore<SpectrumPack>('custom:spectra', builtinSpectra);
-export const customGibberish = customStore<GibberishPack>('custom:gibberish', builtinGibberish);
-export const customQuiz = customStore<QuizBoard>('custom:quiz', builtinQuiz);
+export const customDecks = customStore<WordDeck>('custom:decks', builtinDecks, 'forehead');
+export const customSpectra = customStore<SpectrumPack>('custom:spectra', builtinSpectra, 'dial');
+export const customGibberish = customStore<GibberishPack>('custom:gibberish', builtinGibberish, 'gibberish');
+export const customQuiz = customStore<QuizBoard>('custom:quiz', builtinQuiz, 'quiz');
 
 /** Every pack: the player's own first, then built-ins (edited versions where edited), in order. */
 export const wordDecks = (): WordDeck[] => merged(customDecks.saved(), builtinDecks);
@@ -125,32 +150,32 @@ export function dedupe(words: string[]): string[] {
 
 // Don't Say It (taboo): each card is a word to describe and the five words the describer may not say.
 export interface TabooCard { word: string; banned: string[] }
-export interface TabooPack { id: string; name: string; blurb: string; cards: TabooCard[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
+export interface TabooPack extends PackMeta { id: string; name: string; blurb: string; cards: TabooCard[] }
 const tabooFiles = import.meta.glob<TabooPack>('../content/taboo/*.json', { eager: true, import: 'default' });
 const builtinTaboo = ordered(Object.values(tabooFiles), ['classic', 'pop-culture', 'after-dark']);
-export const customTaboo = customStore<TabooPack>('custom:taboo', builtinTaboo);
+export const customTaboo = customStore<TabooPack>('custom:taboo', builtinTaboo, 'taboo');
 export const tabooPacks = (): TabooPack[] => merged(customTaboo.saved(), builtinTaboo);
 
 // Brain Freeze: "Name 3 …" prompts, stored without the lead-in ("things you'd find in a fridge").
-export interface QuickPack { id: string; name: string; blurb: string; prompts: string[]; custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
+export interface QuickPack extends PackMeta { id: string; name: string; blurb: string; prompts: string[] }
 const quickFiles = import.meta.glob<QuickPack>('../content/quick/*.json', { eager: true, import: 'default' });
 const builtinQuick = ordered(Object.values(quickFiles), ['classic', 'pop-culture', 'after-dark']);
-export const customQuick = customStore<QuickPack>('custom:quick', builtinQuick);
+export const customQuick = customStore<QuickPack>('custom:quick', builtinQuick, 'quick');
 export const quickPacks = (): QuickPack[] => merged(customQuick.saved(), builtinQuick);
 
 // Snark Tank: prompts players write funny answers to ("The worst thing to hear from your pilot").
 /** A final for three-line duels: a prompt that asks for three things, and the house's own three lines. */
 export interface SnarkFinal { prompt: string; house: [string, string, string] }
-export interface SnarkPack {
+export interface SnarkPack extends PackMeta {
   id: string; name: string; blurb: string; prompts: string[];
   /** Prompt → a stock answer for "Give me one" (sent untouched, it earns half points). */
   safety?: Record<string, string>;
   /** Finals for three-line duels. */
   finals?: SnarkFinal[];
-  custom?: boolean; /** When the pack was made (ISO date or time); built-ins without one count as the oldest. */ added?: string; /** Shared to the Community library (src/lib/library.ts `afterRun`). */ shared?: boolean }
+}
 const snarkFiles = import.meta.glob<SnarkPack>('../content/snark/*.json', { eager: true, import: 'default' });
 const builtinSnark = ordered(Object.values(snarkFiles), ['classic', 'after-dark']);
-export const customSnark = customStore<SnarkPack>('custom:snark', builtinSnark);
+export const customSnark = customStore<SnarkPack>('custom:snark', builtinSnark, 'snark');
 export const snarkPacks = (): SnarkPack[] => merged(customSnark.saved(), builtinSnark);
 
 /** Word Salad packs are bundled with the game and selected in host settings. */

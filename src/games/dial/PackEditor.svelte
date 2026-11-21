@@ -5,6 +5,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
+  import SharePack from '../../components/SharePack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import AddMore from '../../components/AddMore.svelte';
@@ -135,7 +136,7 @@
   </AddMore>
 {:else}
 <Screen title={pack ? pack.name : 'Pack not found'} accent="var(--c-dial)" {onback}>
-  {#if pack?.shared}<p class="muted">Shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it.</p>{/if}
+  {#if pack?.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
   {#if !pack}
     <p class="muted">This pack is no longer on this phone.</p>
   {:else}
@@ -148,6 +149,7 @@
       {#if !builtin}<span class="tag">yours</span>{:else if edited}<span class="tag hot">edited</span>{:else}<span class="tag">built-in</span>{/if}
     </p>
     <ExportPack game="dial" {pack} />
+    <SharePack game="dial" {pack} onshared={() => (pack = pack && { ...pack, shared: true })} />
 
     <form class="add" onsubmit={add}>
       <div class="pair">

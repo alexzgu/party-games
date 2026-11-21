@@ -1,13 +1,15 @@
 // The Community library on the wizard server (worker/src/libraryRoutes.ts): packs Fizzwick made
-// for friends, shared automatically from phones with a magic-words pass. Anyone can browse,
-// preview and import; starring needs a pass. Everything fetched is rebuilt field by field
+// for friends, shared automatically from phones with a magic-words pass, and the phone's own packs
+// a player shares with "Share to Community". Anyone can browse, preview and import; sharing by
+// hand and starring need a pass. Everything fetched is rebuilt field by field
 // (libraryShape.ts) before it is shown or kept; an imported pack then goes through the pack-file
 // checks (packfile.ts), so it is saved exactly like a pack file.
 import type { PackGameId } from '../app.config';
 import { slugify } from './content';
 import { viaPass } from './claude';
-import { cleanExtra, cleanItems, text } from './libraryShape';
-import { builtinPacks, FORMAT, isBuiltinPack, itemsField, packParts, readFile, savePacks, type AnyPack, type ImportResult } from './packfile';
+import { cleanExtra, cleanItems, itemCount, SHAPE, text } from './libraryShape';
+import { builtinPacks, FORMAT, isBuiltinPack, itemsField, markPackShared, ownPack, packParts, readFile, savePacks, unitOf, type AnyPack, type ImportResult } from './packfile';
+import { isSending, lastShared, noteShared, setSending, type SharedRecord } from './shareLog.svelte';
 import { saveSettings, settings } from './settings.svelte';
 import { getUsername } from './username';
 import { cleanUsername } from './usernameShape';
@@ -16,6 +18,7 @@ import { cardId as spectrumKey } from '../games/dial/state';
 import { answerKey } from '../games/gibberish/parse';
 import { promptKey } from '../games/quick/logic';
 import { cardId as tabooKey } from '../games/taboo/cards';
+import { emptyTiles } from '../games/quiz/board';
 
 /**
  * Games with a Community entry in their pack list and whose wizard packs are shared. Adding a
@@ -76,7 +79,7 @@ export interface LibraryFull extends LibraryPack {
 }
 
 export type Sort = 'stars' | 'new';
-export type Failure = 'offline' | 'server' | 'missing' | 'pass' | 'limited' | 'broken';
+export type Failure = 'offline' | 'server' | 'missing' | 'pass' | 'limited' | 'big' | 'broken';
 export type Got<T> = ({ ok: true } & T) | { ok: false; reason: Failure };
 
 async function call(path: string, init: RequestInit = {}, withPass = false, server = WIZARD_SERVER): Promise<Got<{ body: Record<string, unknown> }>> {
@@ -96,7 +99,7 @@ async function call(path: string, init: RequestInit = {}, withPass = false, serv
       settings.wizardPass = '';
       saveSettings();
     }
-    const reason: Failure = res.status === 401 ? 'pass' : res.status === 404 ? 'missing' : res.status === 429 ? 'limited' : res.status >= 500 ? 'server' : 'broken';
+    const reason: Failure = res.status === 401 ? 'pass' : res.status === 404 ? 'missing' : res.status === 429 ? 'limited' : res.status === 413 ? 'big' : res.status >= 500 ? 'server' : 'broken';
     return { ok: false, reason };
   }
   const body = await res.json().catch(() => null);
@@ -147,12 +150,106 @@ export async function starPack(id: string, on: boolean): Promise<Got<{ stars: nu
   return r.ok ? { ok: true, stars: num(r.body.stars), starred: r.body.starred === true } : r;
 }
 
-/** Publishes the whole pack with this phone's username; the same pass and pack id update the entry it made before. */
-export async function publishPack(game: PackGameId, pack: AnyPack): Promise<Got<{ id: string }>> {
+/** What of a pack goes to the library: its name, description, items and the fields beside them. */
+function contentOf(game: PackGameId, pack: AnyPack) {
+  return { name: pack.name.slice(0, 60), blurb: pack.blurb.slice(0, 140), ...packParts(game, pack) };
+}
+
+/**
+ * Publishes the whole pack with this phone's username: the version saved on this phone when there
+ * is one (what an editor shows may not be saved as it is yet), else `pack` as given. The same
+ * pass, game and id update the entry made before; a pack whose id changed since keeps the id the
+ * library knows. While it is on its way the pack counts as sending; once the server takes it,
+ * what was sent is noted (`packPrint`), so the pack's editor can tell when it has changed since,
+ * and with `mark` the saved pack is marked shared (`markPackShared`) in the same step.
+ */
+export async function publishPack(game: PackGameId, pack: AnyPack, mark = false): Promise<Got<{ id: string }>> {
+  const sent = ownPack(game, pack.id) ?? pack;
+  const localId = lastShared(game, sent.id)?.localId ?? sent.id;
+  const body = { game, ...contentOf(game, sent), localId, username: getUsername() };
+  setSending(game, sent.id, true);
+  let r: Awaited<ReturnType<typeof call>>;
+  try {
+    r = await call('/library/packs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, true);
+  } finally {
+    setSending(game, sent.id, false);
+  }
+  if (!r.ok) return r;
+  if (mark) markPackShared(game, sent.id);
+  noteShared(game, sent.id, { print: packPrint(game, sent), localId });
+  return { ok: true, id: String(r.body.id) };
+}
+
+/** A short fingerprint of what of `pack` the library gets: equal prints, same shared version. */
+export function packPrint(game: PackGameId, pack: AnyPack): string {
+  const s = JSON.stringify(contentOf(game, pack));
+  let h = 0x811c9dc5; // FNV-1a, 32 bits
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
+  return `${s.length.toString(36)}.${(h >>> 0).toString(36)}`;
+}
+
+// ---- Sharing a pack by hand ("Share to Community" in a pack editor)
+
+/**
+ * True for a pack a player may share by hand: their own pack, saved on this phone, in a game
+ * with the library. Never a built-in pack or an edit of one, and never one imported from the
+ * Community library (it is there already). Pasted, hand-made, wizard-made and file-imported
+ * packs all qualify.
+ */
+export const canShare = (game: string, pack: AnyPack): boolean =>
+  libraryOn(game) && !!pack.id && !isBuiltinPack(game, pack.id) && pack.fromLibrary !== true;
+
+export type ShareStatus = 'off' | 'sending' | 'new' | 'unsent' | 'current' | 'changed';
+
+/**
+ * Where a saved pack stands with the library, from what this phone knows: `off` (it cannot be
+ * shared), `sending` (on its way now), `new` (never marked for sharing: the first share asks
+ * first), `unsent` (marked, by the wizard or an earlier share, but this phone has no record of the
+ * library taking it: an automatic share failed, or it was shared before records were kept),
+ * `current` (the version the library took) or `changed` (taken, then changed).
+ * `last` is the record of what the library last took (`lastShared`).
+ */
+export function shareStatus(game: string, pack: AnyPack, last: SharedRecord | undefined, sending = false): ShareStatus {
+  if (!canShare(game, pack)) return 'off';
+  if (sending) return 'sending';
+  if (pack.shared !== true) return 'new';
+  if (!last) return 'unsent';
+  return last.print === packPrint(game as PackGameId, pack) ? 'current' : 'changed';
+}
+
+/** `shareStatus` of the pack as saved on this phone (`off` when it is not one of its own saved packs). */
+export function shareStatusNow(game: PackGameId, id: string): ShareStatus {
+  const saved = ownPack(game, id);
+  return saved ? shareStatus(game, saved, lastShared(game, id), isSending(game, id)) : 'off';
+}
+
+/**
+ * Shares the player's own saved pack by hand (`canShare`), as saved, and once the library takes
+ * it marks the saved pack shared, changing nothing else: a pack deleted meanwhile stays deleted.
+ */
+export async function shareByHand(game: PackGameId, id: string): Promise<Got<{ id: string }>> {
+  const saved = ownPack(game, id);
+  if (!saved || !canShare(game, saved)) return { ok: false, reason: 'missing' };
+  return publishPack(game, saved, true);
+}
+
+/**
+ * Why the pack cannot go to the library as it is, in plain words, or null: the library's own
+ * rules (libraryShape.ts, the ones the server stores by) and a Big Board's empty tiles.
+ */
+export function shareProblem(game: PackGameId, pack: AnyPack): string | null {
+  if (!pack.name.trim()) return 'Give the pack a name first.';
+  const gaps = game === 'quiz' ? emptyTiles(pack as Parameters<typeof emptyTiles>[0]).length : 0;
+  if (gaps) return `Fill the ${gaps === 1 ? 'empty tile' : `${gaps} empty tiles`} first.`;
   const { items, extra } = packParts(game, pack);
-  const body = { game, name: pack.name.slice(0, 60), blurb: pack.blurb.slice(0, 140), localId: pack.id, items, extra, username: getUsername() };
-  const r = await call('/library/packs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, true);
-  return r.ok ? { ok: true, id: String(r.body.id) } : r;
+  const unit = unitOf(game);
+  if (!items.length || (game === 'quiz' && !itemCount(game, items))) return `Add at least one ${unitOf(game, 1)} first.`;
+  if (game !== 'quiz' && items.length > SHAPE.itemsMax) return `Too big for the Community library: ${SHAPE.itemsMax} ${unit} at most.`;
+  if ('problem' in cleanItems(game, items)) return `Some ${unit} are too long for the Community library.`;
+  if (new TextEncoder().encode(JSON.stringify({ items, extra })).length > SHAPE.bytesMax) {
+    return `Too big for the Community library: ${SHAPE.bytesMax / 1024} KB at most.`;
+  }
+  return null;
 }
 
 // ---- Sharing what the wizard made
@@ -170,7 +267,8 @@ export function onLibraryNote(fn: (note: string) => void): () => void {
  * (`afterRun`) and `byPass`: this run went through a magic-words pass. Anything made with the
  * host's own key or an invite link, now or in an earlier run, keeps it private even once the
  * phone has a pass. Nothing happens either for a game without the library or a built-in pack.
- * Call it after saving and don't wait for it: it never throws; a failure only shows a small note.
+ * Call it after saving (the saved version is what goes) and don't wait for it: it never throws;
+ * a failure only shows a small note, and the pack's editor then offers to share it.
  */
 export async function shareWizardPack(game: PackGameId, pack: AnyPack, byPass: boolean): Promise<boolean> {
   if (pack.shared !== true || !byPass || !hasPass() || !libraryOn(game) || isBuiltinPack(game, pack.id)) return false;
@@ -211,14 +309,17 @@ export function withoutBuiltins(game: PackGameId, pack: AnyPack): { pack: AnyPac
 
 /**
  * Saves a library pack on this phone as the player's own: read like a pack file (each item
- * checked and tidied by its game's own rules), then without what a built-in pack already has.
+ * checked and tidied by its game's own rules), then without what a built-in pack already has,
+ * marked `fromLibrary`.
  */
 export function importLibraryPack(game: PackGameId, pack: LibraryFull): ImportResult {
   const keep = game === 'forehead' ? { emoji: pack.extra.emoji } : game === 'snark' ? { safety: pack.extra.safety, finals: pack.extra.finals } : {};
   const file = { jerkBox: FORMAT, game, packs: [{ id: slugify(pack.name) || 'community-pack', name: pack.name, blurb: pack.blurb, ...keep, [itemsField(game)]: pack.items }] };
   const read = readFile(JSON.stringify(file), game);
   if ('error' in read) return read;
-  const { pack: clean, dropped } = withoutBuiltins(game, read.packs[0]);
+  const { pack: tidied, dropped } = withoutBuiltins(game, read.packs[0]);
+  // Marked as the library's, so it is never shared again from this phone.
+  const clean = { ...tidied, fromLibrary: true };
   if (!(clean as unknown as Record<string, unknown[]>)[itemsField(game)].length) {
     return { error: dropped ? 'Everything in this pack is already in the built-in packs.' : 'This pack has nothing in it.' };
   }
@@ -226,11 +327,14 @@ export function importLibraryPack(game: PackGameId, pack: LibraryFull): ImportRe
   return { saved: savePacks(game, [clean]), skipped: read.skipped, problems };
 }
 
-/** What a failed library call means, in plain words. */
-export function failureWords(reason: Failure): string {
+/** What a failed library call means, in plain words; `doing` says what the player was doing. */
+export function failureWords(reason: Failure, doing: 'star' | 'share' = 'star'): string {
   if (reason === 'offline') return "Couldn't reach the Community library. Check the internet and try again.";
-  if (reason === 'missing') return 'That pack is no longer in the library.';
-  if (reason === 'pass') return "Fizzwick's pass ran out. Say the magic words again to star packs.";
-  if (reason === 'limited') return 'The library is busy. Try again later.';
+  if (reason === 'missing') return doing === 'share' ? 'This pack is no longer on this phone.' : 'That pack is no longer in the library.';
+  if (reason === 'pass') return `Fizzwick's pass ran out. Say the magic words again to ${doing} packs.`;
+  // A share is refused with 429 only at the daily caps (one pass's, or everyone's together).
+  if (reason === 'limited') return doing === 'share' ? "That's all the sharing the library takes for today. Try again tomorrow." : 'The library is busy. Try again later.';
+  if (reason === 'big') return `This pack is too big for the Community library: ${SHAPE.bytesMax / 1024} KB at most.`;
+  if (reason === 'broken' && doing === 'share') return "The Community library couldn't take this pack as it is.";
   return 'The Community library is having trouble. Try again in a little while.';
 }

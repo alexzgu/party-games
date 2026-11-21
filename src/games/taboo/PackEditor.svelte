@@ -7,6 +7,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
+  import SharePack from '../../components/SharePack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import CardForm from './CardForm.svelte';
@@ -173,7 +174,7 @@
   </AddMore>
 {:else}
 <Screen title={pack ? (pack.id ? pack.name : 'Make a pack') : 'Pack not found'} accent="var(--c-taboo)" {onback}>
-  {#if pack?.shared}<p class="muted">Shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it.</p>{/if}
+  {#if pack?.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
   {#if pack && !pack.id && !reviewing}
     <Segmented label="How to make it" options={MODES} bind:value={mode} />
   {/if}
@@ -191,6 +192,7 @@
       {#if !builtin}<span class="tag">{pack.id ? 'yours' : 'new'}</span>{:else if edited}<span class="tag hot">edited</span>{:else}<span class="tag">built-in</span>{/if}
     </p>
     {#if pack.id}<ExportPack game="taboo" {pack} />{/if}
+    {#if pack.id}<SharePack game="taboo" {pack} onshared={() => (pack = pack && { ...pack, shared: true })} />{/if}
 
     <div class="add">
       <div class="add-head">

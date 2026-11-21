@@ -2,6 +2,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
+  import SharePack from '../../components/SharePack.svelte';
   import Popup from '../../components/Popup.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import AddMore from '../../components/AddMore.svelte';
@@ -127,7 +128,7 @@
     <p class="muted">This pack is no longer on this device.</p>
   {:else}
     <div class="about">
-      <p class="muted">{#if builtin}Comes with the app{edited ? ' · edited on this device' : ''}{:else if pack?.shared}Your pack, shared in the Community library: edits you make here are shared too the next time Fizzwick adds to it{:else}Your pack, on this device only{/if}</p>
+      <p class="muted">{#if builtin}Comes with the app{edited ? ' · edited on this device' : ''}{:else if pack?.shared}Your pack, shared in the Community library: edits go out when you tap Share changes or Fizzwick adds to it{:else}Your pack, on this device only{/if}</p>
       {#if builtin && edited}
         <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
       {:else if !builtin}
@@ -135,6 +136,7 @@
       {/if}
     </div>
     <ExportPack game="snark" {pack} />
+    <SharePack game="snark" {pack} onshared={() => { if (pack) pack.shared = true; }} />
     {#if !builtin && missing}
       <div class="fill">
         <p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer, so “Give me one” can't help there.</p>

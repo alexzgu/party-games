@@ -8,6 +8,8 @@ import { isIcon } from './icon';
 export const SHAPE = {
   /** Items in one pack, at most (Big Board: its tiles, at most 8 × 10 anyway). */
   itemsMax: 400,
+  /** A pack's items and the fields beside them as JSON, in bytes, at most (the server's LIBRARY.itemsBytes). */
+  bytesMax: 64 * 1024,
   quizCategories: 8,
   quizClues: 10,
   tabooBanned: 10,
