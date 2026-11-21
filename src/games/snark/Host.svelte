@@ -2,7 +2,7 @@
   // The host screen: a top bar (back, round, room code, pause, skip, rules, end) over the
   // current step. Works as a TV/laptop screen and as a phone on the table.
   import { onMount } from 'svelte';
-  import { route, go } from '../../lib/router.svelte';
+  import { route, go, back } from '../../lib/router.svelte';
   import { keepAwake } from '../../lib/wakelock';
   import { sfx } from '../../lib/sound';
   import HowTo from '../../components/HowTo.svelte';
@@ -80,7 +80,7 @@
     confirmEnd = false;
     if (fixed) return;
     host.end();
-    go('/snark', true);
+    back('/snark');
   }
 
   const timed = $derived(!!game && (game.deadline !== null || game.paused !== null));
@@ -94,7 +94,7 @@
 
 <div class="host">
   <header class="bar">
-    <button class="icon back" aria-label="Back to Snark Tank (the room stays open)" onclick={() => go('/snark')}>
+    <button class="icon back" aria-label="Back to Snark Tank (the room stays open)" onclick={() => back('/snark')}>
       <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <div class="where">

@@ -39,7 +39,7 @@
     if (!deck.name.trim() && deck.words.length === 0) return;
     if (!deck.id) {
       deck.id = 'my-' + slugify(deck.name || 'deck') + '-' + Date.now().toString(36);
-      history.replaceState(null, '', '#/forehead/deck?id=' + encodeURIComponent(deck.id));
+      history.replaceState(history.state, '', '#/forehead/deck?id=' + encodeURIComponent(deck.id)); // keeps the router's step count
     }
     customDecks.put({ ...$state.snapshot(deck), name: deck.name.trim() || 'My pack' });
     edited = builtin;

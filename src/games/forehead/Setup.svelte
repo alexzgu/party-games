@@ -7,7 +7,7 @@
   import ListTools from '../../components/ListTools.svelte';
   import type { SortKey } from '../../lib/listing';
   import { customDecks, wordDecks } from '../../lib/content';
-  import { go } from '../../lib/router.svelte';
+  import { back, go } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
   import { prefs, savePrefs, selectedDecks, type Input } from './state.svelte';
@@ -57,7 +57,7 @@
   );
 </script>
 
-<Screen title={gameName('forehead')} accent="var(--c-forehead)" onback={() => go('/')}>
+<Screen title={gameName('forehead')} accent="var(--c-forehead)" onback={() => back('/')}>
   {#snippet trailing()}
     <HowTo>
       <ol>

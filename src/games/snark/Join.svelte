@@ -5,7 +5,7 @@
   import HowTo from '../../components/HowTo.svelte';
   import Rules from './Rules.svelte';
   import Connection from '../../components/room/Connection.svelte';
-  import { go } from '../../lib/router.svelte';
+  import { back } from '../../lib/router.svelte';
   import { phone } from './player.svelte';
   import { CODE_LENGTH, cleanCode } from '../../lib/room/code';
   import { NAME_MAX, cleanName } from './logic';
@@ -31,7 +31,7 @@
   }
 </script>
 
-<Screen title="Join {gameName('snark')}" onback={() => { phone.leave(); go('/snark', true); }}>
+<Screen title="Join {gameName('snark')}" onback={() => { phone.leave(); back('/snark'); }}>
   {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
   <form class="join" onsubmit={join}>
     {#if stopped}<p class="stopped pop-in" role="alert">{stopped}</p>{/if}

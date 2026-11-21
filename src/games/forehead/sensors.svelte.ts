@@ -2,21 +2,29 @@
 // sign fix learned while the player is still looking at the Start screen, the upright edge for the
 // people facing the phone, and Android's fullscreen + landscape lock.
 import {
-  requestMotion, watchMotion, screenAngle, toScreen, axisSignFromLookingAt, rotationFor,
-  upEdge, UprightTracker, type Gravity,
+  requestMotion, watchMotion, screenAngle, toScreen, axisSignFromLookingAt, stageTurn,
+  upEdge, UprightTracker, offsetFromReading, offsetAfterTurn, quarterTurn, type Gravity,
 } from '../../lib/motion';
 import { load, save } from '../../lib/storage';
 import { PitchTracker, GYRO_LAYOUTS, likelyLayout, type GyroLayout, type MotionSample } from '../../lib/pitch';
 
 export const motion = $state({
   live: false, denied: false, angle: screenAngle() as number, edge: 0 as 0 | 90 | 180 | 270,
+  /** Where the page's top sits against the browser's angle (see offsetFromReading); it survives reloads. */
+  offset: quarterTurn(Number(load<number>('forehead:pageOffset', 0)) || 0) as number,
   /** The rotation sensor: absent, present but its layout not yet learned, or in use. */
   gyro: 'none' as 'none' | 'learning' | 'learned',
 });
 
 /** CSS rotation for the play screen so it reads upright for the viewers. */
 export function stageRotation(): 0 | 90 | -90 | 180 {
-  return motion.live ? rotationFor(motion.edge, motion.angle) : 0;
+  return motion.live ? stageTurn(motion.edge, motion.angle, motion.offset) : 0;
+}
+
+function setOffset(o: number): void {
+  if (o === motion.offset) return;
+  motion.offset = o;
+  save('forehead:pageOffset', o);
 }
 
 /** The phone's pitch, read once per motion sample by every listener (see src/lib/pitch.ts). */
@@ -66,26 +74,45 @@ function readingSign(mean: Gravity, spread: number): 1 | -1 | null {
   return pose && g >= STILL_G[0] && g <= STILL_G[1] ? s : null;
 }
 
-/** Page-frame gravity over the first SIGN_SAMPLE_MS of a stream: its mean and how much it wandered. */
+/**
+ * Gravity over the first SIGN_SAMPLE_MS of a stream, in the page frame and as read: its mean and
+ * how much it wandered. `angle` is the page's angle at the tap, the page the player was reading:
+ * the landscape lock the same tap asks for may turn the page before the first reading arrives,
+ * while the phone is still held the way it was read.
+ */
 class SignWindow {
   private from: number | null = null;
   private n = 0;
   private sum: Gravity = [0, 0, 0];
+  private rawSum: Gravity = [0, 0, 0];
   private squares = 0;
 
-  /** Adds a reading; true once the window is full. */
-  add(p: Gravity, t: number): boolean {
+  constructor(readonly angle: number) {}
+
+  /** Adds a reading as read; true once the window is full. */
+  add(raw: Gravity, t: number): boolean {
     this.from ??= t;
     this.n++;
-    for (let i = 0; i < 3; i++) this.sum[i] += p[i];
+    const p = toScreen(raw, this.angle);
+    for (let i = 0; i < 3; i++) { this.sum[i] += p[i]; this.rawSum[i] += raw[i]; }
     this.squares += p[0] * p[0] + p[1] * p[1] + p[2] * p[2];
     return t - this.from >= SIGN_SAMPLE_MS;
   }
 
+  private spread(mean: Gravity): number {
+    return Math.sqrt(Math.max(0, this.squares / this.n - (mean[0] ** 2 + mean[1] ** 2 + mean[2] ** 2)));
+  }
+
   sign(): 1 | -1 | null {
     const mean = this.sum.map((v) => v / this.n) as Gravity;
-    const variance = this.squares / this.n - (mean[0] ** 2 + mean[1] ** 2 + mean[2] ** 2);
-    return readingSign(mean, Math.sqrt(Math.max(0, variance)));
+    return readingSign(mean, this.spread(mean));
+  }
+
+  /** The mean reading as read, or null when the phone was moving or the reading is not gravity alone. */
+  steadyRaw(): Gravity | null {
+    const mean = this.rawSum.map((v) => v / this.n) as Gravity;
+    const g = Math.hypot(...mean);
+    return this.spread(mean) <= SIGN_STEADY && g >= STILL_G[0] && g <= STILL_G[1] ? mean : null;
   }
 }
 
@@ -94,7 +121,15 @@ function learnSign(w: SignWindow): void {
   if (learned != null && learned !== sign) {
     sign = learned;
     save('forehead:axisSign', sign);
+    setOffset((motion.offset + 180) % 360); // every edge reads the other way round now
   }
+}
+
+/** The player is reading the screen: the edge pointing up is the page's top (see offsetFromReading). */
+function learnOffset(w: SignWindow): void {
+  const raw = w.steadyRaw();
+  const o = raw && offsetFromReading([raw[0] * sign, raw[1] * sign, raw[2] * sign], w.angle);
+  if (o != null) setOffset(o);
 }
 
 /** The gyroscope layout this phone's browser was found to use; it survives reloads. */
@@ -109,12 +144,19 @@ export function axisSign(): 1 | -1 {
   return sign;
 }
 
-function onAngle() { motion.angle = screenAngle(); }
+/** The page turned (or a resize may hide a missed turn event): gravity says which end is its top. */
+function onAngle() {
+  const a = screenAngle();
+  if (a === motion.angle) return;
+  setOffset(offsetAfterTurn(motion.offset, a, motionFresh(300) ? last : null));
+  motion.angle = a;
+}
 
 function unhook(): void {
   detach?.();
   detach = null;
   removeEventListener('orientationchange', onAngle);
+  removeEventListener('resize', onAngle);
   screen.orientation?.removeEventListener?.('change', onAngle);
 }
 
@@ -124,6 +166,7 @@ function unhook(): void {
  * get-ready screen may come with the phone already on a forehead. Resolves false without motion.
  */
 export async function startMotion(learnAxis = false): Promise<boolean> {
+  const tapAngle = screenAngle(); // before this tap's fullscreen and landscape lock can turn the page
   const mine = ++generation;
   const allowed = await requestMotion();
   if (mine !== generation) return false; // released while the prompt was up
@@ -131,18 +174,21 @@ export async function startMotion(learnAxis = false): Promise<boolean> {
   if (!allowed) return false;
   unhook();
   motion.live = false;
-  onAngle();
+  last = null;
+  motion.angle = screenAngle(); // a turn while stopped had nobody watching gravity: no offset change
   addEventListener('orientationchange', onAngle);
+  addEventListener('resize', onAngle);
   screen.orientation?.addEventListener?.('change', onAngle);
   upright = new UprightTracker();
   tracker = new PitchTracker(tracker.layout);
-  let signWindow = learnAxis ? new SignWindow() : null;
+  let signWindow = learnAxis ? new SignWindow(tapAngle) : null;
   detach = watchMotion((s) => {
     const raw = s.g;
     const t = s.t;
     lastSampleAt = performance.now();
-    if (signWindow?.add(toScreen(raw, screenAngle()), t)) {
+    if (signWindow?.add(raw, t)) {
       learnSign(signWindow);
+      learnOffset(signWindow);
       signWindow = null;
     }
     const g: Gravity = [raw[0] * sign, raw[1] * sign, raw[2] * sign];

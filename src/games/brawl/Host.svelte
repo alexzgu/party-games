@@ -8,7 +8,7 @@
   import Connection from '../../components/room/Connection.svelte';
   import TapToFinish from '../../components/room/TapToFinish.svelte';
   import Timer from '../../components/room/Timer.svelte';
-  import { go, route } from '../../lib/router.svelte';
+  import { back, go, route } from '../../lib/router.svelte';
   import { brokerSetting } from '../../lib/room/broker';
   import { joinLink } from '../../lib/room/look';
   import { keepAwake } from '../../lib/wakelock';
@@ -51,7 +51,7 @@
 <div class="host">
   <header class="bar">
     <div class="where">
-      <Button size="sm" variant="ghost" label="Back to game menu" onclick={() => fixed ? go('/brawl') : (confirm = true)}>←</Button>
+      <Button size="sm" variant="ghost" label="Back to game menu" onclick={() => fixed ? back('/brawl') : (confirm = true)}>←</Button>
       <b>{gameName('brawl')}</b>
       {#if v && v.phase !== 'lobby'}<span>Room {fixed ? 'BRWK' : game?.code} · Round {v.round}</span>{/if}
     </div>
@@ -111,7 +111,7 @@
 {#if confirm}
   <Popup title="Close the room?" onclose={() => (confirm = false)}>
     <p>Everyone will be disconnected.</p>
-    <Button variant="danger" onclick={() => { if (!fixed) host.close(); go('/brawl'); }}>Close room</Button>
+    <Button variant="danger" onclick={() => { if (!fixed) host.close(); back('/brawl'); }}>Close room</Button>
     <Button variant="secondary" onclick={() => (confirm = false)}>Keep playing</Button>
   </Popup>
 {/if}

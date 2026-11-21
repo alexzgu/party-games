@@ -24,7 +24,11 @@ the home screen, and works offline once loaded. Names shown to players live in
 Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Hash routing
 (`#/forehead`, `#/dial`, `#/gibberish`, `#/quiz`, `#/settings`, `#/join/<key>`) so any static host works.
 
-- `src/lib/` — shared logic: `storage` (guarded localStorage), `router.svelte`, `settings.svelte`,
+- `src/lib/` — shared logic: `storage` (guarded localStorage), `router.svelte` (each history
+  entry carries how many in-app steps lie behind it, so `back()` returns to the screen a page
+  came from, also after the browser's or Android's back gesture or a reload, and never leaves the
+  app; a screen leaving to the one it came from uses `back()`, never a new `go()`, or Back there
+  would return to it in a loop), `settings.svelte`,
   `sound` (synthesised cues; call `unlockAudio()` in the first tap), `haptics`, `wakelock`,
   `motion` (permission, motion stream, sign fix, upright rotation), `pitch` (forehead pitch from
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
@@ -179,14 +183,25 @@ shout clues; the holder tilts down for "got it", up for "pass".
   motion takes taps instead, so it can always be played (`accepts` in `round.ts`).
   "Edit" (in the packs header, before the search and sort toggles) opens the pack list: open any pack to see, edit or restore its words.
 - **Start tap**: `unlockAudio()`, `requestMotion()` (iOS prompt), sample gravity for the sign fix
-  (`axisSignFromLookingAt`), `keepAwake(true)`, and on Android try fullscreen + landscape lock
-  (guarded; iOS has neither).
+  (`axisSignFromLookingAt`) and for where the page's top is (below), `keepAwake(true)`, and on
+  Android try fullscreen + landscape lock (guarded; iOS has neither). Both samples are read
+  against the page as it was at the tap, before the lock can turn it.
 - **Get ready**: "Put it on your forehead". The countdown starts by itself once the phone has
   been held upright and steady for ~0.7 s (or on tap). 3-2-1 beeps, then the first word.
 - **Play**: the word as large as possible (`FitText`), timer, score. The screen content is rotated
   so text reads upright for the people facing the phone, even when the phone's rotation lock
-  keeps the page in portrait (`uprightRotation` combined with `screen.orientation.angle`; fixed
-  at countdown start). Tilt down → correct (✓, chime, double buzz); tilt up → pass (buzz).
+  keeps the page in portrait: its top goes to the device edge gravity says is up (fixed at
+  countdown start), measured against the edge the page's top is on. That edge is measured, not
+  assumed from the browser's angle (`offsetFromReading`, `offsetAfterTurn` in `motion.ts`): at
+  the Start tap the player is reading, so the page's top is the edge pointing up; when the system
+  turns the page it turns it toward gravity, so the browser's angle gives only the new axis and
+  gravity says which end. The browser's angle alone (`window.orientation`, else
+  `screen.orientation.angle`) assumed the motion axes and the angle share one frame and the axis
+  sign fix was already learned; a freshly installed app (its own storage, sign not yet learned)
+  or a foldable whose inner screen's natural orientation is not its motion frame broke that and
+  showed the word upside down or sideways. Phone sideways (the turned screen wider than tall)
+  mirrors the tap zones to the holder's hands. Tilt down → correct (✓, chime, double buzz); tilt
+  up → pass (buzz).
   Feedback (Settings): by default the screen edge on the side of the matching tap zone glows
   green or amber; "Flash the screen" flashes the whole screen instead. Tap fallback always on: right half correct, left half pass. Last 10 s:
   tick each second and a red pulsing timer. Leaving the app pauses; returning shows a Resume
@@ -627,7 +642,10 @@ Every own-phones game (Snark Tank, Word Salad, Doodle Brawl) uses one link layer
 broker choice (`?peer=`, stored under the existing `snark:broker` key so the setting carries
 over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone's outbox and the
 host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
-logic. The host's peer id is `jerkbox-<game>-<CODE>`. Any message whose JSON is 15,000 UTF-8
+logic. The host's peer id is `jerkbox-<game>-<CODE>`. Leaving the host screen (its back arrow,
+ending the game or closing the room) and leaving or cancelling on a phone return to the game's
+first screen the way they came (`back()`), and that screen's Back returns to the main menu; the
+browser's or Android's back gesture walks the same path and never lands on a closed host screen. Any message whose JSON is 15,000 UTF-8
 bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 5,000 characters
 each) and reassembled before it is read; incomplete parts are dropped after 30 s. (PeerJS errors
 and drops the link on a JSON message of 16,300 bytes or more.)

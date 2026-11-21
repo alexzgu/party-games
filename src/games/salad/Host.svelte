@@ -9,7 +9,7 @@
   import Confetti from '../../components/room/Confetti.svelte';
   import TapToFinish from '../../components/room/TapToFinish.svelte';
   import Timer from '../../components/room/Timer.svelte';
-  import { route, go } from '../../lib/router.svelte';
+  import { route, go, back } from '../../lib/router.svelte';
   import { brokerSetting } from '../../lib/room/broker';
   import { joinLink } from '../../lib/room/look';
   import { keepAwake } from '../../lib/wakelock';
@@ -83,7 +83,7 @@
 
   function end() {
     if (!fixed) host.end();
-    go('/salad', true);
+    back('/salad');
   }
 </script>
 
@@ -92,7 +92,7 @@
 <div class="host" inert={view?.paused ?? false}>
   <header class="bar">
     <div class="where">
-      <Button size="sm" variant="ghost" label="Back to game menu" onclick={() => go('/salad')}>←</Button>
+      <Button size="sm" variant="ghost" label="Back to game menu" onclick={() => back('/salad')}>←</Button>
       <b>{gameName('salad')}</b>
       {#if view && view.phase !== 'lobby'}<span>Room {view.code} · Round {view.round} of 2</span>{/if}
     </div>

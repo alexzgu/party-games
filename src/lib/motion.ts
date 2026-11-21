@@ -25,8 +25,9 @@ export async function requestMotion(): Promise<boolean> {
 }
 
 /**
- * The page's rotation from the device's natural (portrait) orientation, in degrees
- * counter-clockwise device turn: 90 = phone turned so its top points left.
+ * The page's rotation from the device's natural orientation (portrait on phones; landscape on
+ * some foldables and tablets), in degrees counter-clockwise device turn: 90 = phone turned so
+ * its top points left. Only how far the page turned is used from it (see offsetAfterTurn).
  * `window.orientation` is preferred because its convention is documented and identical on
  * iOS Safari and Android Chrome (90 = turned counter-clockwise, -90 = clockwise);
  * `screen.orientation.angle` is the fallback.
@@ -121,10 +122,55 @@ export function upEdge(g: Gravity, minRatio = 1): UpEdge | null {
   return ay >= ax * minRatio ? (y >= 0 ? 0 : 180) : null;
 }
 
+/** A whole number of quarter turns, 0 to 270. */
+export const quarterTurn = (deg: number): UpEdge => ((((Math.round(deg / 90) * 90) % 360) + 360) % 360) as UpEdge;
+
 /** CSS rotation (clockwise degrees) that puts the content's top on the device edge `edge`, for a page turned `angle`. */
 export function rotationFor(edge: UpEdge, angle: number): 0 | 90 | -90 | 180 {
-  const r = ((((edge - angle) % 360) + 360) % 360);
+  const r = quarterTurn(edge - angle);
   return (r === 270 ? -90 : r) as 0 | 90 | -90 | 180;
+}
+
+/** m/s² along the screen below which the phone is too close to flat to say which edge is up (about 18°). */
+export const READING_IN_PLANE = 3;
+/** The same for a page turn: the system only turns the page once the phone is well off flat (about 30°). */
+export const TURN_IN_PLANE = 5;
+
+/** The edge clearly pointing up: the phone tipped off flat by at least `minInPlane` and not near a diagonal. */
+export function clearUpEdge(g: Gravity, minInPlane = READING_IN_PLANE): UpEdge | null {
+  return Math.hypot(g[0], g[1]) >= minInPlane ? upEdge(g, 1.6) : null;
+}
+
+/**
+ * Where the page's top sits, as a turn added to the browser's page angle: the device edge under
+ * the page's top is `angle + offset`, in the frame of the motion readings. The specs make it 0,
+ * but nothing guarantees it: a phone whose motion axes come inverted (the sign fix not yet learned,
+ * as on a freshly installed app), or a foldable whose inner screen's natural orientation is not the
+ * one its motion axes use, puts it at 90, 180 or 270. So it is measured, never assumed: while the
+ * player reads the screen (the Start tap) the page's top is the edge pointing up. Null when the
+ * phone is too flat or too diagonal to tell; keep the previous offset then.
+ */
+export function offsetFromReading(g: Gravity, angle: number): UpEdge | null {
+  const up = clearUpEdge(g);
+  return up == null ? null : quarterTurn(up - angle);
+}
+
+/**
+ * The offset after the browser reports the page turned to `angle`. The system turns the page
+ * toward gravity, so its top is whichever end of the new axis points up: the browser's angle is
+ * trusted for the axis only, never for which end (which is where its conventions and the motion
+ * axes can disagree). A turn gravity does not explain (a landscape lock taking hold while the
+ * phone is still upright, or a phone too flat to tell) keeps the offset.
+ */
+export function offsetAfterTurn(offset: number, angle: number, g: Gravity | null): UpEdge {
+  const predicted = quarterTurn(angle + offset);
+  const up = g ? clearUpEdge(g, TURN_IN_PLANE) : null;
+  return up != null && (up - predicted) % 180 === 0 ? quarterTurn(up - angle) : quarterTurn(offset);
+}
+
+/** CSS rotation that puts the content's top on the up edge `edge`, for a page at `angle` with offset `offset`. */
+export function stageTurn(edge: UpEdge, angle: number, offset: number): 0 | 90 | -90 | 180 {
+  return rotationFor(edge, angle + offset);
 }
 
 /**

@@ -5,7 +5,7 @@
   import HowTo from '../../components/HowTo.svelte';
   import Rules from './Rules.svelte';
   import Connection from '../../components/room/Connection.svelte';
-  import { go } from '../../lib/router.svelte';
+  import { back, go } from '../../lib/router.svelte';
   import { unlockAudio } from '../../lib/sound';
   import { host } from './host.svelte';
   import { phone } from './player.svelte';
@@ -22,7 +22,7 @@
   }
 </script>
 
-<Screen title={gameName('snark')} onback={() => go('/', true)} backLabel="Home">
+<Screen title={gameName('snark')} onback={() => back('/')} backLabel="Home">
   {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
 
   {#if openRoom}

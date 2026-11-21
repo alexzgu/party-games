@@ -6,7 +6,7 @@
   import Popup from '../../components/Popup.svelte';
   import Button from '../../components/Button.svelte';
   import Timer from '../../components/room/Timer.svelte';
-  import { go, route } from '../../lib/router.svelte';
+  import { back, route } from '../../lib/router.svelte';
   import { keepAwake } from '../../lib/wakelock';
   import { demo, demoArt } from './demo';
   import { phone, gallery } from './player.svelte';
@@ -67,7 +67,7 @@
 {#if !v || (!fixed && phone.stopped)}
   {#key code}<Join code={code || phone.me?.code || ''} fixed={!!fixed} />{/key}
 {:else}
-  <Screen title={gameName('brawl')} onback={() => fixed ? go('/brawl') : (leaving = true)}>
+  <Screen title={gameName('brawl')} onback={() => fixed ? back('/brawl') : (leaving = true)}>
     {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
     <div class="play">
       {#if !fixed && phone.link !== 'live'}<p role="status">{phone.trouble || 'Reconnecting…'}</p>{/if}
@@ -94,7 +94,7 @@
 {/if}
 {#if leaving}
   <Popup title="Leave the room?" onclose={() => (leaving = false)}>
-    <Button variant="danger" onclick={() => { phone.leave(); gallery.art = {}; go('/brawl'); }}>Leave</Button>
+    <Button variant="danger" onclick={() => { phone.leave(); gallery.art = {}; back('/brawl'); }}>Leave</Button>
     <Button variant="secondary" onclick={() => (leaving = false)}>Stay</Button>
   </Popup>
 {/if}

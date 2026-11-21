@@ -58,12 +58,17 @@
   /**
    * Phone sideways with live motion means it is on a forehead, content facing the onlookers.
    * Then the tap zones follow the holder's hands: their right hand (the onlookers' left) is
-   * "got it". Held in portrait or on a laptop, right is "got it" as usual.
+   * "got it". Held in portrait or on a laptop, right is "got it" as usual. Sideways is read off
+   * the turned screen being wider than tall, not off the motion axes, which run along the long
+   * side on most phones but along the short side on a foldable whose inner screen is landscape.
    */
-  const mirrored = $derived(
-    rotation != null ? Math.abs(rotation) === 90 // demo screenshots pass a fixed turn
-      : motion.live && (motion.edge === 90 || motion.edge === 270),
-  );
+  let winW = $state(innerWidth);
+  let winH = $state(innerHeight);
+  const mirrored = $derived.by(() => {
+    if (rotation != null) return Math.abs(rotation) === 90; // demo screenshots pass a fixed turn
+    const quarter = Math.abs(stageRotation()) === 90;
+    return motion.live && (quarter ? winH > winW : winW > winH);
+  });
 
   const opened = openPlay(start, dealer.next);
   if (opened.round !== start) setRound(opened.round);
@@ -184,7 +189,7 @@
   onDestroy(() => timers.forEach(clearTimeout));
 </script>
 
-<svelte:window onkeydown={key} />
+<svelte:window onkeydown={key} bind:innerWidth={winW} bind:innerHeight={winH} />
 
 <Stage rotation={rotation ?? stageRotation()}>
   <div class="play" class:hot>

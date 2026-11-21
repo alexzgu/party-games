@@ -3,7 +3,7 @@
   // (answer, vote), and in between what the host screen shows, so nobody needs to see it.
   // The link reconnects by itself; a banner says when it is doing so.
   import { onMount } from 'svelte';
-  import { route, go } from '../../lib/router.svelte';
+  import { route, back } from '../../lib/router.svelte';
   import { keepAwake } from '../../lib/wakelock';
   import { haptic } from '../../lib/haptics';
   import Screen from '../../components/Screen.svelte';
@@ -62,7 +62,7 @@
 {#if link === 'idle' || link === 'stopped'}
   <Join code={routeCode || (phone.me?.code ?? '')} name={phone.me?.name ?? ''} {stopped} />
 {:else if !view}
-  <Screen title="Joining {phone.me?.code ?? ''}" onback={() => { phone.leave(); go('/snark', true); }} backLabel="Cancel">
+  <Screen title="Joining {phone.me?.code ?? ''}" onback={() => { phone.leave(); back('/snark'); }} backLabel="Cancel">
     <div class="wait">
       <div class="spinner" aria-hidden="true"></div>
       <p class="big">Finding the host screen…</p>

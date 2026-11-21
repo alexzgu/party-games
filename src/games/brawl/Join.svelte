@@ -4,7 +4,7 @@
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Connection from '../../components/room/Connection.svelte';
-  import { go } from '../../lib/router.svelte';
+  import { back } from '../../lib/router.svelte';
   import { cleanCode, isCode } from '../../lib/room/code';
   import { phone } from './player.svelte';
   import Rules from './Rules.svelte';
@@ -17,7 +17,7 @@
   const ready = $derived(isCode(code) && !!name.trim() && phone.link !== 'joining');
 </script>
 
-<Screen title="Join {gameName('brawl')}" onback={() => { if (!fixed) phone.leave(); go('/brawl'); }}>
+<Screen title="Join {gameName('brawl')}" onback={() => { if (!fixed) phone.leave(); back('/brawl'); }}>
   {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
   <form onsubmit={(e) => { e.preventDefault(); if (ready && !fixed) phone.join(code, name.trim()); }}>
     {#if !fixed && (phone.stopped || phone.trouble)}<p role="status">{phone.stopped || phone.trouble}</p>{/if}

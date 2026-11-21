@@ -5,7 +5,7 @@
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Connection from '../../components/room/Connection.svelte';
-  import { go } from '../../lib/router.svelte';
+  import { back } from '../../lib/router.svelte';
   import { CODE_LENGTH, cleanCode } from '../../lib/room/code';
   import { brokerLabel } from '../../lib/room/broker';
   import { NAME_MAX } from './protocol';
@@ -27,7 +27,7 @@
   }
 </script>
 
-<Screen title="Join {gameName('salad')}" onback={() => { onleave(); go('/salad', true); }}>
+<Screen title="Join {gameName('salad')}" onback={() => { onleave(); back('/salad'); }}>
   {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
   {#if stopped}<p class="status" role="alert">{stopped}</p>{/if}
 

@@ -7,7 +7,7 @@
   import Popup from '../../components/Popup.svelte';
   import Screen from '../../components/Screen.svelte';
   import Timer from '../../components/room/Timer.svelte';
-  import { route, go } from '../../lib/router.svelte';
+  import { route, back } from '../../lib/router.svelte';
   import { cleanCode, newPid } from '../../lib/room/code';
   import { keepAwake } from '../../lib/wakelock';
   import { phone } from './player.svelte';
@@ -60,7 +60,7 @@
       onjoin={join} onleave={leave} />
   {/key}
 {:else if !view}
-  <Screen title="Joining {phone.me?.code ?? ''}" onback={() => { leave(); go('/salad', true); }} backLabel="Cancel">
+  <Screen title="Joining {phone.me?.code ?? ''}" onback={() => { leave(); back('/salad'); }} backLabel="Cancel">
     <p role="status">Finding the host screen…</p>
     {#if phone.trouble}<p role="alert">{phone.trouble}</p>{/if}
     <Button variant="ghost" onclick={() => (connection = true)}>Connection settings</Button>
@@ -146,7 +146,7 @@
 {#if connection}<Connection onclose={() => (connection = false)} onchange={reconnect} />{/if}
 {#if leaving}
   <Popup title="Leave room?" onclose={() => (leaving = false)}>
-    <Button variant="danger" onclick={() => { leave(); go('/salad', true); }}>Leave room</Button>
+    <Button variant="danger" onclick={() => { leave(); back('/salad'); }}>Leave room</Button>
     <Button variant="secondary" onclick={() => (leaving = false)}>Stay</Button>
   </Popup>
 {/if}
