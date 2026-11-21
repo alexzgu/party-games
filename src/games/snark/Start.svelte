@@ -27,7 +27,7 @@
   {#if openRoom}
     <div class="banner pop-in" role="status">
       <span><b>Room {openRoom.code} is open</b><span class="muted">{openRoom.phase === 'lobby' ? 'In the lobby' : 'Game in progress'} on this device</span></span>
-      <Button size="sm" onclick={hostHere}>Back to it</Button>
+      <Button size="sm" onclick={hostHere} label="Return to room {openRoom.code}">Return</Button>
     </div>
   {:else if rejoin}
     <div class="banner pop-in" role="status">
