@@ -61,7 +61,6 @@
   --tap-min: 44px; /* the smallest a small icon button may be */
 
   /* Stacking, lowest first. Everything that covers the page uses one of these. */
-  --z-pinned-inner: 10; /* a bar pinned inside the page, under its header (a pack list's header) */
   --z-pinned: 30; /* the page's pinned header and start bar */
   --z-float: 35; /* over the page and its bars, never taking taps: confetti, flashes, the drag-around timer */
   --z-overlay: 40; /* full-screen layers: pauses, game menus, the Community packs */

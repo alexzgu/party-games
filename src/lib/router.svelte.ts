@@ -1,5 +1,6 @@
 // Hash routing: works from any host or subpath (GitHub Pages, a laptop, a file) with no server rules.
 import { tick } from 'svelte';
+import { cleanKept, readKept, restoreKept } from './keepScroll';
 
 export type Route = { path: string; params: URLSearchParams };
 
@@ -14,9 +15,10 @@ export const route = $state<Route>(parse());
 /**
  * Each history entry carries its own state: `depth`, the in-app steps behind it, so it stays
  * right after the browser's or Android's back gesture and after a reload, and Back never leaves
- * the app when a page was opened directly; `y`, how far the page was scrolled when it was left.
+ * the app when a page was opened directly; `y`, how far the page was scrolled when it was left,
+ * and `parts`, how far each part scrolling on its own was (keepScroll.ts).
  */
-type EntryState = { depth?: unknown; y?: unknown };
+type EntryState = { depth?: unknown; y?: unknown; parts?: unknown };
 const entry = (): EntryState => (history.state as EntryState | null) ?? {};
 const stepsHere = (): number => {
   const d = entry().depth;
@@ -33,9 +35,11 @@ function sync(): void {
   route.params = next.params;
   const y = entry().y;
   const to = typeof y === 'number' ? y : 0;
+  const kept = cleanKept(entry().parts);
+  const place = () => { scrollTo(0, to); restoreKept(kept); };
   void tick().then(() => {
-    scrollTo(0, to);
-    if (to > 0) requestAnimationFrame(() => scrollTo(0, to)); // a game page may render a moment later
+    place();
+    if (to > 0 || Object.keys(kept).length) requestAnimationFrame(place); // a game page may render a moment later
   });
 }
 
@@ -59,7 +63,7 @@ export function go(path: string, replace = false): void {
     history.replaceState({ depth }, '', url);
     sync();
   } else if (location.hash !== url) {
-    history.replaceState({ ...entry(), depth, y: scrollY }, ''); // remembered for Back
+    history.replaceState({ ...entry(), depth, y: scrollY, parts: readKept() }, ''); // remembered for Back
     location.hash = path; // a new entry; hashchange updates the route
     history.replaceState({ depth: ++depth }, '', url);
   }

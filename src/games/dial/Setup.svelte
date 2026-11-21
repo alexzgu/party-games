@@ -33,7 +33,7 @@
   }
 </script>
 
-<Screen title={gameName('dial')} accent="var(--c-dial)" onback={() => back('/')} backLabel="Home">
+<Screen fill title={gameName('dial')} accent="var(--c-dial)" onback={() => back('/')} backLabel="Home">
   {#snippet trailing()}
     <HowTo title="How to play {gameName('dial')}">
       <ol>
@@ -48,21 +48,23 @@
     </HowTo>
   {/snippet}
 
-  <section class="stack">
-    <h3>Teams</h3>
-    <div class="teams">
-      {#each cfg.names as _, i (i)}
-        {#if i === 1}<span class="vs" aria-hidden="true">vs</span>{/if}
-        <label class="team" style:--team={teamColor(i as 0 | 1)}>
-          <span class="sr-only">Team {i + 1} name</span>
-          <input type="text" maxlength="18" autocomplete="off" bind:value={cfg.names[i]} />
-        </label>
-      {/each}
-    </div>
-  </section>
-
-  <PackList game="dial" {entries} bind:selected={cfg.packIds} noun="cards" placeholder="Search packs and cards" makeHint="Paste a list or ask the wizard"
-    onedit={(id) => go('/dial/pack?id=' + encodeURIComponent(id))} onmake={onmake} onimported={() => (packs = spectrumPacks())} />
+  <PackList game="dial" {entries} bind:selected={cfg.packIds} noun="cards" placeholder="Search packs and cards" makeHint="Paste a list or ask the wizard" topName="teams"
+    onedit={(id) => go('/dial/pack?id=' + encodeURIComponent(id))} onmake={onmake} onimported={() => (packs = spectrumPacks())}>
+    {#snippet top()}
+      <section class="stack">
+        <h3>Teams</h3>
+        <div class="teams">
+          {#each cfg.names as _, i (i)}
+            {#if i === 1}<span class="vs" aria-hidden="true">vs</span>{/if}
+            <label class="team" style:--team={teamColor(i as 0 | 1)}>
+              <span class="sr-only">Team {i + 1} name</span>
+              <input type="text" maxlength="18" autocomplete="off" bind:value={cfg.names[i]} />
+            </label>
+          {/each}
+        </div>
+      </section>
+    {/snippet}
+  </PackList>
 
   {#snippet actions()}
     <RulesCard compact summary={rulesSummary(cfg.goal, cfg.steal)}>

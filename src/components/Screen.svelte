@@ -14,6 +14,7 @@
     backLabel = 'Back',
     hideBack = false,
     split = false,
+    fill = false,
     trailing,
     actions,
     children,
@@ -31,20 +32,27 @@
      * around them (`display: contents`). Upright both add no box, so the page looks as before.
      */
     split?: boolean;
+    /**
+     * The page fits the screen: the body takes the room between the header and the actions and
+     * its own parts scroll (a pack page: only the pack list scrolls; components/PackList.svelte).
+     * On a screen too short even for that the whole page scrolls, header and actions still pinned.
+     */
+    fill?: boolean;
     trailing?: Snippet;
     actions?: Snippet;
     children: Snippet;
   } = $props();
 
-  // What the page scrolls to (a new row, a focused input) stops clear of the pinned bars.
-  let screen: HTMLDivElement;
+  // What the page scrolls to (a new row, a focused input) stops clear of the pinned bars. The
+  // header's scroller is the page, or the screen itself when it fills the screen.
+  let head: HTMLElement;
   let headH = $state(0);
   let footH = $state(0);
-  $effect(() => padScroller(screen, headH, footH));
+  $effect(() => padScroller(head, headH, footH));
 </script>
 
-<div class="screen fade-in" class:split style:--accent={accent} bind:this={screen}>
-  <header class="pinned-bg pinned-lift" bind:offsetHeight={headH}>
+<div class="screen fade-in" class:split class:fill style:--accent={accent} data-keep-scroll={fill ? 'screen' : undefined}>
+  <header class="pinned-bg pinned-lift" bind:this={head} bind:offsetHeight={headH}>
     {#if !hideBack}
       <button class="back" onclick={() => (onback ? onback() : back())} aria-label={backLabel}>
         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -109,12 +117,18 @@
     content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--s-4); pointer-events: none;
     background: linear-gradient(to top, var(--bg), transparent);
   }
+  /* The body takes what the header and actions leave, never less than its parts need (a pack
+     page: its pinned top, a row of packs, its Add pack row); below that the screen scrolls. */
+  .fill { height: 100dvh; min-height: 0; overflow: hidden auto; overscroll-behavior: contain; }
+  .fill .body { flex: 1 1 0; padding-bottom: 0; }
+  .fill .actions::before { content: none; }
   .screen :global(:is(.split-side, .split-main)) { display: contents; }
   @media (orientation: landscape) and (max-height: 500px) {
     .screen { --head-pad: var(--s-2); --head-row: 48px; }
     /* A setup's rules row and start buttons side by side, so the pinned bars stay low. */
     .actions:has(> :global(.rules-card)) { flex-direction: row; align-items: stretch; }
     .actions:has(> :global(.rules-card)) > :global(*) { flex: 1 1 0; min-width: 0; }
+    .fill .body { padding-top: var(--s-2); }
     .split {
       height: 100dvh; max-width: 960px; display: grid; column-gap: var(--s-5); row-gap: var(--s-2);
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;

@@ -37,24 +37,26 @@
   const modeOptions: { value: EndMode; label: string }[] = [{ value: 'score', label: 'Points' }, { value: 'rounds', label: 'Rounds' }];
 </script>
 
-<Screen title={gameName('taboo')} accent="var(--c-taboo)" onback={() => back('/')} backLabel="Home">
+<Screen fill title={gameName('taboo')} accent="var(--c-taboo)" onback={() => back('/')} backLabel="Home">
   {#snippet trailing()}<Rules />{/snippet}
 
-  <section class="stack">
-    <h3>Teams</h3>
-    <div class="teams">
-      {#each cfg.names as _, i (i)}
-        {#if i === 1}<span class="vs" aria-hidden="true">vs</span>{/if}
-        <label class="team" style:--team={teamColor(i as 0 | 1)}>
-          <span class="sr-only">Team {i + 1} name</span>
-          <input type="text" maxlength="18" autocomplete="off" bind:value={cfg.names[i]} />
-        </label>
-      {/each}
-    </div>
-  </section>
-
-  <PackList game="taboo" {entries} bind:selected={cfg.packIds} noun="cards" placeholder="Search packs and words" makeHint="Write cards or ask the wizard"
-    onedit={(id) => go('/taboo/pack?id=' + encodeURIComponent(id))} onmake={() => go('/taboo/new')} onimported={() => (packs = tabooPacks())} />
+  <PackList game="taboo" {entries} bind:selected={cfg.packIds} noun="cards" placeholder="Search packs and words" makeHint="Write cards or ask the wizard" topName="teams"
+    onedit={(id) => go('/taboo/pack?id=' + encodeURIComponent(id))} onmake={() => go('/taboo/new')} onimported={() => (packs = tabooPacks())}>
+    {#snippet top()}
+      <section class="stack">
+        <h3>Teams</h3>
+        <div class="teams">
+          {#each cfg.names as _, i (i)}
+            {#if i === 1}<span class="vs" aria-hidden="true">vs</span>{/if}
+            <label class="team" style:--team={teamColor(i as 0 | 1)}>
+              <span class="sr-only">Team {i + 1} name</span>
+              <input type="text" maxlength="18" autocomplete="off" bind:value={cfg.names[i]} />
+            </label>
+          {/each}
+        </div>
+      </section>
+    {/snippet}
+  </PackList>
 
   {#snippet actions()}
     <RulesCard compact summary={rulesSummary(cfg)}>

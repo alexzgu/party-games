@@ -85,28 +85,31 @@
   }
 </script>
 
-<Screen title={gameName('quiz')} onback={() => { keepRoster(); onhome(); }} backLabel="Home">
+<Screen fill title={gameName('quiz')} onback={() => { keepRoster(); onhome(); }} backLabel="Home">
   {#snippet trailing()}<Rules />{/snippet}
 <div class="setup">
-  {#if inProgress}
-    {@const top = standings(inProgress)}
-    <div class="resume pop-in" role="status">
-      <b>Game in progress · {inProgress.board.name}</b>
-      <span>{top.slice(0, 4).map((r) => `${r.name} ${points(r.score)}`).join(' · ')}{top.length > 4 ? ` · +${top.length - 4} more` : ''}</span>
-      <small>Team changes join this game. The pack and points apply to the next one.</small>
-    </div>
-  {/if}
-
-  <Teams bind:names bind:count locked={inProgress ? (inProgress.teams.length === 1 ? 'solo' : 'teams') : null} />
-
-  <PackList game="quiz" entries={boards.map(boardEntry)} bind:selected={picked} single noun="clues" placeholder="Search packs and clues" makeHint="Start blank, paste one, or ask the wizard"
-    onedit={(id) => onedit(id)} {onmake} onimported={() => (boards = quizBoards())} />
-  {#if board && gaps}
-    <div class="gaps" role="status">
-      <p><b>{board.name}</b> is a draft with {gaps === 1 ? 'one empty tile' : `${gaps} empty tiles`}: {describeEmpty(board, rowValues(rows, scale === 'x2'))}.</p>
-      <Button variant="secondary" size="sm" onclick={() => onedit(board.id, emptyTiles(board)[0]?.category)}>{gaps === 1 ? 'Fill it in' : 'Fill them in'}</Button>
-    </div>
-  {/if}
+  <PackList game="quiz" entries={boards.map(boardEntry)} bind:selected={picked} single noun="clues" placeholder="Search packs and clues"
+    makeHint="Start blank, paste one, or ask the wizard" topName="teams"
+    onedit={(id) => onedit(id)} {onmake} onimported={() => (boards = quizBoards())}>
+    {#snippet top()}
+      <Teams bind:names bind:count locked={inProgress ? (inProgress.teams.length === 1 ? 'solo' : 'teams') : null} />
+    {/snippet}
+    {#snippet notice()}
+      {#if inProgress}
+        {@const lead = standings(inProgress)}
+        <div class="resume pop-in" role="status">
+          <span><b>Game in progress · {inProgress.board.name}</b> · {lead.slice(0, 4).map((r) => `${r.name} ${points(r.score)}`).join(' · ')}{lead.length > 4 ? ` · +${lead.length - 4} more` : ''}</span>
+          <small>Team changes join this game. The pack and points apply to the next one.</small>
+        </div>
+      {/if}
+      {#if board && gaps}
+        <div class="gaps" role="status">
+          <p><b>{board.name}</b> is a draft with {gaps === 1 ? 'one empty tile' : `${gaps} empty tiles`}: {describeEmpty(board, rowValues(rows, scale === 'x2'))}.</p>
+          <Button variant="secondary" size="sm" onclick={() => onedit(board.id, emptyTiles(board)[0]?.category)}>{gaps === 1 ? 'Fill it in' : 'Fill them in'}</Button>
+        </div>
+      {/if}
+    {/snippet}
+  </PackList>
 </div>
 
   {#snippet actions()}
@@ -133,17 +136,18 @@
   .setup :global(h3) {
     color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700;
   }
+  /* Compact, always shown above the teams (they can be folded away). */
   .resume {
-    display: flex; flex-direction: column; gap: 2px; padding: var(--s-4); border-radius: var(--r-lg); border: 2px solid var(--accent);
-    background: color-mix(in srgb, var(--accent) 16%, var(--bg-raised));
+    display: flex; flex-direction: column; gap: 2px; margin: var(--s-1) 0 var(--s-3); padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-md); border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--bg-raised));
   }
-  .resume b { font-family: var(--font-display); font-size: 1.15rem; }
   .resume span { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .resume small { margin-top: var(--s-1); color: var(--text-dim); font-size: 0.85rem; line-height: 1.3; }
+  .resume b { color: var(--text); font-family: var(--font-display); }
+  .resume small { color: var(--text-dim); font-size: 0.8rem; line-height: 1.3; }
   .field { display: flex; flex-direction: column; gap: var(--s-1); }
   .lbl { font-weight: 600; font-size: 0.92rem; color: var(--text-dim); padding-left: var(--s-1); }
   .gaps {
-    display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); padding: var(--s-3) var(--s-4); border-radius: var(--r-md);
+    margin-bottom: var(--s-3); display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); padding: var(--s-3) var(--s-4); border-radius: var(--r-md);
     background: color-mix(in srgb, var(--c-pass) 14%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--c-pass) 50%, transparent);
   }
   .gaps p { margin: 0; }

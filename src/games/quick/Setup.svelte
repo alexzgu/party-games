@@ -84,21 +84,24 @@
   }
 </script>
 
-<Screen title={gameName('quick')} onback={() => { keepRoster(); onhome(); }} backLabel="Home">
+<Screen fill title={gameName('quick')} onback={() => { keepRoster(); onhome(); }} backLabel="Home">
   {#snippet trailing()}<Rules {seconds} {target} {steal} {stealUsesTurn} />{/snippet}
 <div class="setup">
-  {#if inProgress}
-    {@const top = standings(inProgress).slice(0, 3)}
-    <div class="resume pop-in" role="status">
-      <b>Game in progress</b>
-      <span>{top.map((r) => `${r.player.name} ${r.player.score}`).join(' · ')}{inProgress.players.length > 3 ? ' …' : ''}</span>
-      <small>Player changes join this game. Packs and rules apply to the next one.</small>
-    </div>
-  {/if}
-
-  <Players bind:names bind:seats />
   <PackList game="quick" entries={packs.map(packEntry)} bind:selected noun="prompts" placeholder="Search packs and prompts" makeHint="Paste a list or ask the wizard"
-    guard={400} {onedit} {onmake} onimported={() => (packs = quickPacks())} />
+    topName="players" topNeeded={names.length < MIN_PLAYERS} guard={400} {onedit} {onmake} onimported={() => (packs = quickPacks())}>
+    {#snippet notice()}
+      {#if inProgress}
+        {@const lead = standings(inProgress).slice(0, 3)}
+        <div class="resume pop-in" role="status">
+          <span><b>Game in progress</b> · {lead.map((r) => `${r.player.name} ${r.player.score}`).join(' · ')}{inProgress.players.length > 3 ? ' …' : ''}</span>
+          <small>Player changes join this game. Packs and rules apply to the next one.</small>
+        </div>
+      {/if}
+    {/snippet}
+    {#snippet top()}
+      <Players bind:names bind:seats />
+    {/snippet}
+  </PackList>
 </div>
 
   {#snippet actions()}
@@ -127,13 +130,14 @@
   .setup :global(h3) {
     color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700;
   }
+  /* Compact, always shown above the players (they can be folded away). */
   .resume {
-    display: flex; flex-direction: column; text-align: left; padding: var(--s-4); border-radius: var(--r-lg);
-    border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--bg-raised)); min-height: 72px;
+    display: flex; flex-direction: column; gap: 2px; margin: var(--s-1) 0 var(--s-3); padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-md); border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--bg-raised));
   }
-  .resume b { font-family: var(--font-display); font-size: 1.2rem; }
   .resume span { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .resume small { margin-top: var(--s-1); color: var(--text-dim); font-size: 0.85rem; line-height: 1.3; }
+  .resume b { color: var(--text); font-family: var(--font-display); }
+  .resume small { color: var(--text-dim); font-size: 0.8rem; line-height: 1.3; }
   .secs { background: var(--surface); border-radius: var(--r-md); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); display: flex; flex-direction: column; gap: var(--s-2); }
   .label { font-weight: 600; }
 </style>

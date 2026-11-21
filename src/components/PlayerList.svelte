@@ -2,15 +2,18 @@
   import type { Snippet } from 'svelte';
   import { nextPlayerName } from '../lib/players';
   import { sfx } from '../lib/sound';
+  import ScrollWindow from './ScrollWindow.svelte';
 
   // The player list on a game's setup screen. Add makes a tile named "Player N";
   // tapping a tile's name (the pencil) renames it in place: Enter or leaving the box keeps it, Escape cancels.
   // `seats`, when bound, follows each tile's first place in the list (-1 for a tile added here),
-  // so a saved game can tell a renamed player from a new one.
+  // so a saved game can tell a renamed player from a new one. The tiles show in a window about three
+  // rows tall that scrolls on its own (a new player scrolls it to the end); Add player stays under it.
   type Check = (raw: string, existing: string[]) => { name: string; error: string };
   let { names = $bindable(), seats = $bindable([]), min, max, check, avatar }: {
     names: string[]; seats?: number[]; min: number; max: number; check: Check; avatar: Snippet<[string, number]>;
   } = $props();
+  let tiles: ScrollWindow | undefined = $state();
   let editing = $state(-1);
   let draft = $state('');
   let error = $state('');
@@ -21,6 +24,7 @@
     seats = [...seats, -1];
     error = '';
     sfx.tap();
+    void tiles?.toEnd();
   }
 
   function removeAt(i: number) {
@@ -66,6 +70,7 @@
     <span class="count" class:short={names.length < min}>{names.length} {#if names.length < min}· need {min}+{/if}</span>
   </div>
   {#if names.length}
+    <ScrollWindow bind:this={tiles}>
     <ul class="list">
       {#each names as name, i (name)}
         <li class="pop-in">
@@ -93,6 +98,7 @@
         </li>
       {/each}
     </ul>
+    </ScrollWindow>
   {/if}
   <button class="add" onclick={add} disabled={names.length >= max}>
     {names.length >= max ? `${max} players is the most` : 'Add player'}

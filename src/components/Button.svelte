@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import type { HTMLButtonAttributes } from 'svelte/elements';
   import { sfx } from '../lib/sound';
   import { haptic } from '../lib/haptics';
   import { TAP_GUARD_MS, tapGuard } from '../lib/tapGuard';
@@ -13,6 +14,7 @@
     guardMs = TAP_GUARD_MS,
     onclick,
     children,
+    ...menu
   }: {
     variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
     size?: 'md' | 'lg' | 'sm';
@@ -24,7 +26,7 @@
     guardMs?: number;
     onclick?: (e: MouseEvent) => void;
     children: Snippet;
-  } = $props();
+  } & Pick<HTMLButtonAttributes, 'id' | 'aria-haspopup' | 'aria-expanded' | 'aria-controls' | 'onkeydown'> = $props();
 
   // svelte-ignore state_referenced_locally
   const ready = tapGuard(guardMs);
@@ -37,7 +39,8 @@
   }
 </script>
 
-<button class="btn {variant} {size}" {type} {disabled} aria-label={label} onclick={click}>
+<!-- `menu`: what a button opening a menu adds (components/MenuButton.svelte). -->
+<button class="btn {variant} {size}" {type} {disabled} aria-label={label} onclick={click} {...menu}>
   {@render children()}
 </button>
 
