@@ -39,7 +39,8 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
   `paste` (reading pasted lists), `packfile` (pack files: export, import), `library` (the Community library), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
 - `src/components/` — `Screen` (page frame: back button, title, sticky actions), `Popup`,
-  `HowTo` (the "?" header button that opens a game's rules), `Button`,
+  `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
+  behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
   items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (Import packs, Export my packs, Community packs),
   `ExportPack` (Export pack), `Community` and `CommunityItems` (browse, preview, import and star
@@ -186,6 +187,11 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
   Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
 - **Rules** live in each game's "?" popup, not on its screens; the popup sits on setup and, in the
   pass-the-phone games, on every hand-off too.
+- **Settings behind a card** (`RulesCard`): a setup keeps players or teams and packs on the page and
+  puts its game settings behind one full-width row: a title ("Rules" unless the game names it), the
+  current values in one plain line ("60 s turns · first to 15 points · skips are free") and a
+  settings icon. Tapping it opens a popup with the controls and Done; a change applies and is saved
+  at once, and Done, ✕, Escape or a tap outside just close it, with focus back on the row.
 - **A saved game and its setup**: with a game in progress, setup shows that game's players
   (Big Board: teams). Adding, renaming or removing them changes the saved game on Resume (or on
   leaving setup): a kept player keeps their score, newcomers start at 0, a removed one leaves
@@ -216,7 +222,8 @@ Heads Up-style. One player holds the phone on their forehead, screen facing out;
 shout clues; the holder tilts down for "got it", up for "pass".
 
 - **Setup**: grid of packs (emoji, name, word count); tap to select one or several (mixed).
-  Round length 30/60/90/120 s (default 60). Controls: Tilt, Tap or Both (default Both on phones
+  A "Round" card (summary like "60 s rounds · tilt or tap") holds round length 30/60/90/120 s
+  (default 60), Controls and, unless Controls is Tap, Calibrate tilt. Controls: Tilt, Tap or Both (default Both on phones
   and tablets, Tap on a laptop; the old saved "Tilt", which always took taps, carries over as
   Both). Only the chosen input scores: in a Tilt round the tap zones are gone and the arrow keys
   do nothing; in a Tap round tilting does nothing. A Tilt round on a phone that cannot feel
@@ -248,7 +255,9 @@ shout clues; the holder tilts down for "got it", up for "pass".
   green or amber; "Flash the screen" flashes the whole screen instead. Tap fallback always on: right half correct, left half pass. Last 10 s:
   tick each second and a red pulsing timer. Leaving the app pauses; returning shows a Resume
   overlay. A small ✕ ends the round after confirmation. Packs used up → round ends early.
-- **Results**: score headline, every word shown marked ✓/✗ and tappable to fix mis-tilts.
+  The word on screen when the round ends (time up or ✕) was never played: it is left out of the
+  results and goes back into its pack unseen (`putBack` in `src/lib/bag.ts`), so a later round can deal it.
+- **Results**: score headline, every word played marked ✓/✗ and tappable to fix mis-tilts.
   Play again (same settings, next player), change packs, home. Round scores of this session
   listed so the group can compare.
 - Pitch comes from the gyroscope blended with gravity (1 s time constant, `src/lib/pitch.ts`).
@@ -299,8 +308,8 @@ Wavelength-genre. Two teams. Each round one player of the active team (the reade
 sees where a target sits on a scale between two opposites, gives one clue out loud, and their
 team sets a dial to where they think the target is.
 
-- **Setup**: two team names (editable), points to win (default 10), packs (multi-select),
-  optional "steal" rule: the other team then guesses whether the target is left or right of
+- **Setup**: two team names (editable), packs (multi-select), and behind the Rules card
+  ("First to 10 points · steals on") points to win (default 10) and the optional "steal" rule: the other team then guesses whether the target is left or right of
   the needle for 1 point. Entry to "Make a pack" (paste a list or ask the wizard). Each pack row
   has a separate › that opens the pack editor; on the player's own packs, "🧙 Add more" as in Heads Down. (5–40 cards, default 10; never a scale any pack on the phone has).
 - **Teams**: Early Birds (`--c-team-a`, warm orange) vs Night Owls (`--c-team-b`, blue), on the
@@ -330,8 +339,10 @@ Community: wizard packs and Add more are shared; "🌍 Community packs" is under
 Mad Gab / Incoherent-genre. Each card is a phrase of real but unrelated words that, said
 aloud, sounds like something well known ("Eye Scream" → Ice Cream).
 
-- **Setup**: player names (3+; add/remove; remembered), packs (multi-select), seconds per card
-  (off/20/30/45/60, default 30), points to win (default 5). Entry to "Make a pack" (paste a list or ask the wizard).
+- **Setup**: player names (3+; add/remove; remembered), packs (multi-select), and behind the Rules
+  card ("30 s per card · first to 5 points") seconds per card (off/20/30/45/60, default 30) and
+  points to win (default 5). Entry to "Make a pack" (paste a list or ask the wizard; a pasted
+  card without a category gets "Anything").
   A pencil on each pack tile opens the pack editor (giveaway check applies to edits); on the player's own packs, "🧙 Add more" as in Heads Down. (5–30 cards, default 10; never an answer any pack on the phone has; a card without a category takes the pack's most common one).
 - **Card**: the reader rotates each card. Hand-off screen ("X reads — everyone else, eyes off the
   phone") → reader view: the phrase huge, a "Show category" button the reader may read out,
@@ -351,8 +362,9 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
 - **Setup**: 1–10 teams (stepper, default 3; a team may be one person), names editable and
   remembered for all twenty seats, each with its own colour (`--team-1` … `--team-20` in
   tokens.css, one set per scheme, readable as text and under a number badge). One pack
-  (search/sort list; a pencil per row opens the editor; "Make a pack" at the end), points
-  100, 200, … per level or doubled, "Wrong answers lose points" (default off). A pack with an
+  (search/sort list; a pencil per row opens the editor; "Make a pack" at the end). A "Points" card
+  ("Tiles 100–500 · wrong answers cost nothing") holds points 100, 200, … per level or doubled
+  and "Wrong answers lose points" (default off). A pack with an
   empty clue or answer is a draft: setup names the empty tiles and will not start it.
 - **Timer** (cosmetic, never touches scores or play): a countdown chip floating over the board and
   clues: tap to start or pause, ↺ resets, the length button cycles 10/20/30/60 s, × hides it (the
@@ -412,9 +424,10 @@ without saying it or any of its five banned words, while a player from the other
 beside them watching for slips.
 
 - **Setup**: two team names (editable, `--c-team-a` / `--c-team-b`, default Loudmouths vs
-  Mimes), turn length 45/60/90 s (default 60), play until a points target (default 15, 5–50)
+  Mimes); behind the Rules card ("60 s turns · first to 15 points · skips are free") turn length
+  45/60/90 s (default 60), play until a points target (default 15, 5–50)
   or a number of rounds (default 5; a round is one turn per team), "Skips cost a point"
-  (default off), packs (search/sort; a › on each opens its editor; "+ Make a pack": write the
+  (default off); packs (search/sort; a › on each opens its editor; "+ Make a pack": write the
   cards one by one or ask the wizard for a theme, 10–60 cards, default 30, reviewed before saving).
   The player's own packs have "🧙 Add more" in their editor (5–40 cards, default 15). Wizard cards
   follow the pack editor's rules (exactly five banned words, none containing the word or inside
@@ -454,18 +467,28 @@ few seconds to name three things that fit it out loud; the room judges.
   Ant's list), packs (search/sort; a pencil on each opens its editor, where the player's own packs
   have "🧙 Add more" as in Heads Down.: 5–40 prompts, default 15, never one any pack on the phone has;
   "Make a pack": paste a list or ask the wizard), seconds on the clock 5/7/10 (default 5), points to win (default 7, 3–15),
-  Steal (default on).
+  Steal (default on), and with Steal on "A steal uses the stealer's turn" (default off; saved
+  setups and games from before it load as off).
 - **Turn**: hand-off ("Pass the phone to Maya"; the last turn's result and a scoreboard strip in
   seating order above it) → "I'm Maya, show my prompt" reveals "Name 3 …" huge (`FitText`) and
   starts the clock at once: a big ring drains, a tick each second (sharper in the last two),
   buzzer at zero. "Got all 3" stops the clock early with the point. At zero the same screen
   shows "Time!" and the room taps ✓ Got 3 (+1) or ✗ Didn't. Steal on and missed: the next
   player gets the same prompt and a fresh clock and must name three *different* things for the
-  point; a missed steal ends the turn with no point. The turn then passes to the next seat.
+  point; a missed steal ends the turn with no point. The turn then passes to the next seat: the
+  stealer, who then takes their own turn, or, when a steal uses the stealer's turn, the player
+  after them (the steal screen says "This steal is your turn").
+- **Rounds and winning**: a round is one turn per seat, counted from the seat that started (a turn
+  used by a steal counts as had; `left` in `logic.ts`). Reaching the points target does not end
+  the game: the round plays out, the hand-off saying so ("Maya reached 7 — the rest of the round
+  still plays"). When the round ends, the one top score at or above the target wins; a tie on top
+  plays another full round ("Maya and Ben are tied on 8 — a tie when the round ends plays one more round"). Players added in setup
+  mid-game sit after the last seat and play in the current round only if it has not passed there
+  yet; removing everyone still to play in it ends the round.
 - **Undo**: the hand-off and the steal screen offer "Wrong call? Undo", which goes back to the
   judging of the last try with its point taken back (one step; gone once the next prompt is up).
-- **End**: the hand-off after the winning point shows "See who won" → win screen (confetti,
-  standings, rematch: next seat starts). History gets one entry then, one detail line per turn
+- **End**: the hand-off at the end of the winning round shows "See who won" → win screen
+  (confetti, standings, rematch: the seat after the one who started goes first). History gets one entry then, one detail line per turn
   ("Name 3 kinds of soup: Ben ✗, Cy stole it"); Start a new game over an unfinished one records
   it with `finished: false`. Reload mid-clock resumes paused with the time left; leaving the
   app pauses. Prompts are dealt without repeats within a game and across games (per-pack bags).
@@ -620,11 +643,16 @@ and drops the link on a JSON message of 16,300 bytes or more.)
 ## Game 8 — Word Salad (`salad`)
 
 2–8 players join a host screen by code or QR using the shared room link. Two rounds, with
-one turn per player in seat order. The host chooses built-in packs in Settings.
+one turn per player in seat order. The host chooses built-in packs in Settings (they apply to a
+new room) and how long a dropped presenter is waited for: 30 s, 1 min (default), 2 min or 5 min
+(applies at once; saved rooms and settings from before the choice wait 1 min).
 
 - **Pick** (20 s): privately choose one of three secrets, including one Easy and a mix of
-  categories (person, place, thing, story). One reshuffle per player each round. At the
-  deadline the first choice is taken for anyone who has yet to pick.
+  categories (person, place, thing, story). One reshuffle per player each round. Picking takes
+  two taps: the first selects a tile (raised, the others dimmed) and grows a "Pick this one" bar
+  on it; the bar confirms, and tapping another tile moves the selection. Each selection reaches
+  the host (`select`), so at the deadline the selected secret is taken for anyone who has yet to
+  confirm, and the first choice for anyone who selected nothing.
 - **Prepare** (30 s): everyone builds an opening clue at once. Each blank offers six shuffled
   words, up to three tailored to the secret and the rest drawn from plain shared vocabulary.
   More words redeals the decoys for one blank. At the deadline any empty blank takes its first choice.
@@ -644,15 +672,16 @@ one turn per player in seat order. The host chooses built-in packs in Settings.
   the room; phones reconnect to their seats and scores. Late arrivals can guess immediately
   and present starting next round. An offline presenter is skipped when their turn comes
   up. One whose phone drops during their turn holds it: the clock stops on every screen, guesses
-  wait, and host and phones say who they are waiting for; back within a minute, the turn carries
-  on with the time it had, else it is revealed without points. Guesses read into a comparison
+  wait, and host and phones say who they are waiting for and for how long at most; back within
+  the host's wait, the turn carries on with the time it had, else it is revealed without points. Guesses read into a comparison
   clue lose their closing punctuation and a capital leading article. The presenter's phone lists
   the guesses straight under the clue builder.
 - **Content**: `src/content/salad/*.json` holds packs of secrets with an answer, category,
   difficulty, accepted variants and fitting words for the sentence slots in `words.ts`.
 - **Demos**: use `#/salad/host?demo=present` or `#/salad/join?demo=guess`. Both accept
   `lobby`, `pick`, `prepare`, `present`, `reveal`, `unsolved`, `scores`, `over` and
-  `paused`. The phone also has `join`, `late`, `wait`, `comparison` and `guess` views.
+  `paused`. The phone also has `join`, `late`, `picking` (a tile selected), `wait`, `comparison`
+  and `guess` views.
 
 ## Game 9 — Doodle Brawl (`brawl`)
 

@@ -35,6 +35,16 @@ export function makeBag<T>(poolKey: string, items: readonly T[], idOf: (t: T) =>
       save(key, [...seen]);
       return item;
     },
+    /**
+     * Undoes the deal of an item that was never really played: it is no longer seen (here or in
+     * storage) and goes back into the queue at a random spot, never on top, so it can come up later.
+     */
+    putBack(item: T): void {
+      const id = idOf(item);
+      if (!seen.delete(id)) return;
+      save(key, [...seen]);
+      if (queue.length) queue.splice(Math.floor(Math.random() * queue.length), 0, item);
+    },
     get remaining() {
       return items.filter((t) => !seen.has(idOf(t))).length;
     },

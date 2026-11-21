@@ -15,7 +15,7 @@
   import { keepAwake } from '../../lib/wakelock';
   import { sfx } from '../../lib/sound';
   import { host, packNames } from './host.svelte';
-  import { playerView } from './view';
+  import { awayWords, playerView } from './view';
   import { demoHost } from './demo';
   import Rules from './Rules.svelte';
   import HostLobby from './HostLobby.svelte';
@@ -152,7 +152,7 @@
             <section class="turn" aria-label="Current turn">
               <div class="headline">
                 <div><h2>{presenter?.name ?? 'Player'} is presenting</h2>
-                  <p class="muted" class:away={view.held}>{view.held ? `Waiting for ${presenter?.name ?? 'the presenter'} to reconnect · clock stopped (up to a minute)` : 'Guess on your phone'}</p></div>
+                  <p class="muted" class:away={view.held}>{view.held ? `Waiting for ${presenter?.name ?? 'the presenter'} to reconnect · clock stopped (up to ${awayWords(view.awayMs)})` : 'Guess on your phone'}</p></div>
                 <Timer left={view.left} total={view.span} paused={view.paused} />
               </div>
               <div class="turn-body">

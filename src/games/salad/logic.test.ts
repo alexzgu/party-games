@@ -49,6 +49,17 @@ describe('Word Salad rounds', () => {
     expect(send(refreshed, 'a', { t: 'pick', index: 0, reshuffled: false })).toBe(refreshed);
   });
 
+  it('takes the tile a player selected but never confirmed when picking time runs out', () => {
+    const g = L.startRound(lobby(), 500);
+    let chose = send(send(g, 'a', { t: 'select', index: 2, reshuffled: false }), 'a', { t: 'select', index: 1, reshuffled: false });
+    expect(playerView(chose, 'a', 500).selected).toBe(1);
+    expect(chose.turns[0].secret).toBeNull(); // selecting is not picking
+    expect(L.tick(chose, 20_500, both).turns[0].secret).toBe(g.turns[0].offers[1]);
+    chose = send(chose, 'a', { t: 'reshuffle' });
+    expect(chose.turns[0].selected).toBeNull(); // new offers, no selection
+    expect(readToHost({ t: 'select', serial: 1, index: 0, reshuffled: false })).toMatchObject({ t: 'select', index: 0 });
+  });
+
   it('selects and prepares simultaneously, then publishes openings in seat order', () => {
     const picked = L.startRound(lobby(), 500);
     expect(picked.deadline).toBe(20_500);
@@ -147,6 +158,16 @@ describe('Word Salad rounds', () => {
     expect(L.timeLeft(back, away + 40_000)).toBe(L.PRESENT_MS - 5_000);
     g = L.tick(g, away + L.AWAY_MS, solo);
     expect(g.result).toMatchObject({ answer: L.currentTurn(onStage).secret!.answer, reason: 'offline', points: {} });
+  });
+
+  it('waits as long as the host chose for a dropped presenter', () => {
+    const onStage = { ...openingTurn(), awayMs: 30_000 };
+    const away = onStage.deadline! - L.PRESENT_MS + 5_000;
+    const g = L.tick(onStage, away, new Set(['b']));
+    expect(playerView(g, 'b', away).awayMs).toBe(30_000);
+    expect(L.tick(g, away + 29_999, new Set(['b'])).phase).toBe('present');
+    expect(L.tick(g, away + 30_000, new Set(['b'])).result?.reason).toBe('offline');
+    expect(L.rematch({ ...g, phase: 'over' }).awayMs).toBe(30_000);
   });
 
   it('lets a player who left come back, but not one the host removed', () => {

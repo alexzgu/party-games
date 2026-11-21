@@ -6,6 +6,8 @@
   import Segmented from '../../components/Segmented.svelte';
   import Toggle from '../../components/Toggle.svelte';
   import Rules from './Rules.svelte';
+  import RulesCard from '../../components/RulesCard.svelte';
+  import { rulesSummary } from './rulesSummary';
   import { reseating, unchanged, type Reseat } from '../../lib/players';
   import Players from './Players.svelte';
   import PackPicker from './PackPicker.svelte';
@@ -35,12 +37,13 @@
   let seconds = $state(prefs.seconds);
   let target = $state(prefs.target);
   let steal = $state(prefs.steal);
+  let stealUsesTurn = $state(prefs.stealUsesTurn);
   // First visit: every built-in pack except the adults-only one.
   // svelte-ignore state_referenced_locally
   let selected = $state((prefs.packIds ?? packs.filter((p) => p.id !== 'after-dark').map((p) => p.id)).filter((id) => packs.some((p) => p.id === id)));
 
   $effect(() => savePlayers($state.snapshot(names)));
-  $effect(() => saveSetup({ packIds: $state.snapshot(selected), seconds, target, steal }));
+  $effect(() => saveSetup({ packIds: $state.snapshot(selected), seconds, target, steal, stealUsesTurn }));
 
   const SECONDS = SECONDS_CHOICES.map((s) => ({ value: s as number, label: `${s}s` }));
   const prompts = $derived(packs.filter((p) => selected.includes(p.id)).reduce((n, p) => n + p.prompts.length, 0));
@@ -76,12 +79,12 @@
 
   function start() {
     unlockAudio();
-    onstart($state.snapshot(names), { target, seconds, steal, packIds: $state.snapshot(selected) });
+    onstart($state.snapshot(names), { target, seconds, steal, stealUsesTurn, packIds: $state.snapshot(selected) });
   }
 </script>
 
 <Screen title={gameName('quick')} onback={() => { keepRoster(); onhome(); }} backLabel="Home">
-  {#snippet trailing()}<Rules {seconds} {target} {steal} />{/snippet}
+  {#snippet trailing()}<Rules {seconds} {target} {steal} {stealUsesTurn} />{/snippet}
 <div class="setup">
   {#if inProgress}
     {@const top = standings(inProgress).slice(0, 3)}
@@ -95,15 +98,15 @@
   <Players bind:names bind:seats />
   <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = quickPacks())} />
 
-  <section class="opts" aria-labelledby="opts-h">
-    <h3 id="opts-h">Rules</h3>
+  <RulesCard summary={rulesSummary(seconds, target, steal, stealUsesTurn)}>
     <div class="secs">
       <span class="label">Seconds on the clock</span>
       <Segmented label="Seconds on the clock" options={SECONDS} bind:value={seconds} />
     </div>
     <Stepper label="Points to win" bind:value={target} min={TARGET_RANGE[0]} max={TARGET_RANGE[1]} />
     <Toggle label="Steal" hint="A miss goes to the next player, same prompt" bind:checked={steal} />
-  </section>
+    {#if steal}<Toggle label="A steal uses the stealer's turn" hint="Play then skips them and goes to the player after" bind:checked={stealUsesTurn} />{/if}
+  </RulesCard>
 </div>
 
   {#snippet actions()}
@@ -130,7 +133,6 @@
   .resume b { font-family: var(--font-display); font-size: 1.2rem; }
   .resume span { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .resume small { margin-top: var(--s-1); color: var(--text-dim); font-size: 0.85rem; line-height: 1.3; }
-  .opts { display: flex; flex-direction: column; gap: var(--s-2); }
   .secs { background: var(--surface); border-radius: var(--r-md); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); display: flex; flex-direction: column; gap: var(--s-2); }
   .label { font-weight: 600; }
 </style>

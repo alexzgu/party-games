@@ -151,13 +151,20 @@
     ending = reason;
     remaining = reason === 'time' ? 0 : remaining;
     if (reason === 'time') { sfx.buzzer(); haptic.end(); } else { sfx.reveal(); haptic.end(); }
-    later(() => onend(finish(round(), reason)), END_MS);
+    later(() => close(reason), END_MS);
   }
 
   function quit() {
     pause = null;
     ending = 'quit';
-    onend(finish(round(), 'quit'));
+    close('quit');
+  }
+
+  /** Ends the round; the word still on screen was never played, so it goes back into its deck. */
+  function close(reason: EndReason) {
+    const r = round();
+    if (r.current) dealer.putBack(r.current);
+    onend(finish(r, reason));
   }
 
   function resume() {

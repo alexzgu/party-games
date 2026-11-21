@@ -5,10 +5,12 @@ export const DEMO_PROMPTS = ['things you\'d find in a fridge', 'words that rhyme
 
 /** The game state a demo screen shows, or null for screens outside play. */
 export function demoGame(screen: string): GameState | null {
-  const base = newGame(['Maya', 'Jordan', 'Priya', 'Sam', 'Theo'], { target: 7, seconds: 5, steal: true, packIds: [] });
+  const base = newGame(['Maya', 'Jordan', 'Priya', 'Sam', 'Theo'], { target: 7, seconds: 5, steal: true, stealUsesTurn: false, packIds: [] });
   const scored: GameState = { ...base, players: base.players.map((p, i) => ({ ...p, score: [3, 2, 5, 1, 0][i] })), turn: 2, actor: 2 };
   const live = reveal(scored, 'things you put on a hot dog');
   const missed = judge(live, false); // Steal: Sam's turn on Priya's prompt
+  /** Priya one point from the target; with `left: 1` hers is the round's last turn. */
+  const nearly: GameState = { ...scored, players: scored.players.map((p, i) => (i === 2 ? { ...p, score: 6 } : p)) };
   switch (screen) {
     case 'handoff-first': return base;
     case 'handoff': return judge(reveal({ ...scored, turn: 1, actor: 1 }, 'kinds of soup'), true);
@@ -17,9 +19,10 @@ export function demoGame(screen: string): GameState | null {
     case 'judge': return timeUp(live);
     case 'steal': return missed;
     case 'live-steal': return { ...startSteal(missed), timeLeft: 4200 };
-    case 'handoff-win': return judge(reveal({ ...scored, players: scored.players.map((p, i) => (i === 2 ? { ...p, score: 6 } : p)) }, 'excuses for being late'), true);
+    case 'handoff-reached': return judge(reveal(nearly, 'excuses for being late'), true);
+    case 'handoff-win': return judge(reveal({ ...nearly, left: 1 }, 'excuses for being late'), true);
     case 'win': {
-      const w = judge(reveal({ ...scored, players: scored.players.map((p, i) => (i === 2 ? { ...p, score: 6 } : p)) }, 'excuses for being late'), true);
+      const w = judge(reveal({ ...nearly, left: 1 }, 'excuses for being late'), true);
       return { ...w, phase: 'win', prev: null, log: Array.from({ length: 17 }, () => w.log[0]) };
     }
     default: return null;

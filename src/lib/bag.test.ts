@@ -38,6 +38,25 @@ describe('makeBag', () => {
     }
   });
 
+  it('puts back an item dealt but never played: unseen again and dealt before any repeat', () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => storage.set(k, v) });
+    try {
+      const items = ['a', 'b', 'c', 'd'];
+      const bag = makeBag('back', items, (x) => x);
+      const first = bag.next()!;
+      bag.next();
+      bag.putBack(first);
+      expect(bag.remaining).toBe(3);
+      expect(makeBag('back', items, (x) => x).remaining).toBe(3); // forgotten in storage too
+      const rest = [bag.next(), bag.next(), bag.next()];
+      expect(rest).toContain(first);
+      expect(bag.remaining).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('returns undefined for an empty pool', () => {
     expect(makeBag('t2', [], (x: string) => x).next()).toBeUndefined();
   });

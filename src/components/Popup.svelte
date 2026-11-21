@@ -1,22 +1,29 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
 
-  // A sheet over the whole page (how to play, details). Tap outside, ✕ or Escape closes it.
-  let { title, onclose, children }: { title: string; onclose: () => void; children: Snippet } = $props();
+  // A sheet over the whole page (how to play, details). Tap outside, ✕ or Escape closes it, and
+  // focus goes back to whatever opened it. `footer` stays pinned under the scrolling body; `wide`
+  // lets a phone on its side use more of its width.
+  let { title, onclose, children, footer, wide = false }: { title: string; onclose: () => void; children: Snippet; footer?: Snippet; wide?: boolean } = $props();
 
   let card: HTMLDivElement;
-  $effect(() => card.querySelector<HTMLElement>('.x')?.focus({ focusVisible: false } as FocusOptions));
+  const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  $effect(() => {
+    card.querySelector<HTMLElement>('.x')?.focus({ focusVisible: false } as FocusOptions);
+    return () => opener?.isConnected && opener.focus({ preventScroll: true });
+  });
 </script>
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
 
 <div class="scrim fade-in" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
-  <div class="card pop-in" role="dialog" aria-modal="true" aria-label={title} bind:this={card}>
+  <div class="card pop-in" class:wide role="dialog" aria-modal="true" aria-label={title} bind:this={card}>
     <header>
       <h2>{title}</h2>
       <button class="x" aria-label="Close" onclick={onclose}>✕</button>
     </header>
     <div class="body">{@render children()}</div>
+    {#if footer}<footer>{@render footer()}</footer>{/if}
   </div>
 </div>
 
@@ -38,4 +45,10 @@
     background: var(--overlay); color: var(--text);
   }
   .body { overflow-y: auto; padding: var(--s-2) var(--s-5) var(--s-5); }
+  footer { flex: none; display: flex; flex-direction: column; padding: var(--s-3) var(--s-5) var(--s-4); border-top: 1px solid var(--line); }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .wide { width: min(760px, 100%); }
+    header { padding: var(--s-3) var(--s-3) var(--s-1) var(--s-5); }
+    footer { padding: var(--s-2) var(--s-5) var(--s-3); }
+  }
 </style>

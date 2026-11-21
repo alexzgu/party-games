@@ -1,16 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { accepts, finish, makeDealer, mark, newRound, openPlay, score, toggle, type Round } from './round';
 import { cleanLine } from './words';
+import { makeBag } from '../../lib/bag';
 
 describe('round results', () => {
-  it('scores, toggles mis-tilts, and counts the word left on screen as a pass', () => {
+  it('scores, toggles mis-tilts, and leaves the word on screen at the end out of the results', () => {
     let r: Round = { ...newRound(['x'], 60, true), current: 'Cat' };
     r = mark(r, true, 'Dog');
     r = mark(r, false, 'Owl');
     r = finish(r, 'time');
-    expect(r.shown).toEqual([{ word: 'Cat', ok: true }, { word: 'Dog', ok: false }, { word: 'Owl', ok: false }]);
+    expect(r.shown).toEqual([{ word: 'Cat', ok: true }, { word: 'Dog', ok: false }]);
+    expect(r.current).toBeNull();
     expect(score(r.shown)).toBe(1);
-    expect(score(toggle(r.shown, 2))).toBe(2);
+    expect(score(toggle(r.shown, 1))).toBe(2);
     expect(r.phase).toBe('results');
   });
 });
@@ -40,6 +42,25 @@ describe('dealer', () => {
     const got: string[] = [];
     for (let w = d.next(); w; w = d.next()) got.push(w.toLowerCase());
     expect(got.sort()).toEqual(['one', 'shared', 'three']);
+  });
+
+  it('puts the word left on screen back in its deck, unseen, even after a reload', () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => storage.set(k, v) });
+    try {
+      const deck = { id: 'back', name: 'B', emoji: '', blurb: '', words: ['One', 'Two', 'Three'] };
+      const unseen = () => makeBag('forehead:back', deck.words, (w) => w.trim().toLowerCase()).remaining;
+      const dealer = makeDealer([deck]);
+      const w = dealer.next()!;
+      expect(unseen()).toBe(2);
+      dealer.putBack(w);
+      expect(unseen()).toBe(3);
+      const before = makeDealer([deck]).next()!;
+      makeDealer([deck], [before]).putBack(before); // dealt before a reload: the new dealer has no record of it
+      expect(unseen()).toBe(3);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

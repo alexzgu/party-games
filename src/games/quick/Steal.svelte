@@ -21,7 +21,7 @@
     <div class="hand">
       <p class="kicker">Pass the phone to</p>
       <p class="name pop-in">{thief.name}</p>
-      <p class="hint">Same prompt, fresh {game.seconds} seconds. Name 3 things <b>{owner.name} didn't say</b> to take the point.</p>
+      <p class="hint">Same prompt, fresh {game.seconds} seconds. Name 3 things <b>{owner.name} didn't say</b> to take the point.{game.stealUsesTurn ? ' This steal is your turn.' : ''}</p>
     </div>
   </div>
 </div>

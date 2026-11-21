@@ -5,6 +5,7 @@
   import HowTo from '../../components/HowTo.svelte';
   import Stepper from '../../components/Stepper.svelte';
   import Toggle from '../../components/Toggle.svelte';
+  import RulesCard from '../../components/RulesCard.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import PackFile from '../../components/PackFile.svelte';
   import { spectrumPacks, customSpectra, packAge, type Spectrum, type SpectrumPack } from '../../lib/content';
@@ -12,6 +13,7 @@
   import { back, go } from '../../lib/router.svelte';
   import { teamColor } from './look';
   import { saveConfig } from './persist';
+  import { rulesSummary } from './rulesSummary';
   import type { Config } from './state';
 
   let { config, onstart, onmake }: { config: Config; onstart: (c: Config) => void; onmake: () => void } = $props();
@@ -81,11 +83,10 @@
     </div>
   </section>
 
-  <section class="stack">
-    <h3>Rules</h3>
+  <RulesCard summary={rulesSummary(cfg.goal, cfg.steal)}>
     <Stepper label="Points to win" bind:value={cfg.goal} min={5} max={30} />
     <Toggle label="Steal rule" hint="After each guess, the other team calls left or right of the needle for 1 point" bind:checked={cfg.steal} />
-  </section>
+  </RulesCard>
 
   <section class="stack">
     <div>

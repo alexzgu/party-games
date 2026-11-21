@@ -64,10 +64,12 @@ export function openPlay(round: Round, next: () => string | undefined): { round:
   return first ? { round: { ...round, current: first }, out: false } : { round, out: true };
 }
 
-/** Ends the round; the word left on screen counts as a pass (fixable on the results screen). */
+/**
+ * Ends the round. The word left on screen was never played, so it is not in the results; the
+ * caller puts it back in its deck (`putBack` on the dealer) so it can come up in a later round.
+ */
 export function finish(round: Round, reason: EndReason): Round {
-  const shown = round.current ? [...round.shown, { word: round.current, ok: false }] : round.shown;
-  return { ...round, shown, current: null, phase: 'results', ended: reason, remainingMs: reason === 'time' ? 0 : round.remainingMs };
+  return { ...round, current: null, phase: 'results', ended: reason, remainingMs: reason === 'time' ? 0 : round.remainingMs };
 }
 
 const keyOf = (w: string) => w.trim().toLowerCase();
@@ -75,12 +77,15 @@ const keyOf = (w: string) => w.trim().toLowerCase();
 /**
  * Deals from one or several decks. Each deck keeps its own no-repeat bag across rounds and
  * restarts; a word never comes up twice in one round, and the dealer runs dry (undefined)
- * once every word of the chosen decks has been shown this round.
+ * once every word of the chosen decks has been shown this round. `putBack` undoes a deal.
  */
 export function makeDealer(decks: readonly WordDeck[], alreadyShown: readonly string[] = [], rand: () => number = Math.random) {
   const pools = decks
     .filter((d) => d.words.length > 0)
-    .map((d) => ({ size: d.words.length, bag: makeBag('forehead:' + d.id, d.words, keyOf) }));
+    .map((d) => ({ size: d.words.length, words: d.words, bag: makeBag('forehead:' + d.id, d.words, keyOf) }));
+  type Pool = (typeof pools)[number];
+  /** Which pool dealt each word, so putting one back reaches the right bag. */
+  const dealtBy = new Map<string, Pool>();
   const all = new Set(decks.flatMap((d) => d.words.map(keyOf)));
   const shown = new Set(alreadyShown.map(keyOf));
   const total = pools.reduce((n, p) => n + p.size, 0);
@@ -95,15 +100,31 @@ export function makeDealer(decks: readonly WordDeck[], alreadyShown: readonly st
     next(): string | undefined {
       if (pools.length === 0 || [...all].every((k) => shown.has(k))) return undefined;
       for (let tries = 0; tries < 500; tries++) {
-        const w = pickPool().bag.next();
+        const pool = pickPool();
+        const w = pool.bag.next();
         if (w && !shown.has(keyOf(w))) {
           shown.add(keyOf(w));
+          dealtBy.set(keyOf(w), pool);
           return w;
         }
       }
       const left = decks.flatMap((d) => d.words).find((w) => !shown.has(keyOf(w)));
       if (left) shown.add(keyOf(left));
       return left;
+    },
+    /**
+     * The word on screen when the round ended was never played: it goes back into its deck, unseen.
+     * A word dealt before a reload has no record here, so every deck holding it takes it back.
+     */
+    putBack(word: string): void {
+      const k = keyOf(word);
+      shown.delete(k);
+      const from = dealtBy.get(k);
+      for (const p of from ? [from] : pools) {
+        const own = p.words.find((w) => keyOf(w) === k);
+        if (own) p.bag.putBack(own);
+      }
+      dealtBy.delete(k);
     },
   };
 }

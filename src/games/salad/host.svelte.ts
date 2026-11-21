@@ -4,7 +4,7 @@ import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode } from '../../lib/room/code';
 import * as L from './logic';
 import { readToHost } from './protocol';
-import { loadGame, loadSettings, saveGame, saveSettings } from './store';
+import { loadGame, loadSettings, saveGame, saveSettings, type Settings } from './store';
 import { playerView } from './view';
 
 function selected(ids: string[]) {
@@ -57,9 +57,9 @@ class HostSession {
   open(): void {
     if (this.game) return;
     const saved = loadGame();
-    const ids = loadSettings();
+    const { packIds, awayMs } = loadSettings();
     const g = saved ? L.afterReload(saved, Date.now())
-      : L.newGame(newCode(), ids, poolFor(ids), Math.floor(Math.random() * 4294967296));
+      : L.newGame(newCode(), packIds, poolFor(packIds), Math.floor(Math.random() * 4294967296), awayMs);
     this.commit(g);
     this.link.open(g.code);
     this.ticker = setInterval(() => this.tick(), 250);
@@ -112,9 +112,12 @@ class HostSession {
     this.tick();
   }
 
-  settings(packIds: string[]): void {
-    saveSettings(packIds);
-    if (this.game?.phase === 'lobby') this.commit({ ...this.game, packIds, pool: poolFor(packIds) });
+  /** Packs change only in the lobby; the presenter wait applies at once. */
+  settings(s: Settings): void {
+    saveSettings(s);
+    if (!this.game) return;
+    const packs = this.game.phase === 'lobby' ? { packIds: s.packIds, pool: poolFor(s.packIds) } : {};
+    this.commit({ ...this.game, ...packs, awayMs: s.awayMs });
   }
 
   end(): void {

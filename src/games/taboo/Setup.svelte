@@ -6,6 +6,7 @@
   import Segmented from '../../components/Segmented.svelte';
   import Stepper from '../../components/Stepper.svelte';
   import Toggle from '../../components/Toggle.svelte';
+  import RulesCard from '../../components/RulesCard.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import PackFile from '../../components/PackFile.svelte';
   import { tabooPacks, customTaboo, packAge, type TabooCard, type TabooPack } from '../../lib/content';
@@ -14,6 +15,7 @@
   import { teamColor } from './look';
   import { GOAL, ROUNDS, saveConfig } from './persist';
   import { SECONDS, type Config, type EndMode } from './state';
+  import { rulesSummary } from './rulesSummary';
 
   let { config, onstart }: { config: Config; onstart: (c: Config) => void } = $props();
 
@@ -73,8 +75,7 @@
     </div>
   </section>
 
-  <section class="stack">
-    <h3>Rules</h3>
+  <RulesCard summary={rulesSummary(cfg)}>
     <div class="field"><span class="lbl">Turn length</span><Segmented label="Turn length" bind:value={cfg.seconds} options={secondsOptions} /></div>
     <div class="field"><span class="lbl">Play until</span><Segmented label="Play until" bind:value={cfg.mode} options={modeOptions} /></div>
     {#if cfg.mode === 'score'}
@@ -83,7 +84,7 @@
       <Stepper label="Rounds to play" bind:value={cfg.rounds} min={ROUNDS.min} max={ROUNDS.max} />
     {/if}
     <Toggle label="Skips cost a point" hint={cfg.skipCost ? 'Each skip is −1' : 'Skipping is free'} bind:checked={cfg.skipCost} />
-  </section>
+  </RulesCard>
 
   <section class="stack">
     <div>

@@ -9,7 +9,8 @@ function keep(msg: ToHost, view: PlayerView): boolean {
   const draft = view.draft;
   switch (msg.t) {
     case 'guess': return view.phase === 'present' && !view.acknowledged.includes(msg.id);
-    case 'pick': return !view.ready && msg.reshuffled === view.reshuffled;
+    case 'pick':
+    case 'select': return !view.ready && msg.reshuffled === view.reshuffled;
     case 'reshuffle': return !view.reshuffled && !view.ready;
     case 'word': return !!draft && draft.index === msg.frame && draft.values[msg.slot] !== msg.value
       && draft.choices[msg.slot]?.includes(msg.value) === true;

@@ -6,7 +6,7 @@
   import Strip from './Strip.svelte';
   import Confetti from './Confetti.svelte';
   import { playerColor, said } from './ui';
-  import { winner, type GameState } from './logic';
+  import { roundNote, winner, type GameState } from './logic';
 
   // Between turns: how the last turn went, the scores, and whose turn it is now. Revealing the
   // prompt starts the clock, so the button says so.
@@ -24,13 +24,15 @@
   const up = $derived(game.players[game.turn]);
   const last = $derived(game.log.at(-1) ?? null);
   const won = $derived(winner(game));
+  /** Someone reached the target but the round is not over yet (or ended tied on top). */
+  const note = $derived(roundNote(game));
   const name = (i: number) => game.players[i]?.name ?? '';
 </script>
 
 {#if last && last.scorer >= 0 && game.prev}<Confetti count={30} />{/if}
 
 <Screen title={gameName('quick')} onback={onleave} backLabel="Back to setup" split>
-  {#snippet trailing()}<Rules seconds={game.seconds} target={game.target} steal={game.steal} />{/snippet}
+  {#snippet trailing()}<Rules seconds={game.seconds} target={game.target} steal={game.steal} stealUsesTurn={game.stealUsesTurn} />{/snippet}
 <div class="center">
   <div class="split-side">
     {#if last}
@@ -53,10 +55,11 @@
   <div class="split-main">
     {#if won >= 0}
       <div class="hand" style:--c={playerColor(won)}>
-        <p class="kicker">First to {game.target}</p>
+        <p class="kicker">Round over · top score</p>
         <p class="name pop-in">🏆 {name(won)}</p>
       </div>
     {:else}
+      {#if note}<p class="round-note pop-in" role="status">{note}</p>{/if}
       <div class="hand" style:--c={playerColor(game.turn)}>
         <p class="kicker">Pass the phone to</p>
         <div class="who pop-in">
@@ -65,7 +68,7 @@
         </div>
         <p class="hint">The clock starts when you tap: <b>{game.seconds} seconds</b> to name 3.</p>
       </div>
-      {#if !last}<p class="meta">First to {game.target} points wins{game.steal ? ' · steals on' : ''}</p>{/if}
+      {#if !last}<p class="meta">{game.target} points wins once the round is done{game.steal ? ' · steals on' : ''}</p>{/if}
     {/if}
 
     {#if error}<p class="error" role="alert">{error}</p>{:else if notice}<p class="notice" role="status">{notice}</p>{/if}
@@ -105,6 +108,10 @@
   }
   .hint { font-size: 1.05rem; font-weight: 600; max-width: 22em; }
   .meta { text-align: center; color: var(--text-faint); }
+  .round-note {
+    align-self: center; max-width: 24em; padding: var(--s-2) var(--s-4); border-radius: var(--r-md); text-align: center;
+    font-weight: 700; line-height: 1.3; background: color-mix(in srgb, var(--accent) 16%, var(--surface)); border: 1.5px solid var(--accent);
+  }
   .error { color: var(--bad-ink); text-align: center; }
   .notice { color: var(--text-dim); font-weight: 600; text-align: center; }
   @keyframes breathe { 50% { transform: scale(1.12); opacity: 0.7; } }

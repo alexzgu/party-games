@@ -25,6 +25,8 @@ export function playerView(g: Game, pid: string, now: number) {
     result: g.phase === 'reveal' ? g.result : null,
     offers: g.phase === 'pick' ? turn?.offers.map(label) ?? [] : [],
     reshuffled: turn?.reshuffled ?? false,
+    selected: g.phase === 'pick' ? turn?.selected ?? null : null,
+    awayMs: g.awayMs,
     secret: turn?.secret && (composing || g.phase === 'pick') ? label(turn.secret) : null,
     draft,
     ready: !!(g.phase === 'pick' ? turn?.secret : turn?.first),
@@ -32,3 +34,7 @@ export function playerView(g: Game, pid: string, now: number) {
 }
 
 export type PlayerView = ReturnType<typeof playerView>;
+
+/** The presenter wait said in words: "30 seconds", "a minute", "5 minutes". */
+export const awayWords = (ms: number) =>
+  ms < 60_000 ? `${Math.round(ms / 1000)} seconds` : ms === 60_000 ? 'a minute' : `${Math.round(ms / 60_000)} minutes`;

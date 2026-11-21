@@ -8,8 +8,9 @@ export const MAX_PLAYERS = 8;
 export const PICK_MS = 20_000;
 export const PREPARE_MS = 30_000;
 export const PRESENT_MS = 75_000;
-/** How long a presenter's turn waits, clock stopped, for their phone to come back. */
+/** How long a presenter's turn waits, clock stopped, for their phone to come back: the default and the host's choices. */
 export const AWAY_MS = 60_000;
+export const AWAY_CHOICES = [30_000, 60_000, 120_000, 300_000] as const;
 const REVEAL_MS = 9_000;
 const SCORES_MS = 15_000;
 
@@ -31,6 +32,8 @@ interface Turn {
   reshuffled: boolean;
   draft: Draft | null;
   first: string | null;
+  /** The offer this player has tapped but not yet confirmed: taken at the deadline instead of the first. */
+  selected: number | null;
 }
 export interface Guess { id: number; pid: string; text: string; request: string }
 export interface Result {
@@ -49,8 +52,10 @@ export interface Game {
   serial: number;
   deadline: number | null;
   paused: number | null;
-  /** When the presenter's phone dropped: their turn is on hold, its clock stopped, until they return or AWAY_MS passes. */
+  /** When the presenter's phone dropped: their turn is on hold, its clock stopped, until they return or `awayMs` passes. */
   offlineSince: number | null;
+  /** How long that hold lasts (the host's setting). */
+  awayMs: number;
   players: Player[];
   order: string[];
   turns: Turn[];
@@ -68,10 +73,10 @@ export interface Game {
   recorded: boolean;
 }
 
-export function newGame(code: string, packIds = ['classic'], pool: Secret[] = [], seed = 1): Game {
+export function newGame(code: string, packIds = ['classic'], pool: Secret[] = [], seed = 1, awayMs = AWAY_MS): Game {
   return {
     code, packIds, pool, seed, phase: 'lobby', round: 0, at: 0, serial: 0,
-    deadline: null, paused: null, offlineSince: null, players: [], order: [], turns: [],
+    deadline: null, paused: null, offlineSince: null, awayMs, players: [], order: [], turns: [],
     used: [], sentences: [], guesses: [], assists: [], result: null, solved: 0, total: 0,
     log: [], recorded: false,
   };
@@ -149,7 +154,7 @@ export function startRound(g: Game, now: number): Game {
   const turns: Turn[] = [];
   const rand = random(g.seed + g.round);
   for (const pid of order) {
-    turns.push({ pid, offers: offer(g, turns, [], rand), secret: null, reshuffled: false, first: null, draft: null });
+    turns.push({ pid, offers: offer(g, turns, [], rand), secret: null, reshuffled: false, first: null, draft: null, selected: null });
   }
   return advance({
     ...g, round: g.round + 1, at: 0, order, turns, result: null, guesses: [], sentences: [], assists: [],
@@ -164,7 +169,7 @@ function updateTurn(g: Game, turn: Turn): Game {
 function prepare(g: Game, now: number): Game {
   const rand = random(g.seed + g.serial);
   const turns = g.turns.map((turn) => {
-    const secret = turn.secret ?? turn.offers[0];
+    const secret = turn.secret ?? turn.offers[turn.selected ?? 0] ?? turn.offers[0];
     return { ...turn, secret, draft: draftFor(secret, opening[secret.category], 0, rand) };
   });
   return advance({ ...g, turns, used: [...g.used, ...turns.map((turn) => turn.secret.answer)] }, 'prepare', now);
@@ -253,10 +258,10 @@ export function tick(g: Game, now: number, online: ReadonlySet<string>): Game {
   return g;
 }
 
-/** The presenter is away: their turn waits, clock stopped, then is given up after AWAY_MS. */
+/** The presenter is away: their turn waits, clock stopped, then is given up after the host's `awayMs`. */
 function hold(g: Game, now: number): Game {
   if (g.offlineSince === null) return { ...g, offlineSince: now };
-  return now - g.offlineSince >= AWAY_MS ? reveal(g, now, 'offline') : g;
+  return now - g.offlineSince >= g.awayMs ? reveal(g, now, 'offline') : g;
 }
 
 /** The presenter is back: the clock carries on from where it stopped. */
@@ -315,12 +320,15 @@ export function fromPhone(g: Game, pid: string, msg: ToHost, now: number): Game 
     if (msg.t === 'pick' && turn.offers[msg.index] && msg.reshuffled === turn.reshuffled) {
       return updateTurn(g, { ...turn, secret: turn.offers[msg.index] });
     }
+    if (msg.t === 'select' && turn.offers[msg.index] && msg.reshuffled === turn.reshuffled) {
+      return updateTurn(g, { ...turn, selected: msg.index });
+    }
     if (msg.t === 'reshuffle' && !turn.reshuffled) {
       const offers = offer(g, g.turns.filter((t) => t !== turn), turn.offers, random(g.seed + g.serial + g.order.indexOf(pid)));
-      return updateTurn(g, { ...turn, offers, reshuffled: true });
+      return updateTurn(g, { ...turn, offers, reshuffled: true, selected: null });
     }
   }
-  if (msg.t === 'pick' || msg.t === 'reshuffle') return g;
+  if (msg.t === 'pick' || msg.t === 'select' || msg.t === 'reshuffle') return g;
   const canCompose = (g.phase === 'prepare' && !turn.first) || (g.phase === 'present' && currentTurn(g) === turn);
   return canCompose && turn.draft ? compose(g, turn, msg) : g;
 }
@@ -340,7 +348,7 @@ export function afterReload(g: Game, now: number): Game {
 }
 export function rematch(g: Game): Game {
   return {
-    ...newGame(g.code, g.packIds, g.pool, g.seed + 2), serial: g.serial + 1,
+    ...newGame(g.code, g.packIds, g.pool, g.seed + 2, g.awayMs), serial: g.serial + 1,
     players: g.players.map((p) => ({ ...p, score: 0, roundPoints: 0 })),
   };
 }

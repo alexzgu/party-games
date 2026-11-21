@@ -5,6 +5,7 @@
   import Segmented from '../../components/Segmented.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import ListTools from '../../components/ListTools.svelte';
+  import RulesCard from '../../components/RulesCard.svelte';
   import type { SortKey } from '../../lib/listing';
   import { customDecks, wordDecks } from '../../lib/content';
   import { back, go } from '../../lib/router.svelte';
@@ -15,6 +16,7 @@
   import { startRound } from './flow';
   import { calibration } from './calibration.svelte';
   import { findDecks } from './find';
+  import { roundSummary } from './roundSummary';
 
   const decks = wordDecks();
   // Drop selections of decks that were deleted since.
@@ -66,7 +68,7 @@
         <li>Your friends shout clues. They can't say the word itself.</li>
         <li><b>Tilt down</b> when you get it. <b>Tilt up</b> to pass.</li>
         <li>Rather tap? Your right hand taps <b>Got it</b>, your left hand taps <b>Pass</b>. Each side is labelled on its edge.</li>
-        <li>Score as many as you can before the timer runs out. Pick the round length below.</li>
+        <li>Score as many as you can before the timer runs out. Set the round length under Round, below the packs.</li>
         <li>Tilted the wrong way? Tap the word on the results screen to fix it.</li>
       </ol>
     </HowTo>
@@ -112,21 +114,22 @@
     {#if !shown.length && query.trim()}<p class="faint none">No packs match “{query.trim()}”</p>{/if}
   </section>
 
-  <section class="stack">
-    <h3>Round length</h3>
-    <Segmented label="Round length" options={lengths} bind:value={prefs.seconds} onchange={savePrefs} />
-  </section>
-
-  <section class="stack">
-    <h3>Controls</h3>
-    <Segmented label="Controls" options={inputs} bind:value={prefs.input} onchange={savePrefs} />
-    <p class="faint small">{inputHelp[prefs.input]}</p>
+  <RulesCard title="Round" summary={roundSummary(prefs.seconds, prefs.input)}>
+    <div class="field">
+      <span class="lbl">Round length</span>
+      <Segmented label="Round length" options={lengths} bind:value={prefs.seconds} onchange={savePrefs} />
+    </div>
+    <div class="field">
+      <span class="lbl">Controls</span>
+      <Segmented label="Controls" options={inputs} bind:value={prefs.input} onchange={savePrefs} />
+      <p class="faint small">{inputHelp[prefs.input]}</p>
+    </div>
     {#if prefs.input !== 'tap'}
       <Button variant="secondary" onclick={() => go('/forehead/calibrate')}>
         {calibration.th ? 'Calibrate tilt again (new player?)' : 'Calibrate tilt (half a minute)'}
       </Button>
     {/if}
-  </section>
+  </RulesCard>
 
   {#snippet actions()}
     <Button size="lg" disabled={wordCount === 0} onclick={start}>{startLabel}</Button>
@@ -139,7 +142,9 @@
   .packs-title { flex: 1; min-width: 0; }
   .count { font-size: 0.85rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .link { flex: none; border: 0; background: transparent; color: var(--accent); font-weight: 700; min-height: 44px; min-width: 44px; padding: 0 var(--s-2); }
-  .small { font-size: 0.9rem; }
+  .small { font-size: 0.9rem; padding: 0 var(--s-1); }
+  .field { display: flex; flex-direction: column; gap: var(--s-1); }
+  .lbl { font-weight: 600; font-size: 0.92rem; color: var(--text-dim); padding-left: var(--s-1); }
   .grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-2); }
   .deck {
     position: relative; width: 100%; height: 100%; min-height: 96px; text-align: left;

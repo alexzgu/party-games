@@ -96,7 +96,7 @@ export function parsePastedCards(text: string, existing: readonly GibberishCard[
   const seen = new Set<string>();
   const out: PastedCards = { items: [], skipped: [] };
   for (const line of pastedLines(text)) {
-    const r = readLine(dropNumberCells(line), 'Mixed');
+    const r = readLine(dropNumberCells(line), 'Anything');
     if (r === 'noise') continue;
     if (typeof r === 'string') { out.skipped.push(REASON[r]); continue; }
     const k = answerKey(r);

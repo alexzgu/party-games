@@ -3,6 +3,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Stepper from '../../components/Stepper.svelte';
+  import RulesCard from '../../components/RulesCard.svelte';
   import Rules from './Rules.svelte';
   import Players from './Players.svelte';
   import PackPicker from './PackPicker.svelte';
@@ -11,6 +12,7 @@
   import { loadPlayers, loadSetup, savePlayers, saveSetup } from './store';
   import { MIN_PLAYERS, TARGET_RANGE, TIMER_CHOICES, standings, type GameState } from './logic';
   import { timerLabel } from './ui';
+  import { rulesSummary } from './rulesSummary';
   import { reseating, unchanged, type Reseat } from '../../lib/players';
 
   let { saved, onstart, onresume, onroster, onmake, onedit, onhome }: {
@@ -94,8 +96,7 @@
   <Players bind:names bind:seats />
   <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = gibberishPacks())} />
 
-  <section class="opts" aria-labelledby="opts-h">
-    <h3 id="opts-h">Rules</h3>
+  <RulesCard summary={rulesSummary(seconds, target)}>
     <div class="timer" role="radiogroup" aria-label="Seconds per card">
       <span class="label">Seconds per card</span>
       <div class="seg">
@@ -105,7 +106,7 @@
       </div>
     </div>
     <Stepper label="Points to win" bind:value={target} min={TARGET_RANGE[0]} max={TARGET_RANGE[1]} />
-  </section>
+  </RulesCard>
 
 </div>
 
@@ -135,7 +136,6 @@
   .r-text b { font-family: var(--font-display); font-size: 1.2rem; }
   .r-text span { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .r-text small { margin-top: var(--s-1); color: var(--text-dim); font-size: 0.85rem; line-height: 1.3; }
-  .opts { display: flex; flex-direction: column; gap: var(--s-2); }
   .timer { background: var(--surface); border-radius: var(--r-md); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); display: flex; flex-direction: column; gap: var(--s-2); }
   .label { font-weight: 600; }
   .seg { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--bg-sunk); border-radius: var(--r-pill); padding: 4px; }

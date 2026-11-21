@@ -3,6 +3,8 @@ export const NAME_MAX = 18;
 
 export type Action =
   | { t: 'pick'; index: number; reshuffled: boolean }
+  /** A tile tapped but not yet confirmed: the pick the deadline takes. */
+  | { t: 'select'; index: number; reshuffled: boolean }
   | { t: 'reshuffle' }
   | { t: 'skipFrame' | 'publish'; frame: number }
   | { t: 'more'; frame: number; slot: number }
@@ -22,7 +24,8 @@ export function readToHost(raw: unknown): ToHost | null {
   if (!index(m.serial)) return null;
   const base = { serial: m.serial };
   switch (m.t) {
-    case 'pick': return index(m.index) && typeof m.reshuffled === 'boolean'
+    case 'pick':
+    case 'select': return index(m.index) && typeof m.reshuffled === 'boolean'
       ? { ...base, t: m.t, index: m.index, reshuffled: m.reshuffled } : null;
     case 'reshuffle': return { ...base, t: m.t };
     case 'skipFrame':

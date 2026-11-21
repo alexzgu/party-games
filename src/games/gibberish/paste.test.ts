@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { parsePastedCards } from './parse';
 
 describe('parsePastedCards', () => {
-  it('reads Phrase | Answer | Category, defaulting the category to Mixed', () => {
+  it('reads Phrase | Answer | Category, defaulting the category to Anything', () => {
     const r = parsePastedCards('1. Eye Scream | Ice Cream | Food\n- Sand A Claws | Santa Claus\nnot a card at all');
     expect(r.items).toEqual([
       { phrase: 'Eye Scream', answer: 'Ice Cream', hint: 'Food' },
-      { phrase: 'Sand A Claws', answer: 'Santa Claus', hint: 'Mixed' },
+      { phrase: 'Sand A Claws', answer: 'Santa Claus', hint: 'Anything' },
     ]);
     expect(r.skipped).toEqual(["not in 'Phrase | Answer' form"]);
   });

@@ -12,11 +12,13 @@
   import { keepAwake } from '../../lib/wakelock';
   import { phone } from './player.svelte';
   import { demoPhone } from './demo';
+  import { awayWords } from './view';
   import type { ToHost } from './protocol';
   import Rules from './Rules.svelte';
   import Join from './Join.svelte';
   import PhoneGuess from './PhoneGuess.svelte';
   import PhoneCompose from './PhoneCompose.svelte';
+  import PhonePick from './PhonePick.svelte';
   import Guesses from './Guesses.svelte';
   import Clues from './Clues.svelte';
   import Reveal from './Reveal.svelte';
@@ -89,13 +91,9 @@
         </ul>
       {:else if view.phase === 'pick' && !view.ready && view.offers.length}
         <h2>Pick a secret</h2>
-        <div class="offers">
-          {#each view.offers as offer, index (offer.answer)}
-            <button onclick={() => send({ serial: view.serial, t: 'pick', index, reshuffled: view.reshuffled })}>
-              <b>{offer.answer}</b><span>{offer.category}{offer.level === 'easy' ? ' · Easy · Half points' : ''}</span>
-            </button>
-          {/each}
-        </div>
+        {#key `${turn}:${view.reshuffled}`}
+          <PhonePick offers={view.offers} selected={view.selected} reshuffled={view.reshuffled} serial={view.serial} {send} />
+        {/key}
         <Button variant="secondary" disabled={view.reshuffled} onclick={() => send({ serial: view.serial, t: 'reshuffle' })}>
           {view.reshuffled ? 'Reshuffle used' : 'Reshuffle'}
         </Button>
@@ -141,7 +139,7 @@
     </main>
     <Button variant="ghost" onclick={() => (leaving = true)}>Leave room</Button>
     {#if view.held}
-      <div class="paused" role="status"><div><h2>Waiting for {presenter?.name ?? 'the presenter'}</h2><p>Their phone dropped. The clock is stopped until they’re back (up to a minute).</p></div></div>
+      <div class="paused" role="status"><div><h2>Waiting for {presenter?.name ?? 'the presenter'}</h2><p>Their phone dropped. The clock is stopped until they’re back (up to {awayWords(view.awayMs)}).</p></div></div>
     {:else if view.paused}<div class="paused" role="status"><div><h2>Paused</h2><p>Waiting for the host to resume.</p></div></div>{/if}
   </div>
 {/if}
@@ -168,14 +166,8 @@
   h2, .secret { overflow-wrap: anywhere; }
   .secret { line-height: 1.25; color: var(--text-dim); padding: var(--s-2) var(--s-3); border-radius: var(--r-md); background: var(--bg-sunk); }
   .secret strong { display: block; color: var(--accent); font: 800 1.35rem / 1.15 var(--font-display); }
-  .players, .offers { display: grid; gap: var(--s-2); padding: 0; margin: 0; list-style: none; }
+  .players { display: grid; gap: var(--s-2); padding: 0; margin: 0; list-style: none; }
   .players li { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-3); background: var(--surface); border-radius: var(--r-lg); }
-  .offers button {
-    display: grid; gap: var(--s-1); text-align: left; padding: var(--s-3) var(--s-4);
-    border: 2px solid var(--line); border-radius: var(--r-lg); background: var(--surface); overflow-wrap: anywhere;
-  }
-  .offers b { font: 800 1.35rem / 1.15 var(--font-display); }
-  .offers span { color: var(--text-dim); text-transform: capitalize; }
   .lost { padding: var(--s-2) var(--s-3); text-align: center; border-radius: var(--r-md); background: var(--surface); }
   .paused { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 85%, transparent); }
   .paused > div { display: grid; gap: var(--s-2); text-align: center; padding: var(--s-5); background: var(--surface); border-radius: var(--r-lg); }

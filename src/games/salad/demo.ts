@@ -57,8 +57,9 @@ export function demoHost(screen: string): { game: L.Game; online: ReadonlySet<st
   const room = lobby(screen === 'lobby-empty');
   if (screen === 'lobby' || screen === 'lobby-empty') return { game: room, online: ONLINE, now: START };
   const pick = L.startRound(room, START);
-  if (screen === 'pick' || screen === 'wait') {
-    const game = action(pick, screen === 'wait' ? 'p0' : 'p1', { t: 'pick', index: 1, reshuffled: false }, START + 3000);
+  if (screen === 'pick' || screen === 'wait' || screen === 'picking') {
+    const msg = { t: screen === 'picking' ? 'select' : 'pick', index: 1, reshuffled: false } as const;
+    const game = action(pick, screen === 'pick' ? 'p1' : 'p0', msg, START + 3000);
     return { game, online: ONLINE, now: START + 7000 };
   }
   if (screen === 'late') return { game: L.join(pick, 'late', 'Riley', ONLINE).game, online: ONLINE, now: START + 7000 };
