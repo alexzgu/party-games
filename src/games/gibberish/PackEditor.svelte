@@ -1,6 +1,7 @@
 <script lang="ts">
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
+  import SharedPill from '../../components/SharedPill.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
   import SharePack from '../../components/SharePack.svelte';
   import Popup from '../../components/Popup.svelte';
@@ -130,7 +131,7 @@
         {#if pack}
           <div class="about">
             <p class="muted">
-              {#if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if pack?.shared}Your pack, shared in the Community library: edits go out when you tap Share changes or Fizzwick adds to it{:else}Your pack, on this phone only{/if}
+              {#if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if pack?.shared}<SharedPill />{:else}Your pack, on this phone only{/if}
             </p>
             {#if builtin && edited}
               <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>

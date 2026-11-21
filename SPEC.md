@@ -45,7 +45,7 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
   items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
-  `ExportPack` (Export pack), `Community` and `CommunityItems` (browse, preview, import and star
+  `ExportPack` (Export), `Community` and `CommunityItems` (browse, preview, import and star
   Community packs), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box).
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
   to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
@@ -126,7 +126,7 @@ pack is one whole board). Code, routes and storage keys keep their older names (
 is JSON, `{"jerkBox": 1, "game": "<game id>", "packs": [...]}`, each pack as stored (id, name,
 icon (`emoji`, any one character) for Heads Down., blurb, items) without `custom` and `added`; named
 `<game>-<pack id or my-packs>.jerkbox.txt` (JSON inside, plain-text type so Chrome on Android
-can share it; import also takes `.json`). "Export pack" sits in every pack editor (built-ins
+can share it; import also takes `.json`). "Export" sits in every pack editor (built-ins
 included); Add pack → "Import" (packs from a file) and "Export" (every pack made or edited on this
 phone; hidden when there are none) sit in the row under every game's pack list (the
 setup's, Snark Tank's in its game settings). Export uses the
@@ -157,7 +157,7 @@ the page shows a small note, "Couldn't share to the library". Each wizard form s
 small text, "Packs Fizzwick makes are shared in the Community library." Shared packs stay for
 good (the owner can hide one).
 **Sharing by hand** (`SharePack`, `canShare`, `shareStatus`, `shareProblem`): every pack editor of
-a game with the library shows "🌍 Share to Community" under "Export pack" for the phone's own saved
+a game with the library shows "Share" under "Export" for the phone's own saved
 packs (pasted, typed by hand, imported from a file or made by Fizzwick), never for a built-in pack
 or its edit, nor for a pack imported from the Community library (marked `fromLibrary` when
 imported; packs imported before the mark existed cannot be told apart). The first share of a pack
@@ -884,7 +884,8 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
 - The title gets 3 s on its own. Results stay up for 8 s and the round scoreboard for 15 s.
   When both round-two fighters are blank, the first bout is skipped and the rematch runs if
   either artist has a previously shown fighter available. The host can pause, advance or close
-  the room; its back arrow leaves the room open (the start screen offers "Back to room CODE").
+  the room. Its back arrow leaves the room open, and the start screen shows the room code
+  and a "Return" button.
   The lobby supports removing players, choosing packs and changing brokers. Reconnects
   and History work as in Snark Tank. Classic has 120 titles and After Dark has 60.
 - Demos at `#/brawl/host?demo=` and `#/brawl/join?demo=` with

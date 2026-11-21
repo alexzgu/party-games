@@ -1,5 +1,5 @@
 <script lang="ts">
-  // "Export pack" in a pack editor: the pack as it is now, in a file to keep or send to friends.
+  // "Export" in a pack editor: the pack as it is now, in a file to keep or send to friends.
   import type { PackGameId } from '../app.config';
   import Button from './Button.svelte';
   import { packFile, type AnyPack } from '../lib/packfile';
@@ -15,7 +15,7 @@
 </script>
 
 <div class="export">
-  <Button variant="secondary" size="sm" onclick={send} {disabled}>Export pack</Button>
+  <Button variant="secondary" size="sm" onclick={send} {disabled}>Export</Button>
   <p class="note" role="status">{note}</p>
 </div>
 

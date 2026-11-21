@@ -29,7 +29,7 @@
       {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
       <div class="start">
         {#if openRoom}<p class="open" role="status"><b>Room {openRoom.code} is open</b> on this screen{openRoom.phase === 'lobby' ? ', in the lobby' : ', game in progress'}.</p>{/if}
-        <Button size="lg" onclick={() => go('/brawl/host')}>{openRoom ? `Back to room ${openRoom.code}` : 'Host on this screen'}</Button>
+        <Button size="lg" onclick={() => go('/brawl/host')} label={openRoom ? `Return to room ${openRoom.code}` : undefined}>{openRoom ? 'Return' : 'Host on this screen'}</Button>
         <Button size="lg" variant="secondary" onclick={() => go('/brawl/join')}>Join a game</Button>
         <p class="muted">3 to 8 players, each on their own phone.</p>
         <ConnectionLink />

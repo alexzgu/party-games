@@ -4,6 +4,7 @@
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Rules from './Rules.svelte';
+  import RoomBanner from '../../components/room/RoomBanner.svelte';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import { back, go } from '../../lib/router.svelte';
   import { unlockAudio } from '../../lib/sound';
@@ -25,15 +26,9 @@
   {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
 
   {#if openRoom}
-    <div class="banner pop-in" role="status">
-      <span><b>Room {openRoom.code} is open</b><span class="muted">{openRoom.phase === 'lobby' ? 'In the lobby' : 'Game in progress'} on this device</span></span>
-      <Button size="sm" onclick={hostHere} label="Return to room {openRoom.code}">Return</Button>
-    </div>
+    <RoomBanner title="Room {openRoom.code} is open" detail="{openRoom.phase === 'lobby' ? 'In the lobby' : 'Game in progress'} on this device" action="Return" label="Return to room {openRoom.code}" onclick={hostHere} />
   {:else if rejoin}
-    <div class="banner pop-in" role="status">
-      <span><b>You're in room {rejoin.code}</b><span class="muted">as {rejoin.name}</span></span>
-      <Button size="sm" onclick={() => go(`/snark/join?code=${rejoin.code}`)}>Rejoin</Button>
-    </div>
+    <RoomBanner title="You're in room {rejoin.code}" detail="as {rejoin.name}" action="Rejoin" label="Rejoin room {rejoin.code} as {rejoin.name}" onclick={() => go(`/snark/join?code=${rejoin.code}`)} />
   {/if}
 
   <div class="choices">
@@ -54,13 +49,6 @@
 </Screen>
 
 <style>
-  .banner {
-    display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
-    padding: var(--s-4); border-radius: var(--r-lg); border: 2px solid var(--accent);
-    background: color-mix(in srgb, var(--accent) 16%, var(--bg-raised));
-  }
-  .banner > span { display: flex; flex-direction: column; min-width: 0; }
-  .banner b { font-family: var(--font-display); font-size: 1.15rem; }
   .choices { display: grid; gap: var(--s-3); }
   .choice {
     display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: var(--s-4); row-gap: 2px;

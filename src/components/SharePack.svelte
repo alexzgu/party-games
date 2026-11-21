@@ -1,5 +1,5 @@
 <script lang="ts">
-  // "Share to Community" in a pack editor, beside "Export pack": the phone's own pack, as saved,
+  // "Share" in a pack editor, beside "Export": the phone's own pack, as saved,
   // into the Community library (library.ts `canShare`, `shareByHand`). The first share asks once,
   // in place; sharing needs the magic words, asked for here when the phone has no pass. The
   // library side marks the saved pack shared (like a shared wizard pack) once the share lands,
@@ -73,7 +73,7 @@
     onshared?.();
   }
 
-  const LABEL: Record<string, string> = { new: '🌍 Share to Community', unsent: 'Share now', changed: 'Share changes', sending: 'Sharing…' };
+  const LABEL: Record<string, string> = { new: 'Share', unsent: 'Share now', changed: 'Share changes', sending: 'Sharing…' };
 </script>
 
 {#if status !== 'off'}

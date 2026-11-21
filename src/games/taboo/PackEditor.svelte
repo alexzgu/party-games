@@ -6,6 +6,7 @@
   // instead be asked of the wizard.
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
+  import SharedPill from '../../components/SharedPill.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
   import SharePack from '../../components/SharePack.svelte';
   import Popup from '../../components/Popup.svelte';
@@ -187,7 +188,7 @@
     <PinnedPanel kind="editor" label="taboo-cards-h" foldId="taboo-details" foldName="details" foldSpoken="pack details" needed={pack.cards.length === 0} keep="items">
       {#snippet top()}
         {#if pack}
-          {#if pack.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
+          {#if pack.shared}<SharedPill />{/if}
           <label class="field">
             <span class="faint">Pack name</span>
             <input type="text" maxlength="40" autocomplete="off" bind:value={name} onchange={rename} />

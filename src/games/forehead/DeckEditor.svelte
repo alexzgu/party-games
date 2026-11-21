@@ -4,6 +4,7 @@
   import Button from '../../components/Button.svelte';
   import ListTools from '../../components/ListTools.svelte';
   import PinnedPanel from '../../components/PinnedPanel.svelte';
+  import SharedPill from '../../components/SharedPill.svelte';
   import ExportPack from '../../components/ExportPack.svelte';
   import SharePack from '../../components/SharePack.svelte';
   import AddMore from '../../components/AddMore.svelte';
@@ -146,7 +147,7 @@
 <Screen title={existing ? (builtin ? 'Built-in pack' : 'Edit pack') : 'New pack'} accent="var(--c-forehead)" fill>
   <PinnedPanel kind="editor" label="forehead-words-h" foldId="forehead-details" foldName="details" foldSpoken="pack details" needed={!deck.id} keep="items">
     {#snippet top()}
-      {#if !builtin && deck.shared}<p class="muted">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</p>{/if}
+      {#if !builtin && deck.shared}<SharedPill />{/if}
       {#if builtin}
         <div class="note" class:edited>
           {#if edited}
