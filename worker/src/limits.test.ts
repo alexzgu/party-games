@@ -24,14 +24,14 @@ describe('guess limits', () => {
     expect(takeGuess(state, 'a', T0 + LIMITS.guessAddressWindowMs + 1).ok).toBe(true);
     expect(takeGuess(state, 'b', T0).ok).toBe(true);
   });
-  it('stops everyone together after the global limit, for an address that has guessed this hour', () => {
+  it('stops everyone together after the global limit, for an address that has guessed this window', () => {
     let s = emptyGuesses();
     for (let i = 0; i < LIMITS.guessesEveryone; i++) s = guesses(s, `addr${i}`, 1).state;
     const r = takeGuess(s, 'addr0', T0);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.scope).toBe('everyone');
-    const later = takeGuess(s, 'addr0', T0 + LIMITS.guessAddressWindowMs + 1);
-    expect(later.ok).toBe(false); // out of its own 15 minutes, but the hour has not passed
+    const later = takeGuess(s, 'addr0', T0 + LIMITS.guessEveryoneWindowMs / 2);
+    expect(later.ok).toBe(false); // well inside its own limit, but everyone's window has not passed
     expect(later.state.byAddress.addr0).toEqual([T0]);
     expect(takeGuess(s, 'addr0', T0 + LIMITS.guessEveryoneWindowMs + 1).ok).toBe(true);
     expect(takeGuess(s, 'addr0', T0 + LIMITS.guessEveryoneWindowMs + 1).state.byAddress).toEqual({ addr0: [T0 + LIMITS.guessEveryoneWindowMs + 1] });
@@ -65,17 +65,18 @@ describe('guess limits', () => {
     expect(takeGuess(s, 'one-more', T0 + LIMITS.guessEveryoneWindowMs + 1, 'one-more-net')).toMatchObject({ ok: true, fresh: false });
   });
   it('says to come back when a limit that applies to the address actually opens', () => {
-    // Everyone's 300 are used, 50 of them 10 minutes before the rest.
+    // Everyone's guesses are used, 50 of them a sixth of the window before the rest.
+    const W = LIMITS.guessEveryoneWindowMs;
     let s = emptyGuesses();
-    for (let i = 0; i < LIMITS.guessesEveryone; i++) s = guesses(s, `addr${i}`, 1, i < 50 ? T0 - 600_000 : T0).state;
-    // An address that guessed at T0: the ordinary guesses open when the oldest 1 leaves the hour (50 minutes)...
+    for (let i = 0; i < LIMITS.guessesEveryone; i++) s = guesses(s, `addr${i}`, 1, i < 50 ? T0 - W / 6 : T0).state;
+    // An address that guessed at T0: the ordinary guesses open when the oldest 1 leaves the window (five sixths of it)...
     const r = takeGuess(s, 'addr200', T0);
-    if (!r.ok) expect([r.scope, r.retryAfter]).toEqual(['everyone', 50 * 60]);
+    if (!r.ok) expect([r.scope, r.retryAfter]).toEqual(['everyone', (W - W / 6) / 1000]);
     expect(r.ok).toBe(false);
     // ...and with more guesses than the limit, the wait runs until enough have left, not just the oldest.
     const crowded = { ...s, everyone: [...s.everyone, ...Array(LIMITS.freshEveryone).fill(T0)], fresh: Array(LIMITS.freshEveryone).fill(T0) };
     const late = takeGuess(crowded, 'new', T0, 'netX');
-    if (!late.ok) expect(late.retryAfter).toBe(60 * 60);
+    if (!late.ok) expect(late.retryAfter).toBe(W / 1000);
     expect(late.ok).toBe(false);
   });
   it('gives a right fresh guess back in full, so friends use none of the fresh allowances', () => {

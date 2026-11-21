@@ -71,7 +71,7 @@ describe('wizard server', () => {
     const limited = await redeem(env, 'test phrase one');
     expect(limited.status).toBe(429);
     expect(limited.headers.get('x-wizard-reason')).toBe('guesses');
-    expect(Number(limited.headers.get('retry-after'))).toBeGreaterThan(800);
+    expect(Number(limited.headers.get('retry-after'))).toBeGreaterThan(LIMITS.guessAddressWindowMs / 1000 * 0.88);
     expect(limited.headers.get('access-control-expose-headers')).toContain('retry-after');
     expect((await redeem(env, 'test phrase one', '198.51.100.9')).status).toBe(200);
   });

@@ -21,44 +21,32 @@ Limits (in `src/limits.ts`; edit and redeploy to change):
 
 | Limit | Value |
 |---|---|
-| Guesses from one address (an IPv4 address, or an IPv6 /64) | 10 per 15 minutes |
-| Guesses from everyone together | 300 per hour |
-| Once those 300 are used: guesses from addresses that made none in the last hour | 100 per hour in all, at most 2 per network (IPv6 /48 or IPv4 /24) |
+| Guesses from one address (an IPv4 address, or an IPv6 /64) | 60 per minute |
+| Guesses from everyone together | 600 per minute |
+| Once those 600 are used: guesses from addresses that made none in the last minute | 100 per minute in all, at most 10 per network (IPv6 /48 or IPv4 /24) |
 | Right phrases from one address | 20 per day (UTC) |
 | Wizard requests, everyone together | 300 per day (UTC): a request allowance, not a money cap |
 | Wizard requests from one phone's pass | 60 per day (UTC): a soft cap |
 | Pass lifetime | 30 days |
 
-Every guess is counted before it is checked, and right ones are given back. An address past
-its own 10 gets nothing checked at all. A stranger can use up everyone's 300 an hour, but that
-does not lock friends out: a phone whose address has made no guess in the last hour still gets
-its words checked, out of a separate 100 an hour (at most 2 from one network). Right words
-given that way are given back too, so friends never use it up; each wrong one counts against
-its address, its network, everyone's 300 and the 100. The fresh allowance improves a friend's
-chances but cannot promise a given friend gets in while a stranger floods: someone on the
-party's Wi-Fi who typed the words wrong in the last hour makes that address wait, a network
-whose 2 fresh guesses are spent waits too, and a second friend on the same Wi-Fi who says the
-words while the first friend's right words are still being given back can be told to wait. The
-wait the server gives is when a limit that applies to that address opens again.
+Guessing the words is meant to be a party game of its own, so the guess limits sit far above
+any human pace (one guess a second from one address, kept up for a whole minute) and only stop
+scripts. Every guess is counted before it is checked, and right ones are given back. An address
+past its own 60 a minute gets nothing checked until the minute has passed. A stranger can use up
+everyone's 600 a minute, but a phone whose address has made no guess in the last minute still
+gets its words checked, out of a separate 100 a minute (at most 10 from one network); right words
+given that way are given back too. The wait the server gives is when a limit that applies to that
+address opens again, at most a minute.
 
-What a guesser gets under these rules:
+At the maximum, everyone together can try 700 guesses a minute, about a million a day, so the
+phrases must be two or three random words (a single common word would be found within a day by a
+script). Guessing at that rate would also use up the free Cloudflare plan's daily Durable Object
+allowance, which stops the wizard until the next UTC day; the owner accepts that for a one-day
+party.
 
-- **One address** (an IPv4 address or an IPv6 /64, however many devices or addresses inside it):
-  at most 10 guesses per 15 minutes, so 40 an hour, and only while everyone's 300 have room;
-  while they are used up, 1 an hour.
-- **One network** (an IPv6 /48 holds 65,536 /64s; an IPv4 /24 holds 256 addresses): its
-  addresses share everyone's 300 an hour; while those are used up, 2 an hour.
-- **Everyone together, however many addresses**: at most 300 + 100 = 400 guesses an hour,
-  9,600 a day.
-- **To use up the whole fresh allowance**, a stranger has to keep everyone's 300 an hour used
-  (at least 8 addresses) and also spend the 100 every hour from at least 50 different networks.
-  Locking out one particular friend can take much less (see above).
-
-So the words must survive 9,600 guesses a day. A single word does not: every word in the EFF
-list (7,776) is tried in under a day, and a word from a 100,000-word dictionary in under 11
-days. A made-up word like "fizzlepop" is safer only while nobody tries pairs of common words.
-Two dice words (about 60 million phrases) take up to about 17 years; three (about 470 billion)
-up to about 134,000 years.
+Phrase strength at about a million guesses a day: every word of a 100,000-word dictionary falls
+within hours; two dice words (about 60 million phrases) take up to about two months; three
+(about 470 billion) over a thousand years.
 
 The per-phone cap is soft: saying the words again gives a fresh pass with a fresh 60, which is
 why right phrases are capped per address and the party-wide 300 limits requests. It is not a

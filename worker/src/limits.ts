@@ -4,21 +4,22 @@
 
 /** Change these to loosen or tighten the server. */
 export const LIMITS = {
-  // An "address" is an IPv4 address or an IPv6 /64 (see address.ts). Every guess counts
-  // against its address and against everyone together before it is checked; a right one is
-  // given back. When everyone's guesses are used up (a stranger flooding wrong guesses), an
-  // address with no guess in the last hour may still try, within the `fresh` allowances, so
-  // friends who say the right words are not locked out while guessing stays bounded.
+  // An "address" is an IPv4 address or an IPv6 /64 (see address.ts). Guessing the words is a
+  // game in itself, so the guess limits sit far above any human pace (one a second from an
+  // address) and only stop scripts. Every guess counts against its address and against everyone
+  // together before it is checked; a right one is given back. When everyone's guesses are used
+  // up (a stranger flooding wrong guesses), an address with no guess in the last minute may still
+  // try, within the `fresh` allowances, so friends who say the right words are not locked out.
   /** Guesses allowed from one address per window; past it, nothing from there is checked. */
-  guessesPerAddress: 10,
-  guessAddressWindowMs: 15 * 60_000,
+  guessesPerAddress: 60,
+  guessAddressWindowMs: 60_000,
   /** Guesses allowed from everyone together per window (also how long an address's guesses are remembered). */
-  guessesEveryone: 300,
-  guessEveryoneWindowMs: 60 * 60_000,
-  /** Once those are used up: guesses from addresses with none in the last hour, everyone together, per hour... */
+  guessesEveryone: 600,
+  guessEveryoneWindowMs: 60_000,
+  /** Once those are used up: guesses from addresses with none in the window, everyone together, per window... */
   freshEveryone: 100,
-  /** ...and from one network (IPv6 /48 or IPv4 /24), per hour. */
-  freshPerNetwork: 2,
+  /** ...and from one network (IPv6 /48 or IPv4 /24), per window. */
+  freshPerNetwork: 10,
   /**
    * Right phrases accepted from one address per UTC day. Each one starts a fresh pass with its
    * own per-pass allowance, so this stops a script minting passes without end. A party on one

@@ -75,13 +75,10 @@ Three routes, in the order the owner chose to rely on them:
 4. **The magic words** (second way in, kept apart from invite links): a small Cloudflare Worker
    in `worker/` (setup in `worker/README.md`) holds its own, spend-capped Anthropic key and a few
    shared party phrases as secrets the owner enters in Cloudflare. A friend types a phrase in
-   the magic-words box; the server checks it (case, punctuation and spacing ignored; guesses limited to 10
-   per address, an IPv4 address or an IPv6 /64, per 15 minutes and 300 overall per hour, but
-   once the 300 are used an address with no guess in the last hour is still checked, within 100
-   such guesses an hour and 2 per network, so a stranger flooding guesses is unlikely to lock
-   friends out, though it cannot be promised for a given friend: a typo from the same Wi-Fi, a
-   network whose fresh guesses are spent, or a second friend saying the words while the first
-   one's are still being given back can each mean a wait; right ones
+   the magic-words box; the server checks it (case, punctuation and spacing ignored; guessing is a game of its own, so guesses are limited only far
+   above human pace: 60 a minute per address, an IPv4 address or an IPv6 /64, and 600 a minute
+   overall, with a separate 100 a minute (10 per network) for addresses with no guess in the last
+   minute so a flood cannot lock friends out for long; right ones
    are given back and limited to 20 per address per day; `worker/README.md` has the numbers)
    and returns a 30-day pass, kept in `settings.wizardPass`, never in a URL or an invite
    link. The phone then uses the server as its API address with the pass in place of a key and
