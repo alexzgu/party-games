@@ -169,6 +169,20 @@ export function anyScored(g: Game): boolean {
   return scores(g).some((s) => s !== 0) || g.log.some((e) => (e.kind === 'tile' ? e.winner >= 0 || (g.penalty && e.wrong.length > 0) : e.delta !== 0));
 }
 
+/**
+ * The saved game with the teams edited in setup, slot by slot: a renamed team keeps its points,
+ * added teams start at 0, and teams dropped off the end leave with their points (tiles they won
+ * count as nobody's). Solo and team play do not turn into each other mid-game.
+ */
+export function reseat(g: Game, teams: string[]): Game {
+  if (teams.length < MIN_TEAMS || teams.length > MAX_TEAMS || (teams.length === 1) !== solo(g)) return g;
+  const n = teams.length;
+  const log = g.log.flatMap((e): LogEntry[] =>
+    e.kind === 'adjust' ? (e.team < n ? [e] : []) : [{ ...e, winner: e.winner < n ? e.winner : -1, wrong: e.wrong.filter((t) => t < n) }]);
+  const open = g.open && { ...g.open, wrong: g.open.wrong.filter((t) => t < n) };
+  return { ...g, teams: teams.slice(), log, open };
+}
+
 /** Game over: the board is cleared, or the host ended it (`early`). */
 export function finish(g: Game, early: boolean): Game {
   if (g.phase === 'win') return g;

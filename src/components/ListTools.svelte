@@ -89,7 +89,7 @@
   .row { display: flex; align-items: center; gap: var(--s-1); min-height: 44px; }
   .title { flex: 1; min-width: 0; }
   .icon {
-    flex: none; width: 40px; height: 40px; border: 0; border-radius: var(--r-pill); display: grid; place-items: center;
+    flex: none; width: var(--tap-min); height: var(--tap-min); border: 0; border-radius: var(--r-pill); display: grid; place-items: center;
     color: var(--text-faint); background: transparent; transition: color var(--dur-fast), background var(--dur-fast);
   }
   .icon.on { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }

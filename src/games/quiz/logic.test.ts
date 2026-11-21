@@ -235,3 +235,19 @@ describe('saving and resuming', () => {
     expect(q.scores(g)).toEqual([100, -100]); // Blues: −100 wrong, +200 fix, −200 wrong on the open tile (200)
   });
 });
+
+describe('teams edited in setup', () => {
+  it('renames by slot, adds teams at 0 and drops teams off the end with their points', () => {
+    let g = play(fresh(true), 0, 2, [1]); // Greens win, Blues wrong
+    g = q.adjust(g, 2, 100);
+    const t = q.reseat(g, ['Reds', 'Navy']);
+    expect(t.teams).toEqual(['Reds', 'Navy']);
+    expect(q.scores(t)).toEqual([0, -100]);
+    expect(q.reseat(t, ['Reds', 'Navy', 'Golds']).teams.length).toBe(3);
+  });
+
+  it('never turns team play into solo or back', () => {
+    const g = fresh();
+    expect(q.reseat(g, ['Reds'])).toBe(g);
+  });
+});

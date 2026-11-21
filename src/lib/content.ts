@@ -64,6 +64,8 @@ function customStore<T extends { id: string; custom?: boolean; /** When the pack
       save(key, stored().filter((x) => x.id !== id));
     },
     isBuiltin: (id: string) => builtinIds.has(id),
+    /** Every pack name in use for this game: the built-ins' and the packs saved here. */
+    names: (): string[] => [...builtin, ...stored()].map((x) => String((x as { name?: unknown }).name ?? '')),
     /** True when a built-in pack has been edited on this phone. */
     isEdited: (id: string) => builtinIds.has(id) && stored().some((x) => x.id === id),
     /** The pack as shipped, for "Restore original". */

@@ -32,11 +32,11 @@
   let sort = $state<SortKey>('suggested');
   const words = $derived(findWords(deck.words, query, sort));
 
-  /** A new deck is picked for the next round once, when its first words arrive (never while empty). */
+  /** A new deck is saved, and picked alone for the next round, when its first words arrive (never while empty). */
   let picked = (existing?.words.length ?? 0) > 0;
 
   function persist() {
-    if (!deck.name.trim() && deck.words.length === 0) return;
+    if (!deck.id && deck.words.length === 0) return;
     if (!deck.id) {
       deck.id = 'my-' + slugify(deck.name || 'deck') + '-' + Date.now().toString(36);
       history.replaceState(history.state, '', '#/forehead/deck?id=' + encodeURIComponent(deck.id)); // keeps the router's step count
@@ -46,7 +46,7 @@
     confirmRestore = false;
     if (!picked && deck.words.length > 0) {
       picked = true;
-      if (!prefs.deckIds.includes(deck.id)) prefs.deckIds = [deck.id, ...prefs.deckIds];
+      prefs.deckIds = [deck.id];
       savePrefs();
     }
   }
@@ -63,8 +63,18 @@
     input?.focus();
   }
 
+  /** The word last removed and where it was, for Undo. */
+  let removed = $state<{ word: string; at: number } | null>(null);
   function removeWord(w: string) {
+    removed = { word: w, at: deck.words.indexOf(w) };
     deck.words = deck.words.filter((x) => x !== w);
+    persist();
+  }
+  function undoRemove() {
+    if (!removed) return;
+    const { word, at } = removed;
+    if (!deck.words.includes(word)) deck.words = [...deck.words.slice(0, at), word, ...deck.words.slice(at)];
+    removed = null;
     persist();
   }
 
@@ -91,7 +101,7 @@
   function claude() {
     // A built-in only becomes an edit once words are actually added (MakeDeck saves it).
     if (!builtin) persist();
-    go('/forehead/make?into=' + encodeURIComponent(deck.id));
+    go(deck.id ? '/forehead/make?into=' + encodeURIComponent(deck.id) : '/forehead/make');
   }
 </script>
 
@@ -131,6 +141,9 @@
       <input type="text" placeholder="Type a word, press Enter" bind:value={draft} bind:this={input} enterkeyhint="done" autocapitalize="words" aria-label="New word" />
       <Button type="submit" size="sm" disabled={!draft.trim()}>Add</Button>
     </form>
+    {#if removed}
+      <p class="undo" role="status">Removed “{removed.word}” <button class="link" onclick={undoRemove}>Undo</button></p>
+    {/if}
     {#if words.length}
       <ul class="chips">
         {#each words as w (w)}
@@ -179,5 +192,7 @@
   .none { text-align: center; padding: var(--s-2) 0; }
   .chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
   .chip { display: flex; align-items: center; gap: 2px; padding-left: var(--s-3); border-radius: var(--r-pill); background: var(--surface); min-height: 44px; }
-  .chip button { width: 40px; height: 40px; border: 0; background: transparent; color: var(--text-faint); display: grid; place-items: center; border-radius: 50%; }
+  .chip button { width: var(--tap-min); height: var(--tap-min); border: 0; background: transparent; color: var(--text-faint); display: grid; place-items: center; border-radius: 50%; }
+  .undo { display: flex; align-items: center; gap: var(--s-2); margin: 0; color: var(--text-dim); font-size: 0.92rem; }
+  .undo .link { border: 0; background: transparent; color: var(--accent); font-weight: 700; min-height: var(--tap-min); padding: 0 var(--s-2); }
 </style>

@@ -3,12 +3,11 @@
   // an "i" that opens the screen's how-to text (`info`), and a small menu to pause or end the game.
   import type { Snippet } from 'svelte';
   import Scoreboard from './Scoreboard.svelte';
-  import Button from '../../components/Button.svelte';
+  import GameMenu from './GameMenu.svelte';
   import Popup from '../../components/Popup.svelte';
   import type { Game, TeamIndex } from './state';
   import { scoresBefore } from './state';
   import { teamColor } from './look';
-  import { revealedLog } from './summary';
 
   let {
     game,
@@ -30,9 +29,7 @@
   } = $props();
 
   let menu = $state(false);
-  let confirmEnd = $state(false);
   let help = $state(false);
-  const close = () => { menu = false; confirmEnd = false; };
 </script>
 
 <div class="frame fade-in" class:t1={active === 1} class:lit={active !== null} style:--team={active !== null ? teamColor(active) : undefined}
@@ -56,21 +53,7 @@
   <Popup title="How this works" onclose={() => (help = false)}><div class="how">{@render info()}</div></Popup>
 {/if}
 {#if menu}
-  <div class="scrim fade-in" role="presentation" onclick={close}></div>
-  <div class="sheet pop-in" role="dialog" aria-modal="true" aria-label="Game menu">
-    {#if confirmEnd}
-      <h3>End game?</h3>
-      <p class="muted">{revealedLog(game).length ? 'The scores so far go in History, marked as ended early.' : 'No round has been scored yet, so nothing goes in History.'}</p>
-      <Button size="lg" variant="danger" onclick={onend}>Yes, end the game</Button>
-      <Button variant="secondary" onclick={close}>No, keep playing</Button>
-    {:else}
-      <h3>Game paused</h3>
-      <p class="muted">Round {game.roundNo || 1} · first to {game.goal}. The game is saved, so you can come back to it.</p>
-      <Button size="lg" onclick={close}>Keep playing</Button>
-      <Button variant="secondary" onclick={onhome}>Pause and go home</Button>
-      <Button variant="danger" onclick={() => (confirmEnd = true)}>End game</Button>
-    {/if}
-  </div>
+  <GameMenu {game} onclose={() => (menu = false)} {onhome} {onend} />
 {/if}
 
 <style>
@@ -97,8 +80,24 @@
   /* The dial is the one part that gives up height when a screen is short (see Dial). */
   main > :global(*) { flex-shrink: 0; }
   main > :global(.tuner) { flex: 0 1 auto; min-height: 0; }
-  /* Landscape phones are too short for that: the page scrolls instead. */
-  @media (max-height: 500px) { .frame { height: auto; min-height: 100dvh; } main { flex: 1 0 auto; } }
+  /* A phone on its side: the dial takes the right half at full height, everything else stacks
+     on the left with the main button under it, so nothing scrolls and the dial stays whole.
+     Up to four items stack on the left (empty rows only add their gap). */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .frame {
+      display: grid; max-width: 960px; column-gap: var(--s-5); row-gap: var(--s-2);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+      grid-template-rows: auto repeat(4, auto) minmax(0, 1fr) auto;
+      padding-bottom: calc(var(--safe-bottom) + var(--s-2));
+    }
+    header { grid-column: 1 / -1; }
+    main { display: contents; }
+    main > :global(*) { grid-column: 1; min-width: 0; }
+    main > :global(.tuner) { grid-column: 2; grid-row: 2 / -1; min-height: 0; align-self: stretch; justify-content: center; }
+    footer { grid-column: 1; grid-row: -2; position: static; padding: var(--s-2) 0 0; background: none; }
+  }
+  /* Short and upright (rare): the page scrolls. */
+  @media (orientation: portrait) and (max-height: 500px) { .frame { height: auto; min-height: 100dvh; } main { flex: 1 0 auto; } }
   .how :global(p) { margin: 0 0 var(--s-3); }
   .how :global(p:last-child) { margin-bottom: 0; }
   footer {
@@ -106,13 +105,4 @@
     padding: var(--s-3) 0 calc(var(--safe-bottom) + var(--s-4));
     background: linear-gradient(to top, var(--bg) 70%, transparent);
   }
-  .scrim { position: fixed; inset: 0; background: var(--scrim-soft); z-index: 10; }
-  .sheet {
-    position: fixed; z-index: 11; left: 50%; bottom: 0; width: min(640px, 100%); transform: translateX(-50%);
-    display: flex; flex-direction: column; gap: var(--s-3);
-    padding: var(--s-5) var(--s-4) calc(var(--safe-bottom) + var(--s-5));
-    background: var(--bg-raised); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--shadow);
-  }
-  .sheet.pop-in { animation-name: sheet-up; }
-  @keyframes sheet-up { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 </style>

@@ -38,6 +38,11 @@ export function parsePasted(text: string, existing: readonly string[] = []): { i
   const items: string[] = [];
   const skipped: string[] = [];
   for (const line of pastedLines(text)) {
+    // A heading over a list ("# Food", "Summer prompts:") is not a prompt.
+    if (/^\s*#/.test(line) || /:\s*$/.test(line)) {
+      skipped.push('a heading');
+      continue;
+    }
     const p = cleanPrompt(line);
     if (!p) continue;
     const why = promptError(p, [...existing, ...items]);

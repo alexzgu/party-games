@@ -4,13 +4,13 @@
   // same screen. Setup and play replace each other in history, so the phone's back gesture from
   // either goes home; Make and the pack editor are pushed on top. ?demo=<screen> shows a fixed
   // state for screenshots and is never saved.
-  import { route, go, back } from '../../lib/router.svelte';
+  import { route, go, back, backHome } from '../../lib/router.svelte';
   import Setup from './Setup.svelte';
   import Play from './Play.svelte';
   import Make from './Make.svelte';
   import PackEditor from './PackEditor.svelte';
   import { loadGame, saveGame, loadSetup, saveSetup } from './store';
-  import { endedRecord, newGame, type GameOptions, type GameState } from './logic';
+  import { endedRecord, newGame, reseat, type GameOptions, type GameState } from './logic';
   import { packNames } from './deal';
   import { record } from '../../lib/history';
   import { demoGame, DEMO_PROMPTS } from './demo';
@@ -34,7 +34,7 @@
 
   function packSaved(id: string) {
     const prefs = loadSetup();
-    saveSetup({ ...prefs, packIds: [...new Set([...(prefs.packIds ?? []), id])] });
+    saveSetup({ ...prefs, packIds: [id] }); // a new pack is played on its own
     back('/quick');
   }
 
@@ -46,13 +46,13 @@
 
 <div class="brain-freeze">
   {#if sub === 'play' && game}
-    <Play {game} {commit} {demo} onleave={() => go('/quick', true)} onhome={() => go('/', true)} />
+    <Play {game} {commit} {demo} onleave={() => go('/quick', true)} onhome={backHome} />
   {:else if sub === 'pack'}
     <PackEditor id={route.params.get('id') ?? ''} onback={() => back('/quick')} />
   {:else if sub === 'make'}
     <Make onsaved={packSaved} onback={() => back('/quick')} demoItems={demo === 'make-review' ? DEMO_PROMPTS : null} />
   {:else}
-    <Setup saved={game} onstart={start} onresume={() => go('/quick/play', true)} onmake={() => go('/quick/make')} onedit={(id) => go(`/quick/pack?id=${encodeURIComponent(id)}`)} onhome={() => go('/', true)} />
+    <Setup saved={game} onstart={start} onroster={(r) => game && commit(reseat(game, r))} onresume={() => go('/quick/play', true)} onmake={() => go('/quick/make')} onedit={(id) => go(`/quick/pack?id=${encodeURIComponent(id)}`)} onhome={() => back('/')} />
   {/if}
 </div>
 

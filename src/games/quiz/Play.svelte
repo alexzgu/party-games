@@ -5,6 +5,8 @@
   import Win from './Win.svelte';
   import Strip from './Strip.svelte';
   import FixScore from './FixScore.svelte';
+  import Timer from './Timer.svelte';
+  import { timer } from './timer.svelte';
   import TapToFinish from './TapToFinish.svelte';
   import { sfx, unlockAudio } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
@@ -111,6 +113,9 @@
   </TapToFinish>
 </div>
 
+{#if timer.shown && game.phase !== 'win'}
+  <Timer clue={game.open?.tile ?? null} />
+{/if}
 {#if fixing >= 0 && game.phase !== 'win'}
   <FixScore {game} team={fixing} onadjust={adjust} onclose={() => (fixing = -1)} />
 {/if}

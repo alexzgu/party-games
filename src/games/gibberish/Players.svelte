@@ -4,9 +4,10 @@
   import { checkName, MAX_PLAYERS, MIN_PLAYERS } from './logic';
 
   // Add, rename and remove players. Reading goes round in this order.
-  let { names = $bindable() }: { names: string[] } = $props();
+  // `seats` follows each player's place in a saved game (see PlayerList).
+  let { names = $bindable(), seats = $bindable([]) }: { names: string[]; seats?: number[] } = $props();
 </script>
 
-<PlayerList bind:names min={MIN_PLAYERS} max={MAX_PLAYERS} check={checkName}>
+<PlayerList bind:names bind:seats min={MIN_PLAYERS} max={MAX_PLAYERS} check={checkName}>
   {#snippet avatar(name, i)}<Avatar {name} index={i} size={32} />{/snippet}
 </PlayerList>

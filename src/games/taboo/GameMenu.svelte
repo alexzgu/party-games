@@ -10,6 +10,7 @@
     note = '',
     resume = 'Keep playing',
     solid = false,
+    ending = false,
     onclose,
     onhome,
     onend,
@@ -21,12 +22,15 @@
     resume?: string;
     /** An opaque backdrop, so nothing behind the menu can be read (the card during a turn). */
     solid?: boolean;
+    /** Opens straight on "End game?" (from a screen's own End game button). */
+    ending?: boolean;
     onclose: () => void;
     onhome: () => void;
     onend: () => void;
   } = $props();
 
-  let confirmEnd = $state(false);
+  // svelte-ignore state_referenced_locally
+  let confirmEnd = $state(ending);
   const marked = $derived(game.turns.some((t) => t.cards.length > 0));
   let sheet = $state<HTMLElement>();
   $effect(() => sheet?.focus());
@@ -38,7 +42,7 @@
     <h3>End game?</h3>
     <p class="muted">{marked ? 'The scores so far go in History, marked as ended early.' : 'Nothing has been scored yet, so nothing goes in History.'}</p>
     <Button size="lg" variant="danger" onclick={onend}>Yes, end the game</Button>
-    <Button variant="secondary" onclick={() => (confirmEnd = false)}>No, keep playing</Button>
+    <Button variant="secondary" onclick={() => (ending ? onclose() : (confirmEnd = false))}>No, keep playing</Button>
   {:else}
     <h3>{title}</h3>
     <p class="muted">{note ? note + ' ' : ''}The game is saved, so you can come back to it.</p>

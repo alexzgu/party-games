@@ -32,6 +32,7 @@
   {#snippet actions()}
     <Button size="lg" onclick={onrematch}>Rematch</Button>
     <Button variant="secondary" onclick={onnew}>Change players or packs</Button>
+    <Button variant="ghost" size="sm" onclick={onhome}>Home</Button>
   {/snippet}
 </Screen>
 

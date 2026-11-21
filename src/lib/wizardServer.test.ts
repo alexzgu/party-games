@@ -86,7 +86,7 @@ describe('the magic words, phone to server to API', () => {
     for (let i = 1; i < LIMITS.guessesPerAddress; i++) await redeemPhrase('not the words', SERVER);
     const limited = await redeemPhrase('not the words', SERVER);
     expect(limited.ok === false && limited.reason).toBe('limited');
-    expect(redeemMessage(limited)).toMatch(/^Too many guesses\. Fizzwick will listen again in about 1[45] minutes\.$/);
+    expect(redeemMessage(limited)).toMatch(/^Too many guesses\. Fizzwick will listen again in a minute\.$/);
   });
 
   it('says when the words were said too often from one address today', async () => {

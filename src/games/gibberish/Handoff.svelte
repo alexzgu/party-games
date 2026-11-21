@@ -2,6 +2,7 @@
   import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
+  import Rules from './Rules.svelte';
   import { playerColor } from './ui';
   import type { GameState } from './logic';
 
@@ -12,6 +13,7 @@
 </script>
 
 <Screen title={gameName('gibberish')} onback={onleave} backLabel="Back to setup">
+  {#snippet trailing()}<Rules target={game.target} />{/snippet}
 <div class="center">
   <div class="hand" style:--c={playerColor(game.reader)}>
     <p class="kicker">Pass the phone to</p>

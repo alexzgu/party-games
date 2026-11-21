@@ -22,4 +22,10 @@ describe('reading typed and pasted prompts', () => {
     expect(items).toEqual(['pizza toppings', 'kinds of soup']);
     expect(skipped).toEqual(['already in the pack', 'already in the pack']);
   });
+
+  it('skips heading lines over a list', () => {
+    const { items, skipped } = parsePasted('# Food\nSummer prompts:\npizza toppings');
+    expect(items).toEqual(['pizza toppings']);
+    expect(skipped).toEqual(['a heading', 'a heading']);
+  });
 });

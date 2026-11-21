@@ -2,7 +2,7 @@
   import Ready from './Ready.svelte';
   import Play from './Play.svelte';
   import Results from './Results.svelte';
-  import { back, go } from '../../lib/router.svelte';
+  import { back, backHome, go } from '../../lib/router.svelte';
   import { score, type EndReason, type Round } from './round';
   import { deckLabel, game, prefs, recordScore, selectedDecks, setRound } from './state.svelte';
   import { releaseDevice, startRound } from './flow';
@@ -61,5 +61,5 @@
     <Play onend={ended} paused={!fresh && !demo} {rotation} demo={demoPlay} />
   {/key}
 {:else if r}
-  <Results round={r} onagain={again} ondecks={() => back('/forehead')} onhome={() => go('/')} />
+  <Results round={r} onagain={again} ondecks={() => back('/forehead')} onhome={backHome} />
 {/if}

@@ -34,8 +34,7 @@ export const loadGame = (): Game | null => restore(load<unknown>(GAME_KEY, null)
 export const saveGame = (g: Game): void => save(GAME_KEY, g);
 export const clearGame = (): void => remove(GAME_KEY);
 
-/** Ticks a newly made pack in the setup list. */
+/** A newly made pack is the one the next game plays, on its own. */
 export function selectPack(id: string): void {
-  const c = loadConfig();
-  if (!c.packIds.includes(id)) saveConfig({ ...c, packIds: [...c.packIds, id] });
+  saveConfig({ ...loadConfig(), packIds: [id] });
 }

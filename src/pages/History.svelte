@@ -19,7 +19,11 @@
   const time = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
   const when = (at: number) => `${day.format(at)} · ${time.format(at)}`;
 
+  /** Delete takes a second tap, so an entry is never lost to a slip. */
+  let sureDelete = $state(false);
   function del(id: string) {
+    if (!sureDelete) { sureDelete = true; return; }
+    sureDelete = false;
     removeEntry(id);
     entries = history();
     open = null;
@@ -56,7 +60,7 @@
 </Screen>
 
 {#if open}
-  <Popup title={gameName(open.game)} onclose={() => (open = null)}>
+  <Popup title={gameName(open.game)} onclose={() => { open = null; sureDelete = false; }}>
     <p class="faint">{when(open.at)}</p>
     <p class="big">{open.title}</p>
     {#if open.finished === false}<p class="early-note">Ended early: these are the scores when it stopped.</p>{/if}
@@ -69,7 +73,7 @@
     {#if open.details?.length}
       <ul class="details">{#each open.details as d, i (i)}<li>{d}</li>{/each}</ul>
     {/if}
-    <Button variant="ghost" onclick={() => del(open!.id)}>Delete this entry</Button>
+    <Button variant={sureDelete ? 'danger' : 'ghost'} onclick={() => del(open!.id)}>{sureDelete ? 'Tap again to delete it' : 'Delete this entry'}</Button>
   </Popup>
 {/if}
 

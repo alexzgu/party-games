@@ -24,7 +24,7 @@
   /** Imported packs are picked for the next round, like a pack just made. */
   function imported(ids: string[]) {
     mine = customDecks.all();
-    prefs.deckIds = [...ids.filter((id) => !prefs.deckIds.includes(id)), ...prefs.deckIds];
+    if (ids.length) prefs.deckIds = [...ids]; // imported packs are played on their own, like a pack just made
     savePrefs();
   }
 </script>

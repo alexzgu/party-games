@@ -5,9 +5,12 @@
 
   // The player list on a game's setup screen. Add makes a tile named "Player N";
   // tapping a tile's name (the pencil) renames it in place: Enter or leaving the box keeps it, Escape cancels.
+  // `seats`, when bound, follows each tile's first place in the list (-1 for a tile added here),
+  // so a saved game can tell a renamed player from a new one.
   type Check = (raw: string, existing: string[]) => { name: string; error: string };
-  let { names = $bindable(), min, max, check, avatar }:
-    { names: string[]; min: number; max: number; check: Check; avatar: Snippet<[string, number]> } = $props();
+  let { names = $bindable(), seats = $bindable([]), min, max, check, avatar }: {
+    names: string[]; seats?: number[]; min: number; max: number; check: Check; avatar: Snippet<[string, number]>;
+  } = $props();
   let editing = $state(-1);
   let draft = $state('');
   let error = $state('');
@@ -15,12 +18,14 @@
   function add() {
     editing = -1;
     names = [...names, nextPlayerName(names)];
+    seats = [...seats, -1];
     error = '';
     sfx.tap();
   }
 
   function removeAt(i: number) {
     names = names.filter((_, k) => k !== i);
+    seats = seats.filter((_, k) => k !== i);
     error = '';
   }
 
@@ -108,6 +113,12 @@
   .name span { min-width: 0; overflow: hidden; overflow-wrap: break-word; line-height: 1.15;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
   .name svg { flex: none; color: var(--text-faint); }
+  /* A narrow tile (half of a small phone) gives the name the pencil's room, so "Player 3" stays whole. */
+  li { container-type: inline-size; }
+  @container (max-width: 200px) {
+    .name svg { display: none; }
+    .name span { font-size: 0.95rem; hyphens: auto; }
+  }
   .name:active { background: var(--surface-hi); }
   input { flex: 1; min-width: 0; min-height: 44px; margin-right: 6px; padding: 0 var(--s-2); font-weight: 700; border-radius: var(--r-sm); }
   .x { width: 44px; height: 44px; flex: none; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--text-faint); display: grid; place-items: center; }

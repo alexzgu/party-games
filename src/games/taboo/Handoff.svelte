@@ -5,24 +5,34 @@
   import Button from '../../components/Button.svelte';
   import Scoreboard from './Scoreboard.svelte';
   import GameMenu from './GameMenu.svelte';
+  import Rules from './Rules.svelte';
   import { teamColor } from './look';
   import { other, roundNo, scoresBefore, type Game } from './state';
 
-  let { game, error = '', onstart, onhome, onend }:
-    { game: Game; error?: string; onstart: () => void; onhome: () => void; onend: () => void } = $props();
+  let { game, outOfCards = false, onstart, onreuse, onhome, onend }: {
+    game: Game;
+    /** Start found every card of the chosen packs played already. */
+    outOfCards?: boolean;
+    onstart: () => void;
+    /** Deals the played cards again and starts the clock. */
+    onreuse: () => void;
+    onhome: () => void;
+    onend: () => void;
+  } = $props();
 
   const team = $derived(game.active);
   const rival = $derived(other(team));
   const round = $derived(roundNo(game) + (game.turns.length % 2 === 0 ? 1 : 0));
   const of = $derived(game.mode === 'rounds' ? ` of ${game.rounds}` : '');
   const rules = $derived(`Got it +1 · Buzz −1 · Skip ${game.skipCost ? '−1' : 'free'}`);
-  let menu = $state(false);
+  let menu = $state<false | 'menu' | 'end'>(false);
 </script>
 
 <div class="handoff fade-in t{team}" style:--team={teamColor(team)} style:--rival={teamColor(rival)} style:--accent={teamColor(team)}>
   <header>
     <div class="grow"><Scoreboard {game} scores={scoresBefore(game)} active={team} /></div>
-    <button class="menu" onclick={() => (menu = true)} aria-label="Game menu" aria-expanded={menu}>
+    <Rules />
+    <button class="menu" onclick={() => (menu = 'menu')} aria-label="Game menu" aria-expanded={!!menu}>
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>
     </button>
   </header>
@@ -48,12 +58,17 @@
     </ol>
   </div>
   <div class="go">
-    {#if error}<p class="err" role="alert">{error}</p>{/if}
-    <Button size="lg" onclick={onstart}>Start the clock</Button>
+    {#if outOfCards}
+      <p class="err" role="alert">Every card in the chosen packs has been played this game.</p>
+      <Button size="lg" onclick={onreuse}>Play those cards again</Button>
+      <Button variant="secondary" onclick={() => (menu = 'end')}>End game</Button>
+    {:else}
+      <Button size="lg" onclick={onstart}>Start the clock</Button>
+    {/if}
   </div>
 </div>
 
-{#if menu}<GameMenu {game} onclose={() => (menu = false)} {onhome} {onend} />{/if}
+{#if menu}<GameMenu {game} ending={menu === 'end'} onclose={() => (menu = false)} {onhome} {onend} />{/if}
 
 <style>
   .handoff {

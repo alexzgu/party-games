@@ -53,7 +53,7 @@
             <span class="blurb">{b.blurb}</span>
             {#if hit}<span class="hit">{hit}</span>{/if}
             <span class="cats">{b.categories.map((c) => c.name).join(' · ')}</span>
-            <span class="size">{boardSize(b)}{tag(b)}{#if gaps}<span class="gaps"> · {gaps} empty</span>{/if}</span>
+            <span class="size">{boardSize(b)}{tag(b)}{#if gaps}<span class="gaps">{` · ${gaps} empty`}</span>{/if}</span>
           </span>
         </button>
         <button class="edit" onclick={() => onedit(b.id)} aria-label="See and edit {b.name}">

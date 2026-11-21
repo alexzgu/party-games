@@ -29,6 +29,8 @@
   // svelte-ignore state_referenced_locally
   let startPaused = $state(game.phase === 'live' && (!demo || demo === 'paused'));
   let error = $state('');
+  /** Every prompt was played this game: the next one starts them over (said on the hand-off). */
+  const usedUp = $derived(game.phase === 'handoff' && dealer.usedUp(game.dealt));
 
   function step(next: GameState) {
     startPaused = false;
@@ -42,14 +44,15 @@
 
   function begin() {
     unlockAudio();
-    const prompt = dealer.next(game.dealt);
+    const g = usedUp ? rules.reshuffle(game) : game;
+    const prompt = dealer.next(g.dealt);
     if (!prompt) {
       error = 'The chosen packs have no prompts. Go back and pick a pack.';
       return;
     }
     error = '';
     sfx.go();
-    step(rules.reveal(game, prompt));
+    step(rules.reveal(g, prompt));
   }
 
   function stealGo() {
@@ -73,7 +76,7 @@
 </script>
 
 {#if game.phase === 'handoff'}
-  <TapToFinish><Handoff {game} onbegin={begin} onwin={toWin} onundo={() => step(rules.undo(game))} {onleave} {error} /></TapToFinish>
+  <TapToFinish><Handoff {game} onbegin={begin} onwin={toWin} onundo={() => step(rules.undo(game))} {onleave} {error} notice={usedUp ? 'Every prompt in these packs has been played. They come round again, shuffled.' : ''} /></TapToFinish>
 {:else if game.phase === 'live' || game.phase === 'judge'}
   {#key `${game.prompt}|${game.actor}|${game.stealing}`}
     <Turn

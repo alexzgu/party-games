@@ -5,12 +5,15 @@
 
   // How many teams (one team is a solo player), and their names. All ten names are kept, so
   // going 8 → 3 → 8 loses nothing. Past four the names sit two to a row on wider screens.
-  let { names = $bindable(), count = $bindable() }: { names: string[]; count: number } = $props();
+  // While a game is saved, `locked` keeps solo and team play from turning into each other.
+  let { names = $bindable(), count = $bindable(), locked = null }: { names: string[]; count: number; locked?: 'solo' | 'teams' | null } = $props();
+  const min = $derived(locked === 'teams' ? 2 : MIN_TEAMS);
+  const max = $derived(locked === 'solo' ? 1 : MAX_TEAMS);
 </script>
 
 <section class="teams" aria-labelledby="teams-h">
   <h3 id="teams-h">Teams</h3>
-  <Stepper bind:value={count} min={MIN_TEAMS} max={MAX_TEAMS} label={count === 1 ? 'Solo: one player' : 'Number of teams'} />
+  <Stepper bind:value={count} {min} {max} label={count === 1 ? 'Solo: one player' : 'Number of teams'} />
   {#if count === 1}<p class="hint">Play for a high score: each tile is “Got it” or “Missed”.</p>{/if}
   <ul class:many={count > 4}>
     {#each names.slice(0, count) as _, i (i)}

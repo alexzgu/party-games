@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { endedRecord, finish, gameRecord, judge, newGame, rematch, reveal, startSteal, timeUp, undo, validGame, validSetup, winner, type GameState } from './logic';
+import { endedRecord, finish, gameRecord, judge, newGame, rematch, reseat, reshuffle, reveal, startSteal, timeUp, undo, validGame, validSetup, winner, type GameState } from './logic';
+import { reseating } from '../../lib/players';
 
 const opts = { target: 2, seconds: 5, steal: true, packIds: ['classic'] };
 const start = (steal = true) => newGame(['Ana', 'Ben', 'Cy'], { ...opts, steal });
@@ -132,5 +133,33 @@ describe('Brain Freeze saves', () => {
   it('checks setup choices field by field', () => {
     expect(validSetup(null)).toEqual({ packIds: null, seconds: 5, target: 7, steal: true });
     expect(validSetup({ seconds: 7, target: 99, steal: false, packIds: ['a'] })).toEqual({ packIds: ['a'], seconds: 7, target: 7, steal: false });
+  });
+});
+
+describe('players edited in setup', () => {
+  it('keeps scores by person and drops a removed player with their turns', () => {
+    let s = turn(start(), true); // Ana scores
+    s = turn(s, true); // Ben scores
+    const t = reseat(s, reseating(['Ana', 'Cy', 'Dee'], [0, 2, -1], 3));
+    expect(scores(t)).toEqual([1, 0, 0]);
+    expect(t.log.map((x) => x.player)).toEqual([0]);
+    expect(t.players[t.turn].name).toBe('Cy');
+    expect(t.prev).toBeNull();
+  });
+
+  it('restarts a turn whose player was removed mid-clock', () => {
+    const s = reveal(start(), 'pizza toppings'); // Ana is up
+    const t = reseat(s, reseating(['Ben', 'Cy'], [1, 2], 3));
+    expect(t.phase).toBe('handoff');
+    expect(t.prompt).toBeNull();
+    expect(t.players[t.turn].name).toBe('Ben');
+  });
+});
+
+describe('reshuffle', () => {
+  it('frees every prompt but the last one played', () => {
+    let s = turn(start(false), true, 'pizza toppings');
+    s = turn(s, false, 'dog breeds');
+    expect(reshuffle(s).dealt).toEqual(['dog breeds']);
   });
 });

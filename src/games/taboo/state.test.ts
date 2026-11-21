@@ -3,7 +3,7 @@ import type { TabooCard } from '../../lib/content';
 import { cardProblems, parseCards } from './cards';
 import { demoGame, SCREENS } from './demo';
 import {
-  finishTurn, fixMark, markCard, newGame, nextTurn, rematch, restore, scores, scoresBefore, startTurn, tiedAtEnd, timeUp,
+  finishTurn, fixMark, inTiebreak, markCard, newGame, nextTurn, rematch, reopenTurn, restore, reuseCards, scores, scoresBefore, startTurn, tiedAtEnd, timeUp,
   type Config, type Game,
 } from './state';
 import { summarize, summarizeEarly, winLine } from './summary';
@@ -166,5 +166,29 @@ describe('cards', () => {
     expect(cards.map((c) => c.word)).toEqual(['Pizza', 'Beach', 'Coffee']);
     expect(cards[1].banned).toEqual(['Sand', 'Ocean', 'Waves', 'Sunscreen', 'Towel']);
     expect(bad).toHaveLength(1);
+  });
+});
+
+describe('between turns', () => {
+  it('reopens the turn\'s cards from the scoreboard to fix a mark', () => {
+    const g = play(newGame(cfg()), ['got', 'buzz']);
+    expect(g.phase).toBe('scores');
+    const fixed = fixMark(reopenTurn(g), 1); // the buzz was a got
+    expect(scores(finishTurn(fixed))).toEqual([2, 0]);
+  });
+
+  it('deals played cards again when the packs run out', () => {
+    const g = nextTurn(play(newGame(cfg()), ['got']));
+    expect(g.played.length).toBeGreaterThan(0);
+    expect(reuseCards(g).played).toEqual([]);
+  });
+
+  it('calls the rounds after a level finish a tiebreak', () => {
+    let g = newGame(cfg({ mode: 'rounds', rounds: 1 }));
+    g = nextTurn(play(g, ['got']));
+    g = play(g, ['got']);
+    expect(tiedAtEnd(g)).toBe(true);
+    expect(inTiebreak(g)).toBe(true);
+    expect(inTiebreak(newGame(cfg()))).toBe(false);
   });
 });

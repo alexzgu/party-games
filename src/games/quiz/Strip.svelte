@@ -29,15 +29,23 @@
 </script>
 
 <div class="wrap {size}">
-  {#if size === 'many' && top.length}
-    <p class="lead" style:--team={top.length === 1 ? teamColor(top[0]) : 'var(--accent)'} aria-label="Leading">
-      <span class="lname"><span class="crown" aria-hidden="true">👑</span>{top.length === 1 ? game.teams[top[0]] : `${top.length} tied`}</span>
+  {#if size === 'many' && top.length === 1}
+    <!-- A sole leader is pinned here instead of in the row (on a phone), so it shows once. -->
+    {@const t = top[0]}
+    <button class="lead" style:--team={teamColor(t)} onclick={() => onfix(t)} aria-label="{game.teams[t]}: {points(s[t])} points, leading. Fix score">
+      <span class="lname"><span class="crown" aria-hidden="true">👑</span>{game.teams[t]}</span>
+      <b>{points(s[t])}</b>
+      {#if flash && flash.team === t}{#key flash.n}<span class="float" class:down={flash.delta < 0} aria-hidden="true">{signed(flash.delta)}</span>{/key}{/if}
+    </button>
+  {:else if size === 'many' && top.length}
+    <p class="lead" style:--team="var(--accent)" aria-label="Leading">
+      <span class="lname"><span class="crown" aria-hidden="true">👑</span>{top.length} tied</span>
       <b>{points(s[top[0]])}</b>
     </p>
   {/if}
   <ol class="strip" bind:this={list} style:--n={n} style:--wide={wideCols} style:--phone={size === 'mid' ? Math.ceil(n / 2) : n} aria-label="Scores">
     {#each game.teams as name, i (i)}
-      <li style:--team={teamColor(i)} data-team={i}>
+      <li style:--team={teamColor(i)} data-team={i} class:pinned={size === 'many' && top.length === 1 && top[0] === i}>
         <button onclick={() => onfix(i)} aria-label="{name}: {points(s[i])} points{top.includes(i) && n > 1 ? ', leading' : ''}. Fix score">
           <span class="name">{#if size !== 'big' && top.includes(i)}<span class="crown" aria-hidden="true">👑</span>{/if}{name}</span>
           <b class="score" class:neg={s[i] < 0}>{points(s[i])}</b>
@@ -72,6 +80,9 @@
     max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     font-weight: 700; font-size: clamp(0.8rem, 1.9vmin, 1.5rem); color: var(--text-dim);
   }
+  /* Big boxes (up to four teams) give a long name a second line instead of cutting it. */
+  .big .name { white-space: normal; text-overflow: clip; overflow-wrap: break-word; line-height: 1.1; text-align: center;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
   .crown { margin-right: 2px; font-size: 0.85em; }
   .score {
     font-family: var(--font-display); font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums;
@@ -90,8 +101,9 @@
   }
   .many .strip::-webkit-scrollbar { display: none; }
   .many li { flex: none; width: 96px; scroll-snap-align: start; }
+  .many li.pinned { display: none; }
   .lead {
-    flex: none; width: 104px; min-height: 48px; margin: 0; padding: 3px 6px; border-radius: var(--r-sm);
+    position: relative; flex: none; width: 104px; color: var(--text); min-height: 48px; margin: 0; padding: 3px 6px; border-radius: var(--r-sm);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     background: color-mix(in srgb, var(--team) 22%, var(--bg-raised)); border: 2px solid var(--team);
   }
@@ -100,6 +112,7 @@
   @media (min-width: 700px) {
     .mid .strip, .many .strip { display: grid; grid-template-columns: repeat(var(--wide), minmax(0, 1fr)); overflow: visible; }
     .many li { width: auto; }
+    .many li.pinned { display: block; }
     .lead { display: none; }
   }
 

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PackGameId } from '../app.config';
 import { customDecks, wordDecks } from './content';
-import { exportFile, fileName, freshId, importMessage, importPacks, readFile, type AnyPack } from './packfile';
+import { exportFile, fileName, freshId, freshName, importMessage, importPacks, readFile, type AnyPack } from './packfile';
 
 const SAMPLES: Record<PackGameId, AnyPack> = {
   forehead: { id: 'our-trip', name: 'Our Trip', emoji: '🚗', blurb: 'Summer 2026', words: ['Road Trip', 'Gas Station', 'Taylor Swift'] },
@@ -111,9 +111,18 @@ describe('a pack id freed for an import', () => {
     const r = importPacks('forehead', exportFile('forehead', [SAMPLES.forehead, builtin]));
     if ('error' in r) throw new Error(r.error);
     expect(r.saved.map((p) => p.id)).toEqual(['our-trip-2', `${builtin.id}-2`]);
-    expect(customDecks.all().map((d) => [d.id, d.name])).toEqual([['our-trip-2', 'Our Trip'], [`${builtin.id}-2`, builtin.name], ['our-trip', 'Mine already']]);
+    // The copy of a built-in also gets a name of its own, so the two tiles can be told apart.
+    expect(customDecks.all().map((d) => [d.id, d.name])).toEqual([['our-trip-2', 'Our Trip'], [`${builtin.id}-2`, `${builtin.name} (2)`], ['our-trip', 'Mine already']]);
     expect(customDecks.isEdited(builtin.id)).toBe(false);
-    expect(importMessage('forehead', r)).toBe(`Imported 2 packs: Our Trip, ${builtin.name}.`);
-    expect(importMessage('forehead', { ...r, skipped: 1 })).toBe(`Imported 2 packs: Our Trip, ${builtin.name}. 1 word skipped.`);
+    expect(importMessage('forehead', r)).toBe(`Imported 2 packs: Our Trip, ${builtin.name} (2).`);
+    expect(importMessage('forehead', { ...r, skipped: 1 })).toBe(`Imported 2 packs: Our Trip, ${builtin.name} (2). 1 word skipped.`);
+  });
+});
+
+describe('a pack name freed for an import', () => {
+  it('numbers a name already in use, whatever its case', () => {
+    const taken = new Set(['movies', 'movies (2)']);
+    expect(freshName('Beach', (x) => taken.has(x))).toBe('Beach');
+    expect(freshName('Movies', (x) => taken.has(x))).toBe('Movies (3)');
   });
 });

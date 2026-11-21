@@ -76,4 +76,22 @@
   .row.lose { background: color-mix(in srgb, var(--team) 8%, var(--surface)); border-color: color-mix(in srgb, var(--team) 35%, transparent); box-shadow: none; }
   .row.lose b { color: var(--text-dim); }
   .actions { width: 100%; margin-top: auto; display: flex; flex-direction: column; gap: var(--s-2); }
+  /* A phone on its side: the winner on the left, the scores and buttons on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .win {
+      max-width: 960px; display: grid; align-items: center; column-gap: var(--s-5); row-gap: var(--s-2);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding-top: calc(var(--safe-top) + var(--s-3));
+    }
+    .trophy { grid-column: 1; font-size: 3rem; }
+    h1 { grid-column: 1; font-size: clamp(2rem, 6vw, 3.2rem); }
+    .final, .faint, .actions { grid-column: 2; margin: 0; }
+    .final { grid-row: 1; }
+    .faint { grid-row: 2; }
+    .actions { grid-row: 3; }
+    .trophy { grid-row: 1; }
+    h1 { grid-row: 2 / 4; align-self: start; }
+    .row { padding: var(--s-2) var(--s-4); }
+    .row b { font-size: 1.6rem; }
+    .win { padding-bottom: calc(var(--safe-bottom) + var(--s-2)); }
+  }
 </style>

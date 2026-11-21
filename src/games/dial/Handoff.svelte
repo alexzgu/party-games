@@ -4,6 +4,7 @@
   // (Button's guard) so a double tap on the previous screen cannot skip past it.
   import Button from '../../components/Button.svelte';
   import Scoreboard from './Scoreboard.svelte';
+  import GameMenu from './GameMenu.svelte';
   import { teamColor } from './look';
   import { other, scoresBefore, type Game, type TeamIndex } from './state';
 
@@ -15,6 +16,7 @@
     button,
     onready,
     onclose,
+    onend,
   }: {
     game: Game;
     team: TeamIndex;
@@ -23,7 +25,11 @@
     button: string;
     onready: () => void;
     onclose?: () => void;
+    /** Ends the game for good (the menu asks first). */
+    onend?: () => void;
   } = $props();
+
+  let menu = $state(false);
 
   const rival = $derived(other(team));
 </script>
@@ -31,7 +37,11 @@
 <div class="handoff fade-in t{team}" style:--team={teamColor(team)} style:--rival={teamColor(rival)} style:--accent={teamColor(team)}>
   <header>
     <div class="grow"><Scoreboard teams={game.teams} scores={scoresBefore(game)} goal={game.goal} active={team} /></div>
-    {#if onclose}
+    {#if onclose && onend}
+      <button class="menu" aria-label="Game menu" aria-expanded={menu} onclick={() => (menu = true)}>
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>
+      </button>
+    {:else if onclose}
       <button class="menu" onclick={onclose} aria-label="Pause and go home (the game is saved)">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
       </button>
@@ -64,6 +74,10 @@
     <Button size="lg" onclick={onready}>{button}</Button>
   </div>
 </div>
+
+{#if menu && onclose && onend}
+  <GameMenu {game} onclose={() => (menu = false)} onhome={onclose} {onend} />
+{/if}
 
 <style>
   .handoff {
@@ -109,5 +123,18 @@
   .icon {
     flex: none; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%;
     color: var(--team); background: color-mix(in srgb, var(--team) 16%, transparent);
+  }
+  /* A phone on its side: the team on the left, the steps and the button on the right. */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .handoff {
+      max-width: 960px; display: grid; gap: var(--s-2) var(--s-5);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+    header { grid-column: 1 / -1; }
+    .content { display: contents; }
+    .top { grid-column: 1; grid-row: 2 / 4; align-self: center; }
+    .steps { grid-column: 2; grid-row: 2; align-self: center; }
+    .go { grid-column: 2; grid-row: 3; }
+    h1 { font-size: clamp(2.4rem, 7vw, 3.6rem); }
   }
 </style>

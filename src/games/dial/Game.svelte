@@ -11,7 +11,7 @@
   import StealView from './StealView.svelte';
   import Reveal from './Reveal.svelte';
   import Win from './Win.svelte';
-  import { route, go, back } from '../../lib/router.svelte';
+  import { route, go, back, backHome } from '../../lib/router.svelte';
   import { unlockAudio } from '../../lib/sound';
   import { keepAwake } from '../../lib/wakelock';
   import { drawCard } from './deck';
@@ -78,7 +78,7 @@
 
   const packNames = (ids: string[]) => spectrumPacks().filter((p) => ids.includes(p.id)).map((p) => p.name);
 
-  const home = () => go('/');
+  const home = backHome;
   /** Clears a game that is over (already in History) to go back to setup. */
   const close = () => set(null);
   /**
@@ -120,6 +120,7 @@
         button="I'm the reader · show me"
         onready={() => openReader(g)}
         onclose={home}
+        onend={end}
       />
     {/key}
   {:else if game.phase === 'reader' && game.round}
@@ -137,6 +138,7 @@
         button="I'm the reader · show me"
         onready={() => (readerOpen = true)}
         onclose={home}
+        onend={end}
       />
     {:else}
       <ReaderView game={g} round={r} onredraw={() => newCard(g)} onclue={(c) => set(setClue(game!, c))}

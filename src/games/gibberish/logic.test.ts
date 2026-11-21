@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { award, endedRecord, gameRecord, newGame, next, noPoint, rematch, showCard, undo, validGame, validSetup, winner } from './logic';
+import { award, endedRecord, gameRecord, newGame, next, noPoint, rematch, reseat, showCard, undo, validGame, validSetup, winner } from './logic';
+import { reseating } from '../../lib/players';
 
 const card = { phrase: 'Eye Scream', answer: 'Ice Cream', hint: 'Food' };
 const start = () => newGame(['Ana', 'Ben', 'Cy'], { target: 2, seconds: 30, packIds: ['classic'] });
@@ -128,5 +129,32 @@ describe('say what rules', () => {
     expect(validSetup(null)).toEqual({ packIds: null, seconds: 30, target: 5 });
     expect(validSetup({ packIds: ['pop'], seconds: 45, target: 7 })).toEqual({ packIds: ['pop'], seconds: 45, target: 7 });
     expect(validSetup({ packIds: 'pop', seconds: 31, target: 99 })).toEqual({ packIds: null, seconds: 30, target: 5 });
+  });
+});
+
+describe('players edited in setup', () => {
+  it('keeps scores by person, adds newcomers at 0 and passes a removed reader on', () => {
+    let s = award(showCard(start(), card), 1); // Ana reads, Ben scores
+    s = next(s); // Ben reads
+    const r = reseating(['Ana', 'Cy', 'Dee'], [0, 2, -1], 3); // Ben leaves, Dee joins
+    const t = reseat(s, r);
+    expect(t.players).toEqual([{ name: 'Ana', score: 0 }, { name: 'Cy', score: 0 }, { name: 'Dee', score: 0 }]);
+    expect(t.reader).toBe(1); // Cy, next after Ben
+    expect(t.log[0].by).toBe(-1);
+  });
+
+  it('drops a removed reader\'s card back to the hand-off', () => {
+    const s = showCard(start(), card); // Ana reads
+    const t = reseat(s, reseating(['Ben', 'Cy', 'Dee'], [1, 2, -1], 3));
+    expect(t.phase).toBe('handoff');
+    expect(t.card).toBeNull();
+    expect(t.reader).toBe(0); // Ben
+  });
+
+  it('after a reveal, moves on to the next player still in', () => {
+    const s = award(showCard(start(), card), 2); // Ana reads, Cy scores
+    const t = next(reseat(s, reseating(['Ben', 'Cy', 'Dee'], [1, 2, -1], 3)));
+    expect(t.players[t.reader].name).toBe('Ben');
+    expect(t.players[1].score).toBe(1);
   });
 });

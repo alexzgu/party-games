@@ -10,7 +10,7 @@
   import Scores from './Scores.svelte';
   import Win from './Win.svelte';
   import TapToFinish from './TapToFinish.svelte';
-  import { route, go, back } from '../../lib/router.svelte';
+  import { route, back, backHome } from '../../lib/router.svelte';
   import { sfx, unlockAudio } from '../../lib/sound';
   import { keepAwake } from '../../lib/wakelock';
   import { record } from '../../lib/history';
@@ -19,7 +19,7 @@
   import { clearGame, loadConfig, loadGame, saveGame } from './persist';
   import { demoGame } from './demo';
   import { summarize, summarizeEarly } from './summary';
-  import { finishTurn, fixMark, markCard, newGame, nextTurn, rematch, startTurn, tick, timeUp, type Config, type Game, type Mark } from './state';
+  import { finishTurn, fixMark, markCard, newGame, nextTurn, rematch, reopenTurn, reuseCards, startTurn, tick, timeUp, type Config, type Game, type Mark } from './state';
 
   const sub = $derived(route.path.split('/').filter(Boolean)[1] ?? '');
   const demo = route.params.get('demo');
@@ -29,7 +29,8 @@
   // Only that one turn; later turns start running.
   // svelte-ignore state_referenced_locally
   let resumedTurn = $state(game?.phase === 'turn' && !demo);
-  let error = $state('');
+  /** Start found no card left: every card of the chosen packs was played this game. */
+  let outOfCards = $state(false);
 
   function set(g: Game | null) {
     game = g;
@@ -62,10 +63,10 @@
     unlockAudio();
     const card = drawCard(g.packIds, g.played);
     if (!card) {
-      error = 'Every card in the chosen packs has been played this game. End the game to pick more packs.';
+      outOfCards = true;
       return;
     }
-    error = '';
+    outOfCards = false;
     sfx.go();
     set(startTurn(g, card));
   }
@@ -81,7 +82,7 @@
     if (n.phase === 'win' && !demo) record(summarize(n, packNames(n.packIds)));
   }
 
-  const home = () => go('/');
+  const home = backHome;
   /** Clears a game that is over (already in History) to go back to setup. */
   const close = () => set(null);
   /**
@@ -109,7 +110,7 @@
   {:else if game.phase === 'handoff'}
     {@const g = game}
     {#key g.turns.length}
-      <TapToFinish><Handoff game={g} {error} onstart={() => begin(g)} onhome={home} onend={end} /></TapToFinish>
+      <TapToFinish><Handoff game={g} {outOfCards} onstart={() => begin(g)} onreuse={() => begin(reuseCards(g))} onhome={home} onend={end} /></TapToFinish>
     {/key}
   {:else if game.phase === 'turn'}
     {#key game.turns.length}
@@ -120,7 +121,7 @@
     <TapToFinish><Summary game={g} onfix={(i) => set(fixMark(game!, i))} ondone={() => done(game!)} onhome={home} onend={end} /></TapToFinish>
   {:else if game.phase === 'scores'}
     {@const g = game}
-    <TapToFinish><Scores game={g} onnext={() => set(nextTurn(g))} onhome={home} onend={end} /></TapToFinish>
+    <TapToFinish><Scores game={g} onnext={() => set(nextTurn(g))} onfix={() => set(reopenTurn(g))} onhome={home} onend={end} /></TapToFinish>
   {:else if game.phase === 'win'}
     {@const g = game}
     <TapToFinish><Win game={g} onrematch={() => set(rematch(g))} onsetup={close} onhome={() => { close(); home(); }} /></TapToFinish>

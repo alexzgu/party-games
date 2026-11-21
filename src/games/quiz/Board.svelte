@@ -5,6 +5,7 @@
   import Button from '../../components/Button.svelte';
   import TopBar from './TopBar.svelte';
   import Rules from './Rules.svelte';
+  import { saveTimer, timer } from './timer.svelte';
   import { anyScored, boardCleared, tileAt, undoLabel, type Game } from './logic';
   import { teamColor } from './look';
 
@@ -60,6 +61,8 @@
           </svg>
         </button>
       {/if}
+      <button class="tool" class:on={timer.shown} aria-pressed={timer.shown} onclick={() => { timer.shown = !timer.shown; saveTimer(); }}
+        aria-label={timer.shown ? 'Hide the timer' : 'Show the timer'}>⏱</button>
       <Rules />
       <button class="tool" onclick={() => (confirmEnd = true)}>End</button>
     {/snippet}

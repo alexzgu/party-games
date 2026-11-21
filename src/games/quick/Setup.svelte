@@ -5,7 +5,8 @@
   import Stepper from '../../components/Stepper.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import Toggle from '../../components/Toggle.svelte';
-  import HowTo from '../../components/HowTo.svelte';
+  import Rules from './Rules.svelte';
+  import { reseating, unchanged, type Reseat } from '../../lib/players';
   import Players from './Players.svelte';
   import PackPicker from './PackPicker.svelte';
   import { quickPacks } from '../../lib/content';
@@ -13,10 +14,12 @@
   import { loadPlayers, loadSetup, savePlayers, saveSetup } from './store';
   import { MIN_PLAYERS, SECONDS_CHOICES, TARGET_RANGE, standings, type GameOptions, type GameState } from './logic';
 
-  let { saved, onstart, onresume, onmake, onedit, onhome }: {
+  let { saved, onstart, onresume, onroster, onmake, onedit, onhome }: {
     saved: GameState | null;
     onstart: (names: string[], opts: GameOptions) => void;
     onresume: () => void;
+    /** Player changes made here, for the saved game (only when there are some). */
+    onroster: (r: Reseat) => void;
     onmake: () => void;
     onedit: (packId: string) => void;
     onhome: () => void;
@@ -24,7 +27,11 @@
 
   const prefs = loadSetup();
   let packs = $state.raw(quickPacks());
-  let names = $state(loadPlayers());
+  // A saved game's own players are the list here: changes to it join that game on Resume.
+  // svelte-ignore state_referenced_locally
+  const live = saved && saved.phase !== 'win' ? saved : null;
+  let names = $state(live ? live.players.map((p) => p.name) : loadPlayers());
+  let seats = $state(live ? live.players.map((_, i) => i) : []);
   let seconds = $state(prefs.seconds);
   let target = $state(prefs.target);
   let steal = $state(prefs.steal);
@@ -42,6 +49,15 @@
     : prompts === 0 ? 'Pick at least one pack' : '',
   );
   const inProgress = $derived(saved && saved.phase !== 'win' ? saved : null);
+
+  /** Hands the player changes to the saved game, when there are any and enough players are left. */
+  function keepRoster() {
+    if (!inProgress || names.length < MIN_PLAYERS) return;
+    const r = reseating(names, seats, inProgress.players.length);
+    if (unchanged(r, inProgress.players.map((p) => p.name))) return;
+    onroster(r);
+    seats = names.map((_, i) => i);
+  }
 
   // With a game saved, starting over takes a second tap so nobody wipes the scores by accident.
   let confirming = $state(false);
@@ -64,30 +80,19 @@
   }
 </script>
 
-<Screen title={gameName('quick')} onback={onhome} backLabel="Home">
-  {#snippet trailing()}
-    <HowTo>
-      <ol>
-        <li>Pass the phone round. The phone says whose turn it is.</li>
-        <li>On your turn, tap to see your prompt, like <b>“Name 3 things you'd find in a fridge”</b>. The clock starts at once: {seconds} seconds.</li>
-        <li>Say three answers out loud before the buzzer. Everyone else listens.</li>
-        <li>The room decides: <b>Got 3</b> is a point, <b>Didn't</b> is not. Got them early? Tap <b>Got all 3</b> to stop the clock.</li>
-        {#if steal}<li><b>Steal:</b> miss it and the next player gets the same prompt and a fresh clock. Three <i>different</i> answers steal the point.</li>{/if}
-        <li>Wrong call? Undo takes back the last decision.</li>
-        <li>First to {target} points wins.</li>
-      </ol>
-    </HowTo>
-  {/snippet}
+<Screen title={gameName('quick')} onback={() => { keepRoster(); onhome(); }} backLabel="Home">
+  {#snippet trailing()}<Rules {seconds} {target} {steal} />{/snippet}
 <div class="setup">
   {#if inProgress}
     {@const top = standings(inProgress).slice(0, 3)}
     <div class="resume pop-in" role="status">
       <b>Game in progress</b>
       <span>{top.map((r) => `${r.player.name} ${r.player.score}`).join(' · ')}{inProgress.players.length > 3 ? ' …' : ''}</span>
+      <small>Player changes join this game. Packs and rules apply to the next one.</small>
     </div>
   {/if}
 
-  <Players bind:names />
+  <Players bind:names bind:seats />
   <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = quickPacks())} />
 
   <section class="opts" aria-labelledby="opts-h">
@@ -103,7 +108,7 @@
 
   {#snippet actions()}
     {#if inProgress}
-      <Button size="lg" onclick={() => { unlockAudio(); onresume(); }}>Resume game</Button>
+      <Button size="lg" disabled={names.length < MIN_PLAYERS} onclick={() => { unlockAudio(); keepRoster(); onresume(); }}>{names.length < MIN_PLAYERS ? missing : 'Resume game'}</Button>
       <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!missing}>
         {missing || (confirming ? 'Tap again to end it and start over' : 'Start a new game')}
       </Button>
@@ -124,6 +129,7 @@
   }
   .resume b { font-family: var(--font-display); font-size: 1.2rem; }
   .resume span { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .resume small { margin-top: var(--s-1); color: var(--text-dim); font-size: 0.85rem; line-height: 1.3; }
   .opts { display: flex; flex-direction: column; gap: var(--s-2); }
   .secs { background: var(--surface); border-radius: var(--r-md); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); display: flex; flex-direction: column; gap: var(--s-2); }
   .label { font-weight: 600; }

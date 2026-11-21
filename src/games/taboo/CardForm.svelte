@@ -33,6 +33,8 @@
       document.getElementById(focusId ?? '')?.focus();
     }
   }
+  /** Delete takes a second tap, so a card is never lost to a slip. */
+  let sure = $state(false);
 </script>
 
 <form class="form" onsubmit={save}>
@@ -44,15 +46,17 @@
         enterkeyhint={i === BANNED_COUNT - 1 ? 'done' : 'next'} bind:value={banned[i]} oninput={() => (error = '')} />
     {/each}
   </div>
-  {#if error}<p class="err" role="alert">{error}</p>{/if}
+  {#if error}<p class="err" role="alert">{error}</p>
+  {:else if !filled && !card}<p class="faint fill">Fill in the word and all {BANNED_COUNT} banned words to add it.</p>{/if}
   <div class="buttons">
     <Button type="submit" variant={card ? 'primary' : 'secondary'} size={card ? 'sm' : 'md'} disabled={!filled}>{submit}</Button>
     {#if oncancel}<Button variant="ghost" size="sm" onclick={oncancel}>Cancel</Button>{/if}
-    {#if ondelete}<span class="grow"></span><Button variant="danger" size="sm" onclick={ondelete}>Delete</Button>{/if}
+    {#if ondelete}<span class="grow"></span><Button variant="danger" size="sm" onclick={() => (sure ? ondelete() : (sure = true))}>{sure ? 'Tap again to delete' : 'Delete'}</Button>{/if}
   </div>
 </form>
 
 <style>
+  .fill { font-size: 0.88rem; margin: 0; }
   .form { display: flex; flex-direction: column; gap: var(--s-2); }
   .word { font-weight: 800; font-family: var(--font-display); font-size: 1.15rem; }
   .banned { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }

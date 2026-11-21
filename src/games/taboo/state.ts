@@ -71,6 +71,12 @@ export function scoresBefore(g: Game): [number, number] {
   return s;
 }
 
+/** True once a full round ended level with the end condition met: the rounds after it are a tiebreak. */
+export function inTiebreak(g: Game): boolean {
+  for (let n = 2; n <= g.turns.length; n += 2) if (tiedAtEnd({ ...g, turns: g.turns.slice(0, n) })) return true;
+  return false;
+}
+
 /** Rounds started: a round is one turn for each team. */
 export const roundNo = (g: Game): number => Math.ceil(g.turns.length / 2);
 const turnsOf = (g: Game, t: TeamIndex): number => g.turns.filter((x) => x.team === t).length;
@@ -168,6 +174,16 @@ export function finishTurn(g: Game): Game {
   if (g.phase !== 'summary') return g;
   const winner = winnerOf(g);
   return winner === null ? { ...g, phase: 'scores' } : { ...g, phase: 'win', winner };
+}
+
+/** From the scoreboard back to the turn's cards, to fix a mark the team only noticed there. */
+export function reopenTurn(g: Game): Game {
+  return g.phase === 'scores' ? { ...g, phase: 'summary' } : g;
+}
+
+/** Every card of the chosen packs was played: deal them again, in a fresh order, for the rest of the game. */
+export function reuseCards(g: Game): Game {
+  return g.phase === 'handoff' ? { ...g, played: [] } : g;
 }
 
 export function nextTurn(g: Game): Game {

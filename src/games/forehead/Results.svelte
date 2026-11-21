@@ -42,7 +42,7 @@
   </div>
 
   {#if round.shown.length}
-    <p class="faint tip">Tilted the wrong way? Tap a word to fix it.</p>
+    <p class="faint tip">{round.tilt ? 'Tilted the wrong way?' : 'Tapped the wrong side?'} Tap a word to fix it.</p>
     <ul class="words">
       {#each round.shown as s, i (i)}
         <li class="pop-in" style:animation-delay="{Math.min(i, 20) * 22}ms">

@@ -14,11 +14,13 @@
   // A saved board saves on every change; editing a built-in saves this phone's copy under the
   // same id ("Restore original" drops it). A board just made (`id` null) waits in storage
   // until "Save board". Empty tiles are allowed: the board is then a draft that cannot be played.
-  let { id, note = '', onback, onsaved }: {
+  let { id, note = '', category = 0, onback, onsaved }: {
     /** The saved board to edit, or null for the board just made. */
     id: string | null;
     /** What the paste step skipped, shown once at the top. */
     note?: string;
+    /** The category tab to open on (e.g. the one with an empty tile). */
+    category?: number;
     onback: () => void;
     onsaved: (id: string) => void;
   } = $props();
@@ -31,7 +33,8 @@
   let board = $state.raw<QuizBoard | null>(fresh ? loadNewBoard() : (quizBoards().find((b) => b.id === id) ?? null));
   // svelte-ignore state_referenced_locally
   let edited = $state(id !== null && customQuiz.isEdited(id));
-  let ci = $state(0);
+  // svelte-ignore state_referenced_locally
+  let ci = $state(Math.max(0, Math.min(category, (board?.categories.length ?? 1) - 1)));
   let confirm = $state<'' | 'restore' | 'delete' | 'leave' | 'level' | 'category'>('');
 
   const cats = $derived(board?.categories ?? []);

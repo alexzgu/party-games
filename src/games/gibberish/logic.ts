@@ -3,6 +3,7 @@
 import type { GibberishCard } from '../../lib/content';
 import type { HistoryEntry } from '../../lib/history';
 import { answerKey } from './parse';
+import { nextKept, type Reseat } from '../../lib/players';
 
 export const MIN_PLAYERS = 3;
 export const MAX_PLAYERS = 12;
@@ -96,6 +97,27 @@ export function undo(s: GameState): GameState {
   const players = o.kind === 'point' ? s.players.map((p, i) => (i === o.scorer ? { ...p, score: p.score - 1 } : p)) : s.players;
   const timeLeft = o.kind === 'timeout' ? s.seconds * 1000 : s.timeLeft;
   return { ...s, players, phase: 'card', outcome: null, timeLeft, cardsPlayed: s.cardsPlayed - 1, log: s.log.slice(0, -1) };
+}
+
+/**
+ * The saved game with the players edited in setup: everyone kept keeps their score, newcomers
+ * start at 0 and a removed player leaves with their points (cards they got show "nobody").
+ * A removed reader's card is dropped and the next player still in reads; after a reveal the
+ * game moves on to that player as usual.
+ */
+export function reseat(s: GameState, r: Reseat): GameState {
+  const players = r.names.map((name, i) => ({ name, score: r.seats[i] >= 0 ? (s.players[r.seats[i]]?.score ?? 0) : 0 }));
+  const to = (i: number) => (i >= 0 ? (r.places[i] ?? -1) : -1);
+  const log = s.log.map((c) => ({ ...c, by: to(c.by) }));
+  const next = { ...s, players, log, reader: to(s.reader) };
+  if (s.phase === 'reveal' && s.outcome?.kind === 'point') {
+    next.outcome = to(s.outcome.scorer) >= 0 ? { kind: 'point', scorer: to(s.outcome.scorer) } : { kind: 'nobody' };
+  }
+  if (next.reader >= 0) return next;
+  const reader = nextKept(r, s.reader);
+  // On the reveal, Next passes the phone on one place: set it just before the next reader.
+  if (s.phase === 'reveal') return { ...next, reader: (reader - 1 + players.length) % players.length };
+  return { ...next, reader, phase: s.phase === 'win' ? 'win' : 'handoff', card: null, outcome: null, timeLeft: s.seconds * 1000 };
 }
 
 /** Index of the player who reached the target, or -1. */

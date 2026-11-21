@@ -28,7 +28,10 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   entry carries how many in-app steps lie behind it, so `back()` returns to the screen a page
   came from, also after the browser's or Android's back gesture or a reload, and never leaves the
   app; a screen leaving to the one it came from uses `back()`, never a new `go()`, or Back there
-  would return to it in a loop), `settings.svelte`,
+  would return to it in a loop; a game's Home button uses `backHome()`, which walks back to the
+  main menu; a new screen opens at the top and Back restores the scroll it was left at),
+  `settings.svelte`, `players` (default names, and `reseating`: a saved game's players after
+  its setup list was edited, which `PlayerList` tracks by place),
   `sound` (synthesised cues; call `unlockAudio()` in the first tap), `haptics`, `wakelock`,
   `motion` (permission, motion stream, sign fix, upright rotation), `pitch` (forehead pitch from
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
@@ -124,8 +127,9 @@ share sheet when the browser can share the file, else a download. Import reads a
 1 MB (an Earworm clip pack: 40 MB) and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
 pack editor's or the paste route's; Big Board: 1–8 categories × 1–10 clues, cut and padded like a
 pasted board); drops what fails and says how many; leaves out a pack with nothing usable; and
-saves each pack as the player's own, ticked (Big Board: picked), under a fresh id (`-2`, `-3`, …)
-when a built-in or a pack on the phone already has its id, so nothing is overwritten. A file of
+saves each pack as the player's own, ticked on its own in place of the packs ticked before (Big Board: picked), under a fresh id (`-2`, `-3`, …)
+when a built-in or a pack on the phone already has its id, so nothing is overwritten, and a fresh
+name ("Movies (2)") when one already has its name. A pack just made is likewise played on its own. A file of
 another game says which game to open; anything else says it isn't a pack file. An Earworm pack's
 songs from the YouTube version that still need an Apple Music match travel apart, as
 `"legacySongs": [{"title", "artist"}]`, and come back as such (so "Rematch saved songs" offers
@@ -147,7 +151,12 @@ the same way.
   "Send Fizzwick away" (clears both). No key field and no model list. Descriptions are
   --text-dim, weight 600.
   Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
-- **Rules** live in each game's "?" popup, not on its screens.
+- **Rules** live in each game's "?" popup, not on its screens; the popup sits on setup and, in the
+  pass-the-phone games, on every hand-off too.
+- **A saved game and its setup**: with a game in progress, setup shows that game's players
+  (Big Board: teams). Adding, renaming or removing them changes the saved game on Resume (or on
+  leaving setup): a kept player keeps their score, newcomers start at 0, a removed one leaves
+  with their points. Pack and rule changes apply to the next game, and setup says so.
 - **History** (`#/history`): one entry per Heads Down. round (rewritten if a word is fixed
   afterwards) and per finished Spectrum or Inn Co Hear Ant game: title, scores, packs and
   details. Filter by game, open, delete one, or clear all. Stored on the phone only.
@@ -269,6 +278,11 @@ team sets a dial to where they think the target is.
   target sits at least 15 from the previous one when its part allows. Distance ≤ 2.5 → 4 pts, ≤ 7.5 → 3,
   ≤ 12.5 → 2, else 0. Steal correct → 1 pt to the other team. Turns alternate. First to the
   target score wins (win screen with confetti, rematch).
+- The hand-off's ⋯ menu offers Keep playing, Pause and go home, and End game, like the menu
+  on every other game screen.
+- **Landscape** (a phone on its side, height ≤ 500 px): game screens put the dial on the right at
+  full height and everything else, the main button included, on the left; the hand-off and win
+  screens split the same way. Nothing scrolls, and turning the phone re-fits the page at once.
 - Game state saved after every step; reopening resumes.
 
 ## Game 3 — Inn Co Hear Ant (`gibberish`)
@@ -298,6 +312,11 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   (search/sort list; a pencil per row opens the editor; "Make a pack" at the end), points
   100, 200, … per level or doubled, "Wrong answers lose points" (default off). A pack with an
   empty clue or answer is a draft: setup names the empty tiles and will not start it.
+- **Timer** (cosmetic, never touches scores or play): a countdown chip floating over the board and
+  clues: tap to start or pause, ↺ resets, the length button cycles 10/20/30/60 s, × hides it (the
+  ⏱ in the board's header shows it again). A new clue resets it without starting it; at zero it
+  shows "Time!" with a buzzer (if sound is on) and a light buzz. Drag it anywhere; it stays on
+  screen and the phone remembers its place, length and whether it shows (shown at first).
 - **Board**: fills the screen; categories across, values down; a played tile goes dim with a dot
   in the winning team's colour. Header: back to setup (game saved), Undo, full screen (wide
   screens with the Fullscreen API), "?", End. A score strip shows every team at all times:
@@ -357,11 +376,14 @@ beside them watching for slips.
   Got it +1 (chime), Skip 0 or −1, Buzz −1 (red flash, buzzer); each button ignores taps for
   400 ms after a new card. Last 10 s: a tick each second and a red pulsing clock. Leaving the app
   or the pause button stops the clock behind an opaque menu (Resume, Pause and go home, End game);
-  a reload mid-turn resumes paused with the time left. Packs used up → the turn ends early.
+  a reload mid-turn resumes paused with the time left. Packs used up → the turn ends early,
+  and the next team's hand-off offers "Play those cards again" (the game's played cards are
+  dealt again) or End game.
 - **Summary**: the turn's total, every card with its mark; a tap cycles a card got → skipped →
   buzzed. The card on screen when time ran out is listed as "Time's up" (0) and can be changed
   to got or buzzed (said at the buzzer). Then the scoreboard: the turn's points land on the team
-  (tap to land them at once), then "Next: <team>".
+  (tap to land them at once), then "Next: <team>", with "Fix <team>'s cards" to go back to the
+  summary. In a tiebreak the scoreboard says "tiebreak" instead of the goal.
 - **Scores** are never stored: they are the sum of every card's mark, so fixes on the summary
   just work. The game is checked only when both teams have had the same number of turns: target
   reached (or every round played) with one team ahead → win screen (confetti, rematch with the
@@ -395,6 +417,8 @@ few seconds to name three things that fit it out loud; the room judges.
   ("Name 3 kinds of soup: Ben ✗, Cy stole it"); Start a new game over an unfinished one records
   it with `finished: false`. Reload mid-clock resumes paused with the time left; leaving the
   app pauses. Prompts are dealt without repeats within a game and across games (per-pack bags).
+  Once every prompt of the chosen packs was played in a game, the hand-off says so and they come
+  round again, shuffled, never starting with the one just played.
 - **Content**: `src/content/quick/*.json`, `{"prompts": ["things you'd find in a fridge", …]}`
   stored without the "Name 3" lead-in. Built-ins: Classic (200), Pop Culture (120), After Dark (80).
 
@@ -439,7 +463,13 @@ play, so here's another."). Songs from a clip pack (below) play without it.
   content gate still requires an Apple track for every built-in song.
 
 - **Setup**: players (2+, remembered), packs (multi-select; pencil opens the pack editor; "New
-  pack" makes an empty own pack and opens "Add songs"), points to win (default 10, 3–30).
+  pack" makes an empty own pack, named "My songs" or "My songs 2"… apart from the phone's other
+  packs, ticked, and opens "Add songs"; one left empty, unrenamed and with no review waiting is
+  removed when setup opens again), points to win (default 10, 3–30). With a game in progress,
+  "Resume game" carries it on with the setup's players: a name already playing keeps its score,
+  a new name where an unmatched player sat is that player renamed (score kept), other new names
+  start at 0, and removed players leave (songs they named stay in History under their name).
+  Pack and points-to-win changes apply to the next game, and setup says so.
 - **Start**: every song in the chosen packs is looked up in batched calls (`lookup` takes 50 ids a
   call; answers are kept on the phone for a week); songs Apple has no preview for are left out.
   Each song's preview is downloaded and decoded just before it is needed (the next one during
@@ -451,7 +481,7 @@ play, so here's another."). Songs from a clip pack (below) play without it.
   screen: a record spins while the clip plays, with a ring for its progress; "Again" replays,
   "Longer" replays from the start at 5 s then 10 s. Naming it is worth 3 / 2 / 1 points at
   2 / 5 / 10 s. Tap the player who got it, or "Nobody got it" (both ignore taps in the first
-  0.4 s, the tail of the Play tap); "Skip song" swaps in another with no penalty and goes back to
+  0.4 s, the tail of the Play tap); a smaller "Skip this song" link swaps in another with no penalty and goes back to
   the ready screen, so nobody is ever asked about, or shown, a song the room has not heard.
   Keys on a laptop: Space again, L longer, 1–9 award, 0 nobody. If the browser will not start
   sound, the record says "Tap to start the sound".
@@ -511,8 +541,8 @@ play, so here's another."). Songs from a clip pack (below) play without it.
   that line (pasting it again retries); being offline pauses the list. A Spotify playlist, album or
   artist link gets one line saying it can't be read and to paste the songs' links instead; a
   spotify.link short link one saying to open it and copy the long link (a web page may not read
-  where it redirects). Results stream into a review list ("Matched 12 of 40", about how
-  long is left): art, ▶ preview, keep or drop, "Check this match" on doubtful ones, "Wrong match?
+  where it redirects). Results stream into a review list ("Looked up 12 of 40 · 10 found", about how
+  long is left; Back with ticked songs not yet added asks to add them first): art, ▶ preview, keep or drop, "Check this match" on doubtful ones, "Wrong match?
   Pick another" listing the other results, and songs already in the pack, or kept on another
   line, marked "Already in this pack" (the mark is worked out again whenever a line is kept,
   dropped or re-picked: unticking one line frees its repeat to be ticked, and picking another song
@@ -549,9 +579,11 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   from an http page, i.e. local dev): e.g. `npx peer --port 9000` plus a quick tunnel such as
   `cloudflared tunnel --url http://localhost:9000`, then `?peer=<name>.trycloudflare.com:443`.
   `?peer=cloud` switches back; the join link and QR
-  code carry it to phones. Connection settings (start screen, join screen, lobby) do the same by
-  hand. Broker unreachable → "Can't reach the matchmaking service. Check internet, or use the
-  backup broker." on both sides, retrying in the background.
+  code always carry the host's choice to phones (`peer=cloud` for the usual one, so a phone that
+  once used a backup is switched back). "Trouble connecting?" (start screen, join screen, lobby)
+  does the same by hand, in plain words; while a device uses a backup that link says so.
+  Broker unreachable → "Can't reach the online service that links phones to the host. Check the
+  internet, or see Trouble connecting." on both sides, retrying in the background.
 - **Host is authoritative** (`logic.ts`, pure): it holds the whole game, saves it after every
   change (`hr:snark:host`), and sends each phone only its own view (`view.ts`: its prompts, the
   two anonymous answers, its score); authors are never sent before the reveal. A phone with
@@ -641,8 +673,12 @@ over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone'
 host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
 logic. The host's peer id is `jerkbox-<game>-<CODE>`. Leaving the host screen (its back arrow,
 ending the game or closing the room) and leaving or cancelling on a phone return to the game's
-first screen the way they came (`back()`), and that screen's Back returns to the main menu; the
-browser's or Android's back gesture walks the same path and never lands on a closed host screen. Any message whose JSON is 15,000 UTF-8
+first screen the way they came (`back()`), and that screen's Back returns to the main menu.
+"Leave room" on a phone (any time, after a confirm) tells the host (`{t: 'leave'}`) before the
+link closes: the player is out like a removed one (no more turns or prompts, nobody waits for
+them) but may rejoin with the same code and keeps their score; a removed player may not. A
+refusal or the end of the room is shown on the join screen even on a phone that came by QR code.
+The browser's or Android's back gesture walks the same path as Back and never lands on a closed host screen. Any message whose JSON is 15,000 UTF-8
 bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 5,000 characters
 each) and reassembled before it is read; incomplete parts are dropped after 30 s. (PeerJS errors
 and drops the link on a JSON message of 16,300 bytes or more.)
@@ -673,7 +709,11 @@ one turn per player in seat order. The host chooses built-in packs in Settings.
 - **Room controls**: pause, skip, remove a player, close the room or rematch. The host saves
   the room; phones reconnect to their seats and scores. Late arrivals can guess immediately
   and present starting next round. An offline presenter is skipped when their turn comes
-  up, or revealed without points after 10 s offline during their turn.
+  up. One whose phone drops during their turn holds it: the clock stops on every screen, guesses
+  wait, and host and phones say who they are waiting for; back within a minute, the turn carries
+  on with the time it had, else it is revealed without points. Guesses read into a comparison
+  clue lose their closing punctuation and a capital leading article. The presenter's phone lists
+  the guesses straight under the clue builder.
 - **Content**: `src/content/salad/*.json` holds packs of secrets with an answer, category,
   difficulty, accepted variants and fitting words for the sentence slots in `words.ts`.
 - **Demos**: use `#/salad/host?demo=present` or `#/salad/join?demo=guess`. Both accept
@@ -700,9 +740,13 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
   title. Each picks on their phone (15 s): keep their fighter, or tag in one of their own
   fighters already shown this game. Then a vote as above, purse 2000; a player who kept their
   fighter and wins the rematch gets +500 (*house*; the original confirms a bonus, not its size).
+  Screens say that a tied vote goes to the challenger, mark each artist's own card "Yours", and
+  explain the +500 on the keep-or-tag screen. Players who join after a round's drawings are
+  handed out are shown as drawing next round (or voting, in round 2).
 - Highest total wins; ties share first. End screen: standings and each bout winner's fighter.
 - **Drawing**: square canvas, 640 × 640 units, Pointer Events, scrolling locked; 8 colours,
-  thin/thick pen, undo, clear. Stored as strokes `{c: colour, w: width, p: [x0, y0, dx1, dy1, …]}`
+  thin/thick pen, undo, clear ("Undo clear" brings a cleared drawing back until the next stroke);
+  on a short phone the canvas shrinks so the name and Submit stay on screen. Stored as strokes `{c: colour, w: width, p: [x0, y0, dx1, dy1, …]}`
   (whole units, points closer than 3 units dropped). The host keeps drawings in their own
   store (key `brawl:art`), never in the game state; views carry drawing ids; a phone asks for a
   drawing it lacks (`{t: 'art?', id}`) and keeps the answer. Drawings travel through the shared
@@ -715,7 +759,8 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
 - The title gets 3 s on its own. Results stay up for 8 s and the round scoreboard for 15 s.
   When both round-two fighters are blank, the first bout is skipped and the rematch runs if
   either artist has a previously shown fighter available. The host can pause, advance or close
-  the room. The lobby supports removing players, choosing packs and changing brokers. Reconnects
+  the room; its back arrow leaves the room open (the start screen offers "Back to room CODE").
+  The lobby supports removing players, choosing packs and changing brokers. Reconnects
   and History work as in Snark Tank. Classic has 120 titles and After Dark has 60.
 - Demos at `#/brawl/host?demo=` and `#/brawl/join?demo=` with
   `lobby|lobby-empty|draw|challenge|title|vote|payout|tag|rematch|scores|over|paused`.

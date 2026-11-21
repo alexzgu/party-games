@@ -1,6 +1,7 @@
 // Pure game rules for Brain Freeze: every step takes a state and returns the next one, so the
 // screens stay thin and each step can be saved and unit-tested.
 import type { HistoryEntry } from '../../lib/history';
+import { nextKept, type Reseat } from '../../lib/players';
 
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 12;
@@ -79,6 +80,15 @@ export function reveal(s: GameState, prompt: string): GameState {
   return { ...s, phase: 'live', prompt, actor: s.turn, stealing: false, timeLeft: s.seconds * 1000, dealt, prev: null };
 }
 
+/**
+ * Every prompt of the chosen packs was played this game: they come round again, all but the
+ * last one played, so it never comes straight back.
+ */
+export function reshuffle(s: GameState): GameState {
+  const last = s.log.at(-1)?.prompt;
+  return { ...s, dealt: last ? [promptKey(last)] : [] };
+}
+
 /** The stealer has the phone: same prompt, full clock. */
 export function startSteal(s: GameState): GameState {
   if (s.phase !== 'steal') return s;
@@ -116,6 +126,24 @@ export function judge(s: GameState, got: boolean): GameState {
 export function undo(s: GameState): GameState {
   if (!s.prev || (s.phase !== 'handoff' && s.phase !== 'steal')) return s;
   return s.prev;
+}
+
+/**
+ * The saved game with the players edited in setup: everyone kept keeps their score, newcomers
+ * start at 0, and a removed player leaves with their points and their own turns. A turn under
+ * way when its player or stealer is removed is dropped: the player whose turn it is (or the next
+ * one still in) starts it again with a new prompt. Undo does not reach back past the edit.
+ */
+export function reseat(s: GameState, r: Reseat): GameState {
+  const players = r.names.map((name, i) => ({ name, score: r.seats[i] >= 0 ? (s.players[r.seats[i]]?.score ?? 0) : 0 }));
+  const to = (i: number) => (i >= 0 ? (r.places[i] ?? -1) : -1);
+  const log = s.log.filter((t) => to(t.player) >= 0).map((t) => ({ ...t, player: to(t.player), stealer: to(t.stealer), scorer: to(t.scorer) }));
+  const turn = to(s.turn) >= 0 ? to(s.turn) : nextKept(r, s.turn);
+  const mid = s.phase === 'live' || s.phase === 'judge' || s.phase === 'steal';
+  const next = { ...s, players, log, turn, prev: null };
+  if (mid && to(s.turn) >= 0 && to(s.actor) >= 0) return { ...next, actor: to(s.actor) };
+  if (s.phase === 'win') return { ...next, actor: turn };
+  return { ...next, actor: turn, stealing: false, phase: 'handoff', prompt: null, timeLeft: s.seconds * 1000 };
 }
 
 /** Index of the player who reached the target, or -1. Only one point is given per turn, so at most one. */

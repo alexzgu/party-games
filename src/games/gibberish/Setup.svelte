@@ -3,7 +3,7 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Stepper from '../../components/Stepper.svelte';
-  import HowTo from '../../components/HowTo.svelte';
+  import Rules from './Rules.svelte';
   import Players from './Players.svelte';
   import PackPicker from './PackPicker.svelte';
   import { gibberishPacks } from '../../lib/content';
@@ -11,11 +11,14 @@
   import { loadPlayers, loadSetup, savePlayers, saveSetup } from './store';
   import { MIN_PLAYERS, TARGET_RANGE, TIMER_CHOICES, standings, type GameState } from './logic';
   import { timerLabel } from './ui';
+  import { reseating, unchanged, type Reseat } from '../../lib/players';
 
-  let { saved, onstart, onresume, onmake, onedit, onhome }: {
+  let { saved, onstart, onresume, onroster, onmake, onedit, onhome }: {
     saved: GameState | null;
     onstart: (names: string[], opts: { target: number; seconds: number; packIds: string[] }) => void;
     onresume: () => void;
+    /** Player changes made here, for the saved game (only when there are some). */
+    onroster: (r: Reseat) => void;
     onmake: () => void;
     onedit: (packId: string) => void;
     onhome: () => void;
@@ -24,7 +27,11 @@
   const prefs = loadSetup();
   const allPacks = gibberishPacks();
   let packs = $state.raw(allPacks);
-  let names = $state(loadPlayers());
+  // A saved game's own players are the list here: changes to it join that game on Resume.
+  // svelte-ignore state_referenced_locally
+  const live = saved && saved.phase !== 'win' ? saved : null;
+  let names = $state(live ? live.players.map((p) => p.name) : loadPlayers());
+  let seats = $state(live ? live.players.map((_, i) => i) : []);
   let seconds = $state(prefs.seconds);
   let target = $state(prefs.target);
   // First visit: every built-in pack except the adults-only one.
@@ -39,6 +46,15 @@
     : cards === 0 ? 'Pick at least one pack' : '',
   );
   const inProgress = $derived(saved && saved.phase !== 'win' ? saved : null);
+
+  /** Hands the player changes to the saved game, when there are any and enough players are left. */
+  function keepRoster() {
+    if (!inProgress || names.length < MIN_PLAYERS) return;
+    const r = reseating(names, seats, inProgress.players.length);
+    if (unchanged(r, inProgress.players.map((p) => p.name))) return;
+    onroster(r);
+    seats = names.map((_, i) => i);
+  }
 
   // With a game saved, starting over takes a second tap so nobody wipes the scores by accident.
   let confirming = $state(false);
@@ -61,20 +77,8 @@
   }
 </script>
 
-<Screen title={gameName('gibberish')} onback={onhome} backLabel="Home">
-  {#snippet trailing()}
-    <HowTo>
-      <ol>
-        <li>Each card, one player is the <b>reader</b>. The phone tells you who.</li>
-        <li>The reader reads a nonsense phrase out loud, like <b>“Eye Scream”</b>. Again and again, faster each time.</li>
-        <li>Everyone else shouts what it really sounds like: <b>Ice Cream</b>.</li>
-        <li>Stuck? The reader can show the category and read it out.</li>
-        <li>The reader taps the name of whoever said it first. They get a point.</li>
-        <li>No point if the timer runs out or nobody gets it. Skip swaps in a new card, no penalty.</li>
-        <li>The phone passes to the next reader. First to {target} points wins.</li>
-      </ol>
-    </HowTo>
-  {/snippet}
+<Screen title={gameName('gibberish')} onback={() => { keepRoster(); onhome(); }} backLabel="Home">
+  {#snippet trailing()}<Rules {target} />{/snippet}
 <div class="setup">
   {#if inProgress}
     {@const top = standings(inProgress).slice(0, 3)}
@@ -82,11 +86,12 @@
       <span class="r-text">
         <b>Game in progress</b>
         <span>{top.map((r) => `${r.player.name} ${r.player.score}`).join(' · ')}{inProgress.players.length > 3 ? ' …' : ''}</span>
+        <small>Player changes join this game. Packs and rules apply to the next one.</small>
       </span>
     </div>
   {/if}
 
-  <Players bind:names />
+  <Players bind:names bind:seats />
   <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = gibberishPacks())} />
 
   <section class="opts" aria-labelledby="opts-h">
@@ -106,7 +111,7 @@
 
   {#snippet actions()}
     {#if inProgress}
-      <Button size="lg" onclick={() => { unlockAudio(); onresume(); }}>Resume game</Button>
+      <Button size="lg" disabled={names.length < MIN_PLAYERS} onclick={() => { unlockAudio(); keepRoster(); onresume(); }}>{names.length < MIN_PLAYERS ? missing : 'Resume game'}</Button>
       <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!missing}>
         {missing || (confirming ? 'Tap again to end it and start over' : 'Start a new game')}
       </Button>
@@ -129,6 +134,7 @@
   .r-text { display: flex; flex-direction: column; min-width: 0; }
   .r-text b { font-family: var(--font-display); font-size: 1.2rem; }
   .r-text span { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .r-text small { margin-top: var(--s-1); color: var(--text-dim); font-size: 0.85rem; line-height: 1.3; }
   .opts { display: flex; flex-direction: column; gap: var(--s-2); }
   .timer { background: var(--surface); border-radius: var(--r-md); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); display: flex; flex-direction: column; gap: var(--s-2); }
   .label { font-weight: 600; }

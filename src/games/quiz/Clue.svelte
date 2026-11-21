@@ -26,8 +26,10 @@
 
   // Taps this soon after the clue or the answer appears are the tail of a double tap on the
   // previous screen, so they must not score a team or mark one wrong.
+  // Only a new step restarts the wait: a ✗ mark changes the game but not the screen.
   let shownAt = performance.now();
-  $effect.pre(() => { void game.phase; shownAt = performance.now(); });
+  const step = $derived(`${game.phase}:${game.open?.tile}`);
+  $effect.pre(() => { void step; shownAt = performance.now(); });
   const settled = () => performance.now() - shownAt >= 400;
 
   // Keys for a laptop host: Space/Enter show the answer, 1–9 award teams 1–9 (solo: 1 got it),
@@ -101,7 +103,7 @@
     </ul>
   {:else if answering}
     <p class="ask">Who got it?</p>
-    <div class="teams" style:--n={n}>
+    <div class="teams" class:four={n === 4} style:--n={n}>
       {#each game.teams as name, i (i)}
         {@const wrong = open.wrong.includes(i)}
         <button class="team" class:wrong style:--team={teamColor(i)} disabled={wrong} onclick={() => settled() && onaward(i)} aria-label={wrong ? `${name}, marked wrong` : `${name} got it, plus ${info.value}`}>
@@ -162,8 +164,13 @@
     transition: transform var(--dur-fast) var(--ease-out);
   }
   .team:active:not(:disabled) { transform: scale(0.96); }
-  .tname { font-family: var(--font-display); font-weight: 800; font-size: clamp(1rem, 2.8vmin, 2.2rem); line-height: 1.1; overflow-wrap: anywhere; text-align: center; }
+  .tname { font-family: var(--font-display); font-weight: 800; font-size: clamp(0.92rem, 2.8vmin, 2.2rem); line-height: 1.1; overflow-wrap: break-word; hyphens: auto; text-align: center; min-width: 0; max-width: 100%; }
   .pts { font-weight: 700; color: var(--c-good); font-size: clamp(0.85rem, 2vmin, 1.4rem); }
+  /* Four teams across a narrow phone: tighter boxes and type, so a name breaks between words. */
+  @media (max-width: 420px) {
+    .four .team { padding: var(--s-2) 4px; }
+    .four .tname { font-size: 0.84rem; letter-spacing: -0.02em; }
+  }
   .team.wrong { opacity: 0.45; border-style: dashed; background: var(--surface); }
   .team.wrong .pts { color: var(--c-bad); }
 

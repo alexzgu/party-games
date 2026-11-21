@@ -2,7 +2,7 @@
   import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
-  import HowTo from '../../components/HowTo.svelte';
+  import Rules from './Rules.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import Stepper from '../../components/Stepper.svelte';
   import Toggle from '../../components/Toggle.svelte';
@@ -10,7 +10,7 @@
   import PackFile from '../../components/PackFile.svelte';
   import { tabooPacks, customTaboo, packAge, type TabooCard, type TabooPack } from '../../lib/content';
   import { matches, sorted, type SortKey } from '../../lib/listing';
-  import { go } from '../../lib/router.svelte';
+  import { back, go } from '../../lib/router.svelte';
   import { teamColor } from './look';
   import { GOAL, ROUNDS, saveConfig } from './persist';
   import { SECONDS, type Config, type EndMode } from './state';
@@ -38,10 +38,10 @@
 
   $effect(() => saveConfig($state.snapshot(cfg) as Config));
 
-  /** Imported packs are ticked, like a pack just made. */
+  /** Imported packs are ticked on their own, like a pack just made. */
   function imported(ids: string[]) {
+    if (ids.length) cfg.packIds = [...ids];
     packs = tabooPacks();
-    cfg.packIds = [...ids.filter((id) => !cfg.packIds.includes(id)), ...cfg.packIds];
   }
 
   function togglePack(id: string) {
@@ -57,19 +57,8 @@
   const modeOptions: { value: EndMode; label: string }[] = [{ value: 'score', label: 'Points' }, { value: 'rounds', label: 'Rounds' }];
 </script>
 
-<Screen title={gameName('taboo')} accent="var(--c-taboo)" onback={() => go('/')} backLabel="Home">
-  {#snippet trailing()}
-    <HowTo title="How to play {gameName('taboo')}">
-      <ol>
-        <li>Two teams take turns. Each turn, one player is the <b>describer</b> and holds the phone.</li>
-        <li>Get your team to say the word on the card <b>without saying it</b> or any of the five words under it. No “sounds like”, no spelling, no pointing at things.</li>
-        <li>Someone from the <b>other team</b> sits next to the describer and watches. A banned word slips out? They hit <b>Buzz</b>: minus 1.</li>
-        <li><b>Got it</b> is plus 1. <b>Skip</b> is free, or costs 1 with the skip rule on.</li>
-        <li>When time is up, check the cards. Tap any card marked wrong to fix it.</li>
-        <li>Play to a points target or a set number of rounds. Both teams always get the same number of turns; a tie plays one more round each.</li>
-      </ol>
-    </HowTo>
-  {/snippet}
+<Screen title={gameName('taboo')} accent="var(--c-taboo)" onback={() => back('/')} backLabel="Home">
+  {#snippet trailing()}<Rules />{/snippet}
 
   <section class="stack">
     <h3>Teams</h3>

@@ -9,7 +9,7 @@
   import PackFile from '../../components/PackFile.svelte';
   import { spectrumPacks, customSpectra, packAge, type Spectrum, type SpectrumPack } from '../../lib/content';
   import { matches, sorted, type SortKey } from '../../lib/listing';
-  import { go } from '../../lib/router.svelte';
+  import { back, go } from '../../lib/router.svelte';
   import { teamColor } from './look';
   import { saveConfig } from './persist';
   import type { Config } from './state';
@@ -37,10 +37,10 @@
 
   $effect(() => saveConfig($state.snapshot(cfg) as Config));
 
-  /** Imported packs are ticked, like a pack just made. */
+  /** Imported packs are ticked on their own, like a pack just made. */
   function imported(ids: string[]) {
+    if (ids.length) cfg.packIds = [...ids];
     packs = spectrumPacks();
-    cfg.packIds = [...ids.filter((id) => !cfg.packIds.includes(id)), ...cfg.packIds];
   }
 
   function togglePack(id: string) {
@@ -53,7 +53,7 @@
   }
 </script>
 
-<Screen title={gameName('dial')} accent="var(--c-dial)" onback={() => go('/')} backLabel="Home">
+<Screen title={gameName('dial')} accent="var(--c-dial)" onback={() => back('/')} backLabel="Home">
   {#snippet trailing()}
     <HowTo title="How to play {gameName('dial')}">
       <ol>
@@ -84,7 +84,7 @@
   <section class="stack">
     <h3>Rules</h3>
     <Stepper label="Points to win" bind:value={cfg.goal} min={5} max={30} />
-    <Toggle label="Steal rule" bind:checked={cfg.steal} />
+    <Toggle label="Steal rule" hint="After each guess, the other team calls left or right of the needle for 1 point" bind:checked={cfg.steal} />
   </section>
 
   <section class="stack">

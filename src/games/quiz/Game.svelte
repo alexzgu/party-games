@@ -3,13 +3,13 @@
   // (make a board), #/quiz/board?id=<board> (see and edit one board) and #/quiz/board?new=1 (the
   // board just made, not saved yet). Using the hash means a reload lands on the same screen; the
   // saved game (or board in the making) puts it in the same state.
-  import { route, go, back } from '../../lib/router.svelte';
+  import { route, go, back, backHome } from '../../lib/router.svelte';
   import Setup from './Setup.svelte';
   import Play from './Play.svelte';
   import MakeBoard from './MakeBoard.svelte';
   import BoardEditor from './BoardEditor.svelte';
   import { loadGame, saveGame } from './store';
-  import { endedRecord, newGame, type Game, type Options } from './logic';
+  import { endedRecord, newGame, reseat, type Game, type Options } from './logic';
   import { record } from '../../lib/history';
   import { demoGame } from './demo';
 
@@ -47,7 +47,7 @@
       {demo}
       onleave={() => go('/quiz', true)}
       onnew={() => { commit(null); go('/quiz', true); }}
-      onhome={() => { commit(null); go('/', true); }}
+      onhome={() => { commit(null); backHome(); }}
     />
   {:else if sub === 'make'}
     <MakeBoard
@@ -60,6 +60,7 @@
       <BoardEditor
         id={route.params.get('new') ? null : (route.params.get('id') ?? '')}
         {note}
+        category={Number(route.params.get('cat')) || 0}
         onback={() => { note = ''; back('/quiz'); }}
         onsaved={() => { note = ''; back('/quiz'); }}
       />
@@ -69,8 +70,9 @@
       saved={game}
       onstart={start}
       onresume={() => go('/quiz/play', true)}
-      onhome={() => go('/', true)}
-      onedit={(id) => go(`/quiz/board?id=${encodeURIComponent(id)}`)}
+      onroster={(teams) => game && commit(reseat(game, teams))}
+      onhome={() => back('/')}
+      onedit={(id, cat) => go(`/quiz/board?id=${encodeURIComponent(id)}${cat ? `&cat=${cat}` : ''}`)}
       onmake={() => go('/quiz/make')}
     />
   {/if}

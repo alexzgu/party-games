@@ -36,7 +36,12 @@
   const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
 </script>
 
-<Screen title={ran} onback={() => (menu = true)} backLabel="Game menu" accent={teamColor(turn.team)}>
+<Screen title={ran} hideBack accent={teamColor(turn.team)}>
+  {#snippet trailing()}
+    <button class="menu" onclick={() => (menu = true)} aria-label="Game menu" aria-expanded={menu}>
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>
+    </button>
+  {/snippet}
   <div class="hero pop-in">
     <span class="big" class:neg={pts < 0} aria-hidden="true">{signed(pts)}</span>
     <div class="hero-txt">
@@ -73,6 +78,10 @@
 {#if menu}<GameMenu {game} onclose={() => (menu = false)} {onhome} {onend} />{/if}
 
 <style>
+  .menu {
+    flex: none; width: 48px; height: 48px; border-radius: var(--r-pill); border: 0;
+    background: var(--surface); color: var(--text-dim); display: grid; place-items: center;
+  }
   .hero { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-2) 0; }
   .big {
     font-family: var(--font-display); font-weight: 800; font-size: clamp(4.5rem, 24vw, 7rem); line-height: 0.9;

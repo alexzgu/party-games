@@ -31,7 +31,10 @@
   const hasWizard = $derived(hasKey());
 
   /** Sends Fizzwick away from this phone, however he came. */
+  let sureForget = $state(false);
   function forgetWords() {
+    if (!sureForget) { sureForget = true; return; } // he only comes back with the magic words
+    sureForget = false;
     settings.wizardPass = '';
     settings.apiKey = '';
     saveSettings();
@@ -80,7 +83,7 @@
     <h3>The wizard</h3>
     {#if hasWizard}
       <p class="muted small">🧙 Fizzwick the Wizard lives on this phone: he can make packs from any theme.</p>
-      <button type="button" class="remove" onclick={forgetWords}>Send Fizzwick away</button>
+      <button type="button" class="remove" onclick={forgetWords}>{sureForget ? 'Tap again: he only comes back with the magic words' : 'Send Fizzwick away'}</button>
     {/if}
     <MagicWords />
   </section>

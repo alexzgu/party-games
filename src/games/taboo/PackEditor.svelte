@@ -186,15 +186,14 @@
       {#if pack.cards.length === 0}<p class="faint">No cards yet. Add one above.</p>
       {:else if rows.length === 0}<p class="faint none">No cards match “{query.trim()}”</p>{/if}
     </div>
-  {/if}
 
-  {#snippet actions()}
-    {#if pack && builtin && edited}
-      <Button variant="secondary" onclick={() => (confirm = 'restore')}>↺ Restore original</Button>
-    {:else if pack?.id && !builtin}
+    <!-- At the end of the page, not pinned: neither is the page's main action. -->
+    {#if builtin && edited}
+      <Button variant="secondary" onclick={() => (confirm = 'restore')}>↺ Restore the original cards</Button>
+    {:else if pack.id && !builtin}
       <Button variant="danger" onclick={() => (confirm = 'delete')}>Delete this pack</Button>
     {/if}
-  {/snippet}
+  {/if}
 </Screen>
 
 {#if confirm === 'restore'}

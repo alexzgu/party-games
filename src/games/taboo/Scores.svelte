@@ -9,7 +9,8 @@
   import { teamColor } from './look';
   import { other, pairDone, roundNo, scores, scoresBefore, tiedAtEnd, turnScore, type Game, type TeamIndex } from './state';
 
-  let { game, onnext, onhome, onend }: { game: Game; onnext: () => void; onhome: () => void; onend: () => void } = $props();
+  let { game, onnext, onfix, onhome, onend }:
+    { game: Game; onnext: () => void; /** Back to the turn's cards to fix a mark. */ onfix: () => void; onhome: () => void; onend: () => void } = $props();
 
   const LAND_MS = 750;
   const last = $derived(game.turns.at(-1)!);
@@ -74,6 +75,7 @@
   <p class="status pop-in" style:animation-delay="200ms">{status}</p>
   <div class="go">
     <Button size="lg" onclick={onnext}>Next: {game.names[next]}</Button>
+    <Button variant="ghost" onclick={onfix}>Fix {game.names[last.team]}'s cards</Button>
   </div>
 </div>
 

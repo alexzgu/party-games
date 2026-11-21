@@ -20,7 +20,7 @@
 
   /** Imported packs are ticked, like a pack just made. */
   function imported(ids: string[]) {
-    selected = [...ids.filter((id) => !selected.includes(id)), ...selected];
+    if (ids.length) selected = [...ids]; // imported packs are played on their own, like a pack just made
     onimported();
   }
 

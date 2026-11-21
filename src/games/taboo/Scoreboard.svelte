@@ -1,13 +1,14 @@
 <script lang="ts">
   // The two teams facing off, each in its own colour, scores meeting at a "vs" in the middle
   // that says what the game is played to.
-  import type { Game, TeamIndex } from './state';
+  import { inTiebreak, type Game, type TeamIndex } from './state';
   import { teamColor } from './look';
 
   let { game, scores, active }: { game: Game; scores: [number, number]; active: TeamIndex | null } = $props();
 
-  const to = $derived(game.mode === 'score' ? `to ${game.goal}` : `${game.rounds} rds`);
-  const told = $derived(game.mode === 'score' ? `first to ${game.goal}` : `${game.rounds} rounds`);
+  const tiebreak = $derived(inTiebreak(game));
+  const to = $derived(tiebreak ? 'tiebreak' : game.mode === 'score' ? `to ${game.goal}` : `${game.rounds} rds`);
+  const told = $derived(tiebreak ? 'tiebreak' : game.mode === 'score' ? `first to ${game.goal}` : `${game.rounds} rounds`);
 </script>
 
 {#snippet side(i: TeamIndex)}

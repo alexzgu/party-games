@@ -20,7 +20,14 @@ export function makeDealer(packIds: string[]) {
     return pick?.b.bag.next();
   }
 
+  const keys = new Set(packs.flatMap((p) => p.prompts.map(promptKey)));
+
   return {
+    /** True when every prompt of the chosen packs was dealt this game (`dealt`, folded). */
+    usedUp(dealt: readonly string[]): boolean {
+      const used = new Set(dealt);
+      return keys.size > 0 && [...keys].every((k) => used.has(k));
+    },
     /** A prompt not in `dealt` (prompts already played this game), when one is left. */
     next(dealt: readonly string[] = []): string | undefined {
       const used = new Set(dealt);

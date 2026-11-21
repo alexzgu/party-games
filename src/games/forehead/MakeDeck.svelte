@@ -11,6 +11,7 @@
   import { hasKey, WANTS } from '../../lib/claude';
   import MagicWords from '../../components/MagicWords.svelte';
   import { back } from '../../lib/router.svelte';
+  import { freshName } from '../../lib/packfile';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
   import { generateWords, THEME_CHIPS } from './generate';
@@ -77,11 +78,14 @@
       customDecks.put({ ...targetDeck, words: dedupe([...kept, ...targetDeck.words]) });
     } else {
       const fromPaste = mode === 'paste';
-      const name = (fromPaste ? deckName.trim() : titleCase(theme.trim())).slice(0, 40) || (fromPaste ? 'My pack' : 'Wizard pack');
+      const typed = (fromPaste ? deckName.trim() : titleCase(theme.trim())).slice(0, 40) || (fromPaste ? 'My pack' : 'Wizard pack');
+      const name = freshName(typed, (n) => wordDecks().some((d) => d.name.toLowerCase() === n)); // never two tiles alike
       id = 'my-' + slugify(name) + '-' + Date.now().toString(36);
       customDecks.put({ id, name, emoji: fromPaste ? '📝' : '✨', blurb: fromPaste ? 'Pasted list' : 'Conjured by Fizzwick', words: dedupe(kept) });
     }
-    if (kept.length && !prefs.deckIds.includes(id)) prefs.deckIds = [id, ...prefs.deckIds];
+    // A new pack is played on its own; words added to a pack keep the packs already picked.
+    if (kept.length && !targetDeck) prefs.deckIds = [id];
+    else if (kept.length && !prefs.deckIds.includes(id)) prefs.deckIds = [id, ...prefs.deckIds];
     savePrefs();
     sfx.win();
     back(into ? '/forehead/decks' : '/forehead');

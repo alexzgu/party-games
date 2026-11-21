@@ -117,7 +117,7 @@
     <button class="icon-btn" onclick={() => settled() && pause()} aria-label="Pause">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
     </button>
-    <p class="reader"><Avatar name={reader.name} index={game.reader} size={26} /> {reader.name} reads</p>
+    <p class="reader"><Avatar name={reader.name} index={game.reader} size={26} /> <span class="rname">{reader.name} reads</span></p>
     {#if total > 0}<Ring {left} {total} size={64} />{:else}<span class="spacer"></span>{/if}
   </header>
 
@@ -174,6 +174,7 @@
   header { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: 64px; }
   .icon-btn { width: 48px; height: 48px; border-radius: var(--r-pill); border: 0; background: var(--surface); color: var(--text); display: grid; place-items: center; flex: none; }
   .spacer { width: 48px; }
+  .rname { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .reader { display: flex; align-items: center; gap: var(--s-2); font-weight: 700; color: var(--text-dim); min-width: 0; overflow: hidden; white-space: nowrap; }
 
   .bubble {
@@ -221,6 +222,13 @@
   .grid.three .player :global(.avatar) { display: none; }
   .player:active { transform: scale(0.96); background: color-mix(in srgb, var(--c-good) 30%, var(--surface)); }
   .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+  /* A short phone with a big room: the phrase gives up height so every name and Nobody stay on screen. */
+  @media (max-height: 720px) {
+    .card-screen { gap: var(--s-2); }
+    .bubble { flex-basis: 140px; min-height: 120px; }
+    .show-cat, .category, .tools :global(.hold) { min-height: 48px; }
+    .grid.three .player { min-height: 46px; }
+  }
 
   .paused {
     position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; justify-content: center; gap: var(--s-4);

@@ -16,10 +16,15 @@
 
   /** Practice tilts of each kind needed to save, and before the phone suggests stopping (more are welcome). */
   const ENOUGH = 3;
+  /** With no motion reading this long after Start, the phone is not sending any: say so instead of waiting. */
+  const SILENT_MS = 3000;
   const WORD: Record<Direction, string> = { down: 'Down', up: 'Up' };
 
   let phase = $state<'intro' | 'running' | 'saved'>('intro');
   let denied = $state(false);
+  /** Why tilts cannot be felt here: the browser has no motion access at all, or it sent no readings. */
+  let noMotion = $state<'' | 'none' | 'silent'>('');
+  let silence: ReturnType<typeof setTimeout> | undefined;
   let onHead = $state(false);
   let ask = $state<Direction>('down');
   let note = $state('');
@@ -39,9 +44,16 @@
     enterPlayMode();
     keepAwake(true);
     denied = false;
+    noMotion = '';
     const ok = await mine.ready;
     if (claim !== mine) return; // left, cancelled or restarted while the prompt was up
-    if (!ok) { denied = motion.denied; release(); return; } // false also when another screen took motion over
+    if (!ok) {
+      // false also when another screen took motion over
+      if (typeof DeviceMotionEvent === 'undefined') noMotion = 'none';
+      else denied = motion.denied;
+      release();
+      return;
+    }
     kept = [];
     onHead = false;
     ask = 'down';
@@ -50,7 +62,9 @@
     say('Put the phone on your forehead, like in a round.');
     const steady = new SteadyDetector();
     const catcher = new GestureCatcher();
+    silence = setTimeout(() => { release(); phase = 'intro'; noMotion = 'silent'; }, SILENT_MS);
     unhook = onGravity((g, t, p) => {
+      clearTimeout(silence);
       if (!onHead) {
         if (steady.update(g, t)) { onHead = true; say(`Ready. ${WORD[ask]}.`); }
         return;
@@ -84,6 +98,7 @@
 
   /** Stops only what this screen started: a newer round's motion stream is left alone. */
   function release() {
+    clearTimeout(silence);
     unhook?.();
     unhook = null;
     if (!claim) return;
@@ -132,7 +147,7 @@
       {#if phase === 'saved' && th}
         <p><b>Saved.</b> Got it now needs about {Math.round(th.down)}° down, pass about {Math.round(th.up)}° up, both done briskly.</p>
         <p class="faint">Each player can calibrate before their turn; the phone keeps the last one.</p>
-        <Button size="lg" onclick={() => back('/forehead')}>Back to the game</Button>
+        <Button size="lg" onclick={() => back('/forehead')}>Done</Button>
       {:else}
         <p>Teach the phone how you tilt, so your tilts always count and laughing or looking around does not.</p>
         <ol class="steps">
@@ -141,6 +156,7 @@
           <li>Do at least three of each (more is fine), then take it off and tap <b>Done</b>.</li>
         </ol>
         {#if note}<p class="bad">{note}</p>{/if}
+        {#if noMotion}<p class="bad">{noMotion === 'none' ? 'This browser cannot feel tilts, so there is nothing to calibrate here.' : 'This phone sent no tilt readings, so it cannot be calibrated here.'} Rounds can still be played with Tap.</p>{/if}
         {#if denied}<p class="bad">Motion was refused, so the phone cannot feel tilts. On iPhone: close the app fully, open it again and choose Allow.</p>{/if}
         <p class="faint">
           {th ? `Now: calibrated (got it at ${Math.round(th.down)}°, pass at ${Math.round(th.up)}°).` : 'Now: not calibrated, using the standard settings.'}

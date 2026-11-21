@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Rules from './Rules.svelte';
   import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
@@ -9,13 +10,15 @@
 
   // Between turns: how the last turn went, the scores, and whose turn it is now. Revealing the
   // prompt starts the clock, so the button says so.
-  let { game, onbegin, onwin, onundo, onleave, error = '' }: {
+  let { game, onbegin, onwin, onundo, onleave, error = '', notice = '' }: {
     game: GameState;
     onbegin: () => void;
     onwin: () => void;
     onundo: () => void;
     onleave: () => void;
     error?: string;
+    /** A plain note over the start button (not an error). */
+    notice?: string;
   } = $props();
 
   const up = $derived(game.players[game.turn]);
@@ -27,6 +30,7 @@
 {#if last && last.scorer >= 0 && game.prev}<Confetti count={30} />{/if}
 
 <Screen title={gameName('quick')} onback={onleave} backLabel="Back to setup">
+  {#snippet trailing()}<Rules seconds={game.seconds} target={game.target} steal={game.steal} />{/snippet}
 <div class="center">
   {#if last}
     <section class="last" aria-label="Last turn">
@@ -61,7 +65,7 @@
     {#if !last}<p class="meta">First to {game.target} points wins{game.steal ? ' · steals on' : ''}</p>{/if}
   {/if}
 
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
+  {#if error}<p class="error" role="alert">{error}</p>{:else if notice}<p class="notice" role="status">{notice}</p>{/if}
 </div>
 
   {#snippet actions()}
@@ -98,6 +102,7 @@
   .hint { font-size: 1.05rem; font-weight: 600; max-width: 22em; }
   .meta { text-align: center; color: var(--text-faint); }
   .error { color: var(--bad-ink); text-align: center; }
+  .notice { color: var(--text-dim); font-weight: 600; text-align: center; }
   @keyframes breathe { 50% { transform: scale(1.12); opacity: 0.7; } }
   @media (prefers-reduced-motion: reduce) { .glow { animation: none; } }
 </style>

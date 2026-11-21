@@ -288,7 +288,7 @@ export function readData(data: unknown, game: PackGameId, opts: ReadOptions = {}
 
 // ---- Saving on this phone
 
-interface PackStore { saved(): AnyPack[]; put(p: AnyPack): void; isBuiltin(id: string): boolean }
+interface PackStore { saved(): AnyPack[]; put(p: AnyPack): void; isBuiltin(id: string): boolean; names(): string[] }
 const STORES: Record<PackGameId, PackStore> = {
   forehead: customDecks, dial: customSpectra, gibberish: customGibberish, quiz: customQuiz,
   quick: customQuick, snark: customSnark, song: customSongs, taboo: customTaboo,
@@ -305,14 +305,28 @@ export function freshId(id: string, taken: (id: string) => boolean): string {
   return `${id}-${n}`;
 }
 
-/** Saves the packs as the player's own, each under an id no built-in or saved pack uses. */
+/** `name`, or `name (2)`, `name (3)`, … : the first that `taken` does not claim (any case). */
+export function freshName(name: string, taken: (lowered: string) => boolean): string {
+  if (!taken(name.toLowerCase())) return name;
+  let n = 2;
+  while (taken(`${name} (${n})`.toLowerCase())) n++;
+  return `${name} (${n})`;
+}
+
+/**
+ * Saves the packs as the player's own, each under an id no built-in or saved pack uses, and a
+ * name none uses either, so two tiles never look alike.
+ */
 export function savePacks(game: PackGameId, packs: readonly AnyPack[]): AnyPack[] {
   const store = STORES[game];
   const taken = new Set(store.saved().map((p) => p.id));
+  const names = new Set(store.names().map((n) => n.toLowerCase()));
   const out = packs.map((p) => {
     const id = freshId(p.id, (x) => taken.has(x) || store.isBuiltin(x));
+    const name = freshName(p.name, (x) => names.has(x));
     taken.add(id);
-    return { ...p, id };
+    names.add(name.toLowerCase());
+    return { ...p, id, name };
   });
   // Each put goes on top: save the last first so the file's order is kept.
   for (const p of [...out].reverse()) store.put(p);

@@ -1,0 +1,19 @@
+// Pure parts of dragging a floating element: keeping it on screen and telling a tap from a drag.
+
+export interface Point { x: number; y: number }
+export interface Size { w: number; h: number }
+
+/** A movement shorter than this (px) is a tap, not a drag. */
+export const TAP_SLOP = 8;
+
+/** True while a press has moved too little to count as a drag. */
+export const isTap = (from: Point, to: Point, slop = TAP_SLOP): boolean => Math.hypot(to.x - from.x, to.y - from.y) < slop;
+
+/**
+ * The top-left corner `p` moved so a box of `size` sits wholly inside `area`, `margin` px from
+ * its edges (a box bigger than the area sits at its top-left margin).
+ */
+export function clampInto(p: Point, size: Size, area: Size, margin = 8): Point {
+  const fit = (v: number, len: number, room: number) => Math.max(margin, Math.min(v, room - len - margin));
+  return { x: fit(p.x, size.w, area.w), y: fit(p.y, size.h, area.h) };
+}
