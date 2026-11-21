@@ -121,8 +121,8 @@
         </button>{/if}
       {/if}
       <HowTo><Rules /></HowTo>
-      {#if game && (game.phase !== 'lobby' || game.players.length)}
-        <button class="icon" aria-label="End game" onclick={() => (confirmEnd = true)}>✕</button>
+      {#if game}
+        <Button size="sm" variant="ghost" onclick={() => (confirmEnd = true)}>{game.phase === 'lobby' ? 'Close room' : 'End game'}</Button>
       {/if}
     </div>
   </header>
@@ -176,11 +176,12 @@
 </div>
 
 {#if confirmEnd && game}
-  <Popup title="End the game?" onclose={() => (confirmEnd = false)}>
+  {@const lobby = game.phase === 'lobby'}
+  <Popup title={lobby ? 'Close the room?' : 'End the game?'} onclose={() => (confirmEnd = false)}>
     <div class="confirm">
       <p>This closes room {game.code} and sends everyone's phone back to the start.{#if game.phase !== 'over' && anyScored(game)} The scores so far go in History as ended early.{/if}</p>
-      <Button variant="danger" onclick={end}>End game</Button>
-      <Button variant="secondary" onclick={() => (confirmEnd = false)}>Keep playing</Button>
+      <Button variant="danger" onclick={end}>{lobby ? 'Close room' : 'End game'}</Button>
+      <Button variant="secondary" onclick={() => (confirmEnd = false)}>{lobby ? 'Keep it open' : 'Keep playing'}</Button>
     </div>
   </Popup>
 {/if}
@@ -209,7 +210,7 @@
     font-weight: 600;
   }
   .stage { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-  .paused { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: var(--s-4); }
+  .paused { position: fixed; inset: 0; z-index: var(--z-overlay); display: grid; place-items: center; background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: var(--s-4); }
   .pcard { width: min(420px, 100%); display: flex; flex-direction: column; gap: var(--s-3); text-align: center; background: var(--bg-raised); border-radius: var(--r-lg); padding: var(--s-6) var(--s-5); border: 1.5px solid var(--line-strong); }
   .confirm { display: flex; flex-direction: column; gap: var(--s-2); }
   .confirm p { margin-bottom: var(--s-2); }

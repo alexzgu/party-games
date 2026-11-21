@@ -1,19 +1,14 @@
-// Search and sort for the pack list and a pack's prompts.
-import { packAge, type SnarkPack } from '../../lib/content';
+// Snark Tank's packs in the shared pack list, and search and sort for a pack's prompts.
+import { customSnark, type SnarkPack } from '../../lib/content';
 import { matches, sorted, type SortKey } from '../../lib/listing';
+import { counted, packTag, type PackEntry } from '../../lib/packList';
 
-/** Whether a pack matches, and, when only some prompts do, a line saying which. */
-export function packHit(p: SnarkPack, query: string): { match: boolean; hit: string } {
-  if (matches(p.name, query) || matches(p.blurb, query)) return { match: true, hit: '' };
-  const found = p.prompts.filter((q) => matches(q, query));
-  if (!found.length) return { match: false, hit: '' };
-  return { match: true, hit: `has “${found[0]}”${found.length > 1 ? ` and ${found.length - 1} more` : ''}` };
-}
-
-export function findPacks(packs: SnarkPack[], query: string, sort: SortKey) {
-  const found = packs.map((p) => ({ p, ...packHit(p, query) })).filter((x) => x.match);
-  return sorted(found, sort, (x) => x.p.name, (x) => packAge(x.p));
-}
+/** A pack as the game settings' pack list shows it. */
+export const packEntry = (p: SnarkPack): PackEntry => ({
+  id: p.id, name: p.name, blurb: p.blurb, added: p.added,
+  size: p.prompts.length, sizeLabel: counted(p.prompts.length, 'prompts'), tag: packTag(p.custom, customSnark.isEdited(p.id)),
+  items: p.prompts.map((label) => ({ label })),
+});
 
 /** A pack's prompts with their index; new prompts go first, so a lower index is newer. */
 export function findPrompts(prompts: string[], query: string, sort: SortKey) {

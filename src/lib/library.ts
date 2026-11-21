@@ -9,6 +9,8 @@ import { viaPass } from './claude';
 import { cleanExtra, cleanItems, text } from './libraryShape';
 import { builtinPacks, FORMAT, isBuiltinPack, itemsField, packParts, readFile, savePacks, type AnyPack, type ImportResult } from './packfile';
 import { saveSettings, settings } from './settings.svelte';
+import { getUsername } from './username';
+import { cleanUsername } from './usernameShape';
 import { WIZARD_SERVER } from './wizardServer';
 import { cardId as spectrumKey } from '../games/dial/state';
 import { answerKey } from '../games/gibberish/parse';
@@ -63,6 +65,8 @@ export interface LibraryPack {
   updated: number;
   /** Only when the list was asked for with a pass. */
   starred?: boolean;
+  /** The sharing phone's username; packs shared before usernames have none. */
+  username?: string;
 }
 
 export interface LibraryFull extends LibraryPack {
@@ -108,9 +112,11 @@ function summaryOf(game: PackGameId, x: unknown): LibraryPack | null {
   const id = typeof r.id === 'string' && /^[\w-]{1,32}$/.test(r.id) ? r.id : null;
   const name = text(r.name, 60);
   if (!id || !name || r.game !== game) return null;
+  const username = cleanUsername(r.username);
   return {
     id, game, name, blurb: text(r.blurb, 140, true) ?? '', count: num(r.count), stars: num(r.stars), created: num(r.created), updated: num(r.updated),
     ...(typeof r.starred === 'boolean' ? { starred: r.starred } : {}),
+    ...(username ? { username } : {}),
   };
 }
 
@@ -141,10 +147,10 @@ export async function starPack(id: string, on: boolean): Promise<Got<{ stars: nu
   return r.ok ? { ok: true, stars: num(r.body.stars), starred: r.body.starred === true } : r;
 }
 
-/** Publishes the whole pack; the same pass and pack id update the entry it made before. */
+/** Publishes the whole pack with this phone's username; the same pass and pack id update the entry it made before. */
 export async function publishPack(game: PackGameId, pack: AnyPack): Promise<Got<{ id: string }>> {
   const { items, extra } = packParts(game, pack);
-  const body = { game, name: pack.name.slice(0, 60), blurb: pack.blurb.slice(0, 140), localId: pack.id, items, extra };
+  const body = { game, name: pack.name.slice(0, 60), blurb: pack.blurb.slice(0, 140), localId: pack.id, items, extra, username: getUsername() };
   const r = await call('/library/packs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, true);
   return r.ok ? { ok: true, id: String(r.body.id) } : r;
 }

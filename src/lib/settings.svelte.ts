@@ -1,5 +1,6 @@
 import { load, save } from './storage';
 import { DEFAULT_MODEL } from './wizard';
+import type { PackView } from './packList';
 
 export interface Settings {
   sound: boolean;
@@ -14,6 +15,8 @@ export interface Settings {
   headsDownFeedback: 'edge' | 'screen';
   /** Colour scheme; 'system' follows the phone. */
   theme: 'system' | 'light' | 'dark';
+  /** How every game's pack list on setup shows its packs. */
+  packView: PackView;
 }
 
 const DEFAULTS: Settings = {
@@ -24,6 +27,7 @@ const DEFAULTS: Settings = {
   model: DEFAULT_MODEL,
   headsDownFeedback: 'edge',
   theme: 'dark',
+  packView: 'tiles',
 };
 
 export const settings = $state<Settings>(load('settings', DEFAULTS));

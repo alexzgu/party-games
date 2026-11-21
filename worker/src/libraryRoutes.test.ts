@@ -185,6 +185,43 @@ describe('library', () => {
     expect((await call(env, '/library/export?after=nope')).status).toBe(400);
   });
 
+  it('stores the username sent with a pack and returns it in the list, the preview and the export', async () => {
+    const env = fakeEnv();
+    const pass = await passFor(env);
+    const { id } = await body<{ id: string }>(publish(env, pass, { username: '  Sneaky   Otter ' }));
+    await publish(env, pass, { localId: 'old-app', name: 'Old App' }); // an app from before usernames
+    await publish(env, pass, { localId: 'bad', name: 'Bad Name', username: 'x'.repeat(25) });
+    type Row = Record<string, unknown>;
+    const rows = (await body<{ packs: Row[] }>(call(env, '/library/packs?sort=new'))).packs;
+    expect(Object.fromEntries(rows.map((p) => [p.name, p.username]))).toEqual({ 'Bad Name': undefined, 'Old App': undefined, 'Road Trip': 'Sneaky Otter' });
+    expect(rows.filter((p) => Object.hasOwn(p, 'username'))).toHaveLength(1);
+    expect((await body<{ pack: Row }>(call(env, `/library/packs/${id}`))).pack.username).toBe('Sneaky Otter');
+    const exported = (await body<{ packs: Row[] }>(call(env, '/library/export'))).packs;
+    expect(exported.map((p) => p.username).sort()).toEqual(['Sneaky Otter', undefined, undefined]);
+    // Search stays names and descriptions only.
+    expect(await names(env, '?q=otter')).toEqual([]);
+    // An update carries the username it is sent with.
+    await publish(env, pass, { username: 'Jolly Moose' });
+    expect((await body<{ pack: Row }>(call(env, `/library/packs/${id}`))).pack.username).toBe('Jolly Moose');
+  });
+
+  it('adds the username column to a library stored before usernames, keeping its packs', async () => {
+    const sql = fakeSql();
+    sql.exec(`CREATE TABLE packs (
+      id TEXT PRIMARY KEY, game TEXT NOT NULL, name TEXT NOT NULL, blurb TEXT NOT NULL,
+      count INTEGER NOT NULL, items TEXT NOT NULL, extra TEXT NOT NULL DEFAULT '{}', search TEXT NOT NULL,
+      created INTEGER NOT NULL, updated INTEGER NOT NULL, stars INTEGER NOT NULL DEFAULT 0,
+      hidden INTEGER NOT NULL DEFAULT 0, owner TEXT NOT NULL, local_id TEXT NOT NULL)`);
+    sql.exec(`INSERT INTO packs (id, game, name, blurb, count, items, search, created, updated, owner, local_id)
+      VALUES ('AAAAAAAAAAAA', 'dial', 'Older', '', 1, '[{"left":"A","right":"B"}]', 'older
+', 1, 1, 'someone', 'x')`);
+    const env = fakeEnv({ LIBRARY: fakeLibrary(sql) });
+    fakeLibrary(sql); // the object waking again finds the column there
+    await publish(env, await passFor(env), { username: 'Jolly Moose' });
+    const rows = (await body<{ packs: Record<string, unknown>[] }>(call(env, '/library/packs?sort=new'))).packs;
+    expect(Object.fromEntries(rows.map((p) => [p.name, p.username]))).toEqual({ 'Road Trip': 'Jolly Moose', Older: undefined });
+  });
+
   it('writes nothing for a vote that changes nothing', async () => {
     const sql = fakeSql();
     const writes: string[] = [];

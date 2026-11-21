@@ -12,6 +12,8 @@
   import { hasKey } from '../lib/claude';
   import { sfx, unlockAudio } from '../lib/sound';
   import { haptic } from '../lib/haptics';
+  import UsernameField from '../components/UsernameField.svelte';
+  import { device, soundHint, vibrationHint } from '../lib/device';
 
   let cleared = $state(false);
 
@@ -49,10 +51,12 @@
 </script>
 
 <Screen title="Settings" accent="var(--c-gibberish)">
+  <UsernameField />
+
   <section class="stack">
     <h3>Feel</h3>
-    <Toggle label="Sound" bind:checked={settings.sound} onchange={soundChanged} hint="Plays even with the iPhone silent switch on" />
-    <Toggle label="Vibration" bind:checked={settings.haptics} onchange={hapticsChanged} hint="Android buzzes only when the phone is not on silent (Chrome skips it then; vibrate mode works). Recent iPhones give a light tick." />
+    <Toggle label="Sound" bind:checked={settings.sound} onchange={soundChanged} hint={soundHint(device)} />
+    <Toggle label="Vibration" bind:checked={settings.haptics} onchange={hapticsChanged} hint={vibrationHint(device)} />
   </section>
 
   <section class="stack">
@@ -63,6 +67,13 @@
       bind:value={settings.theme}
       onchange={() => { saveSettings(); applyTheme(); }}
     />
+    <Segmented
+      label="Pack lists"
+      options={[{ value: 'tiles', label: 'Tiles' }, { value: 'rows', label: 'List' }]}
+      bind:value={settings.packView}
+      onchange={saveSettings}
+    />
+    <p class="faint">How every game shows its packs on setup. The switch beside a pack list's search changes it too.</p>
   </section>
 
   <section class="stack">
@@ -73,7 +84,7 @@
       bind:value={settings.headsDownFeedback}
       onchange={saveSettings}
     />
-    <p class="faint">Light the edge: the edge on the side you tilted glows. Flash the screen: the whole screen turns green or amber.</p>
+    <p class="faint"><b>Light the edge:</b> the edge on the side you tilted glows. <b>Flash the screen:</b> the whole screen turns green or amber.</p>
     <Button variant="secondary" onclick={() => go('/forehead/calibrate')}>Calibrate tilt</Button>
     <p class="faint">Tilt: {calibration.th ? `calibrated on this phone (got it at ${Math.round(calibration.th.down)}°, pass at ${Math.round(calibration.th.up)}°)` : 'not calibrated yet, standard settings'}. Calibrating takes half a minute and makes tilts count reliably for whoever did it.</p>
     <TiltCheck />

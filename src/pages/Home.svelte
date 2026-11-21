@@ -17,7 +17,7 @@
 </script>
 
 <div class="home">
-  <header class="top">
+  <header class="top pinned-bg pinned-lift">
     <div class="brand">
       <span class="logo" aria-hidden="true">🎲</span>
       <h1>{APP.name}</h1>
@@ -68,11 +68,18 @@
 
 <style>
   .home {
+    --gutter-l: calc(var(--safe-left) + var(--s-4));
+    --gutter-r: calc(var(--safe-right) + var(--s-4));
     max-width: 640px; margin: 0 auto;
-    padding: calc(var(--safe-top) + var(--s-5)) calc(var(--safe-right) + var(--s-4)) calc(var(--safe-bottom) + var(--s-6)) calc(var(--safe-left) + var(--s-4));
+    padding: 0 var(--gutter-r) calc(var(--safe-bottom) + var(--s-6)) var(--gutter-l);
     display: flex; flex-direction: column; gap: var(--s-4); min-height: 100dvh;
   }
-  .top { display: flex; align-items: center; justify-content: space-between; }
+  /* Pinned, edge to edge, in the page's own background: History and Settings are always in reach. */
+  .top {
+    position: sticky; top: 0; z-index: var(--z-pinned); display: flex; align-items: center; justify-content: space-between;
+    margin: 0 calc(-1 * var(--gutter-r)) calc(-1 * var(--s-2)) calc(-1 * var(--gutter-l));
+    padding: calc(var(--safe-top) + var(--s-4)) var(--gutter-r) var(--s-2) var(--gutter-l);
+  }
   .tools { display: flex; gap: var(--s-2); }
   .brand { display: flex; align-items: center; gap: var(--s-3); }
   .logo { font-size: 2.2rem; }

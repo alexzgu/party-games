@@ -1,8 +1,8 @@
 <script lang="ts">
-  // "Import packs" and "Export my packs" for a game's pack list. Import reads a pack file and
+  // "Import" and "Export" (my packs) under a game's pack list. Import reads a pack file and
   // saves each pack in it as the player's own (never over a pack already here); export sends
   // every pack made or edited on this phone in one file. Text from a file is only ever shown as text.
-  // For a game in the Community library (library.ts) it also opens the Community packs, over the
+  // For a game in the Community library (library.ts) “🌍 Community” opens the Community packs, over the
   // page, at the same address plus `?community=1`, so Back closes them; a pack imported there
   // goes through `onimported` like one from a file.
   import type { PackGameId } from '../app.config';
@@ -62,9 +62,9 @@
 
 <div class="packfile">
   <div class="row">
-    {#if community}<Button variant="secondary" size="sm" onclick={openCommunity}>🌍 Community packs</Button>{/if}
-    <Button variant="secondary" size="sm" onclick={() => input?.click()}>Import packs</Button>
-    {#if mine}<Button variant="secondary" size="sm" onclick={exportMine}>Export my packs</Button>{/if}
+    {#if community}<Button variant="secondary" size="sm" label="Community packs" onclick={openCommunity}>🌍 Community</Button>{/if}
+    <Button variant="secondary" size="sm" label="Import packs from a file" onclick={() => input?.click()}>Import</Button>
+    {#if mine}<Button variant="secondary" size="sm" label="Export my packs to a file" onclick={exportMine}>Export</Button>{/if}
   </div>
   <input bind:this={input} type="file" accept={PACK_FILE_ACCEPT} hidden onchange={chosen} aria-label="Pack file to import" />
   <p class="status" class:failed role="status">{status}</p>
@@ -80,5 +80,5 @@
   .status { margin: 0; color: var(--text-dim); font-size: 0.9rem; line-height: 1.3; overflow-wrap: anywhere; }
   .status:empty { display: none; }
   .failed { color: var(--bad-ink); font-weight: 600; }
-  .layer { position: fixed; inset: 0; z-index: 40; overflow-y: auto; overscroll-behavior: contain; background: var(--bg); }
+  .layer { position: fixed; inset: 0; z-index: var(--z-overlay); overflow-y: auto; overscroll-behavior: contain; background: var(--bg); }
 </style>

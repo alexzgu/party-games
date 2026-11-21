@@ -220,7 +220,7 @@
     .got { min-height: 0; }
   }
 
-  .flash { position: fixed; inset: 0; z-index: 20; pointer-events: none; animation: flash 450ms ease-out both; }
+  .flash { position: fixed; inset: 0; z-index: var(--z-float); pointer-events: none; animation: flash 450ms ease-out both; }
   .flash.buzz { background: color-mix(in srgb, var(--c-bad) 55%, transparent); }
   .flash.got { background: color-mix(in srgb, var(--c-good) 30%, transparent); animation-duration: 300ms; }
   @keyframes flash { from { opacity: 1; } to { opacity: 0; } }

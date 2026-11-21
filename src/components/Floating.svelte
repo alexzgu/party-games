@@ -85,7 +85,7 @@
 </div>
 
 <style>
-  .floating { position: fixed; z-index: 20; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+  .floating { position: fixed; z-index: var(--z-float); touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
   .dragging { cursor: grabbing; }
   .docked { position: relative; }
 </style>

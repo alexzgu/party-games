@@ -135,6 +135,7 @@
       <div class="about">
         {#if open.blurb}<p class="blurb">{open.blurb}</p>{/if}
         <p class="faint">{count(open.count)} · ★ {open.stars}</p>
+        {#if open.username}<p><span class="who">{open.username}</span></p>{/if}
       </div>
       <div class="star">
         {#if hasPass()}
@@ -184,7 +185,7 @@
               <span class="txt">
                 <span class="name">{p.name}</span>
                 {#if p.blurb}<span class="blurb">{p.blurb}</span>{/if}
-                <span class="faint meta">{count(p.count)}</span>
+                <span class="faint meta">{count(p.count)}{#if p.username}<span class="who">{p.username}</span>{/if}</span>
               </span>
               <span class="stars" class:mine={p.starred} aria-label="{p.stars} stars">★ {p.stars}</span>
             </button>
@@ -212,7 +213,12 @@
   .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .name { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; overflow-wrap: anywhere; }
   .blurb { color: var(--text-dim); font-size: 0.9rem; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-  .meta { font-size: 0.85rem; }
+  .meta { font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap; gap: 2px var(--s-2); }
+  /* The sharing phone's username: a small, quiet chip. */
+  .who {
+    display: inline-block; max-width: 100%; padding: 1px var(--s-2); border-radius: var(--r-pill); background: var(--overlay);
+    color: var(--text-faint); font-size: 0.8rem; font-weight: 600; overflow-wrap: anywhere;
+  }
   .stars { flex: none; font-weight: 800; color: var(--text-dim); }
   .stars.mine { color: var(--accent); }
   .about { display: flex; flex-direction: column; gap: 2px; }

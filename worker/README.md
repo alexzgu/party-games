@@ -80,17 +80,17 @@ Packs Fizzwick makes on a phone with a pass are published here automatically; an
 them, preview one and import it; starring needs a pass. They are kept for good, in a second
 SQLite-backed Durable Object, `Library` (`src/libraryObject.ts`, migration `v2`; the counters'
 `Limits` object is untouched). It stores each pack's game, name, description, item count, items,
-times, stars and a hidden flag, plus a one-way label of the pass that published it and that
+times, stars, a hidden flag and the sharing phone's username (when it sent a good one), plus a one-way label of the pass that published it and that
 phone's id for the pack (so an "Add more" updates the same entry); stars are kept as
 (pack, pass label) pairs, one per pass per pack. Nothing else about the phone is stored.
 
 | Route | Who | What |
 |---|---|---|
-| `POST /library/packs` | pass | Publish `{game, name, blurb, localId, items, extra}`, or update the entry this pass made with that `localId`. `game`: forehead, dial, gibberish, quick, quiz, taboo or snark; name 1–60 characters, description up to 140; items rebuilt from that game's own fields only (`src/lib/libraryShape.ts`, shared with the app; anything else is dropped), at most 400 (Big Board: 8 categories of 10 tiles) and 64 KB with `extra` (a Heads Down. icon, kept only when it is exactly one character of at most 32 UTF-16 units, `src/lib/icon.ts`; Snark Tank stock answers for its own prompts and finals of exactly three house lines, both checked). A broken item is a 400. |
-| `GET /library/packs?game=&q=&sort=stars\|new&page=` | anyone | 30 a page, hidden packs left out: id, game, name, description, count, stars, times, and `more`. `q` matches the name or description (any case, plain text), looking through the first 2,000 packs of the order; pages stop at 100. Most stars first, newest among equals; `sort=new` newest first. With a pass, each pack also says whether that pass starred it. |
-| `GET /library/packs/:id` | anyone | The whole pack, for preview and import. |
+| `POST /library/packs` | pass | Publish `{game, name, blurb, localId, items, extra, username}`, or update the entry this pass made with that `localId`. Other fields are ignored. `game`: forehead, dial, gibberish, quick, quiz, taboo or snark; name 1–60 characters, description up to 140; items rebuilt from that game's own fields only (`src/lib/libraryShape.ts`, shared with the app; anything else is dropped), at most 400 (Big Board: 8 categories of 10 tiles) and 64 KB with `extra` (a Heads Down. icon, kept only when it is exactly one character of at most 32 UTF-16 units, `src/lib/icon.ts`; Snark Tank stock answers for its own prompts and finals of exactly three house lines, both checked). A broken item is a 400. `username` is optional: control and invisible characters dropped, spaces collapsed and trimmed, then kept only when 1–24 characters (`src/lib/usernameShape.ts`, shared with the app); anything else (missing, not text, too long, empty) is dropped, never a reason to refuse the pack. An update stores the username it was sent with. |
+| `GET /library/packs?game=&q=&sort=stars\|new&page=` | anyone | 30 a page, hidden packs left out: id, game, name, description, count, stars, times, `username` (only on packs that have one), and `more`. `q` matches the name or description (never the username) (any case, plain text), looking through the first 2,000 packs of the order; pages stop at 100. Most stars first, newest among equals; `sort=new` newest first. With a pass, each pack also says whether that pass starred it. |
+| `GET /library/packs/:id` | anyone | The whole pack, for preview and import, with its `username` when it has one. |
 | `POST` / `DELETE /library/packs/:id/star` | pass | Star it, or take the star back; answers the new count. The same vote again writes nothing. |
-| `GET /library/export?after=` | anyone | Every pack not hidden, with its items, for your backups (everything in it is public anyway), 16 a page in the order they were first shared: `{"packs": [...], "next": "<cursor>"}`; ask again with `after=<next>` until `next` is `null`. A page stays near 1 MB at most. |
+| `GET /library/export?after=` | anyone | Every pack not hidden, with its items (and username, when it has one), for your backups (everything in it is public anyway), 16 a page in the order they were first shared: `{"packs": [...], "next": "<cursor>"}`; ask again with `after=<next>` until `next` is `null`. A page stays near 1 MB at most. |
 | `POST /library/packs/:id/hide` | `LIBRARY_ADMIN` | Body exactly `{"hidden": true}`, or `{"hidden": false}` to show it again; any other body changes nothing (over 256 bytes: 413). |
 
 Limits: 40 publishes (new or updated) per pass per UTC day, and 600 per day from everyone
@@ -191,6 +191,12 @@ same words give it a new one.
 The server takes its model list and token cap from `src/lib/wizard.ts` when it is
 deployed. After those change (e.g. a new effort level), run `npx wrangler@4.165.0 deploy` again
 from this folder, or the new choice gets "That model is not available here."
+
+Usernames on Community packs need a deploy from after they were added; either order is safe.
+The live server ignores fields it does not know, so the new app's `username` is simply not kept
+until then (its packs show no name). The new server, on its first request, adds a `username`
+column to the stored packs (no migration step to run; existing packs get none) and takes packs
+from older apps, which send no username, as before; older apps ignore the username in listings.
 
 The Community library exists only once a deploy that includes it has run (it creates the
 `Library` object, migration `v2`). Until then the app's Community list says the library is

@@ -6,7 +6,8 @@
   import Toggle from '../../components/Toggle.svelte';
   import RulesCard from '../../components/RulesCard.svelte';
   import Teams from './Teams.svelte';
-  import BoardPicker from './BoardPicker.svelte';
+  import PackList from '../../components/PackList.svelte';
+  import { boardEntry } from './find';
   import Rules from './Rules.svelte';
   import { quizBoards } from '../../lib/content';
   import { unlockAudio } from '../../lib/sound';
@@ -36,7 +37,8 @@
   let names = $state(live ? [...live.teams, ...prefs.names.slice(live.teams.length)] : prefs.names);
   let count = $state(live ? live.teams.length : prefs.count);
   // svelte-ignore state_referenced_locally
-  let boardId = $state(boards.some((b) => b.id === prefs.boardId) ? prefs.boardId : (boards[0]?.id ?? null));
+  let picked = $state(boards.some((b) => b.id === prefs.boardId) ? [prefs.boardId as string] : boards.slice(0, 1).map((b) => b.id));
+  const boardId = $derived(picked[0] ?? null);
   let scale = $state<'x1' | 'x2'>(prefs.double ? 'x2' : 'x1');
   let penalty = $state(prefs.penalty);
 
@@ -96,25 +98,25 @@
   {/if}
 
   <Teams bind:names bind:count locked={inProgress ? (inProgress.teams.length === 1 ? 'solo' : 'teams') : null} />
-  <RulesCard title="Points" summary={pointsSummary(rows, scale === 'x2', penalty)}>
-    <div class="field">
-      <span class="lbl">Points per row</span>
-      <Segmented bind:value={scale} options={scales} label="Points per row" />
-    </div>
-    <Toggle bind:checked={penalty} label="Wrong answers lose points" hint="A team that guesses wrong loses the tile's value" />
-  </RulesCard>
 
-  <BoardPicker {boards} bind:selected={boardId} {onedit} {onmake} onimported={() => (boards = quizBoards())} />
+  <PackList game="quiz" entries={boards.map(boardEntry)} bind:selected={picked} single noun="clues" placeholder="Search packs and clues" makeHint="Start blank, paste one, or ask the wizard"
+    onedit={(id) => onedit(id)} {onmake} onimported={() => (boards = quizBoards())} />
   {#if board && gaps}
     <div class="gaps" role="status">
       <p><b>{board.name}</b> is a draft with {gaps === 1 ? 'one empty tile' : `${gaps} empty tiles`}: {describeEmpty(board, rowValues(rows, scale === 'x2'))}.</p>
       <Button variant="secondary" size="sm" onclick={() => onedit(board.id, emptyTiles(board)[0]?.category)}>{gaps === 1 ? 'Fill it in' : 'Fill them in'}</Button>
     </div>
   {/if}
-
 </div>
 
   {#snippet actions()}
+    <RulesCard compact title="Points" summary={pointsSummary(rows, scale === 'x2', penalty)}>
+      <div class="field">
+        <span class="lbl">Points per row</span>
+        <Segmented bind:value={scale} options={scales} label="Points per row" />
+      </div>
+      <Toggle bind:checked={penalty} label="Wrong answers lose points" hint="A team that guesses wrong loses the tile's value" />
+    </RulesCard>
     {#if inProgress}
       <Button size="lg" onclick={() => { unlockAudio(); keepRoster(); onresume(); }}>Resume game</Button>
       <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!blocked}>

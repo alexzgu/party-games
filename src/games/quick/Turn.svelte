@@ -158,7 +158,7 @@
   }
 
   .paused {
-    position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; justify-content: center; gap: var(--s-4);
+    position: fixed; inset: 0; z-index: var(--z-overlay); display: flex; flex-direction: column; justify-content: center; gap: var(--s-4);
     padding: calc(var(--safe-top) + var(--s-5)) var(--s-5) calc(var(--safe-bottom) + var(--s-5));
     background: color-mix(in srgb, var(--bg) 82%, transparent); text-align: center;
   }

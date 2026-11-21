@@ -1,4 +1,6 @@
 export const DRAW_DELIVERY_MS = 1000;
+/** Characters in a player's name, at most. */
+export const NAME_MAX = 20;
 export const DRAW_TIMES = [60, 90, 120, 180] as const;
 export type Settings = { seconds: number; packs: string[] };
 export const DEFAULT_SETTINGS: Settings = { seconds: 90, packs: ['classic'] };
@@ -37,7 +39,7 @@ export const afterReload = (g: Game, now: number): Game => g.deadline !== null &
   { ...g, deadline: now + 12000 } : g;
 
 export function join(g: Game, pid: string, name: string, online: ReadonlySet<string>) {
-  name = name.trim().slice(0, 20);
+  name = name.trim().slice(0, NAME_MAX);
   if (!pid || Object.hasOwn(Object.prototype, pid) || !name) return { error: 'Enter a player name to join.' };
   const gone = g.left ?? [];
   if (gone.includes(pid)) {

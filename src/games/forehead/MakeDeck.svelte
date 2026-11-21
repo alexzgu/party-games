@@ -11,16 +11,16 @@
   import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
   import { hasKey, WANTS } from '../../lib/claude';
   import MagicWords from '../../components/MagicWords.svelte';
-  import { back } from '../../lib/router.svelte';
+  import { back, go } from '../../lib/router.svelte';
   import { freshName } from '../../lib/packfile';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
   import { generateWords, THEME_CHIPS } from './generate';
   import { parsePastedWords, titleCase } from './words';
 
-  // "Make a deck": paste a list, or give Claude a theme and watch words stream in → drop the
-  // duds → save as a new deck or add to one of mine. "More" asks Claude for more, never
-  // repeating what is there.
+  // "Make a deck": paste a list, type one by hand in the deck editor, or give Claude a theme and
+  // watch words stream in → drop the duds → save as a new deck or add to one of mine. "More"
+  // asks Claude for more, never repeating what is there.
   let { into = null, demo = null }: { into?: string | null; demo?: string | null } = $props();
 
   const start = untrack(() => ({ into, demo: demo === 'triage', isDemo: demo != null }));
@@ -37,9 +37,15 @@
 
   const targetDeck = $derived(mine.find((d) => d.id === target));
   const keyReady = $derived(hasKey());
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
+  type Mode = 'paste' | 'hand' | 'claude';
+  // Typing by hand makes a new pack; adding to one is its own editor's job.
+  const MODES: { value: Mode; label: string }[] = [
+    { value: 'paste', label: 'Paste' },
+    ...(start.into ? [] : [{ value: 'hand' as const, label: 'By hand' }]),
+    { value: 'claude', label: '🧙 Wizard' },
+  ];
   // svelte-ignore state_referenced_locally
-  let mode = $state<'paste' | 'claude'>(keyReady || start.isDemo ? 'claude' : 'paste');
+  let mode = $state<Mode>(keyReady || start.isDemo ? 'claude' : 'paste');
   let pasteText = $state('');
   let note = $state('');
   let deckName = $state('');
@@ -98,7 +104,7 @@
     else if (kept.length && !prefs.deckIds.includes(id)) prefs.deckIds = [id, ...prefs.deckIds];
     savePrefs();
     sfx.win();
-    back(into ? '/forehead/decks' : '/forehead');
+    back(into ? '/forehead/deck?id=' + encodeURIComponent(into) : '/forehead');
   }
 
   function cancel() {
@@ -141,6 +147,11 @@
         parse={(t) => parsePastedWords(t, targetDeck?.words ?? [])} onadd={pasted} bind:text={pasteText}>
         {@render saveTo()}
       </PasteList>
+    {:else if mode === 'hand'}
+      <div class="stack">
+        <p class="faint">Name the pack, pick its icon, then type the words in one at a time.</p>
+        <Button size="lg" onclick={() => go('/forehead/deck?id=new', true)}>Type a pack by hand</Button>
+      </div>
     {:else if !keyReady && demo == null}
       <MagicWords intro={WANTS} />
     {:else}

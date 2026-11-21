@@ -2,23 +2,29 @@
   import type { Snippet } from 'svelte';
   import Popup from './Popup.svelte';
   import Button from './Button.svelte';
+  import { tapGuard } from '../lib/tapGuard';
 
   // A setup row that shows a game's settings in one line and opens them in a popup. The controls
   // (children) stay bound to the setup's own state, so each change applies and saves at once;
   // Done, ✕, Escape and a tap outside only close it. Popup puts focus back on this row.
-  let { title = 'Rules', summary, children }: {
+  // `compact`: one slim line for the setup's pinned start bar, the summary cut off with "…"
+  // (its accessible name still says all of it).
+  let { title = 'Rules', summary, compact = false, children }: {
     title?: string;
     /** The current values in plain words, joined with " · " ("60 s turns · first to 15 points"). */
     summary: string;
+    compact?: boolean;
     children: Snippet;
   } = $props();
 
   let open = $state(false);
+  // It sits in the start bar, where the last screen's button often was: a double tap there must not open it.
+  const ready = tapGuard();
   // Screen readers get commas, not "middle dot".
   const name = $derived(`${title}: ${summary.replaceAll(' · ', ', ')}. Change`);
 </script>
 
-<button type="button" class="rules-card" aria-haspopup="dialog" aria-label={name} onclick={() => (open = true)}>
+<button type="button" class="rules-card" class:compact aria-haspopup="dialog" aria-label={name} onclick={() => { if (ready()) open = true; }}>
   <span class="text">
     <span class="title">{title}</span>
     <span class="summary">{summary}</span>
@@ -55,6 +61,11 @@
     flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
     color: var(--accent); background: var(--overlay);
   }
+  .compact { min-height: 52px; padding: var(--s-1) var(--s-1) var(--s-1) var(--s-4); }
+  .compact .text { flex-direction: row; align-items: baseline; gap: var(--s-2); }
+  .compact .title { flex: none; }
+  .compact .summary { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+  .compact .gear { width: 42px; height: 42px; }
   /* Rows (Toggle, Stepper) are --surface; on the raised popup that is the same white in the light
      scheme, so the popup's rows take a shade just off the card in either scheme. */
   .controls { display: flex; flex-direction: column; gap: var(--s-3); --surface: color-mix(in srgb, var(--text) 6%, var(--bg-raised)); }

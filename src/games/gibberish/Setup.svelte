@@ -6,7 +6,8 @@
   import RulesCard from '../../components/RulesCard.svelte';
   import Rules from './Rules.svelte';
   import Players from './Players.svelte';
-  import PackPicker from './PackPicker.svelte';
+  import PackList from '../../components/PackList.svelte';
+  import { packEntry } from './find';
   import { gibberishPacks } from '../../lib/content';
   import { unlockAudio } from '../../lib/sound';
   import { loadPlayers, loadSetup, savePlayers, saveSetup } from './store';
@@ -94,23 +95,23 @@
   {/if}
 
   <Players bind:names bind:seats />
-  <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = gibberishPacks())} />
-
-  <RulesCard summary={rulesSummary(seconds, target)}>
-    <div class="timer" role="radiogroup" aria-label="Seconds per card">
-      <span class="label">Seconds per card</span>
-      <div class="seg">
-        {#each TIMER_CHOICES as s (s)}
-          <button role="radio" aria-checked={seconds === s} class:on={seconds === s} onclick={() => (seconds = s)}>{timerLabel(s)}</button>
-        {/each}
-      </div>
-    </div>
-    <Stepper label="Points to win" bind:value={target} min={TARGET_RANGE[0]} max={TARGET_RANGE[1]} />
-  </RulesCard>
+  <PackList game="gibberish" entries={packs.map(packEntry)} bind:selected noun="cards" placeholder="Search packs and cards" makeHint="Paste a list or ask the wizard"
+    {onedit} {onmake} onimported={() => (packs = gibberishPacks())} />
 
 </div>
 
   {#snippet actions()}
+    <RulesCard compact summary={rulesSummary(seconds, target)}>
+      <div class="timer" role="radiogroup" aria-label="Seconds per card">
+        <span class="label">Seconds per card</span>
+        <div class="seg">
+          {#each TIMER_CHOICES as s (s)}
+            <button role="radio" aria-checked={seconds === s} class:on={seconds === s} onclick={() => (seconds = s)}>{timerLabel(s)}</button>
+          {/each}
+        </div>
+      </div>
+      <Stepper label="Points to win" bind:value={target} min={TARGET_RANGE[0]} max={TARGET_RANGE[1]} />
+    </RulesCard>
     {#if inProgress}
       <Button size="lg" disabled={names.length < MIN_PLAYERS} onclick={() => { unlockAudio(); keepRoster(); onresume(); }}>{names.length < MIN_PLAYERS ? missing : 'Resume game'}</Button>
       <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!missing}>

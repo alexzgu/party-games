@@ -29,7 +29,7 @@
 
 <style>
   .scrim {
-    position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+    position: fixed; inset: 0; z-index: var(--z-popup); display: grid; place-items: center;
     padding: max(var(--s-4), env(safe-area-inset-top)) var(--s-4) max(var(--s-4), env(safe-area-inset-bottom));
     background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }

@@ -1,7 +1,6 @@
 <script lang="ts">
   import Setup from './Setup.svelte';
   import Round from './Round.svelte';
-  import MyDecks from './MyDecks.svelte';
   import DeckEditor from './DeckEditor.svelte';
   import MakeDeck from './MakeDeck.svelte';
   import Lab from './lab/Lab.svelte';
@@ -11,7 +10,8 @@
   import { demoRound } from './demo';
   import { tapToSkip } from './skip';
 
-  // Heads Down's router: #/forehead (setup), /play, /decks, /deck?id=…, /make?into=…, /calibrate, /lab (Tilt lab, unlinked)
+  // Heads Down's router: #/forehead (setup), /play, /deck?id=…, /make?into=…, /calibrate, /lab (Tilt lab, unlinked).
+  // The old pack list, /decks, is setup now.
   const sub = $derived(route.path.split('/').filter(Boolean)[1] ?? '');
   const demo = route.params.get('demo');
   const rot = Number(route.params.get('rot')) || undefined;
@@ -26,6 +26,9 @@
   const skippable = $derived(view !== 'play' || game.round?.phase === 'results');
 
   $effect(() => {
+    if (sub === 'decks') go('/forehead', true);
+  });
+  $effect(() => {
     if (sub === '' && playing) {
       game.interrupt = true;
       go('/forehead/play');
@@ -37,8 +40,6 @@
 <div class="forehead" onpointerdowncapture={skippable ? skip.onpointerdowncapture : undefined} onclickcapture={skippable ? skip.onclickcapture : undefined}>
   {#if view === 'play'}
     <Round demo={demo} rotation={rot} />
-  {:else if view === 'decks'}
-    <MyDecks />
   {:else if view === 'deck'}
     {#key route.params.get('id')}
       <DeckEditor id={route.params.get('id') ?? 'new'} />

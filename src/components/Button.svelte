@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import { sfx } from '../lib/sound';
   import { haptic } from '../lib/haptics';
+  import { TAP_GUARD_MS, tapGuard } from '../lib/tapGuard';
 
   let {
     variant = 'primary',
@@ -9,7 +10,7 @@
     disabled = false,
     type = 'button',
     label,
-    guardMs = 400,
+    guardMs = TAP_GUARD_MS,
     onclick,
     children,
   }: {
@@ -25,10 +26,11 @@
     children: Snippet;
   } = $props();
 
-  const shownAt = performance.now();
+  // svelte-ignore state_referenced_locally
+  const ready = tapGuard(guardMs);
 
   function click(e: MouseEvent) {
-    if (performance.now() - shownAt < guardMs) return;
+    if (!ready()) return;
     sfx.tap();
     haptic.light();
     onclick?.(e);

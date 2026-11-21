@@ -19,7 +19,7 @@
 
 <style>
   .note {
-    position: fixed; left: 50%; bottom: calc(var(--safe-bottom) + 96px); z-index: 60; transform: translateX(-50%);
+    position: fixed; left: 50%; bottom: calc(var(--safe-bottom) + 96px); z-index: var(--z-toast); transform: translateX(-50%);
     max-width: calc(100vw - 2 * var(--s-4)); margin: 0; padding: var(--s-2) var(--s-4); border-radius: var(--r-pill);
     background: var(--bg-raised); border: 1.5px solid var(--line-strong); color: var(--text-dim); font-size: 0.88rem;
     box-shadow: var(--shadow); pointer-events: none;

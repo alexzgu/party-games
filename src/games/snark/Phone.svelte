@@ -135,5 +135,5 @@
   .trouble { color: var(--bad-ink); font-weight: 600; max-width: 30ch; }
   .spinner { width: 48px; height: 48px; border-radius: 50%; border: 4px solid var(--overlay-strong); border-top-color: var(--accent); animation: spin 0.9s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .paused { position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-2); background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); text-align: center; }
+  .paused { position: fixed; inset: 0; z-index: var(--z-overlay); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-2); background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); text-align: center; }
 </style>

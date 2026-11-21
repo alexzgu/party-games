@@ -15,12 +15,23 @@ html, body {
   touch-action: manipulation;
 }
 
-body {
-  /* Party rooms are dim: a soft glow keeps the dark from feeling flat. */
-  background:
-    radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%),
-    var(--bg);
-  background-attachment: fixed;
+/* Party rooms are dim: a soft glow keeps the dark from feeling flat. It is one layer fixed to the
+   screen (fixed backgrounds are ignored on iPhones). Bars pinned over the scrolling page
+   (`.pinned-bg`) paint the same glow sized to the screen and placed where they sit on it
+   (`--pin-at`: top, bottom, or how far below the top), so they look like part of the page while
+   content slides under them, on every phone. */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--page-glow);
+}
+.pinned-bg { background: var(--page-glow) center var(--pin-at, top) / 100vw 100dvh no-repeat, var(--bg); }
+/* A hairline under a bar pinned at the top, once the page has scrolled under it. */
+@supports (animation-timeline: scroll()) {
+  .pinned-lift { animation: pinned-lift linear both; animation-timeline: scroll(nearest); animation-range: 0 24px; }
+}
+@keyframes pinned-lift {
+  from { box-shadow: 0 1px 0 transparent; }
+  to { box-shadow: 0 1px 0 var(--line), 0 10px 18px -16px var(--shade); }
 }
 
 #app { min-height: 100%; min-height: 100dvh; }

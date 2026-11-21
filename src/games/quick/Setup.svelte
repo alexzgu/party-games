@@ -10,7 +10,8 @@
   import { rulesSummary } from './rulesSummary';
   import { reseating, unchanged, type Reseat } from '../../lib/players';
   import Players from './Players.svelte';
-  import PackPicker from './PackPicker.svelte';
+  import PackList from '../../components/PackList.svelte';
+  import { packEntry } from './find';
   import { quickPacks } from '../../lib/content';
   import { unlockAudio } from '../../lib/sound';
   import { loadPlayers, loadSetup, savePlayers, saveSetup } from './store';
@@ -96,20 +97,20 @@
   {/if}
 
   <Players bind:names bind:seats />
-  <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = quickPacks())} />
-
-  <RulesCard summary={rulesSummary(seconds, target, steal, stealUsesTurn)}>
-    <div class="secs">
-      <span class="label">Seconds on the clock</span>
-      <Segmented label="Seconds on the clock" options={SECONDS} bind:value={seconds} />
-    </div>
-    <Stepper label="Points to win" bind:value={target} min={TARGET_RANGE[0]} max={TARGET_RANGE[1]} />
-    <Toggle label="Steal" hint="A miss goes to the next player, same prompt" bind:checked={steal} />
-    {#if steal}<Toggle label="A steal uses the stealer's turn" hint="Play then skips them and goes to the player after" bind:checked={stealUsesTurn} />{/if}
-  </RulesCard>
+  <PackList game="quick" entries={packs.map(packEntry)} bind:selected noun="prompts" placeholder="Search packs and prompts" makeHint="Paste a list or ask the wizard"
+    guard={400} {onedit} {onmake} onimported={() => (packs = quickPacks())} />
 </div>
 
   {#snippet actions()}
+    <RulesCard compact summary={rulesSummary(seconds, target, steal, stealUsesTurn)}>
+      <div class="secs">
+        <span class="label">Seconds on the clock</span>
+        <Segmented label="Seconds on the clock" options={SECONDS} bind:value={seconds} />
+      </div>
+      <Stepper label="Points to win" bind:value={target} min={TARGET_RANGE[0]} max={TARGET_RANGE[1]} />
+      <Toggle label="Steal" hint="A miss goes to the next player, same prompt" bind:checked={steal} />
+      {#if steal}<Toggle label="A steal uses the stealer's turn" hint="Play then skips them and goes to the player after" bind:checked={stealUsesTurn} />{/if}
+    </RulesCard>
     {#if inProgress}
       <Button size="lg" disabled={names.length < MIN_PLAYERS} onclick={() => { unlockAudio(); keepRoster(); onresume(); }}>{names.length < MIN_PLAYERS ? missing : 'Resume game'}</Button>
       <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!missing}>

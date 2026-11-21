@@ -53,10 +53,10 @@
 </div>
 
 <style>
-  .scrim { position: fixed; inset: 0; background: var(--scrim-soft); z-index: 30; }
+  .scrim { position: fixed; inset: 0; background: var(--scrim-soft); z-index: var(--z-overlay); }
   .scrim.solid { background: color-mix(in srgb, var(--bg) 94%, transparent); }
   .sheet {
-    position: fixed; z-index: 31; left: 50%; bottom: 0; width: min(640px, 100%); transform: translateX(-50%);
+    position: fixed; z-index: calc(var(--z-overlay) + 1); left: 50%; bottom: 0; width: min(640px, 100%); transform: translateX(-50%);
     display: flex; flex-direction: column; gap: var(--s-3);
     padding: var(--s-5) var(--s-4) calc(var(--safe-bottom) + var(--s-5));
     background: var(--bg-raised); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--shadow);

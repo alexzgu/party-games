@@ -3,7 +3,8 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Segmented from '../../components/Segmented.svelte';
-  import PackPicker from './PackPicker.svelte';
+  import PackList from '../../components/PackList.svelte';
+  import { packEntry } from './find';
   import { snarkPacks } from '../../lib/content';
   import { ANSWER_CHOICES, VOTE_CHOICES, type FinalStyle } from './logic';
   import { loadSettings } from './store';
@@ -31,7 +32,6 @@
   });
   // Duels need finals; packs without any borrow Classic's (logic falls back to the 3-vote final if there are none at all).
   const ownFinals = $derived(packs.some((p) => selected.includes(p.id) && p.finals?.length));
-  const prompts = $derived(packs.filter((p) => selected.includes(p.id)).reduce((n, p) => n + p.prompts.length, 0));
 </script>
 
 <Screen title="Game settings" {onback}>
@@ -59,8 +59,9 @@
         : 'One prompt for everyone; each player spreads 3 votes over the other answers.'}</span>
     </div>
   </section>
-  <PackPicker {packs} bind:selected {onmake} {onedit} onimported={() => (packs = snarkPacks())} />
-  <p class="faint">{prompts} prompts picked. Each game deals ones this device has not shown lately.</p>
+  <PackList game="snark" entries={packs.map(packEntry)} bind:selected title="Prompt packs" noun="prompts" placeholder="Search packs and prompts" makeHint="Paste a list or ask the wizard"
+    keepOnImport {onedit} {onmake} onimported={() => (packs = snarkPacks())} />
+  <p class="faint">Each game deals prompts this device has not shown lately.</p>
   {#snippet actions()}
     <Button size="lg" onclick={onback} disabled={selected.length === 0}>{selected.length ? 'Done' : 'Pick at least one pack'}</Button>
   {/snippet}

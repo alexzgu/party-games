@@ -1,8 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { back } from '../lib/router.svelte';
+  import { padScroller } from '../lib/scrollPadding';
 
-  // A standard page: header with back button, scrolling body, actions pinned above the home bar.
+  // A standard page: header with back button pinned at the top, scrolling body, actions pinned
+  // above the home bar. Both bars wear the page's background edge to edge. Children can pin
+  // under the header with `top: var(--screen-head)` and reach the screen's edges with
+  // `--gutter-l` / `--gutter-r` (the side padding, safe areas included).
   let {
     title = '',
     accent,
@@ -31,41 +35,60 @@
     actions?: Snippet;
     children: Snippet;
   } = $props();
+
+  // What the page scrolls to (a new row, a focused input) stops clear of the pinned bars.
+  let screen: HTMLDivElement;
+  let headH = $state(0);
+  let footH = $state(0);
+  $effect(() => padScroller(screen, headH, footH));
 </script>
 
-<div class="screen fade-in" class:split style:--accent={accent}>
-  <header>
+<div class="screen fade-in" class:split style:--accent={accent} bind:this={screen}>
+  <header class="pinned-bg pinned-lift" bind:offsetHeight={headH}>
     {#if !hideBack}
       <button class="back" onclick={() => (onback ? onback() : back())} aria-label={backLabel}>
         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     {/if}
-    <h2 class="title">{title}</h2>
+    <!-- One line, cut with "…" so the pinned header keeps its height; screen readers get it all. -->
+    <h2 class="title" title={title}>{title}</h2>
     <div class="trailing">{@render trailing?.()}</div>
   </header>
   <main class="body">{@render children()}</main>
   {#if actions}
-    <footer class="actions">{@render actions()}</footer>
+    <footer class="actions pinned-bg" bind:offsetHeight={footH}>{@render actions()}</footer>
   {/if}
 </div>
 
 <style>
   .screen {
+    --gutter-l: calc(var(--safe-left) + var(--s-4));
+    --gutter-r: calc(var(--safe-right) + var(--s-4));
+    --head-pad: var(--s-3);
+    --head-row: 52px;
+    --screen-head: calc(var(--safe-top) + var(--head-pad) + var(--head-row));
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
-    padding: calc(var(--safe-top) + var(--s-3)) calc(var(--safe-right) + var(--s-4)) 0 calc(var(--safe-left) + var(--s-4));
+    padding: 0 var(--gutter-r) 0 var(--gutter-l);
     max-width: 640px;
     margin: 0 auto;
   }
+  /* Pinned with a solid page background, under the status bar too. Bars inside the page sit
+     under it; it rises above the start bar only while one of its own popups is open, and the
+     start bar above it while the rules popup is open. */
   header {
+    position: sticky; top: 0; z-index: var(--z-pinned);
     display: grid;
-    grid-template-columns: 48px 1fr 48px;
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
     align-items: center;
-    min-height: 52px;
+    height: var(--screen-head);
     gap: var(--s-2);
+    margin: 0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));
+    padding: calc(var(--safe-top) + var(--head-pad)) var(--gutter-r) 0 var(--gutter-l);
   }
-  .title { text-align: center; font-size: 1.35rem; color: var(--text); }
+  header:has(:global(.scrim)), .actions:has(:global(.scrim)) { z-index: var(--z-raised); }
+  .title { text-align: center; font-size: 1.35rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-block: 2px; }
   .back {
     width: 48px; height: 48px; display: grid; place-items: center;
     background: var(--surface); border: 0; border-radius: var(--r-pill); color: var(--text);
@@ -74,23 +97,34 @@
   .back:active { transform: scale(0.92); }
   .trailing { display: flex; justify-content: flex-end; }
   .body { flex: 1; padding: var(--s-4) 0 var(--s-5); display: flex; flex-direction: column; gap: var(--s-4); }
+  /* In the page's flow, so at the end of the page it sits under the content and covers none of it. */
   .actions {
-    position: sticky; bottom: 0;
-    padding: var(--s-3) 0 calc(var(--safe-bottom) + var(--s-4));
+    position: sticky; bottom: 0; z-index: var(--z-pinned); --pin-at: bottom;
+    margin: 0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));
+    padding: var(--s-2) var(--gutter-r) calc(var(--safe-bottom) + var(--s-3)) var(--gutter-l);
     display: flex; flex-direction: column; gap: var(--s-2);
-    background: linear-gradient(to top, var(--bg) 70%, transparent);
+  }
+  /* A short fade above it, over the body's bottom padding at the end of the page. */
+  .actions::before {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: var(--s-4); pointer-events: none;
+    background: linear-gradient(to top, var(--bg), transparent);
   }
   .screen :global(:is(.split-side, .split-main)) { display: contents; }
   @media (orientation: landscape) and (max-height: 500px) {
+    .screen { --head-pad: var(--s-2); --head-row: 48px; }
+    /* A setup's rules row and start buttons side by side, so the pinned bars stay low. */
+    .actions:has(> :global(.rules-card)) { flex-direction: row; align-items: stretch; }
+    .actions:has(> :global(.rules-card)) > :global(*) { flex: 1 1 0; min-width: 0; }
     .split {
       height: 100dvh; max-width: 960px; display: grid; column-gap: var(--s-5); row-gap: var(--s-2);
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
       grid-template-areas: 'head head' 'side main' 'side go';
-      padding-bottom: calc(var(--safe-bottom) + var(--s-2));
+      padding-top: calc(var(--safe-top) + var(--s-3)); padding-bottom: calc(var(--safe-bottom) + var(--s-2));
     }
-    .split header { grid-area: head; min-height: 48px; }
+    .split header { grid-area: head; position: static; height: auto; min-height: 48px; margin: 0; padding: 0; background: none; animation: none; }
     .split .body { display: contents; }
-    .split .actions { grid-area: go; position: static; padding: 0; background: none; }
+    .split .actions { grid-area: go; position: static; margin: 0; padding: 0; background: none; }
+    .split .actions::before { content: none; }
     .split :global(:is(.split-side, .split-main)) {
       display: flex; flex-direction: column; gap: var(--s-3); min-height: 0; min-width: 0; overflow-y: auto;
     }

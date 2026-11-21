@@ -4,28 +4,26 @@
   import Button from '../../components/Button.svelte';
   import Segmented from '../../components/Segmented.svelte';
   import HowTo from '../../components/HowTo.svelte';
-  import ListTools from '../../components/ListTools.svelte';
+  import PackList from '../../components/PackList.svelte';
   import RulesCard from '../../components/RulesCard.svelte';
-  import type { SortKey } from '../../lib/listing';
-  import { customDecks, wordDecks } from '../../lib/content';
+  import { wordDecks } from '../../lib/content';
   import { back, go } from '../../lib/router.svelte';
-  import { sfx } from '../../lib/sound';
-  import { haptic } from '../../lib/haptics';
   import { prefs, savePrefs, selectedDecks, type Input } from './state.svelte';
   import { ROUND_LENGTHS } from './round';
   import { startRound } from './flow';
   import { calibration } from './calibration.svelte';
-  import { findDecks } from './find';
+  import { deckEntry } from './find';
   import { roundSummary } from './roundSummary';
 
-  const decks = wordDecks();
+  let decks = $state.raw(wordDecks());
   // Drop selections of decks that were deleted since.
   prefs.deckIds = prefs.deckIds.filter((id) => decks.some((d) => d.id === id));
-
-  let query = $state('');
-  let sort = $state<SortKey>('suggested');
-  /** The tiles on show; the count and Start always cover every picked deck, shown or not. */
-  const shown = $derived(findDecks(decks, query, sort));
+  const entries = $derived(decks.map(deckEntry));
+  // Every pick (a tap, an import) is kept for next time.
+  $effect(() => {
+    $state.snapshot(prefs.deckIds);
+    savePrefs();
+  });
 
   const chosen = $derived(selectedDecks(prefs.deckIds));
   const wordCount = $derived(chosen.reduce((n, d) => n + d.words.length, 0));
@@ -41,14 +39,6 @@
     tap: 'Tap only: right hand got it, left hand pass. Tilting does nothing.',
     both: 'Tilt or tap, whichever is handy: down or right hand for got it, up or left hand to pass.',
   };
-
-  function toggleDeck(id: string) {
-    const on = prefs.deckIds.includes(id);
-    prefs.deckIds = on ? prefs.deckIds.filter((x) => x !== id) : [...prefs.deckIds, id];
-    savePrefs();
-    sfx.tick();
-    haptic.light();
-  }
 
   function start() {
     startRound($state.snapshot(prefs.deckIds), prefs.seconds, prefs.input);
@@ -68,103 +58,39 @@
         <li>Your friends shout clues. They can't say the word itself.</li>
         <li><b>Tilt down</b> when you get it. <b>Tilt up</b> to pass.</li>
         <li>Rather tap? Your right hand taps <b>Got it</b>, your left hand taps <b>Pass</b>. Each side is labelled on its edge.</li>
-        <li>Score as many as you can before the timer runs out. Set the round length under Round, below the packs.</li>
+        <li>Score as many as you can before the timer runs out. Set the round length under Round, just above Start.</li>
         <li>Tilted the wrong way? Tap the word on the results screen to fix it.</li>
       </ol>
     </HowTo>
   {/snippet}
 
-  <section>
-    <ListTools key="forehead:setup" bind:query bind:sort placeholder="Search packs or words" shown={shown.length} total={decks.length}>
-      {#snippet title()}
-        <div class="packs-head">
-          <div class="packs-title">
-            <h3>Packs</h3>
-            <p class="faint count">{chosen.length ? `${chosen.length} picked · ${wordCount} words` : 'pick one or more'}</p>
-          </div>
-          <button class="link" onclick={() => go('/forehead/decks')} aria-label="Edit packs">Edit</button>
-        </div>
-      {/snippet}
-    </ListTools>
-    <ul class="grid">
-      {#each shown as { deck: d, via }, i (d.id)}
-        {@const on = prefs.deckIds.includes(d.id)}
-        <li class="pop-in" style:animation-delay="{Math.min(i, 12) * 25}ms">
-          <button class="deck" class:on aria-pressed={on} onclick={() => toggleDeck(d.id)}>
-            <span class="emoji" aria-hidden="true">{d.emoji || '🃏'}</span>
-            <span class="name">{d.name}</span>
-            <span class="meta">{d.custom ? 'Mine · ' : customDecks.isEdited(d.id) ? 'Edited · ' : ''}{d.words.length} words</span>
-            {#if via}<span class="via">has “{via}”</span>{/if}
-            <span class="check" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </span>
-          </button>
-        </li>
-      {/each}
-      {#if !query.trim()}
-        <li>
-          <button class="deck make" onclick={() => go('/forehead/make')}>
-            <span class="emoji" aria-hidden="true">✨</span>
-            <span class="name">Make a pack</span>
-            <span class="meta">paste a list or ask the wizard</span>
-          </button>
-        </li>
-      {/if}
-    </ul>
-    {#if !shown.length && query.trim()}<p class="faint none">No packs match “{query.trim()}”</p>{/if}
-  </section>
-
-  <RulesCard title="Round" summary={roundSummary(prefs.seconds, prefs.input)}>
-    <div class="field">
-      <span class="lbl">Round length</span>
-      <Segmented label="Round length" options={lengths} bind:value={prefs.seconds} onchange={savePrefs} />
-    </div>
-    <div class="field">
-      <span class="lbl">Controls</span>
-      <Segmented label="Controls" options={inputs} bind:value={prefs.input} onchange={savePrefs} />
-      <p class="faint small">{inputHelp[prefs.input]}</p>
-    </div>
-    {#if prefs.input !== 'tap'}
-      <Button variant="secondary" onclick={() => go('/forehead/calibrate')}>
-        {calibration.th ? 'Calibrate tilt again (new player?)' : 'Calibrate tilt (half a minute)'}
-      </Button>
-    {/if}
-  </RulesCard>
+  <PackList game="forehead" entries={entries} bind:selected={prefs.deckIds} noun="words" placeholder="Search packs or words"
+    makeHint="Paste a list, type one or ask the wizard"
+    onedit={(id) => go('/forehead/deck?id=' + encodeURIComponent(id))} onmake={() => go('/forehead/make')} onimported={() => (decks = wordDecks())} />
 
   {#snippet actions()}
+    <RulesCard compact title="Round" summary={roundSummary(prefs.seconds, prefs.input)}>
+      <div class="field">
+        <span class="lbl">Round length</span>
+        <Segmented label="Round length" options={lengths} bind:value={prefs.seconds} onchange={savePrefs} />
+      </div>
+      <div class="field">
+        <span class="lbl">Controls</span>
+        <Segmented label="Controls" options={inputs} bind:value={prefs.input} onchange={savePrefs} />
+        <p class="faint small">{inputHelp[prefs.input]}</p>
+      </div>
+      {#if prefs.input !== 'tap'}
+        <Button variant="secondary" onclick={() => go('/forehead/calibrate')}>
+          {calibration.th ? 'Calibrate tilt again (new player?)' : 'Calibrate tilt (half a minute)'}
+        </Button>
+      {/if}
+    </RulesCard>
     <Button size="lg" disabled={wordCount === 0} onclick={start}>{startLabel}</Button>
   {/snippet}
 </Screen>
 
 <style>
-  /* Title and count on the left, Edit just before the search and sort toggles at the right end. */
-  .packs-head { display: flex; align-items: center; gap: var(--s-2); }
-  .packs-title { flex: 1; min-width: 0; }
-  .count { font-size: 0.85rem; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .link { flex: none; border: 0; background: transparent; color: var(--accent); font-weight: 700; min-height: 44px; min-width: 44px; padding: 0 var(--s-2); }
   .small { font-size: 0.9rem; padding: 0 var(--s-1); }
   .field { display: flex; flex-direction: column; gap: var(--s-1); }
   .lbl { font-weight: 600; font-size: 0.92rem; color: var(--text-dim); padding-left: var(--s-1); }
-  .grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-2); }
-  .deck {
-    position: relative; width: 100%; height: 100%; min-height: 96px; text-align: left;
-    display: flex; flex-direction: column; justify-content: flex-end; gap: 1px;
-    padding: var(--s-3); border-radius: var(--r-md); border: 2px solid transparent; background: var(--surface);
-    transition: transform var(--dur-fast) var(--ease-out), background var(--dur) ease, border-color var(--dur) ease;
-  }
-  .deck:active { transform: scale(0.96); }
-  .deck.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 20%, var(--surface)); }
-  .emoji { font-size: 1.7rem; line-height: 1.1; margin-bottom: var(--s-1); }
-  .name { font-family: var(--font-display); font-weight: 800; font-size: 1.08rem; line-height: 1.1; letter-spacing: -0.01em; }
-  .meta { color: var(--text-faint); font-size: 0.82rem; }
-  .via { color: var(--text-dim); font-size: 0.8rem; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .none { text-align: center; padding: var(--s-2) 0; }
-  .check {
-    position: absolute; top: var(--s-2); right: var(--s-2); width: 26px; height: 26px; border-radius: 50%;
-    display: grid; place-items: center; background: var(--accent); color: var(--on-accent);
-    transform: scale(0); transition: transform var(--dur) var(--ease-spring);
-  }
-  .on .check { transform: scale(1); }
-  .make { background: transparent; border: 2px dashed var(--line-strong); }
-  .make .name { color: var(--accent); }
 </style>

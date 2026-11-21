@@ -29,6 +29,8 @@ export interface PackSummary {
   created: number;
   updated: number;
   starred?: boolean;
+  /** Only for packs shared with one. */
+  username?: string;
 }
 
 export interface FullPack extends PackSummary {
@@ -65,13 +67,25 @@ const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS publishes (day TEXT NOT NULL, who TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, who)) WITHOUT ROWID',
 ];
 
-const SUMMARY = 'id, game, name, blurb, count, stars, created, updated';
+/**
+ * Columns added to `packs` after it was first deployed, each added once when missing. NULL in
+ * packs from before (an old app's packs too): those have no username.
+ */
+const ADDED_COLUMNS = [{ name: 'username', type: 'TEXT' }];
+
+/** True when `packs` has the column (`PRAGMA table_info`, which Durable Object SQLite allows). */
+function hasColumn(sql: SqlStorageLike, name: string): boolean {
+  return sql.exec('PRAGMA table_info(packs)').toArray().some((c) => c.name === name);
+}
+
+const SUMMARY = 'id, game, name, blurb, count, stars, created, updated, username';
 type Row = Record<string, SqlValue>;
 const EVERYONE = '*';
 
 const summary = (r: Row): PackSummary => ({
   id: String(r.id), game: r.game as LibraryGame, name: String(r.name), blurb: String(r.blurb),
   count: Number(r.count), stars: Number(r.stars), created: Number(r.created), updated: Number(r.updated),
+  ...(typeof r.username === 'string' && r.username ? { username: r.username } : {}),
 });
 const full = (r: Row): FullPack => ({ ...summary(r), items: JSON.parse(String(r.items)), extra: JSON.parse(String(r.extra)) });
 
@@ -81,6 +95,7 @@ export class Library {
   constructor(ctx: SqlStateLike) {
     this.sql = ctx.storage.sql;
     for (const s of SCHEMA) this.sql.exec(s);
+    for (const c of ADDED_COLUMNS) if (!hasColumn(this.sql, c.name)) this.sql.exec(`ALTER TABLE packs ADD COLUMN ${c.name} ${c.type}`);
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -130,7 +145,7 @@ export class Library {
     this.sql.exec('INSERT INTO publishes (day, who, n) VALUES (?, ?, 1) ON CONFLICT (day, who) DO UPDATE SET n = n + 1', day, who);
   }
 
-  /** Same pass and same phone id: that entry is replaced (hidden stays hidden); else a new one. */
+  /** Same pass and same phone id: that entry is replaced, username included (hidden stays hidden); else a new one. */
   private publish(owner: string, p: PublishPack, now: number): LibraryReply {
     const day = utcDay(now);
     if (this.published(day, EVERYONE) >= LIBRARY.publishesPerDay) return { ok: false, status: 429, scope: 'everyone', retryAfter: untilTomorrow(now) };
@@ -141,15 +156,16 @@ export class Library {
     const search = `${searchText(p.name)}\n${searchText(p.blurb)}`;
     const items = JSON.stringify(p.items);
     const extra = JSON.stringify(p.extra);
+    const username = p.username ?? null;
     const had = this.rows('SELECT id FROM packs WHERE owner = ? AND game = ? AND local_id = ?', owner, p.game, p.localId)[0];
     if (had) {
-      this.sql.exec('UPDATE packs SET name = ?, blurb = ?, count = ?, items = ?, extra = ?, search = ?, updated = ? WHERE id = ?',
-        p.name, p.blurb, p.count, items, extra, search, now, String(had.id));
+      this.sql.exec('UPDATE packs SET name = ?, blurb = ?, count = ?, items = ?, extra = ?, search = ?, updated = ?, username = ? WHERE id = ?',
+        p.name, p.blurb, p.count, items, extra, search, now, username, String(had.id));
       return { ok: true, id: String(had.id), created: false };
     }
     const id = toBase64url(crypto.getRandomValues(new Uint8Array(9)));
-    this.sql.exec('INSERT INTO packs (id, game, name, blurb, count, items, extra, search, created, updated, owner, local_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      id, p.game, p.name, p.blurb, p.count, items, extra, search, now, now, owner, p.localId);
+    this.sql.exec('INSERT INTO packs (id, game, name, blurb, count, items, extra, search, created, updated, owner, local_id, username) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      id, p.game, p.name, p.blurb, p.count, items, extra, search, now, now, owner, p.localId, username);
     return { ok: true, id, created: true };
   }
 

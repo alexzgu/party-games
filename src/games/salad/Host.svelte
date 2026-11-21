@@ -257,7 +257,7 @@
   .turn-body { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; gap: var(--s-4); --clue-size: clamp(1.65rem, 3.1vw, 3.7rem); --clues-height: 64dvh; --guesses-height: 56dvh; --guess-size: clamp(1rem, 1.55vw, 1.55rem); }
   .scores { --standing-size: clamp(1rem, 2vw, 1.35rem); }
   .scores .controls { flex-wrap: nowrap; }
-  .paused { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 85%, transparent); }
+  .paused { position: fixed; inset: 0; z-index: var(--z-overlay); display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 85%, transparent); }
   .paused > div { display: grid; gap: var(--s-3); text-align: center; padding: var(--s-5); background: var(--surface); border: 2px solid var(--line); border-radius: var(--r-lg); }
   @media (max-width: 760px) { .turn-body { grid-template-columns: 1fr; --clues-height: 50dvh; --guesses-height: 40dvh; } }
 </style>

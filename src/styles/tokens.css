@@ -60,6 +60,15 @@
   --tap: 56px; /* minimum height of anything tappable */
   --tap-min: 44px; /* the smallest a small icon button may be */
 
+  /* Stacking, lowest first. Everything that covers the page uses one of these. */
+  --z-pinned-inner: 10; /* a bar pinned inside the page, under its header (a pack list's header) */
+  --z-pinned: 30; /* the page's pinned header and start bar */
+  --z-float: 35; /* over the page and its bars, never taking taps: confetti, flashes, the drag-around timer */
+  --z-overlay: 40; /* full-screen layers: pauses, game menus, the Community packs */
+  --z-raised: 45; /* a pinned bar while a popup it opened is up */
+  --z-popup: 50;
+  --z-toast: 60;
+
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --dur-fast: 120ms;
@@ -80,6 +89,8 @@
   --scrim-soft: rgb(0 0 0 / 0.6); /* behind bottom sheets */
   --shade: #000; /* base of drop and text shadows: color-mix(in srgb, var(--shade) 40%, transparent) */
   --glow: 1; /* multiplier for coloured glows: calc(40% * var(--glow)) */
+  /* The page's glow at the top of the screen (base.css). */
+  --page-glow: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%);
   --on-danger: #ffd0d8; /* text on a danger-tinted surface */
   --bad-ink: color-mix(in srgb, var(--c-bad) 55%, white); /* error text */
   --word: var(--text); /* the word on the Heads Down. play screen */

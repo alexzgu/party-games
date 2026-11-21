@@ -6,13 +6,16 @@
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import { back } from '../../lib/router.svelte';
   import { cleanCode, isCode } from '../../lib/room/code';
+  import { joinName } from '../../lib/username';
+  import { NAME_MAX } from './logic';
   import { phone } from './player.svelte';
   import Rules from './Rules.svelte';
 
   let { code: initial, fixed }: { code: string; fixed: boolean } = $props();
   // svelte-ignore state_referenced_locally
   let code = $state(cleanCode(initial));
-  let name = $state(phone.me?.name ?? '');
+  // The phone's username, or after a refused join what was typed for it, so it can be fixed.
+  let name = $state(joinName(NAME_MAX, phone.stopped ? phone.me?.name : ''));
   // Trying, or connected and waiting for the host's first screen: one Join is enough.
   const joining = $derived(!fixed && phone.link !== 'idle' && phone.link !== 'stopped');
   const ready = $derived(isCode(code) && !!name.trim() && !joining);
@@ -26,7 +29,7 @@
       code = cleanCode(e.currentTarget.value);
       e.currentTarget.value = code;
     }} placeholder="ABCD" autocapitalize="characters" autocomplete="off" /></label>
-    <label>Your name <input bind:value={name} maxlength={20} autocomplete="nickname" /></label>
+    <label>Your name <input bind:value={name} maxlength={NAME_MAX} autocomplete="nickname" /></label>
     <button class="join" disabled={!ready}>{joining ? 'Joining…' : 'Join'}</button>
     {#if joining}<Button variant="secondary" onclick={() => phone.leave()}>Cancel</Button>{/if}
   </form>

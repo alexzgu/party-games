@@ -31,7 +31,7 @@
 </div>
 
 <style>
-  .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 20; }
+  .confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: var(--z-float); }
   i { position: absolute; top: -20px; border-radius: 2px; opacity: 0; animation: fall linear forwards; }
   i.round { border-radius: 50%; }
   @keyframes fall {

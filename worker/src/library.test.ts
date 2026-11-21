@@ -51,6 +51,12 @@ describe('checkPublish', () => {
     expect(['AB', '🎉🎉', ' 🎉', '', 'e' + '\u0301'.repeat(40), { deep: 1 }].map(icon)).toEqual(Array(6).fill(undefined));
   });
 
+  it('keeps a username only when it is one (tidied, 1 to 24 characters), and never refuses a pack for it', () => {
+    const name = (username: unknown) => { const r = checkPublish(pack({ username })); return r.ok ? (Object.hasOwn(r.value, 'username') ? r.value.username : 'none') : 'refused'; };
+    expect([' Sneaky \t Otter ', 'x'.repeat(24), 'Ziggy 👩‍🚀', 'A\u202Eb\u0007c'].map(name)).toEqual(['Sneaky Otter', 'x'.repeat(24), 'Ziggy 👩‍🚀', 'Abc']);
+    expect([undefined, '', '   ', '\u200B', 'x'.repeat(25), 7, ['Al'], { name: 'Al' }, 'x'.repeat(100_000)].map(name)).toEqual(Array(9).fill('none'));
+  });
+
   it('counts a Big Board by its written clues', () => {
     const categories = [{ name: 'A', clues: [{ clue: 'One', answer: '1' }, { clue: '', answer: '' }] }, { name: 'B', clues: [{ clue: 'Two', answer: '2' }, { clue: 'Three', answer: '3' }] }];
     const r = checkPublish(pack({ game: 'quiz', items: categories }));

@@ -5,15 +5,11 @@
 
 <HowTo>
   <ol>
-    <li>One person is the <b>host</b>. They run this screen (a phone, or a laptop on the TV) and read every clue out loud.</li>
-    <li>Teams take turns choosing a category and a value. Bigger values, harder clues.</li>
-    <li>The host taps that tile and reads the clue. Answer however your room likes: the choosing team first, or first team to shout.</li>
-    <li>Tap <b>Show answer</b>, then the team that got it: they earn the tile's points. Nobody? Tap <b>Nobody got it</b>.</li>
-    <li>With <b>Wrong answers lose points</b> on, tap ✗ for a team that guessed wrong: they lose the tile's value and can't win that tile.</li>
-    <li>Most points when every tile is gone wins.</li>
+    <li>A <b>host</b> runs this screen and reads each clue aloud. Play with 1 to 10 teams.</li>
+    <li>Teams take turns picking a <b>category</b> and a <b>value</b>. Higher values, harder clues.</li>
+    <li>Tap <b>Show answer</b>, then the team that got it to give them the points, or <b>Nobody got it</b>.</li>
+    <li>With <b>Wrong answers lose points</b> on, tap ✗ for a wrong guess: that team loses the value.</li>
+    <li>Most points when the board is cleared wins.</li>
   </ol>
-  <p>Anywhere from 1 to 10 teams; a team can be one person. Playing alone? Pick 1 and go for a high score: each tile is <b>Got it</b> or <b>Missed</b>.</p>
-  <p>Your own pack: <b>Make a pack</b> under the pack list (blank, pasted, or conjured by Fizzwick the Wizard). The pencil on any pack opens it to change clues, categories and levels.</p>
-  <p>Tapped the wrong team? <b>Undo</b> on the board takes it back. Tap a team's score to fix it by hand.</p>
-  <p>On a keyboard: <b>Space</b> shows the answer, <b>1–9</b> picks the team that got it (teams past nine: tap them), <b>0</b> is nobody, <b>Esc</b> puts the tile back.</p>
+  <p>Mistake? <b>Undo</b>, or tap a team's score to fix it. Keyboard: <b>Space</b> shows the answer, <b>1–9</b> picks a team, <b>0</b> is nobody, <b>Esc</b> puts the tile back.</p>
 </HowTo>

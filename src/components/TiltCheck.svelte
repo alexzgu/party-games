@@ -6,6 +6,7 @@
   import { onDestroy } from 'svelte';
   import Button from './Button.svelte';
   import { motionNeedsPermission } from '../lib/motion';
+  import { device, DEVICE_NAME } from '../lib/device';
   import { TiltDetector } from '../lib/tilt';
   import { motion, onGravity, claimMotion, type MotionClaim } from '../games/forehead/sensors.svelte';
   import { tiltThresholds } from '../games/forehead/calibration.svelte';
@@ -60,7 +61,7 @@
     <Button variant="secondary" onclick={start}>Check tilt</Button>
   {/if}
   <p class="faint">
-    Running as: <b>{installed ? 'installed app (home screen)' : 'browser tab'}</b>.
+    Running as: <b>{installed ? 'installed app (home screen)' : 'browser tab'}</b> on <b>{DEVICE_NAME[device]}</b>.
     {#if motionNeedsPermission()}This phone asks before sharing motion.{/if}
   </p>
   {#if phase === 'asking'}<p class="faint">Waiting for permission…</p>{/if}

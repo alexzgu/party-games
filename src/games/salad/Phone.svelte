@@ -169,6 +169,6 @@
   .players { display: grid; gap: var(--s-2); padding: 0; margin: 0; list-style: none; }
   .players li { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-3); background: var(--surface); border-radius: var(--r-lg); }
   .lost { padding: var(--s-2) var(--s-3); text-align: center; border-radius: var(--r-md); background: var(--surface); }
-  .paused { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 85%, transparent); }
+  .paused { position: fixed; inset: 0; z-index: var(--z-overlay); display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 85%, transparent); }
   .paused > div { display: grid; gap: var(--s-2); text-align: center; padding: var(--s-5); background: var(--surface); border-radius: var(--r-lg); }
 </style>

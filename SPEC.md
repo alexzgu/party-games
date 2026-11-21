@@ -13,7 +13,9 @@ the home screen, and works offline once loaded. Names shown to players live in
 - **Robust**: never loses a game in progress (state saved to localStorage, resumes after a
   reload), never crashes mid-round, degrades quietly when a feature is missing (no motion →
   tap controls, no vibration → sound only, no key → built-in packs only). Chrome on Android
-  never vibrates while the phone is on silent; Settings says so under Vibration.
+  never vibrates while the phone is on silent. Settings words the Sound and Vibration notes for
+  this device only (`lib/device`: iPhone, iPad, Android or other, from the browser's own report;
+  used for wording only, never for play), and the tilt check names it ("browser tab on iPhone").
 - **Readable at arm's length in a dim room**: large type, high contrast, colour never the only
   signal (✓/✗ icons and words alongside green/red).
 - **Accessible**: every control reachable and labelled, 44 px minimum targets (56 px default),
@@ -37,14 +39,14 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `library` (the Community library), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
-- `src/components/` — `Screen` (page frame: back button, title, sticky actions), `Popup`,
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `library` (the Community library), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
+- `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PackList` (every pack game's pack list on setup), `Popup`,
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
-  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (Import packs, Export my packs, Community packs),
+  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (🌍 Community, Import, Export under every pack list),
   `ExportPack` (Export pack), `Community` and `CommunityItems` (browse, preview, import and star
-  Community packs), `ShareNote` (the note a failed Community share leaves).
+  Community packs), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box).
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
   to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
@@ -125,10 +127,9 @@ is JSON, `{"jerkBox": 1, "game": "<game id>", "packs": [...]}`, each pack as sto
 icon (`emoji`, any one character) for Heads Down., blurb, items) without `custom` and `added`; named
 `<game>-<pack id or my-packs>.jerkbox.txt` (JSON inside, plain-text type so Chrome on Android
 can share it; import also takes `.json`). "Export pack" sits in every pack editor (built-ins
-included); "Import packs" and "Export my packs" (every pack made or edited on this phone; hidden
-when there are none) sit under every pack list: Heads Down.'s "Packs" screen (Edit on setup),
-Spectrum and Don't Say It setup under "Make a pack", the pack tiles of Inn Co Hear Ant and Brain
-Freeze setup, Big Board's pack list, and Snark Tank's game settings. Export uses the
+included); "Import" (packs from a file) and "Export" (every pack made or edited on this phone;
+hidden when there are none) sit under every game's pack list (the setup's, Snark Tank's in its
+game settings). Export uses the
 share sheet when the browser can share the file, else a download. Import reads a file of at most
 1 MB and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
 pack editor's or the paste route's; Big Board: 1–8 categories × 1–10 clues, cut and padded like a
@@ -154,10 +155,15 @@ the mark. Pack files never carry it. The same pass and pack
 update one entry. Sharing never holds up saving; when it fails the page shows a small note,
 "Couldn't share to the library". Each wizard form says once, in small text, "Packs Fizzwick
 makes are shared in the Community library." Shared packs stay for good (the owner can hide one).
-"🌍 Community packs" sits beside "Import packs" under every pack list and opens over it (the
+Each share (and each update) carries the phone's username at that moment; the server keeps it only
+when it is a username by the same rules as the phone's (tidied, 1–24 characters) and otherwise
+stores the pack without one. Packs shared before usernames have none.
+"🌍 Community" sits beside "Import" under every pack list and opens the Community packs over it (the
 address gains `?community=1`, so Back closes it): a search of pack names and descriptions only
-(not the items), Most stars (then newest) or Newest, 30 at a time with "Show more"; each row
-shows name, description, item count and ★ stars. Tapping a pack shows everything in it (Snark
+(not the items, nor usernames), Most stars (then newest) or Newest, 30 at a time with "Show more"; each row
+shows name, description, item count and ★ stars, and the sharer's username as a small, quiet
+chip beside the count (nothing for a pack without one; no "made by" wording); the preview shows the
+same chip under its count. Tapping a pack shows everything in it (Snark
 Tank: with its stock answers and finals). Everything fetched is rebuilt from each game's own
 fields first (`src/lib/libraryShape.ts`, the same rules the server stores by).
 "Import" saves it through the pack-file import above (same checks, fresh id and name, ticked on
@@ -173,7 +179,7 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
 
 - **Home** shows every game in `GAMES` (name, emoji, player count), History and Settings. No blurbs.
   Any other address, such as one of a game taken out of the app (`#/song`), shows Home.
-- **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours), Heads Down. (scored-word feedback,
+- **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours; pack lists as Tiles or List, the same choice as the switch on every pack list), Heads Down. (scored-word feedback,
   "Calibrate tilt" with the calibration note under it, "Check tilt" with its notes under it),
   The wizard, Cards (reset card history). The wizard never mentions invite links. Without a key
   or pass: "Fizzwick the Wizard is not on this phone yet. Say the magic words the host told
@@ -185,13 +191,62 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
   "Send Fizzwick away" (clears both). No key field and no model list. Descriptions are
   --text-dim, weight 600.
   Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
+- **Username** (`src/lib/username.ts`): every phone has one. A phone without one is given a
+  random friendly name the first time anything asks: an adjective and an animal from the app's
+  own word lists ("Sneaky Otter"), at most 14 characters so it fits every room game's name box.
+  Settings shows exactly "Username:" and a text box (`UsernameField`). What is typed is saved as
+  it is typed, tidied: invisible and control characters dropped, spaces collapsed and trimmed,
+  1–24 characters (`src/lib/usernameShape.ts`). A box left empty or holding only spaces gets a
+  fresh random username when it loses focus or the page is left. Nobody checks that usernames are
+  unique. It is the name the room games' Join screens start with (see the shared room link) and
+  goes with every pack the phone shares to the Community library.
 - **Rules** live in each game's "?" popup, not on its screens; the popup sits on setup and, in the
   pass-the-phone games, on every hand-off too.
 - **Settings behind a card** (`RulesCard`): a setup keeps players or teams and packs on the page and
-  puts its game settings behind one full-width row: a title ("Rules" unless the game names it), the
-  current values in one plain line ("60 s turns · first to 15 points · skips are free") and a
-  settings icon. Tapping it opens a popup with the controls and Done; a change applies and is saved
-  at once, and Done, ✕, Escape or a tap outside just close it, with focus back on the row.
+  puts its game settings behind one full-width row in the pinned bar just above Start: a title
+  ("Rules" unless the game names it), the current values on the same line ("60 s turns · first to
+  15 points · skips are free", cut off with "…" when long; its accessible name says all of it) and a
+  settings icon, about 52 px tall. Tapping it opens a popup with the controls and Done; a change
+  applies and is saved at once, and Done, ✕, Escape or a tap outside just close it, with focus back
+  on the row.
+- **Pinned bars**: every screen's header (back, title, "?") stays at the top as the page scrolls,
+  in the page's own background (under the status bar too), with a hairline once something slides
+  under it; its title is one line, cut with "…" when long (the whole title is still read out). The
+  main menu's header (🎲 Jerk Box, History, Settings) likewise. A screen's actions (a setup's rules
+  row and Start) stay at the bottom; they sit in the page's flow, so at the end of the page they
+  cover nothing. On a setup, the pack list's header (title, counts, search, sort, view switch, and
+  the open search bar or sort chips) pins under the screen header while the list is on screen and
+  lets go after it; it shows the page background only while pinned. On a screen under 700 px tall
+  it scrolls with the page instead, so the pinned bars never cover most of the screen. A phone on
+  its side (height ≤ 500 px) also shrinks the screen header to 48 px and puts the rules row and the
+  start buttons side by side. Whatever the page scrolls to (a new row, a focused field) stops clear
+  of the pinned header and actions (`src/lib/scrollPadding.ts`). The page's glow is one layer fixed
+  to the screen, and each pinned bar paints the same glow placed where it sits, so the bars match
+  the page on iPhones too. Players and teams stay at the top of a setup and scroll normally.
+- **Stacking** (`--z-*` in tokens.css, lowest first): a bar pinned inside the page, the page's
+  pinned header and actions, things floating over everything without taking taps (confetti,
+  flashes, the drag-around timer), full-screen layers (pauses, game menus, the Community packs), a
+  pinned bar holding an open popup, popups, the share note.
+- **Double taps**: a button or the rules row ignores taps in its first 400 ms on screen
+  (`src/lib/tapGuard.ts`), so the second tap of a double tap never presses what the next screen
+  has in the same spot.
+- **Pack list** (`PackList`, `src/lib/packList.ts`): the one way every pack game (Heads Down.,
+  Spectrum, Inn Co Hear Ant, Big Board, Don't Say It, Brain Freeze, and Snark Tank's game settings)
+  picks, edits, makes and shares packs. Header: "Packs" (Snark Tank: "Prompt packs") with what is
+  picked under it ("2 picked · 320 words"; Big Board: "25 clues"; "pick one or more" when none),
+  then search, sort and a tiles/list switch (one choice for every game, kept on the phone; default
+  tiles). Tiles: a grid of at least 150 px columns (two on a phone); each shows the mark top right,
+  the Heads Down. icon, name, description cut to two lines, a search hit line while searching, and
+  "60 words · Mine" (or Edited; Big Board "5 × 5" and "3 empty"). List: one full-width row each,
+  the mark on the left, the Heads Down. icon, name with a Mine or Edited tag, the whole description,
+  Big Board's category names and "N empty", and the size on the right. In both, tapping a pack
+  ticks it (several packs; a rounded-square tick) or picks it (Big Board: exactly one, a round
+  mark, a radio group), and the pencil (48 px, bottom right of a tile, right end of a row) opens it
+  in that game's editor. "✨ Make a pack" (with the game's ways to make one) is the last item, a
+  dashed tile or row, hidden while searching. Under the list: 🌍 Community, Import, Export. An
+  import plays the imported packs on their own (Big Board: picks the first; Snark Tank: adds them
+  to the picked ones). Brain Freeze's list ignores taps in its first 400 ms (the tail of a double
+  tap on the screen before).
 - **A saved game and its setup**: with a game in progress, setup shows that game's players
   (Big Board: teams). Adding, renaming or removing them changes the saved game on Resume (or on
   leaving setup): a kept player keeps their score, newcomers start at 0, a removed one leaves
@@ -202,7 +257,7 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
   game taken out of the app are left out.
 - **Search and sort** (`ListTools`): every pack list and every pack's contents has a search
   toggle (matches names, blurbs and the items inside; a pack found only through an item shows
-  `has "…"`) and a sort toggle (Suggested, Newest, Oldest, A–Z). Each list remembers its toggles
+  `has "…"`, or `has "…" and 2 more`) and a sort toggle (Suggested, Newest, Oldest, A–Z). Each list remembers its toggles
   and order on the phone. Packs carry an `added` date; built-ins without one count as oldest.
   Ticking packs during a search still counts every picked pack.
 - **Ended early**: a Heads Down. round quit from the pause menu, or a Spectrum / Inn Co Hear Ant
@@ -221,14 +276,13 @@ Updates reach phones without interrupting play: a new version downloads in the b
 Heads Up-style. One player holds the phone on their forehead, screen facing out; the others
 shout clues; the holder tilts down for "got it", up for "pass".
 
-- **Setup**: grid of packs (emoji, name, word count); tap to select one or several (mixed).
+- **Setup**: the shared pack list (packs with their icon, word count); tap to select one or several (mixed); the pencil opens a pack to see, edit or restore its words (`#/forehead/deck?id=…`; the old pack screen `#/forehead/decks` now opens setup). "Make a pack" offers Paste, By hand (opens an empty pack in the editor) and 🧙 Wizard.
   A "Round" card (summary like "60 s rounds · tilt or tap") holds round length 30/60/90/120 s
   (default 60), Controls and, unless Controls is Tap, Calibrate tilt. Controls: Tilt, Tap or Both (default Both on phones
   and tablets, Tap on a laptop; the old saved "Tilt", which always took taps, carries over as
   Both). Only the chosen input scores: in a Tilt round the tap zones are gone and the arrow keys
   do nothing; in a Tap round tilting does nothing. A Tilt round on a phone that cannot feel
   motion takes taps instead, so it can always be played (`accepts` in `round.ts`).
-  "Edit" (in the packs header, before the search and sort toggles) opens the pack list: open any pack to see, edit or restore its words.
   Between its name and its words, a pack's icon is a box that takes one character, typed or pasted ("Type or paste one emoji or letter"), shown large beside it: anything longer is cut to its first character as a person sees it (`oneIcon` in `src/lib/icon.ts`: a flag, a skin-toned or joined emoji like 👩‍🚀, or an accented letter is one), and an empty box means the default 🃏. Pack files and the Community library carry the icon (the library keeps it only when it is exactly one character); older packs keep theirs. No other game's packs have an icon.
   On the player's own packs (not built-ins), "🧙 Add more" (`AddMore`, `src/lib/addMore.ts`) asks how many (10–80, default 20) and for an optional steer, then the wizard writes more in the pack's spirit (the request carries its name, description and every word, so none repeats); they stream into `Triage` for review and the kept ones go on top. No wizard: the magic-words box in place of the form.
 - **Start tap**: `unlockAudio()`, `requestMotion()` (iOS prompt), sample gravity for the sign fix
@@ -300,7 +354,7 @@ shout clues; the holder tilts down for "got it", up for "pass".
   real data. The file goes to a laptop lab server when the page is served from one, else to
   share / download.
 
-Community: wizard packs and Add more are shared; "🌍 Community packs" is on the Packs screen; imported words are kept even when a built-in pack has them.
+Community: wizard packs and Add more are shared; "🌍 Community" is under the pack list on setup; imported words are kept even when a built-in pack has them.
 
 ## Game 2 — Spectrum (`dial`)
 
@@ -310,8 +364,8 @@ team sets a dial to where they think the target is.
 
 - **Setup**: two team names (editable), packs (multi-select), and behind the Rules card
   ("First to 10 points · steals on") points to win (default 10) and the optional "steal" rule: the other team then guesses whether the target is left or right of
-  the needle for 1 point. Entry to "Make a pack" (paste a list or ask the wizard). Each pack row
-  has a separate › that opens the pack editor; on the player's own packs, "🧙 Add more" as in Heads Down. (5–40 cards, default 10; never a scale any pack on the phone has).
+  the needle for 1 point. "Make a pack" at the end of the pack list (paste a list or ask the wizard). Each
+  pack's pencil opens the pack editor; on the player's own packs, "🧙 Add more" as in Heads Down. (5–40 cards, default 10; never a scale any pack on the phone has).
 - **Teams**: Early Birds (`--c-team-a`, warm orange) vs Night Owls (`--c-team-b`, blue), on the
   dark theme: team colour as glow, border and name, never a full bright fill. The scoreboard
   is a face-off; the hand-off shows round, both scores and the rival.
@@ -332,7 +386,7 @@ team sets a dial to where they think the target is.
   screens split the same way. Nothing scrolls, and turning the phone re-fits the page at once.
 - Game state saved after every step; reopening resumes.
 
-Community: wizard packs and Add more are shared; "🌍 Community packs" is under the pack list on setup; scales a built-in pack has are left out on import.
+Community: wizard packs and Add more are shared; "🌍 Community" is under the pack list on setup; scales a built-in pack has are left out on import.
 
 ## Game 3 — Inn Co Hear Ant (`gibberish`)
 
@@ -343,7 +397,7 @@ aloud, sounds like something well known ("Eye Scream" → Ice Cream).
   card ("30 s per card · first to 5 points") seconds per card (off/20/30/45/60, default 30) and
   points to win (default 5). Entry to "Make a pack" (paste a list or ask the wizard; a pasted
   card without a category gets "Anything").
-  A pencil on each pack tile opens the pack editor (giveaway check applies to edits); on the player's own packs, "🧙 Add more" as in Heads Down. (5–30 cards, default 10; never an answer any pack on the phone has; a card without a category takes the pack's most common one).
+  A pencil on each pack opens the pack editor (giveaway check applies to edits); on the player's own packs, "🧙 Add more" as in Heads Down. (5–30 cards, default 10; never an answer any pack on the phone has; a card without a category takes the pack's most common one).
 - **Card**: the reader rotates each card. Hand-off screen ("X reads — everyone else, eyes off the
   phone") → reader view: the phrase huge, a "Show category" button the reader may read out,
   answer hidden until press-and-hold, countdown ring. When someone shouts the answer the
@@ -351,7 +405,7 @@ aloud, sounds like something well known ("Eye Scream" → Ice Cream).
   "Nobody" → answer revealed, no point. Skip draws a new card without penalty.
 - Scoreboard between cards; first to the target wins (win screen, rematch). State saved.
 
-Community: wizard packs and Add more are shared; "🌍 Community packs" is under the pack tiles on setup; answers a built-in pack has are left out on import.
+Community: wizard packs and Add more are shared; "🌍 Community" is under the pack list on setup; answers a built-in pack has are left out on import.
 
 ## Game 4 — Big Board (`quiz`)
 
@@ -362,7 +416,7 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
 - **Setup**: 1–10 teams (stepper, default 3; a team may be one person), names editable and
   remembered for all twenty seats, each with its own colour (`--team-1` … `--team-20` in
   tokens.css, one set per scheme, readable as text and under a number badge). One pack
-  (search/sort list; a pencil per row opens the editor; "Make a pack" at the end). A "Points" card
+  (the shared pack list, single pick; a pencil on each opens the editor; "Make a pack" at the end). A "Points" card
   ("Tiles 100–500 · wrong answers cost nothing") holds points 100, 200, … per level or doubled
   and "Wrong answers lose points" (default off). A pack with an
   empty clue or answer is a draft: setup names the empty tiles and will not start it.
@@ -415,7 +469,7 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   pack in the editor, kept in storage (`quiz:new-board`) until "Save pack" (or "Save as a
   draft" with empty tiles), which picks it on setup.
 
-Community: a board Fizzwick wrote is shared when it is first saved from the editor, and again after Add more; "🌍 Community packs" is under the pack list; the preview lists every category's clues and answers.
+Community: a board Fizzwick wrote is shared when it is first saved from the editor, and again after Add more; "🌍 Community" is under the pack list; the preview lists every category's clues and answers.
 
 ## Game 5 — Don't Say It (`taboo`)
 
@@ -427,7 +481,7 @@ beside them watching for slips.
   Mimes); behind the Rules card ("60 s turns · first to 15 points · skips are free") turn length
   45/60/90 s (default 60), play until a points target (default 15, 5–50)
   or a number of rounds (default 5; a round is one turn per team), "Skips cost a point"
-  (default off); packs (search/sort; a › on each opens its editor; "+ Make a pack": write the
+  (default off); packs (the shared pack list; a pencil on each opens its editor; "✨ Make a pack": write the
   cards one by one or ask the wizard for a theme, 10–60 cards, default 30, reviewed before saving).
   The player's own packs have "🧙 Add more" in their editor (5–40 cards, default 15). Wizard cards
   follow the pack editor's rules (exactly five banned words, none containing the word or inside
@@ -456,7 +510,7 @@ beside them watching for slips.
 - **Packs**: `src/content/taboo/*.json` (Classic 150, Pop Culture 100, After Dark 60). Paste
   lines `Word: one, two, three, four, five` in the pack editor to add many.
 
-Community: wizard packs and Add more are shared; "🌍 Community packs" is on setup under "Make a pack"; words a built-in pack has are left out on import.
+Community: wizard packs and Add more are shared; "🌍 Community" is under the pack list on setup; words a built-in pack has are left out on import.
 
 ## Game 6 — Brain Freeze (`quick`)
 
@@ -497,7 +551,7 @@ few seconds to name three things that fit it out loud; the room judges.
 - **Content**: `src/content/quick/*.json`, `{"prompts": ["things you'd find in a fridge", …]}`
   stored without the "Name 3" lead-in. Built-ins: Classic (200), Pop Culture (120), After Dark (80).
 
-Community: wizard packs and Add more are shared; "🌍 Community packs" is under the pack tiles on setup; prompts a built-in pack has are left out on import.
+Community: wizard packs and Add more are shared; "🌍 Community" is under the pack list on setup; prompts a built-in pack has are left out on import.
 
 ## Hosting
 
@@ -584,7 +638,7 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
 - **Packs**: `src/content/snark/*.json`, `{"prompts": [...]}`, 3–14 words (Classic 200, After
   Dark 80); optional `safety` and `finals`, below.
 
-Community: wizard packs, Add more and Fill in stock answers are shared with their stock answers and finals, and imported with them; "🌍 Community packs" is in the game settings; prompts a built-in pack has are left out on import.
+Community: wizard packs, Add more and Fill in stock answers are shared with their stock answers and finals, and imported with them; "🌍 Community" is under the pack list in the game settings; prompts a built-in pack has are left out on import.
 
 ### Snark Tank: Quiplash 3 options (`snark`, on by setting; defaults unchanged)
 
@@ -635,6 +689,10 @@ first screen the way they came (`back()`), and that screen's Back returns to the
 link closes: the player is out like a removed one (no more turns or prompts, nobody waits for
 them) but may rejoin with the same code and keeps their score; a removed player may not. A
 refusal or the end of the room is shown on the join screen even on a phone that came by QR code.
+The join screen's name box starts with the phone's username, cut to that game's name limit (Snark
+Tank 14, Word Salad 18, Doodle Brawl 20 characters); after a refused join (a name already taken,
+say) it keeps what was typed, so it can be fixed. A name typed there is for that room only (kept
+for rejoining it) and never changes the username.
 The browser's or Android's back gesture walks the same path as Back and never lands on a closed host screen. Any message whose JSON is 15,000 UTF-8
 bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 5,000 characters
 each) and reassembled before it is read; incomplete parts are dropped after 30 s. (PeerJS errors

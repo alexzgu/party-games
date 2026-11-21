@@ -7,6 +7,7 @@
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import { back } from '../../lib/router.svelte';
   import { CODE_LENGTH, cleanCode } from '../../lib/room/code';
+  import { joinName } from '../../lib/username';
   import { NAME_MAX } from './protocol';
   import Rules from './Rules.svelte';
 
@@ -16,7 +17,8 @@
   } = $props();
 
   let code = $state(untrack(() => cleanCode(initialCode)));
-  let name = $state(untrack(() => initialName));
+  // The phone's username, or after a refused join what was typed for it, so it can be fixed.
+  let name = $state(untrack(() => joinName(NAME_MAX, stopped ? initialName : '')));
   const ready = $derived(code.length === CODE_LENGTH && !!name.trim());
 
   function join(e: SubmitEvent) {

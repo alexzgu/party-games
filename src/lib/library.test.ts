@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { settings } from './settings.svelte';
 import { afterRun, getPack, importLibraryPack, listPacks, onLibraryNote, passedSoFar, SHARE_FAILED, shareWizardPack, starPack, type LibraryFull } from './library';
 import { WIZARD_SERVER } from './wizardServer';
+import { setUsername } from './username';
 import { customDecks, customQuick, customQuiz, quizBoards, type QuickPack, type QuizBoard, type SnarkPack, type SpectrumPack, type WordDeck } from './content';
 import { exportFile, importPacks } from './packfile';
 import { addClues } from '../games/quiz/more';
@@ -29,11 +30,12 @@ describe('sharing what the wizard made', () => {
   it('publishes the whole pack with the pass, without the fields only this phone uses', async () => {
     const fetch = server();
     settings.wizardPass = PASS;
+    setUsername('Sneaky Otter');
     expect(await shareWizardPack('forehead', deck, true)).toBe(true);
     const [url, init] = fetch.mock.calls[0];
     expect(url).toBe(`${WIZARD_SERVER}/library/packs`);
     expect(new Headers(init?.headers).get('authorization')).toBe(`Bearer ${PASS}`);
-    expect(JSON.parse(String(init?.body))).toEqual({ game: 'forehead', name: 'Cartoons', blurb: 'Conjured by Fizzwick: cartoons', localId: 'my-cartoons-abc', items: ['Shrek', 'SpongeBob'], extra: { emoji: '📺' } });
+    expect(JSON.parse(String(init?.body))).toEqual({ game: 'forehead', name: 'Cartoons', blurb: 'Conjured by Fizzwick: cartoons', localId: 'my-cartoons-abc', items: ['Shrek', 'SpongeBob'], extra: { emoji: '📺' }, username: 'Sneaky Otter' });
   });
 
   it('shares nothing made without a pass, even once the phone has one, nor a built-in pack', async () => {
@@ -198,6 +200,15 @@ describe('browsing and importing', () => {
     expect(await getPack('dial', 'AAAAAAAAAAAA')).toEqual({ ok: false, reason: 'broken' });
     server(() => Response.json({ pack: { ...pack, game: 'quick' } }));
     expect(await getPack('dial', 'AAAAAAAAAAAA')).toEqual({ ok: false, reason: 'broken' });
+  });
+
+  it("shows a listed pack's username only when it is one, and nothing for packs shared without", async () => {
+    const row = { id: 'AAAAAAAAAAAA', game: 'dial', name: 'Road Trip', blurb: '', count: 1, stars: 0, created: 1, updated: 2 };
+    const names = ['  Sneaky   Otter ', 'x'.repeat(25), { deep: 1 }, undefined, '\u200B'];
+    server(() => Response.json({ packs: names.map((username, i) => ({ ...row, id: `AAAAAAAAAAA${i}`, username })), more: false }));
+    const r = await listPacks('dial');
+    expect(r.ok && r.packs.map((p) => p.username)).toEqual(['Sneaky Otter', undefined, undefined, undefined, undefined]);
+    expect(r.ok && Object.hasOwn(r.packs[1], 'username')).toBe(false);
   });
 
   it('forgets a pass the server refuses, so the phone asks for the words again', async () => {

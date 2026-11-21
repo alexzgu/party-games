@@ -1,6 +1,7 @@
 // The community library's rules as pure functions: what a published pack may hold, and what a
 // list request asks for. The Durable Object in libraryObject.ts stores what passes them.
 import { cleanExtra, cleanItems, itemCount, SHAPE } from '../../src/lib/libraryShape';
+import { cleanUsername } from '../../src/lib/usernameShape';
 import type { Checked } from './validate';
 
 /** Change these to loosen or tighten the library. */
@@ -40,6 +41,11 @@ export interface PublishPack {
   /** Fields beside the items: a Heads Down. pack's emoji, a Snark Tank pack's stock answers and finals. */
   extra: Record<string, unknown>;
   count: number;
+  /**
+   * The sharing phone's username (src/lib/usernameShape.ts: tidied, 1 to 24 characters), only
+   * when it sent a good one; an app from before usernames sends none, and a bad one is dropped.
+   */
+  username?: string;
 }
 
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
@@ -47,7 +53,7 @@ const str = (max: number) => (x: unknown): boolean => typeof x === 'string' && x
 
 const bytes = (x: unknown) => new TextEncoder().encode(JSON.stringify(x)).length;
 
-/** `{game, name, blurb, localId, items, extra?}` checked: the pack to store, or why not. */
+/** `{game, name, blurb, localId, items, extra?, username?}` checked: the pack to store, or why not. Other fields are ignored. */
 export function checkPublish(raw: string): Checked<PublishPack> {
   let b: unknown;
   try {
@@ -70,7 +76,9 @@ export function checkPublish(raw: string): Checked<PublishPack> {
   const extra = cleanExtra(game, b.extra, items);
   if (bytes({ items, extra }) > LIBRARY.itemsBytes) return { ok: false, message: `A pack is limited to ${LIBRARY.itemsBytes / 1024} KB.` };
   const count = itemCount(game, items);
-  return { ok: true, value: { game, name, blurb, localId: (b.localId as string).trim(), items, extra, count } };
+  // Never a reason to refuse the pack: a username that is not one is left out.
+  const username = cleanUsername(b.username);
+  return { ok: true, value: { game, name, blurb, localId: (b.localId as string).trim(), items, extra, count, ...(username ? { username } : {}) } };
 }
 
 export interface ListQuery {

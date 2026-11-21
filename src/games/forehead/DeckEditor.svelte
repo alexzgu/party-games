@@ -98,7 +98,7 @@
       prefs.deckIds = prefs.deckIds.filter((x) => x !== deck.id);
       savePrefs();
     }
-    back('/forehead/decks');
+    back('/forehead');
   }
 
   function restore() {

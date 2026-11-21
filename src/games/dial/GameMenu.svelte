@@ -26,9 +26,9 @@
 </div>
 
 <style>
-  .scrim { position: fixed; inset: 0; background: var(--scrim-soft); z-index: 10; }
+  .scrim { position: fixed; inset: 0; background: var(--scrim-soft); z-index: var(--z-overlay); }
   .sheet {
-    position: fixed; z-index: 11; left: 50%; bottom: 0; width: min(640px, 100%); transform: translateX(-50%);
+    position: fixed; z-index: calc(var(--z-overlay) + 1); left: 50%; bottom: 0; width: min(640px, 100%); transform: translateX(-50%);
     max-height: 100dvh; overflow-y: auto;
     display: flex; flex-direction: column; gap: var(--s-3);
     padding: var(--s-5) calc(var(--safe-right) + var(--s-4)) calc(var(--safe-bottom) + var(--s-5)) calc(var(--safe-left) + var(--s-4));

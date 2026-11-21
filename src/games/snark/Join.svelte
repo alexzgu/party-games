@@ -9,6 +9,7 @@
   import { phone } from './player.svelte';
   import { CODE_LENGTH, cleanCode } from '../../lib/room/code';
   import { NAME_MAX, cleanName } from './logic';
+  import { joinName } from '../../lib/username';
 
   // Room code (filled in from the QR link) and a name, then Join. A reason from the host or
   // the broker (wrong code, name taken, removed) shows above the form.
@@ -16,7 +17,8 @@
   // svelte-ignore state_referenced_locally
   let code = $state(cleanCode(start));
   // svelte-ignore state_referenced_locally
-  let name = $state(startName);
+  // The phone's username, or after a refused join what was typed for it, so it can be fixed.
+  let name = $state(joinName(NAME_MAX, stopped ? startName : ''));
   let nameInput = $state<HTMLInputElement>();
   const ready = $derived(code.length === CODE_LENGTH && cleanName(name) !== '');
 

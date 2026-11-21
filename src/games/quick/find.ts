@@ -1,24 +1,14 @@
-// Search and sort for the pack list and a pack's prompts.
-import type { QuickPack } from '../../lib/content';
-import { packAge } from '../../lib/content';
+// Brain Freeze's packs in the shared pack list, and search and sort for a pack's prompts.
+import { customQuick, type QuickPack } from '../../lib/content';
 import { matches, sorted, type SortKey } from '../../lib/listing';
+import { counted, packTag, type PackEntry } from '../../lib/packList';
 
-/**
- * Whether a pack matches, and, when only some of its prompts do, a short line saying which
- * (`has “pizza toppings”`, `has “pizza toppings” and 2 more`). Empty `hit` when the name or blurb matches.
- */
-export function packHit(p: QuickPack, query: string): { match: boolean; hit: string } {
-  if (matches(p.name, query) || matches(p.blurb, query)) return { match: true, hit: '' };
-  const found = p.prompts.filter((q) => matches(q, query));
-  if (!found.length) return { match: false, hit: '' };
-  return { match: true, hit: `has “${found[0]}”${found.length > 1 ? ` and ${found.length - 1} more` : ''}` };
-}
-
-/** The packs to show, in the chosen order, each with its hit line. */
-export function findPacks(packs: QuickPack[], query: string, sort: SortKey) {
-  const found = packs.map((p) => ({ p, ...packHit(p, query) })).filter((x) => x.match);
-  return sorted(found, sort, (x) => x.p.name, (x) => packAge(x.p));
-}
+/** A pack as the setup's pack list shows it. */
+export const packEntry = (p: QuickPack): PackEntry => ({
+  id: p.id, name: p.name, blurb: p.blurb, added: p.added,
+  size: p.prompts.length, sizeLabel: counted(p.prompts.length, 'prompts'), tag: packTag(p.custom, customQuick.isEdited(p.id)),
+  items: p.prompts.map((label) => ({ label })),
+});
 
 /** A pack's prompts to show, each with its index in the pack. The editor puts new prompts first, so a lower index is newer. */
 export function findPrompts(prompts: string[], query: string, sort: SortKey) {
