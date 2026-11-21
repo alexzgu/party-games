@@ -82,50 +82,6 @@ theme is unclear; pick sensible defaults and say what you chose.
    "Live. Go back to the main menu, wait a moment, then open <game> and tick <pack name> in
    the pack list" (Big Board: "pick <pack name> in the Pack list"). Mention the 3 to 5 items you are least sure about.
 
-### Earworm song packs (`song/`), made by a Claude Code chat on this laptop
-
-Earworm plays a few seconds of each song's 30-second Apple Music preview on the host phone; a
-pack holds only titles, artists and Apple track ids (plus, optionally, a clip start and a YouTube
-video for the reveal), never audio. Matching songs to Apple needs network access, so these packs
-are made by a chat on the owner's laptop. Default size 35 songs (30–40). Run `npm run list --
-song` first: an Apple track, or the same title by the same lead artist, may appear in only one
-song pack.
-
-```json
-{"id": "pop-2020s", "name": "2020s Pop", "blurb": "The last few summers", "added": "2026-11-21T15:40", "songs": [{"title": "Levitating", "artist": "Dua Lipa", "apple": 1234567890, "youtube": "VIDEO_ID_11"}]}
-```
-
-1. **List** about 1.2× the songs for the theme in a text file, one per line as `Title - Artist`
-   (or YouTube links, which also give the reveal its video): ones most US 20-somethings would
-   name from two seconds of the hook; studio originals only.
-2. **Match**: `npm run match:songs -- <file>` (pass the network domains `itunes.apple.com`,
-   `*.itunes.apple.com` and `www.youtube.com`). It prints the `songs` JSON on stdout and a report
-   on stderr: ✓ sure, ? check it (with the other candidates), ✗ not found. Apple allows about 20
-   calls a minute, so 40 songs take two or three minutes. For every `?` line, keep the right
-   candidate or drop the song; never keep a live, karaoke, cover or remix version.
-3. **Write** `src/content/song/<id>.json` with the songs. Keep `title` as the room would shout it
-   and `artist` the main artist (features as "A ft. B"). Leave `start` out: the game picks the
-   catchiest moment of each preview itself (set it, seconds into the preview, 0–19.5, only to
-   fix a pick that is clearly wrong). `npm run match:songs -- --pack <file>` re-checks a pack in
-   place and drops songs Apple has no preview for.
-4. **Check**: `npm run test:content`, then `npm run check:songs` (every Apple id must still have
-   a preview; every YouTube id must still be embeddable: remove a `youtube` it lists, or replace
-   the song). Then publish and confirm as in steps 6 and 7, and name the songs you were least sure
-   matched the right recording.
-
-**Clip packs** (only when the owner asks for one): `npm run clip:songs -- <pack>` cuts a 12-second
-clip of every song from its YouTube video (yt-dlp and ffmpeg, on this laptop) and writes one file,
-`~/Data/party_games/clips/<pack-id>.clips.jerkbox.txt`, holding the pack and its clips. `<pack>` is
-a built-in pack (`src/content/song/<id>.json`), an exported `.jerkbox.txt` pack file, or a
-"Title - Artist" / link list. It finds a video when a song has none and starts each clip on the
-moment the game would play from Apple's preview; `--at "Title=1:23"` sets a clip by hand. Network
-domains: `www.youtube.com`, `*.youtube.com`, `*.googlevideo.com`, `i.ytimg.com`, `itunes.apple.com`,
-`*.itunes.apple.com`, `*.mzstatic.com` (inside the agent sandbox also set `NODE_USE_ENV_PROXY=1`).
-Check every `?` line of its report, then tell the owner the file's path: they import it on the host
-phone with "Import packs" on Earworm setup, once. **A clip file holds copies of the recordings:
-never commit it, put it in `public/` or the built site, or post it anywhere public.** It stays in
-`~/Data`; `.gitignore` refuses `*.clips.jerkbox.txt` as a backstop.
-
 ### Don't Say It packs (`taboo/`)
 
 Two teams; the describer gets their team to say the word without saying it or any of the five

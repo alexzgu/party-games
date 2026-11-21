@@ -1,12 +1,12 @@
 // Lists what a game's built-in packs already contain, so a new pack can avoid repeats:
-//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|song|salad|brawl
+//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const game = process.argv[2];
 const dir = join(import.meta.dirname, '..', 'src', 'content', game ?? '');
-if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'song', 'salad', 'brawl'].includes(game)) {
-  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|song|salad|brawl');
+if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'salad', 'brawl'].includes(game)) {
+  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl');
   process.exit(1);
 }
 const packs = readdirSync(dir)
@@ -24,12 +24,11 @@ for (const p of packs) {
     }
     continue;
   }
-  const items = p.words ?? p.cards ?? p.prompts ?? p.songs ?? p.secrets ?? p.titles;
+  const items = p.words ?? p.cards ?? p.prompts ?? p.secrets ?? p.titles;
   console.log(`\n## ${p.id} — ${p.name} (${items.length})`);
   for (const it of items) {
     if (typeof it === 'string') console.log(it);
     else if ('left' in it) console.log(`${it.left} | ${it.right}`);
-    else if ('apple' in it) console.log(`${it.title} — ${it.artist}  [apple ${it.apple}${it.start !== undefined ? `, from ${it.start}s` : ''}${it.youtube ? `, video ${it.youtube}` : ''}]`);
     else if ('banned' in it) console.log(`${it.word}: ${it.banned.join(', ')}`);
     else if ('also' in it) console.log(`${it.answer}  [${it.category}, ${it.level}]${it.also.length ? ` — also ${it.also.join(', ')}` : ''}`);
     else { console.log(`${it.answer}  ←  ${it.phrase}`); hints.set(it.hint, (hints.get(it.hint) ?? 0) + 1); }

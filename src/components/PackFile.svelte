@@ -4,16 +4,10 @@
   // every pack made or edited on this phone in one file. Text from a file is only ever shown as text.
   import type { PackGameId } from '../app.config';
   import Button from './Button.svelte';
-  import { importMessage, importPacks, MAX_FILE_BYTES, PACK_FILE_ACCEPT, packFile, savedPacks } from '../lib/packfile';
+  import { HEAD_BYTES, importMessage, importPacks, MAX_FILE_BYTES, PACK_FILE_ACCEPT, packFile, savedPacks, tooBigMessage } from '../lib/packfile';
   import { shareOrDownload } from '../lib/share';
 
-  let { game, onimported, read, maxBytes = MAX_FILE_BYTES }: {
-    game: PackGameId;
-    onimported?: (ids: string[]) => void;
-    /** A game's own importer (Earworm: pack files that also carry clips); the plain pack import otherwise. */
-    read?: (content: string) => Promise<{ error: string } | { ids: string[]; message: string }>;
-    maxBytes?: number;
-  } = $props();
+  let { game, onimported }: { game: PackGameId; onimported?: (ids: string[]) => void } = $props();
 
   let input: HTMLInputElement | undefined = $state();
   // svelte-ignore state_referenced_locally
@@ -27,20 +21,14 @@
     const f = e.currentTarget.files?.[0];
     e.currentTarget.value = ''; // the same file can be picked again
     if (!f) return;
-    if (f.size > maxBytes) return say('That file is too big to be a pack file.', true);
+    if (f.size > MAX_FILE_BYTES) return say(tooBigMessage(await f.slice(0, HEAD_BYTES).text().catch(() => '')), true);
     let content: string;
     try { content = await f.text(); } catch { return say('That file could not be read.', true); }
-    if (read) say('Importing…');
-    const r = read ? await read(content) : plain(content);
-    if ('error' in r) return say(r.error, true);
-    say(r.message);
-    mine = savedPacks(game).length;
-    onimported?.(r.ids);
-  }
-
-  function plain(content: string): { error: string } | { ids: string[]; message: string } {
     const r = importPacks(game, content);
-    return 'error' in r ? r : { ids: r.saved.map((p) => p.id), message: importMessage(game, r) };
+    if ('error' in r) return say(r.error, true);
+    say(importMessage(game, r));
+    mine = savedPacks(game).length;
+    onimported?.(r.saved.map((p) => p.id));
   }
 
   async function exportMine() {

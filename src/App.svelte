@@ -18,7 +18,6 @@
     taboo: () => import('./games/taboo/Game.svelte'),
     quick: () => import('./games/quick/Game.svelte'),
     snark: () => import('./games/snark/Game.svelte'),
-    song: () => import('./games/song/Game.svelte'),
     salad: () => import('./games/salad/Game.svelte'),
     brawl: () => import('./games/brawl/Game.svelte'),
   };

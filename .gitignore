@@ -7,5 +7,5 @@ dist
 !.claude/skills/
 .mcp.json
 .gitmodules
-# Earworm clip packs hold copies of recordings: never in the repo (scripts/clip-songs.mjs writes them to ~/Data)
+# Old Earworm clip packs hold copies of recordings: never in the repo (they stay in ~/Data)
 *.clips.jerkbox.txt

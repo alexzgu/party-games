@@ -9,7 +9,6 @@ import { brawlPacks, saladPacks, snarkPacks } from './content';
 import { cardId, cardProblems } from '../games/taboo/cards';
 import { normalise } from '../games/salad/match';
 import { categories, followups, leaksAnswer, levels, opening, shared, type Secret } from '../games/salad/words';
-import { songPacks } from './content';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Small words a phrase may share with its answer without giving it away. */
@@ -271,39 +270,6 @@ describe('Snark Tank packs', () => {
         }
       }
     }
-    expect(problems).toEqual([]);
-  });
-});
-
-describe('Earworm packs', () => {
-  it('hold Apple track ids (plus optional clip starts and YouTube ids), and never repeat a song across packs', () => {
-    const problems: string[] = [];
-    const packs = songPacks();
-    packBasics(packs, problems);
-    const ids = new Map<number, string>();
-    const songs = new Map<string, string>();
-    for (const p of packs) {
-      if (!Array.isArray(p.songs) || p.songs.length < 10) { problems.push(`${p.id}: only ${p.songs?.length ?? 0} songs (need 10+)`); continue; }
-      for (const s of p.songs) {
-        const name = `"${s.title}" by ${s.artist}`;
-        if (!s.title?.trim() || !s.artist?.trim()) problems.push(`${p.id}: a song is missing its title or artist (${JSON.stringify(s)})`);
-        if (!Number.isInteger(s.apple) || s.apple! <= 0) problems.push(`${p.id}: ${name}: "apple" should be the Apple Music track id (a whole number)`);
-        // The longest clip (10 s) must end inside the 30-second preview.
-        if (s.start !== undefined && (typeof s.start !== 'number' || s.start < 0 || s.start > 19.5)) problems.push(`${p.id}: ${name}: start should be seconds into the preview, 0 to 19.5 (or left out)`);
-        if (s.youtube !== undefined && !/^[A-Za-z0-9_-]{11}$/.test(s.youtube)) problems.push(`${p.id}: ${name}: "${s.youtube}" is not an 11-character YouTube video id`);
-        const extra = Object.keys(s).filter((k) => !['title', 'artist', 'apple', 'start', 'youtube'].includes(k));
-        if (extra.length) problems.push(`${p.id}: ${name}: unknown field ${extra.join(', ')}`);
-        const prevId = ids.get(s.apple!);
-        if (prevId) problems.push(`${p.id}: ${name}: Apple track ${s.apple} already exists in ${prevId}`);
-        ids.set(s.apple!, p.id);
-        // Same title by the same lead artist, whoever is featured ("Timber" by Pitbull ft. Kesha).
-        const k = `${key(s.title ?? '')} | ${key((s.artist ?? '').split(/\s+(?:ft\.|feat\.|featuring|&|and|x)\s+/i)[0])}`;
-        const prevSong = songs.get(k);
-        if (prevSong) problems.push(`${p.id}: ${name} already exists in ${prevSong}`);
-        songs.set(k, p.id);
-      }
-    }
-    expect(packs.slice(0, 3).map((p) => p.id)).toEqual(['2000s-bangers', '2010s-hits', 'throwbacks']);
     expect(problems).toEqual([]);
   });
 });

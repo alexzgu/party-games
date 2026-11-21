@@ -1,5 +1,5 @@
 // A log of finished rounds and games, newest first, kept on this phone for scorekeeping.
-import type { GameId } from '../app.config';
+import { GAMES, type GameId } from '../app.config';
 import { load, save } from './storage';
 
 export interface HistoryEntry {
@@ -22,8 +22,11 @@ export interface HistoryEntry {
 const KEY = 'history';
 const MAX = 500;
 
+const inApp = new Set<string>(GAMES.map((g) => g.id));
+
+/** Every entry, newest first; those of a game no longer in the app are left out. */
 export function history(): HistoryEntry[] {
-  return load<HistoryEntry[]>(KEY, []);
+  return load<HistoryEntry[]>(KEY, []).filter((e) => inApp.has(e.game));
 }
 
 /** Adds an entry and returns its id. */

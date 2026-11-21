@@ -4,7 +4,7 @@ export const APP = {
   shortName: 'Jerk Box',
 } as const;
 
-export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'song' | 'salad' | 'brawl';
+export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl';
 
 /** Games whose packs players can make, import and export on a phone. */
 export type PackGameId = Exclude<GameId, 'salad' | 'brawl'>;
@@ -26,10 +26,12 @@ export const GAMES: GameInfo[] = [
   { id: 'taboo', name: "Don't Say It", players: '4+ players · 2 teams', accent: 'var(--c-taboo)', emoji: '🤐' },
   { id: 'quick', name: 'Brain Freeze', players: '2+ players', accent: 'var(--c-quick)', emoji: '🥶' },
   { id: 'snark', name: 'Snark Tank', players: '3–8 players · own phones', accent: 'var(--c-snark)', emoji: '🦈' },
-  { id: 'song', name: 'Earworm', players: '2+ players · needs internet', accent: 'var(--c-song)', emoji: '🎧' },
   { id: 'salad', name: 'Word Salad', players: '2–8 players · own phones', accent: 'var(--c-salad)', emoji: '🥗' },
   { id: 'brawl', name: 'Doodle Brawl', players: '3–8 players · own phones', accent: 'var(--c-brawl)', emoji: '🥊' },
 ];
+
+/** Games taken out of the app, by id: an old pack file of one is turned away by name. */
+export const RETIRED_GAMES: Readonly<Record<string, string>> = { song: 'Earworm' };
 
 /** The name players see for a game; screens read it from here, never hard-code it. */
 export const gameName = (id: GameId): string => GAMES.find((g) => g.id === id)!.name;

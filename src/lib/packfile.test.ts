@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PackGameId } from '../app.config';
 import { customDecks, wordDecks } from './content';
-import { exportFile, fileName, freshId, freshName, importMessage, importPacks, readFile, type AnyPack } from './packfile';
+import { exportFile, fileName, freshId, freshName, importMessage, importPacks, MAX_FILE_BYTES, readFile, type AnyPack } from './packfile';
 
 const SAMPLES: Record<PackGameId, AnyPack> = {
   forehead: { id: 'our-trip', name: 'Our Trip', emoji: '🚗', blurb: 'Summer 2026', words: ['Road Trip', 'Gas Station', 'Taylor Swift'] },
@@ -13,7 +13,6 @@ const SAMPLES: Record<PackGameId, AnyPack> = {
   ] },
   quick: { id: 'kitchen', name: 'Kitchen', blurb: 'Food', prompts: ['things in a fridge', 'songs by Taylor Swift'] },
   snark: { id: 'boats', name: 'Boats', blurb: 'At sea', prompts: ['A terrible name for a boat', 'The worst thing to hear from your pilot'] },
-  song: { id: 'pop', name: 'Pop', blurb: 'Hits', songs: [{ title: 'Levitating', artist: 'Dua Lipa', apple: 1550000000, youtube: 'TUVcZfQe-Kw', start: 12 }] },
   taboo: { id: 'food', name: 'Food', blurb: 'Eat', cards: [{ word: 'Pizza', banned: ['Cheese', 'Slice', 'Pepperoni', 'Italian', 'Delivery'] }] },
 };
 
@@ -41,17 +40,6 @@ describe('pack files', () => {
     expect(readFile(file('snark', [broken]), 'snark')).toEqual({ packs: [full], skipped: 0, problems: [] });
   });
 
-  it('carries Earworm songs still needing an Apple match, so the other phone can rematch them', () => {
-    const old = { title: 'Old Song', artist: 'An Artist' };
-    const saved = { ...SAMPLES.song, songs: [...(SAMPLES.song as { songs: object[] }).songs, { ...old, youtube: 'abcdefghijk', start: 60 }], legacySongs: [{ title: 'Older', artist: 'Someone' }], custom: true } as AnyPack;
-    const want = { ...SAMPLES.song, legacySongs: [{ title: 'Older', artist: 'Someone' }, old] };
-    expect(readFile(exportFile('song', [saved]), 'song')).toEqual({ packs: [want], skipped: 0, problems: [] });
-    // A file written before they were kept apart, and a pack of nothing but such songs.
-    expect(readFile(file('song', [saved]), 'song')).toEqual({ packs: [want], skipped: 0, problems: [] });
-    const onlyOld = { id: 'old', name: 'Old', blurb: '', songs: [{ ...old, youtube: 'abcdefghijk' }] };
-    expect(readFile(file('song', [onlyOld]), 'song')).toEqual({ packs: [{ id: 'old', name: 'Old', blurb: '', songs: [], legacySongs: [old] }], skipped: 0, problems: [] });
-  });
-
   it('names the file after the game and the pack', () => {
     expect(fileName('forehead', 'our-trip')).toBe('heads-down-our-trip.jerkbox.txt');
     expect(fileName('quiz')).toBe('big-board-my-packs.jerkbox.txt');
@@ -59,6 +47,15 @@ describe('pack files', () => {
 
   it('sends a file of another game to that game', () => {
     expect(readFile(exportFile('dial', [SAMPLES.dial]), 'forehead')).toEqual({ error: 'This file is a Spectrum pack; open Spectrum to import it.' });
+  });
+
+  it('names a game no longer in the app, even in a file too big to read', () => {
+    const gone = { error: 'Earworm is no longer in Jerk Box.' };
+    const old = JSON.stringify({ jerkBox: 1, game: 'song', packs: [{ id: 'pop', name: 'Pop', blurb: '', songs: [] }] }, null, 2);
+    expect(readFile(old, 'forehead')).toEqual(gone);
+    const clips = JSON.stringify({ jerkBox: 1, game: 'song', packs: [], clips: { x: 'a'.repeat(MAX_FILE_BYTES) } });
+    expect(readFile(clips, 'quiz')).toEqual(gone);
+    expect(readFile(file('dial', [{ big: 'a'.repeat(MAX_FILE_BYTES) }]), 'dial')).toEqual({ error: 'That file is too big to be a pack file.' });
   });
 
   it('refuses anything that is not a pack file', () => {

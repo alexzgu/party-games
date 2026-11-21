@@ -4,11 +4,11 @@
 // checks every item with that game's own rules (the ones its pack editor or paste route uses),
 // drops the items that fail with a count, and saves each pack as the player's own under an id
 // nothing on the phone uses yet, so an import never overwrites a pack.
-import { APP, gameName, GAMES, type PackGameId } from '../app.config';
+import { APP, gameName, GAMES, RETIRED_GAMES, type PackGameId } from '../app.config';
 import {
-  customDecks, customGibberish, customQuick, customQuiz, customSnark, customSongs, customSpectra, customTaboo, slugify, splitSongs,
-  type GibberishCard, type LegacySong, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkFinal, type SnarkPack, type Song,
-  type SongPack, type Spectrum, type SpectrumPack, type TabooCard, type TabooPack, type WordDeck,
+  customDecks, customGibberish, customQuick, customQuiz, customSnark, customSpectra, customTaboo, slugify,
+  type GibberishCard, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkFinal, type SnarkPack,
+  type Spectrum, type SpectrumPack, type TabooCard, type TabooPack, type WordDeck,
 } from './content';
 import { MAX_ITEM_CHARS, MAX_WORDS_PER_ITEM } from '../games/forehead/words';
 import { parsePair } from '../games/dial/generate';
@@ -18,8 +18,6 @@ import { MAX_CATEGORIES, MAX_LEVELS, sizeProblem, tidyBoard } from '../games/qui
 import { cleanPrompt, promptError } from '../games/quick/parse';
 import { promptProblem } from '../games/snark/prompts';
 import { ANSWER_MAX, LINE_MAX } from '../games/snark/logic';
-import { checkSong } from '../games/song/edit';
-import { songKey, YOUTUBE_ID } from '../games/song/logic';
 import { cardId as tabooId, cardProblems, tidy as tidyTaboo } from '../games/taboo/cards';
 
 export const FORMAT = 1;
@@ -28,15 +26,15 @@ export const MAX_FILE_BYTES = 1_000_000;
 export const MAX_PACKS = 100;
 export const MAX_ITEMS = 1000;
 
-export type AnyPack = WordDeck | SpectrumPack | GibberishPack | QuizBoard | QuickPack | SnarkPack | SongPack | TabooPack;
-type Field = 'words' | 'cards' | 'categories' | 'prompts' | 'songs';
+export type AnyPack = WordDeck | SpectrumPack | GibberishPack | QuizBoard | QuickPack | SnarkPack | TabooPack;
+type Field = 'words' | 'cards' | 'categories' | 'prompts';
 
 const FIELD: Record<PackGameId, Field> = {
-  forehead: 'words', dial: 'cards', gibberish: 'cards', quiz: 'categories', quick: 'prompts', snark: 'prompts', song: 'songs', taboo: 'cards',
+  forehead: 'words', dial: 'cards', gibberish: 'cards', quiz: 'categories', quick: 'prompts', snark: 'prompts', taboo: 'cards',
 };
 /** What the items are called on screen, plural. */
 const UNIT: Record<PackGameId, string> = {
-  forehead: 'words', dial: 'cards', gibberish: 'cards', quiz: 'clues', quick: 'prompts', snark: 'prompts', song: 'songs', taboo: 'cards',
+  forehead: 'words', dial: 'cards', gibberish: 'cards', quiz: 'clues', quick: 'prompts', snark: 'prompts', taboo: 'cards',
 };
 
 const NOT_A_PACK_FILE = `This isn't a ${APP.name} pack file.`;
@@ -45,17 +43,15 @@ const NOT_A_PACK_FILE = `This isn't a ${APP.name} pack file.`;
 
 /**
  * The pack as it goes in a file: id, name, emoji (Heads Down. only), blurb and items (Snark Tank:
- * stock answers and finals too, when it has them; Earworm: the songs that can play, and apart from
- * them, as `legacySongs`, the YouTube-era songs that still need an Apple Music match).
+ * stock answers and finals too, when it has them).
  */
 function plain(game: PackGameId, p: AnyPack): Record<string, unknown> {
   const field = FIELD[game];
   const { safety, finals } = game === 'snark' ? (p as SnarkPack) : {};
-  const { songs, legacySongs } = game === 'song' ? splitSongs(p as SongPack) : { songs: null, legacySongs: [] };
   return {
     id: p.id, name: p.name, ...(game === 'forehead' ? { emoji: (p as WordDeck).emoji } : {}), blurb: p.blurb,
-    [field]: songs ?? (p as unknown as Record<Field, unknown>)[field],
-    ...(safety ? { safety } : {}), ...(finals ? { finals } : {}), ...(legacySongs.length ? { legacySongs } : {}),
+    [field]: (p as unknown as Record<Field, unknown>)[field],
+    ...(safety ? { safety } : {}), ...(finals ? { finals } : {}),
   };
 }
 
@@ -148,36 +144,6 @@ function snarkExtras(raw: Record<string, unknown>, prompts: string[]): Partial<S
   return { ...(stock ? { safety: stock } : {}), ...(finals.length ? { finals } : {}) };
 }
 
-/** What a reader may know beyond the packs: the songs (by songKey) whose clips came in the same file. */
-export interface ReadOptions { clips?: ReadonlySet<string> }
-
-function song(x: unknown, kept: Song[], opts: ReadOptions): Song | null {
-  if (!isObj(x) || typeof x.title !== 'string' || typeof x.artist !== 'string') return null;
-  const start = typeof x.start === 'number' && Number.isFinite(x.start) && x.start >= 0 ? x.start : null;
-  const youtube = typeof x.youtube === 'string' ? x.youtube : '';
-  const draft = { title: x.title, artist: x.artist, youtube, start };
-  if (typeof x.apple === 'number' && Number.isSafeInteger(x.apple) && x.apple > 0) {
-    return checkSong(draft, { title: x.title, artist: x.artist, apple: x.apple }, kept).song;
-  }
-  // The Apple Music track is what the room hears; without one, only a clip in the same file can play it.
-  if (x.clipOnly !== true || !YOUTUBE_ID.test(youtube) || !opts.clips?.has(songKey({ youtube }))) return null;
-  return checkSong(draft, { title: x.title, artist: x.artist, youtube, clipOnly: true }, kept).song;
-}
-
-/** A song from before Apple Music tracks (no `apple`, not clip-only): kept to be rematched, not played. */
-const isLegacy = (x: unknown): boolean => isObj(x) && x.apple === undefined && x.clipOnly !== true;
-
-function legacySong(x: unknown): LegacySong | null {
-  if (!isObj(x)) return null;
-  const title = text(x.title);
-  const artist = text(x.artist);
-  return title && artist ? { title, artist } : null;
-}
-
-/** An Earworm pack's songs still needing an Apple Music match: its `legacySongs`, and any such song among its songs (older files). */
-const legacySongs = (raw: Record<string, unknown>, songs: unknown[]): LegacySong[] =>
-  keep([...(Array.isArray(raw.legacySongs) ? raw.legacySongs : []), ...songs.filter(isLegacy)], legacySong, (s) => `${s.title}|${s.artist}`.toLowerCase()).items;
-
 function taboo(x: unknown): TabooCard | null {
   if (!isObj(x) || typeof x.word !== 'string' || !Array.isArray(x.banned) || !x.banned.every((b) => typeof b === 'string')) return null;
   const card = tidyTaboo({ word: x.word, banned: x.banned as string[] });
@@ -210,7 +176,7 @@ function board(raw: unknown[]): Kept<QuizCategory> & { clues: number } {
   return { items, skipped, clues };
 }
 
-function items(game: PackGameId, raw: unknown[], opts: ReadOptions): Kept<unknown> & { usable: number } {
+function items(game: PackGameId, raw: unknown[]): Kept<unknown> & { usable: number } {
   const done = <T>(k: Kept<T>) => ({ ...k, usable: k.items.length });
   switch (game) {
     case 'forehead': return done(keep(raw, word, (w) => w.toLowerCase()));
@@ -218,7 +184,6 @@ function items(game: PackGameId, raw: unknown[], opts: ReadOptions): Kept<unknow
     case 'gibberish': return done(keep(raw, gibberish));
     case 'quick': return done(keep(raw, quick));
     case 'snark': return done(keep(raw, snark, (q) => q.toLowerCase()));
-    case 'song': return done(keep(raw, (x, kept: Song[]) => song(x, kept, opts)));
     case 'taboo': return done(keep(raw, taboo, tabooId));
     case 'quiz': { const b = board(raw); return { items: b.items, skipped: b.skipped, usable: b.clues }; }
   }
@@ -226,15 +191,13 @@ function items(game: PackGameId, raw: unknown[], opts: ReadOptions): Kept<unknow
 
 type ReadPack = { pack: AnyPack; skipped: number } | { problem: string };
 
-function readPack(game: PackGameId, raw: unknown, opts: ReadOptions): ReadPack {
+function readPack(game: PackGameId, raw: unknown): ReadPack {
   if (!isObj(raw)) return { problem: 'One pack in the file is damaged.' };
   const name = text(raw.name).slice(0, 40) || 'My pack';
   const all = raw[FIELD[game]];
   if (!Array.isArray(all)) return { problem: `“${name}” has no ${UNIT[game]} in it.` };
-  const legacy = game === 'song' ? legacySongs(raw, all) : [];
-  const list = game === 'song' ? all.filter((x) => !isLegacy(x)) : all;
-  const got = items(game, list, opts);
-  if (!got.usable && got.skipped && !legacy.length) return { problem: `None of the ${UNIT[game]} in “${name}” could be used.` };
+  const got = items(game, all);
+  if (!got.usable && got.skipped) return { problem: `None of the ${UNIT[game]} in “${name}” could be used.` };
   const base = { id: slugify(text(raw.id) || name), name, blurb: text(raw.blurb).slice(0, 80) };
   if (game === 'quiz') {
     const b = { ...base, categories: got.items as QuizCategory[] };
@@ -243,8 +206,7 @@ function readPack(game: PackGameId, raw: unknown, opts: ReadOptions): ReadPack {
   }
   const emoji = text(raw.emoji);
   const extra = game === 'forehead' ? { emoji: emoji && emoji.length <= 16 ? emoji : '🃏' }
-    : game === 'snark' ? snarkExtras(raw, got.items as string[])
-    : legacy.length ? { legacySongs: legacy } : {};
+    : game === 'snark' ? snarkExtras(raw, got.items as string[]) : {};
   return { pack: { ...base, ...extra, [FIELD[game]]: got.items } as unknown as AnyPack, skipped: got.skipped };
 }
 
@@ -252,32 +214,47 @@ export interface ReadResult { packs: AnyPack[]; /** Items dropped across all pac
 
 /** A pack file's packs for `game`, or a plain-words reason it cannot be imported. */
 export function readFile(content: string, game: PackGameId): ReadResult | { error: string } {
-  if (content.length > MAX_FILE_BYTES) return { error: TOO_BIG };
+  if (content.length > MAX_FILE_BYTES) return { error: tooBigMessage(content.slice(0, HEAD_BYTES)) };
   const data = parseFile(content);
   return data === null ? { error: NOT_A_PACK_FILE } : readData(data, game);
 }
 
-export const TOO_BIG = 'That file is too big to be a pack file.';
+const TOO_BIG = 'That file is too big to be a pack file.';
+const retiredMessage = (name: string): string => `${name} is no longer in ${APP.name}.`;
+
+/** How much of a file's start `tooBigMessage` needs. */
+export const HEAD_BYTES = 200;
+
+/**
+ * Why a file over the size limit is refused, from its first bytes: by name when it is a pack
+ * file of a game no longer in the app (an Earworm clip pack ran to 40 MB), else as too big.
+ */
+export function tooBigMessage(head: string): string {
+  const id = /^\s*\{\s*"jerkBox"\s*:\s*\d+\s*,\s*"game"\s*:\s*"([a-z]+)"/.exec(head)?.[1];
+  return id && RETIRED_GAMES[id] ? retiredMessage(RETIRED_GAMES[id]) : TOO_BIG;
+}
 
 /** The file's JSON, or null when it is not JSON at all. */
-export function parseFile(content: string): unknown {
+function parseFile(content: string): unknown {
   try { return JSON.parse(content); } catch { return null; }
 }
 
 /** The packs for `game` in a parsed pack file, or a plain-words reason it cannot be imported. */
-export function readData(data: unknown, game: PackGameId, opts: ReadOptions = {}): ReadResult | { error: string } {
+function readData(data: unknown, game: PackGameId): ReadResult | { error: string } {
   if (!isObj(data) || typeof data.jerkBox !== 'number' || typeof data.game !== 'string' || !Array.isArray(data.packs)) return { error: NOT_A_PACK_FILE };
   if (data.jerkBox > FORMAT) return { error: `This pack file is from a newer ${APP.name}. Go back to the main menu, wait a moment for the update, then try again.` };
   if (data.game !== game) {
     const other = GAMES.find((g) => g.id === data.game);
-    return { error: other ? `This file is a ${other.name} pack; open ${other.name} to import it.` : NOT_A_PACK_FILE };
+    const retired = RETIRED_GAMES[data.game];
+    return { error: other ? `This file is a ${other.name} pack; open ${other.name} to import it.`
+      : retired ? retiredMessage(retired) : NOT_A_PACK_FILE };
   }
   if (!data.packs.length) return { error: 'This file has no packs in it.' };
   const packs: AnyPack[] = [];
   const problems: string[] = [];
   let skipped = 0;
   for (const raw of data.packs.slice(0, MAX_PACKS)) {
-    const r = readPack(game, raw, opts);
+    const r = readPack(game, raw);
     if ('problem' in r) problems.push(r.problem);
     else { packs.push(r.pack); skipped += r.skipped; }
   }
@@ -291,7 +268,7 @@ export function readData(data: unknown, game: PackGameId, opts: ReadOptions = {}
 interface PackStore { saved(): AnyPack[]; put(p: AnyPack): void; isBuiltin(id: string): boolean; names(): string[] }
 const STORES: Record<PackGameId, PackStore> = {
   forehead: customDecks, dial: customSpectra, gibberish: customGibberish, quiz: customQuiz,
-  quick: customQuick, snark: customSnark, song: customSongs, taboo: customTaboo,
+  quick: customQuick, snark: customSnark, taboo: customTaboo,
 } as Record<PackGameId, PackStore>;
 
 /** Every pack saved on this phone for a game: the player's own and their edits of built-ins. */

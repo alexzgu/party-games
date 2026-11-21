@@ -125,24 +125,23 @@ emoji for Heads Down., blurb, items) without `custom` and `added`; named
 can share it; import also takes `.json`). "Export pack" sits in every pack editor (built-ins
 included); "Import packs" and "Export my packs" (every pack made or edited on this phone; hidden
 when there are none) sit under every pack list: Heads Down.'s "Packs" screen (Edit on setup),
-Spectrum and Don't Say It setup under "Make a pack", the pack tiles of Inn Co Hear Ant, Brain
-Freeze and Earworm setup, Big Board's pack list, and Snark Tank's game settings. Export uses the
+Spectrum and Don't Say It setup under "Make a pack", the pack tiles of Inn Co Hear Ant and Brain
+Freeze setup, Big Board's pack list, and Snark Tank's game settings. Export uses the
 share sheet when the browser can share the file, else a download. Import reads a file of at most
-1 MB (an Earworm clip pack: 40 MB) and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
+1 MB and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
 pack editor's or the paste route's; Big Board: 1–8 categories × 1–10 clues, cut and padded like a
 pasted board); drops what fails and says how many; leaves out a pack with nothing usable; and
 saves each pack as the player's own, ticked on its own in place of the packs ticked before (Big Board: picked), under a fresh id (`-2`, `-3`, …)
 when a built-in or a pack on the phone already has its id, so nothing is overwritten, and a fresh
 name ("Movies (2)") when one already has its name. A pack just made is likewise played on its own. A file of
-another game says which game to open; anything else says it isn't a pack file. An Earworm pack's
-songs from the YouTube version that still need an Apple Music match travel apart, as
-`"legacySongs": [{"title", "artist"}]`, and come back as such (so "Rematch saved songs" offers
-them on the other phone); a file that has them among its `songs`, with no Apple track, is read
-the same way.
+another game says which game to open; one of a game taken out of the app (`RETIRED_GAMES` in
+`src/app.config.ts`) says so by name, even when it is too big to read ("Earworm is no longer in
+Jerk Box."); anything else says it isn't a pack file.
 
 ## Shared behaviour
 
 - **Home** shows every game in `GAMES` (name, emoji, player count), History and Settings. No blurbs.
+  Any other address, such as one of a game taken out of the app (`#/song`), shows Home.
 - **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours), Heads Down. (scored-word feedback,
   "Calibrate tilt" with the calibration note under it, "Check tilt" with its notes under it),
   The wizard, Cards (reset card history). The wizard never mentions invite links. Without a key
@@ -163,7 +162,8 @@ the same way.
   with their points. Pack and rule changes apply to the next game, and setup says so.
 - **History** (`#/history`): one entry per Heads Down. round (rewritten if a word is fixed
   afterwards) and per finished Spectrum or Inn Co Hear Ant game: title, scores, packs and
-  details. Filter by game, open, delete one, or clear all. Stored on the phone only.
+  details. Filter by game, open, delete one, or clear all. Stored on the phone only; entries of a
+  game taken out of the app are left out.
 - **Search and sort** (`ListTools`): every pack list and every pack's contents has a search
   toggle (matches names, blurbs and the items inside; a pack found only through an item shows
   `has "…"`) and a sort toggle (Suggested, Newest, Oldest, A–Z). Each list remembers its toggles
@@ -428,138 +428,6 @@ few seconds to name three things that fit it out loud; the room judges.
 - **Content**: `src/content/quick/*.json`, `{"prompts": ["things you'd find in a fridge", …]}`
   stored without the "Name 3" lead-in. Built-ins: Classic (200), Pop Culture (120), After Dark (80).
 
-## Game 8 — Earworm (`song`)
-
-Name-that-tune. One device (a phone, or a laptop on the TV) plays a short clip of a song; players
-shout the title; the host taps who got it first. The clips are Apple Music's 30-second song
-previews (iTunes Search API: no key, open to any site); packs (`src/content/song/*.json`) hold
-only title, artist, Apple track id and, optionally, a clip start and a YouTube video id for the
-reveal. Nothing plays hidden: there is no video while guessing. It is the only game that needs
-internet; without it the ready screen says so ("No internet" or "Can't reach Apple Music") with
-Try again. Only a connection problem waits there (offline, a download with no answer, or Apple's
-lookup failing); a song whose preview Apple refuses (403, 404), will not decode, or cannot play
-because the browser has no Web Audio is skipped like one with no preview ("That song wouldn't
-play, so here's another."). Songs from a clip pack (below) play without it.
-
-- **Clip packs** (`scripts/clip-songs.mjs` on the owner's laptop; `clipfile.ts`, `clips.ts`): a
-  pack file that also carries a 12-second clip of each song, cut with yt-dlp and ffmpeg from the
-  song's YouTube video (its `youtube`, else the best of a search: the artist's own channel,
-  "- Topic" or VEVO, about the Apple track's length, never live, cover, remix, karaoke or sped up;
-  the next result is tried when Apple's preview is not in the first). The clip starts on the
-  moment the game would play from the preview: Apple's preview is found in the full recording
-  (mono 1 kHz samples, normalised cross-correlation by FFT, `align.ts`; sure at 0.4, or at 0.2
-  when 2.5 times every other offset), plus the pack's `start` or the game's own pick; about 30% in
-  when it is not found; `--at "Title=1:23"` (or a `clipAt` field in the input) sets it by hand.
-  AAC 128 kbps stereo in .m4a, no tags, 0.03 s fade in, 0.5 s fade out. The file is
-  `{"jerkBox": 1, "game": "song", "packs": [the pack], "clips": {"<song key>": {"youtube", "at",
-  "seconds", "type": "audio/mp4", "data": base64}}}` (song key: the Apple track id, or
-  `yt:<video id>` for a song Apple lacks, marked `"clipOnly": true` and kept only when its clip is
-  in the file). It holds copies of recordings, so it goes to `~/Data/party_games/clips/`, never
-  into the repo, the site or anywhere public (`.gitignore` refuses `*.clips.jerkbox.txt`).
-  "Import packs" on Earworm setup takes it (up to 40 MB, 300 clips of up to 1 MB and 30 s, each
-  an MP4): the pack is saved as the player's own like any pack file and its clips go into
-  IndexedDB (`jerkbox-clips`, per pack and song key, no titles), with a request that the browser
-  keep them; the message says how many were saved. A song with a clip plays from it (decoded
-  once, clip from 0, same 2 / 5 / 10 s and 10-second reveal) with no Apple lookup or preview;
-  one without plays Apple's preview as before; one whose clip will not decode falls back to the
-  preview. A clip-only song is dealt only on a phone that has its clip. Offline, with clips among
-  the chosen packs, only those songs are dealt ("No internet, so only the songs saved on this
-  phone play."). The pack editor shows "N clips on this phone · 5.6 MB", marks songs that play
-  from a clip, and deleting the pack deletes its clips. Built-in packs never carry clips: the
-  content gate still requires an Apple track for every built-in song.
-
-- **Setup**: players (2+, remembered), packs (multi-select; pencil opens the pack editor; "New
-  pack" makes an empty own pack, named "My songs" or "My songs 2"… apart from the phone's other
-  packs, ticked, and opens "Add songs"; one left empty, unrenamed and with no review waiting is
-  removed when setup opens again), points to win (default 10, 3–30). With a game in progress,
-  "Resume game" carries it on with the setup's players: a name already playing keeps its score,
-  a new name where an unmatched player sat is that player renamed (score kept), other new names
-  start at 0, and removed players leave (songs they named stay in History under their name).
-  Pack and points-to-win changes apply to the next game, and setup says so.
-- **Start**: every song in the chosen packs is looked up in batched calls (`lookup` takes 50 ids a
-  call; answers are kept on the phone for a week); songs Apple has no preview for are left out.
-  Each song's preview is downloaded and decoded just before it is needed (the next one during
-  the reveal), so Play answers at once and the clip starts on the exact second. Songs are dealt
-  from per-pack bags (what a phone has heard is remembered across games) and never twice in a
-  game; once every playable song has been used (rematches carry on the same list), the one used
-  longest ago comes back, never the song on screen unless it is the only one left.
-- **Round**: ready screen ("Song N", one big Play button) → Play plays the 2-second clip → listen
-  screen: a record spins while the clip plays, with a ring for its progress; "Again" replays,
-  "Longer" replays from the start at 5 s then 10 s. Naming it is worth 3 / 2 / 1 points at
-  2 / 5 / 10 s. Tap the player who got it, or "Nobody got it" (both ignore taps in the first
-  0.4 s, the tail of the Play tap); a smaller "Skip this song" link swaps in another with no penalty and goes back to
-  the ready screen, so nobody is ever asked about, or shown, a song the room has not heard.
-  Keys on a laptop: Space again, L longer, 1–9 award, 0 nobody. If the browser will not start
-  sound, the record says "Tap to start the sound".
-- **Clip start** (`pick.ts`): a pack's `start` (seconds into the preview) wins; otherwise the game
-  picks the moment itself and remembers it per track: loudness every 50 ms and onset strength,
-  Apple's fade-in and fade-out (first and last 1.5 s) ignored, the start in 1.5–20 s that best
-  begins the loudest sustained stretch (mean loudness of the next 5 s, plus a bonus for starting
-  just after a clear rise or hit), moved back up to 0.3 s to the quietest moment so it opens in a
-  breath, not mid-word. The 10-second clip always ends inside the preview.
-- **Reveal**: who scored (+points), title and artist big, album art, the song playing on from the
-  clip's start for 10 s ("Stop the music" / "Hear it again"), and "Listen on Apple Music" (opens
-  the song's Apple Music page in a new tab). A song with a YouTube id shows the video instead of
-  the big art, uncovered, at least 200×200, with YouTube's own controls; starting it stops the
-  preview. "Wrong name? Undo" returns to the same clip. Nothing names a song before its reveal:
-  no screen before it renders the title, artist, art or video; the clips play through Web Audio
-  (no media element, so the lock screen, notification shade and car displays get no song
-  details); the page title stays the app's; the YouTube player is created only on the reveal.
-  The YouTube player (reveal and playlist reading, `youtube.ts`) is always a plain cross-origin
-  `youtube-nocookie.com/embed` iframe driven by postMessage, answering only messages from that
-  frame on that origin; no YouTube script is ever added to the app's page, so YouTube's code
-  never runs where the phone's settings (an invite key, the wizard pass) are stored. The frame
-  is sandboxed (scripts, its own origin, presentation and pop-ups only, never top navigation,
-  so it cannot move the app's page); only the watched video gets media permissions. It counts
-  as answered only on the player's `onReady` or `initialDelivery`. If the player is not ready
-  within 15 s, or reports an error before or after it is ready, the reveal shows a "Watch the
-  video on YouTube" link.
-  Then the scoreboard → "Next song" → ready. First to the target wins (win screen, confetti, rematch). History gets one entry per
-  finished game, `finished: false` when a game with something scored is thrown away; songs
-  whose preview would not play are listed in its details.
-- **Pack editor**: every song with its art; tap one to change its title and artist, the clip
-  start (the preview's loudness drawn as bars: tap to place the start, at most 19.5 s, ▶ 2 / 5 /
-  10 s to hear it, "Auto" to let the game pick again) and an optional YouTube link for the
-  reveal. "+ Add songs" opens the adding screen. A pack with songs from the YouTube version
-  says they need a match; "Rematch saved songs" on Add songs puts them in the list, and each
-  leaves the pack's to-match list once it is added or turns out to be in the pack already.
-- **Add songs** (one screen per pack; nothing is saved until "Add N songs"): Paste (one per line,
-  any mix of YouTube links in every form, Apple Music song links, Spotify song links
-  (`open.spotify.com/track/…`, with or without `/intl-xx/` and `?si=…`, or `spotify:track:…`),
-  "Title - Artist" or "Artist - Title", numbered or bulleted lists, tables from a chat), Playlist (a YouTube playlist link: an
-  off-screen embedded player reads up to 200 video ids and is never played; a playlist YouTube
-  will not list (private, deleted or empty: the player reports an error, or no videos within
-  15 s) becomes a line saying "That YouTube playlist can't be
-  read: it may be private or empty", pasting it again retries, and the list goes on; the player
-  never answering within 15 s, or being offline, pauses the list), or 🧙 Ask the
-  wizard (a theme, a count and "How hard Fizzwick tries"; "Fizzwick is conjuring … songs" while
-  "Title | Artist" lines stream in through `streamLines`; without the wizard the screen shows
-  the magic-words box and how to ask any chatbot app and paste the answer). Every line goes through the
-  matcher (`match.ts`): a YouTube link's title comes from oEmbed and is cleaned (official video,
-  lyrics, HD, remastered, featured artists, VEVO and "- Topic" channels), then searched on Apple;
-  results are ranked by title and artist likeness, preferring the original studio recording over
-  live, demo, karaoke, remix and cover versions; when no result is clearly right, the artist's own
-  catalogue is searched too. A Spotify song link's title comes from Spotify's public oEmbed (no
-  key or login; never the Spotify Web API or SDK, whose terms rule out games), three calls at a
-  time, each given up after 8 s. It gives no artist, so the line is the title with artist "N/A",
-  searched on Apple by title alone and always marked "Check this match" with the other results to
-  pick from; a kept song takes the artist of the Apple track picked. Spotify not answering stays on
-  that line (pasting it again retries); being offline pauses the list. A Spotify playlist, album or
-  artist link gets one line saying it can't be read and to paste the songs' links instead; a
-  spotify.link short link one saying to open it and copy the long link (a web page may not read
-  where it redirects). Results stream into a review list ("Looked up 12 of 40 · 10 found", about how
-  long is left; Back with ticked songs not yet added asks to add them first): art, ▶ preview, keep or drop, "Check this match" on doubtful ones, "Wrong match?
-  Pick another" listing the other results, and songs already in the pack, or kept on another
-  line, marked "Already in this pack" (the mark is worked out again whenever a line is kept,
-  dropped or re-picked: unticking one line frees its repeat to be ticked, and picking another song
-  for a kept line passes its old song to the first line set aside as its repeat). The YouTube id a
-  line came from is kept for the reveal. Apple allows about 20 calls a minute, so calls go one by
-  one through a queue that keeps under it. The review list survives a reload.
-- State saved after every step; a reload resumes on the same screen (the clip waits for a tap).
-  A game saved by the YouTube version cannot carry on: setup says so once and its scores go to
-  History as ended early. `npm run check:songs` asks Apple whether every built-in track still
-  has a preview, and YouTube whether every reveal video may still be embedded.
-
 ## Hosting
 
 Static build (`npm run build` → `dist/`), base path `./` so it runs from any folder or host.
@@ -689,7 +557,7 @@ bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 5,0
 each) and reassembled before it is read; incomplete parts are dropped after 30 s. (PeerJS errors
 and drops the link on a JSON message of 16,300 bytes or more.)
 
-## Game 9 — Word Salad (`salad`)
+## Game 8 — Word Salad (`salad`)
 
 2–8 players join a host screen by code or QR using the shared room link. Two rounds, with
 one turn per player in seat order. The host chooses built-in packs in Settings.
@@ -726,7 +594,7 @@ one turn per player in seat order. The host chooses built-in packs in Settings.
   `lobby`, `pick`, `prepare`, `present`, `reveal`, `unsolved`, `scores`, `over` and
   `paused`. The phone also has `join`, `late`, `wait`, `comparison` and `guess` views.
 
-## Game 10 — Doodle Brawl (`brawl`)
+## Game 9 — Doodle Brawl (`brawl`)
 
 Rules of Champ'd Up, our titles and art. 3–8 players draw on their own phones; a host screen
 stages the bouts. Two rounds. No spectator seats; late joiners vote.
