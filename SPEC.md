@@ -754,10 +754,11 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   settings or a pack and come back without dropping anyone; only End game / Close the room ends it.
 - **Robustness**: a phone keeps an id and name in localStorage and rejoins as the same player
   with its score after a lock, reload or Wi-Fi change; half-typed answers survive a reload;
-  answers and votes sent while offline are resent. A host reload reopens the same room (same
+  answers and votes sent while offline are resent, never into the next game after Play again
+  (messages and drafts carry which of the room's games they are for). A host reload reopens the same room (same
   peer id) and phones reconnect by themselves; a timer that ran out meanwhile gets 12 s back. A
   name already in use by an online phone is refused; the same name from a phone that lost its
-  storage takes over the offline seat. Late joiners watch until the next round (they may vote).
+  storage takes over the offline seat once the host says yes (see Shared room link). Late joiners watch until the next round (they may vote).
   A player who drops keeps their seat; unanswered prompts become "(no answer)". A kicked phone
   cannot rejoin that room. A phone that cannot find its host for about two minutes stops trying.
 - **Flow**: Snark Tank → "Host on this screen" or "Join a game". Lobby: big code, QR code of
@@ -849,7 +850,8 @@ ending the game or closing the room) and leaving or cancelling on a phone return
 first screen the way they came (`back()`), and that screen's Back returns to the main menu.
 "Leave room" on a phone (any time, after a confirm) tells the host (`{t: 'leave'}`) before the
 link closes: the player is out like a removed one (no more turns or prompts, nobody waits for
-them) but may rejoin with the same code and keeps their score; a removed player may not. A
+them) but may rejoin with the same code and keeps their score; a removed player may not, not even
+after Play again. A
 refusal or the end of the room is shown on the join screen even on a phone that came by QR code.
 The join screen's name box starts with the phone's username, cut to that game's name limit (Snark
 Tank 14, Word Salad 18, Doodle Brawl, Sketchy and Bad Hand 20 characters); after a refused join (a name already taken,
@@ -860,6 +862,41 @@ bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 5,0
 each) and reassembled before it is read; incomplete parts are dropped after 30 s. (PeerJS errors
 and drops the link on a JSON message of 16,300 bytes or more.)
 
+**Seat keys** (`seats.ts`; nobody can take another player's seat). Each seat has a secret key its
+phone made for that room; the player id and the name never prove anything. The room has a random
+id of its own (not its code) that lasts through a host reload, a code change and Play again, and
+ends when the room closes. A phone's `hello` says it can do keys (`keys: 1`); the game's join rules
+then say which seat it would get, and until the steps below are done the phone is sent nothing
+about the game, replaces nobody and changes nothing.
+
+- A seat new to the game: the host sends `{t: 'enrol', room}`, the phone makes a new key, stores it
+  and sends `{t: 'key', key}`, and the host records it before the welcome. A phone never answers
+  `enrol` with a key it already had.
+- A seat with a key: the host sends `{t: 'prove', room, nonce}` (a new random number each time) and
+  the phone answers `{t: 'proof', mac}`, an HMAC-SHA256 of both under its key; the key itself is
+  never sent again. The right proof replaces the seat's old connection at once, even one that still
+  looks online, so sleep, reload, Wi-Fi and broker changes need no tap. A wrong or empty proof is
+  refused while the seat is online; while it is offline the host is asked.
+- The host is asked on the host screen: "Move Sam's seat to this phone?" (Yes / No). The phone shows
+  that it is waiting. Yes makes the phone enrol a new key and the old one stops working. The
+  question ends when the phone disconnects, the seat's own phone returns with its key, the host
+  says no, or a minute passes. One question per seat, eight in all; a phone that slept and asks
+  again takes its own question over, and a Yes waits up to a minute for it to come back. The 10 s
+  limit on joining stands still while the host is asked.
+- A seat without a key (a game saved without its seat record, or a seat held by a page that cannot
+  do keys) is never open: the host is asked once, and the phone enrols.
+- A page that cannot do keys (its `hello` has no `keys`) needs the host's Yes on every connection,
+  for a new seat ("Let Sam join from this phone?") or one without a key, which stays without one;
+  for a seat with a key it is told "Reload this page to rejoin."
+- A connection is given one seat, once. Leaving, removal and replacement stop the host listening to
+  it at once. Removal drops the key and blocks the player id for the life of the room, across
+  reload and Play again; a player who left keeps their key and may return.
+- The host keeps the room's id, the keys and who was removed in one record per game
+  (`<game>:seats`), outside the game, cleared when the room closes. A phone keeps its keys by room
+  id (`<game>:keys`, the last 20; in memory when storage is blocked). Keys are in no URL, log,
+  view, History entry or player row. Proofs need `crypto.subtle` (https, or localhost): a page on
+  plain http sends an empty one.
+
 **Bots** (for playtesting: a whole game on one host screen, with one real phone or none). "🤖 Add
 bot" in each game's host lobby seats a bot: a pretend phone the host screen runs in a local seat
 of the link (`seat`). It says hello through the game's own join rules (same name limits and
@@ -868,7 +905,7 @@ start), counts as online, is sent exactly the view a phone of its own would be s
 sending a phone's messages, which the host checks like any phone's. Its name carries the mark
 ("🤖 Ada", "🤖 Bix", new in the room), so the robot shows wherever players are listed, on the
 host and on phones; a phone's name may not start with 🤖 (it is dropped; a name of only 🤖 is
-refused), nor may a phone take a bot's seat. The lobby's ✕ removes a bot like a player. A bot's
+refused), nor may a phone take a bot's seat. Bots have no keys. The lobby's ✕ removes a bot like a player. A bot's
 id starts with `bot-`, which the link lets no phone use: when a reloaded host reopens the room,
 every player in it with such an id is seated again as a bot with the same id and name (one the
 room refuses is removed from the game; a name alone never makes a seat a bot); closing the room drops them. Bots do not count when an empty
