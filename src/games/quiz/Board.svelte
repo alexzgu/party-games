@@ -151,13 +151,16 @@
   .dot { position: absolute; right: 12%; bottom: 14%; width: max(7px, 9cqmin); height: max(7px, 9cqmin); border-radius: 50%; opacity: 0.85; }
 
   .cleared {
-    position: absolute; inset: 0; display: grid; place-items: center; border-radius: var(--r-lg);
+    position: absolute; inset: 0; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; border-radius: var(--r-lg);
     background: color-mix(in srgb, var(--bg) 72%, transparent);
   }
   .done {
-    display: flex; flex-direction: column; align-items: center; gap: var(--s-3); width: min(92%, 460px);
+    display: flex; flex-direction: column; align-items: center; gap: var(--s-3); width: min(92%, 460px); max-height: 100%; overflow-y: auto;
     padding: var(--s-5); border-radius: var(--r-lg); background: var(--bg-raised); border: 2px solid var(--accent); box-shadow: var(--shadow);
   }
+  /* The last thing scored can be one long word: it wraps inside the card, which scrolls on a low screen. */
+  .done > :global(*) { flex: none; }
+  .done :global(.btn) { max-width: 100%; padding-block: var(--s-1); overflow-wrap: anywhere; }
   .big { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.8rem, 5vmin, 3rem); color: var(--accent); }
   .note { margin-bottom: var(--s-4); }
   /* Beats the top bar's own .tool display rule. */
