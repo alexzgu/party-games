@@ -73,7 +73,7 @@ function phone(link: HostLink, pid: string, name: string, key?: string, modern =
     if (m.t === 'enrol') { p.key = newKey(); near.send({ t: 'key', key: p.key }); }
     if (m.t === 'prove') {
       const { here, there } = ends(near.peerConnection);
-      void proofOf(p.key, { room: m.room as string, nonce: m.nonce as string, host: there, phone: here }).then((mac) => near.send({ t: 'proof', mac }));
+      void proofOf(p.key, { room: m.room as string, nonce: m.nonce as string, host: there, phone: here }).then((mac) => near.send({ t: 'proof', macs: mac ? [newKey(), mac] : [] }));
     }
   });
   (link as unknown as { accept(c: unknown): void }).accept(far);
@@ -116,16 +116,22 @@ it('decides each step from the proof, the key on record and the host', () => {
   for (const [claim, held, step] of cases) expect(nextStep(claim, held), JSON.stringify([claim, held])).toEqual(step as Step);
 });
 
-it('a phone keeps one key per room, in memory when storage is blocked, and proves it without showing it', async () => {
+it('a phone keeps a room\'s two newest keys, in memory when storage is blocked, and proves one without showing it', async () => {
   const [a, b] = [newKey(), newKey()];
   const ring = new KeyRing('snark');
   const key = ring.make(a);
-  expect(new KeyRing('snark').get(a)).toBe(key);
-  expect(ring.get(b)).toBeUndefined();
-  expect(ring.make(a)).not.toBe(key);
+  expect(new KeyRing('snark').get(a)).toEqual([key]);
+  expect(ring.get(b)).toEqual([]);
+  // An enrolment that came to nothing, or a fake host's: the key before still works.
+  const newer = ring.make(a);
+  expect(newer).not.toBe(key);
+  for (let i = 0; i < 30; i++) ring.make(newKey());
+  expect(ring.get(a)).toEqual([key, newer]);
+  expect(ring.get(a)).not.toContain(ring.make(a));
+  expect(ring.get(a)).toHaveLength(2);
   vi.stubGlobal('localStorage', undefined);
   const held = ring.make(b);
-  expect(ring.get(b)).toBe(held);
+  expect(ring.get(b)).toEqual([held]);
   const c = { room: b, nonce: a, host: 'h', phone: 'p' };
   expect(await proofOf(held, c)).toMatch(/^[0-9a-f]{64}$/);
   expect(await proofOf(undefined, c)).toBe('');
@@ -380,7 +386,16 @@ describe('the app\'s phone', () => {
     await vi.advanceTimersByTimeAsync(1000);
     await until(() => p.link === 'live');
     expect(p.link).toBe('live');
-    expect(sent).toMatchObject([{ t: 'hello', keys: 1 }, { t: 'proof', mac: expect.stringMatching(/^[0-9a-f]{64}$/) }]);
+    expect(sent).toMatchObject([{ t: 'hello', keys: 1 }, { t: 'proof', macs: [expect.stringMatching(/^[0-9a-f]{64}$/)] }]);
+    // The other end asks for keys: it gets one, and the seat's own key still proves.
+    const room = (host.link as unknown as { book: { room: string } }).book.room;
+    for (let i = 0; i < 3; i++) (p as unknown as { receive(m: object): void }).receive({ t: 'enrol', room });
+    expect(sent.filter((m) => (m as { t: string }).t === 'key')).toHaveLength(1);
+    conn().close();
+    await vi.advanceTimersByTimeAsync(1000);
+    await until(() => p.link === 'live');
+    expect(p.link).toBe('live');
+    expect(host.link.asks).toEqual([]);
     close(host);
   });
 

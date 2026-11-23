@@ -871,12 +871,14 @@ about the game, replaces nobody and changes nothing.
 
 - A seat new to the game: the host sends `{t: 'enrol', room}`, the phone makes a new key, stores it
   and sends `{t: 'key', key}`, and the host records it before the welcome. A phone never answers
-  `enrol` with a key it already had.
+  `enrol` with a key it already had, and answers one per connection. It keeps the two newest keys of
+  a room, so an enrolment cut short, or asked for by a screen that only claims the code, leaves the
+  one before usable.
 - A seat with a key: the host sends `{t: 'prove', room, nonce}` (a new random number each time) and
-  the phone answers `{t: 'proof', mac}`, an HMAC-SHA256 under its key of both and of the two
+  the phone answers `{t: 'proof', macs}`, for each key it keeps an HMAC-SHA256 under it of both and of the two
   certificate fingerprints of the connection (host's, phone's; each side reads them from its own
   WebRTC descriptions, never from a message), so a proof passed along by a guest in between is
-  wrong; the key itself is never sent again. The right proof replaces the seat's old connection at once, even one that still
+  wrong; a key is never sent again. The right proof replaces the seat's old connection at once, even one that still
   looks online, so sleep, reload, Wi-Fi and broker changes need no tap. A wrong or empty proof is
   refused while the seat is online; while it is offline the host is asked.
 - The host is asked on the host screen: "Move Sam's seat to the phone showing 47?" (Yes / No). The
@@ -899,7 +901,7 @@ about the game, replaces nobody and changes nothing.
   reload and Play again; a player who left keeps their key and may return.
 - The host keeps the room's id, the keys and who was removed in one record per game
   (`<game>:seats`), outside the game, cleared when the room closes. A phone keeps its keys by room
-  id (`<game>:keys`, the last 20; in memory when storage is blocked). Keys are in no URL, log,
+  id (`<game>:keys`, the last 200; in memory when storage is blocked). Keys are in no URL, log,
   view, History entry or player row. Proofs need `crypto.subtle` (https, or localhost): a page on
   plain http sends an empty one.
 

@@ -38,25 +38,32 @@ const pairs = (x: unknown, ok: (p: Pair) => boolean): Pair[] =>
 
 // --- the phone's keys ---
 
-const RING_MAX = 20;
+const RING_MAX = 200;
+const KEYS_EACH = 2;
 
-/** A phone's keys in one game, by room id; kept in memory where storage is blocked. */
+/**
+ * A phone's keys in one game: the two newest of each room (an enrolment cut short, or asked for by
+ * a screen that only says it is the host, leaves the one before usable), oldest first. Kept in
+ * memory where storage is blocked.
+ */
 export class KeyRing {
-  private held = new Map<string, string>();
+  private held: Pair[] = [];
   constructor(private game: string) {}
 
-  get(room: string): string | undefined {
-    return this.held.get(room) ?? this.saved().find(([r]) => r === room)?.[1];
+  get(room: string): string[] {
+    return this.all().filter(([r]) => r === room).map(([, key]) => key);
   }
 
-  /** A new key for the room, replacing any it had. */
+  /** A new key for the room. */
   make(room: string): string {
     const key = newKey();
-    const all: Pair[] = [...this.saved().filter(([r]) => r !== room), [room, key]];
-    if (trySave(`${this.game}:keys`, all.slice(-RING_MAX))) this.held.delete(room);
-    else this.held.set(room, key);
+    const before = this.get(room).slice(1 - KEYS_EACH).map((k): Pair => [room, k]);
+    const all = [...this.all().filter(([r]) => r !== room), ...before, [room, key] as Pair].slice(-RING_MAX);
+    this.held = trySave(`${this.game}:keys`, all) ? [] : all;
     return key;
   }
+
+  private all(): Pair[] { return this.held.length ? this.held : this.saved(); }
 
   private saved(): Pair[] {
     return pairs(load<unknown>(`${this.game}:keys`, null), ([r, k]) => isKey(r) && isKey(k));
@@ -212,15 +219,15 @@ export class Desk<C> {
     this.advance(call);
   }
 
-  async proof(conn: C, mac: unknown): Promise<void> {
+  async proof(conn: C, macs: unknown): Promise<void> {
     const call = this.calls.get(conn);
-    if (call?.stage !== 'prove') return;
+    if (call?.stage !== 'prove' || !Array.isArray(macs) || macs.length > KEYS_EACH) return;
     call.stage = 'check';
     const key = this.book.key(call.seat);
     const { here, there } = this.hooks.ends(conn);
     const want = await proofOf(key, { room: this.book.room, nonce: call.nonce, host: here, phone: there });
     if (this.calls.get(conn) !== call) return; // gone meanwhile
-    call.proof = want !== '' && mac === want && this.book.key(call.seat) === key ? 'right' : 'wrong';
+    call.proof = want !== '' && macs.includes(want) && this.book.key(call.seat) === key ? 'right' : 'wrong';
     this.advance(call);
   }
 

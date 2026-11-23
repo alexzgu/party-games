@@ -293,14 +293,14 @@ export class HostLink {
   }
 
   private receive(conn: DataConnection, raw: unknown): void {
-    const msg = this.parts.get(conn)?.take(raw) as { t?: unknown; pid?: unknown; name?: unknown; keys?: unknown; mac?: unknown; key?: unknown } | null | undefined;
+    const msg = this.parts.get(conn)?.take(raw) as { t?: unknown; pid?: unknown; name?: unknown; keys?: unknown; macs?: unknown; key?: unknown } | null | undefined;
     if (!msg || typeof msg !== 'object') return;
     this.heard.set(conn, Date.now());
     if (msg.t === 'pong') return;
     const pid = this.pidOf.get(conn);
     if (msg.t === 'hello' || msg.t === 'proof' || msg.t === 'key') {
       if (pid || this.moving) return; // seated already; or moving to a new code, where the phone asks again
-      if (msg.t === 'proof') void this.desk.proof(conn, msg.mac);
+      if (msg.t === 'proof') void this.desk.proof(conn, msg.macs);
       else if (msg.t === 'key') this.desk.key(conn, msg.key);
       else if (str(msg.pid, 64) && str(msg.name, 200)) this.hello(conn, msg.pid, msg.name, msg.keys === 1);
       return;

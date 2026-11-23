@@ -64,6 +64,8 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   /** Reconnected: re-send the outbox once the host's fresh view has pruned it. */
   private replay = false;
   private keys: KeyRing;
+  /** This connection has been given a key: one each, whatever the other end asks. */
+  private enrolled = false;
 
   constructor(private game: string, private hooks: PhoneHooks<Out, V>) {
     this.keys = new KeyRing(game);
@@ -214,6 +216,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     const conn = this.peer.connect(hostPeerId(this.game, this.me.code), { reliable: true, serialization: 'json' });
     this.conn = conn;
     this.parts = new Assembler();
+    this.enrolled = false;
     const timeout = setTimeout(() => { if (this.conn === conn && !conn.open) this.lose(conn); }, DIAL_TIMEOUT);
     conn.on('open', () => {
       clearTimeout(timeout);
@@ -258,13 +261,20 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     if (this.link === 'live' && this.conn && Date.now() - this.heard > LINK_TIMEOUT) this.lose(this.conn);
   }
 
-  /** Shows the host that this phone has its seat's key, without sending the key. */
+  /** Shows the host that this phone has its seat's key, without sending it: one proof for each key it may be. */
   private async prove(room: unknown, nonce: unknown): Promise<void> {
     const conn = this.conn;
     if (!isKey(room) || !isKey(nonce)) return;
     const { here, there } = ends(conn?.peerConnection);
-    const mac = await proofOf(this.keys.get(room), { room, nonce, host: there, phone: here });
-    if (conn && this.conn === conn) this.write({ t: 'proof', mac });
+    const macs = await Promise.all(this.keys.get(room).map((key) => proofOf(key, { room, nonce, host: there, phone: here })));
+    if (conn && this.conn === conn) this.write({ t: 'proof', macs });
+  }
+
+  /** A new seat: makes its key and sends it, this once. */
+  private enrol(room: unknown): void {
+    if (this.enrolled || !isKey(room)) return;
+    this.enrolled = true;
+    this.write({ t: 'key', key: this.keys.make(room) });
   }
 
   private receive(msg: { t: string; pid?: string; v?: V; why?: string; room?: unknown; nonce?: unknown }): void {
@@ -272,7 +282,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     switch (msg.t) {
       case 'ping': this.write({ t: 'pong' }); break;
       case 'prove': void this.prove(msg.room, msg.nonce); break;
-      case 'enrol': if (isKey(msg.room)) this.write({ t: 'key', key: this.keys.make(msg.room) }); break;
+      case 'enrol': this.enrol(msg.room); break;
       case 'wait': this.trouble = msg.why ?? ''; break;
       case 'welcome':
         if (this.me && typeof msg.pid === 'string') this.setMe({ ...this.me, pid: msg.pid, joined: true });
