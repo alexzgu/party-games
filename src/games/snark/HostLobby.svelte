@@ -6,6 +6,7 @@
   import { MAX_PLAYERS, MIN_PLAYERS, canStart, present, type Game } from './logic';
   import { host, packNames } from './host.svelte';
   import AddBot from '../../components/room/AddBot.svelte';
+  import StartButton from '../../components/room/StartButton.svelte';
   import { route } from '../../lib/router.svelte';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
 
@@ -70,9 +71,9 @@
       <span class="sum">{summary}</span>
       <Button size="sm" variant="secondary" onclick={onsettings} tip="Pick packs, rounds, times and the kind of final">Settings</Button>
     </div>
-    <Button size="lg" disabled={!canStart(game)} onclick={onstart}>
+    <StartButton size="lg" {players} {online} disabled={!canStart(game)} {onstart}>
       {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${players.length} players`}
-    </Button>
+    </StartButton>
     <ConnectionLink onchange={onrebroker} />
   </section>
 </div>

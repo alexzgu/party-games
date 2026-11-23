@@ -24,6 +24,7 @@
   import HostStage from './HostStage.svelte';
   import Players from './Players.svelte';
   import AddBot from '../../components/room/AddBot.svelte';
+  import StartButton from '../../components/room/StartButton.svelte';
   import Rules from './Rules.svelte';
 
   const fixed = $derived(route.params.get('demo'));
@@ -114,9 +115,9 @@
           {/if}
           <p class="summary">{summary}</p>
           <div class="controls">
-            <Button disabled={fixed ? v.players.length < 3 : !game || !canStart(game)} onclick={() => { if (!fixed) host.start(); }}>
+            <StartButton players={v.players} online={fixed ? undefined : host.online} disabled={fixed ? v.players.length < 3 : !game || !canStart(game)} onstart={() => { if (!fixed) host.start(); }}>
               {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${v.players.length} players`}
-            </Button>
+            </StartButton>
             <Button variant="secondary" onclick={() => go('/sketch/settings')} tip="Pick the mode, packs, rounds and times">Settings</Button>
           </div>
           <ConnectionLink onchange={rebroker} />

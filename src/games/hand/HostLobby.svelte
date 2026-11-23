@@ -10,6 +10,7 @@
   import { DEFAULT_SETTINGS, MAX_PLAYERS, MIN_PLAYERS } from './logic';
   import Seats from './Seats.svelte';
   import AddBot from '../../components/room/AddBot.svelte';
+  import StartButton from '../../components/room/StartButton.svelte';
   import type { View } from './view';
 
   let { v, code, demo, brokerChanged, online, onkick, onrebroker }: {
@@ -45,9 +46,9 @@
       <span>{packLine} · {rules}</span>
       <Button size="sm" variant="secondary" onclick={() => go('/hand/settings')} tip="Pick packs, time to answer, points to win and house rules">Settings</Button>
     </div>
-    <Button size="lg" disabled={need > 0 || noCards} onclick={() => { if (!demo) host.start(); }}>
+    <StartButton size="lg" players={v.players} {online} disabled={need > 0 || noCards} onstart={() => { if (!demo) host.start(); }}>
       {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : noCards ? `${cards.problem}: pick packs in Settings` : `Start with ${v.players.length} players`}
-    </Button>
+    </StartButton>
     <ConnectionLink onchange={onrebroker} />
   </section>
 </main>

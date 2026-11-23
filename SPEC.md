@@ -620,7 +620,7 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
 - **Scores** are never stored: they are the sum of the log (tiles closed, hand fixes) plus wrong
   marks on the open tile. Undo drops the last log entry; an undone tile reopens on its answer
   with its wrong marks so the right team can be tapped.
-- **End**: every tile played → "See who won", or End with something scored → win screen
+- **End**: every tile played → "See who won" (or "Undo: <the last scoring>"), or End with something scored → win screen
   (confetti, tap to skip; standings with shared places for ties; from 9 teams compact rows, two
   columns on wide screens). History gets one entry at that moment (`finished: false` when ended
   early; more than 4 teams: the title gives the top score and the team count); End with nothing
@@ -868,6 +868,11 @@ host's one-view-per-phone sending. Each game supplies its own message reader, vi
 logic. The host's peer id is `jerkbox-<game>-<CODE>`. Leaving the host screen (its back arrow,
 ending the game or closing the room) and leaving or cancelling on a phone return to the game's
 first screen the way they came (`back()`), and that screen's Back returns to the main menu.
+On every host screen the button that closes the room says "Close room" in every phase and asks
+first ("Close the room?", with "The game ends." while one is being played); after a game "Back to
+lobby" keeps the room and its players for another. Start asks first while any player's phone is
+disconnected (`StartButton`: "2 phones are disconnected. Start anyway?", naming them), since those
+players are dealt in too.
 "Leave room" on a phone (any time, after a confirm) tells the host (`{t: 'leave'}`) before the
 link closes: the player is out like a removed one (no more turns or prompts, nobody waits for
 them) but may rejoin with the same code and keeps their score; a removed player may not. A
@@ -1069,8 +1074,8 @@ on their own phones through the shared room link; a host screen shows the room. 
   wrote", "Alex drew", "Jo thought it was"), the entry before it alongside, one per Next (host
   button, Space or →; ← goes back). Phones follow the same entry, so a group can play from
   phones alone; only the host turns pages. No scores. After the last entry of the last chain:
-  Back to lobby (same room and players; Start deals new chains) or Close room. History gets one entry on the host when the album opens: "Telephone · N chains",
-  with each chain's first and last line.
+  Back to lobby (same room and players; Start deals new chains) or Close room. History gets one
+  entry on the host when the album opens: "Telephone · N chains", with each chain's first and last line.
 
 ### Draw & guess
 

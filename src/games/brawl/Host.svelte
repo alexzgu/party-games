@@ -19,6 +19,7 @@
   import { active, canStart } from './logic';
   import Stage from './Stage.svelte';
   import AddBot from '../../components/room/AddBot.svelte';
+  import StartButton from '../../components/room/StartButton.svelte';
   import Rules from './Rules.svelte';
   import { phaseLabel } from './labels';
 
@@ -92,9 +93,9 @@
             <p role="status">{host.trouble} <Button size="sm" variant="secondary" onclick={() => (connection = true)} tip="See how phones connect, or use a backup server">Trouble connecting?</Button></p>
           {/if}
           <div class="controls">
-            <Button disabled={fixed ? v.players.length < 3 : !game || !canStart(game)} onclick={() => { if (!fixed) host.start(); }}>
+            <StartButton players={v.players} online={fixed ? undefined : host.online} disabled={fixed ? v.players.length < 3 : !game || !canStart(game)} onstart={() => { if (!fixed) host.start(); }}>
               {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${v.players.length} players`}
-            </Button>
+            </StartButton>
             <Button variant="secondary" onclick={() => go('/brawl/settings')} tip="Pick the packs and the drawing time">Settings</Button>
           </div>
           <ConnectionLink onchange={rebroker} />

@@ -7,6 +7,7 @@
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import type { PlayerView } from './view';
   import AddBot from '../../components/room/AddBot.svelte';
+  import StartButton from '../../components/room/StartButton.svelte';
   import { route } from '../../lib/router.svelte';
   import { MAX_PLAYERS } from './logic';
   import { host } from './host.svelte';
@@ -49,9 +50,9 @@
       <span>2 rounds · {packNames.join(', ')}</span>
       <Button size="sm" variant="secondary" onclick={onsettings} tip="Pick the packs and how long to wait for a dropped presenter">Settings</Button>
     </div>
-    <Button size="lg" disabled={connected < 2} onclick={onstart}>
+    <StartButton size="lg" players={seated} {online} disabled={connected < 2} {onstart}>
       {connected < 2 ? `Need ${2 - connected} more ${connected === 1 ? 'player' : 'players'}` : `Start with ${connected} players`}
-    </Button>
+    </StartButton>
     <ConnectionLink onchange={onrebroker} />
   </section>
 </div>
