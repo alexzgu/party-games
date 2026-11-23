@@ -3,9 +3,9 @@
   import { askText } from '../../lib/room/seats';
   import type { HostLink } from '../../lib/room/host-link.svelte';
 
-  // Host screen: a phone that cannot show it owns a seat waits for the host's Yes or No. The
-  // number is on that phone only, so the host can tell whose it is. One question at a time, over
-  // the game and its pause; the game goes on meanwhile.
+  // Host screen: a phone that cannot show it owns a seat waits for the host's Yes or No. Both
+  // screens work out the same number, so the host can tell whose phone it is. One question at a
+  // time, over the game and its pause; the game goes on meanwhile.
   let { link }: { link: HostLink } = $props();
   const ask = $derived(link.asks[0]);
 </script>
@@ -15,7 +15,7 @@
     <div class="ask pop-in" role="alertdialog" aria-label="A phone is waiting">
       <p>{askText(ask)}</p>
       <div class="answers">
-        <Button size="sm" onclick={() => link.answer(ask, true)} tip={ask.code === null ? 'Only if you know whose phone it is' : 'Only if you see that number on their phone'}>Yes</Button>
+        <Button size="sm" onclick={() => link.answer(ask, true)} tip={ask.code ? 'Only if you see that number on their phone' : 'Only if you know whose phone it is'}>Yes</Button>
         <Button size="sm" variant="secondary" onclick={() => link.answer(ask, false)}>No</Button>
       </div>
     </div>

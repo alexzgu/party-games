@@ -9,7 +9,7 @@ import { BROKER_TROUBLE, LINK_TIMEOUT, backoff, classify, makePeer } from './net
 import { currentBroker } from './broker';
 import { hostPeerId, newPid } from './code';
 import { Assembler, toWire } from './parts';
-import { KeyRing, ends, isKey, proofOf } from './seats';
+import { KeyRing, WAITING, ends, isKey, numberOf, proofOf } from './seats';
 import { load, remove, save } from '../storage';
 
 /** idle: not in a room. joining/live/lost: trying, connected, reconnecting. stopped: told to stop (see `stopped`). */
@@ -278,13 +278,22 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.write({ t: 'key', key: this.keys.make(room) });
   }
 
+  /** The host is being asked about this phone: shows so, with the number to compare on its screen. */
+  private async waiting(): Promise<void> {
+    const conn = this.conn;
+    this.trouble = WAITING;
+    const { here, there } = ends(conn?.peerConnection);
+    const number = await numberOf(there, here);
+    if (number && this.conn === conn && this.trouble === WAITING) this.trouble = `${WAITING} Your number is ${number}.`;
+  }
+
   private receive(msg: { t: string; pid?: string; v?: V; why?: string; room?: unknown; nonce?: unknown }): void {
     this.heard = Date.now();
     switch (msg.t) {
       case 'ping': this.write({ t: 'pong' }); break;
       case 'prove': void this.prove(msg.room, msg.nonce); break;
       case 'enrol': this.enrol(msg.room); break;
-      case 'wait': this.trouble = msg.why ?? ''; break;
+      case 'wait': void this.waiting(); break;
       case 'welcome':
         if (this.me && typeof msg.pid === 'string') this.setMe({ ...this.me, pid: msg.pid, joined: true });
         this.link = 'live';

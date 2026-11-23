@@ -32,6 +32,23 @@ export async function proofOf(key: string | undefined, c: Challenge): Promise<st
   } catch { return ''; }
 }
 
+/**
+ * The number a waiting phone and the host screen both show ("482 913"): each works it out from its
+ * own connection's ends and never sends it, so a guest passing messages along cannot pass it along.
+ * Null without fingerprints or crypto.subtle: no number to compare.
+ */
+export async function numberOf(host: string, phone: string): Promise<string | null> {
+  if (!host || !phone || !globalThis.crypto?.subtle) return null;
+  try {
+    const sum = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(['seat number', host, phone])));
+    const n = String(new DataView(sum).getUint32(0) % 1_000_000).padStart(6, '0');
+    return `${n.slice(0, 3)} ${n.slice(3)}`;
+  } catch { return null; }
+}
+
+/** What a waiting phone shows: its own words, whatever the host sends. */
+export const WAITING = 'Waiting for a Yes on the host screen.';
+
 type Pair = [string, string];
 const pairs = (x: unknown, ok: (p: Pair) => boolean): Pair[] =>
   Array.isArray(x) ? x.filter((p): p is Pair => Array.isArray(p) && p.length === 2 && ok(p as Pair)) : [];
@@ -129,7 +146,6 @@ const NO_ANSWER = 'The host did not answer. Try again.';
 const BUSY = 'Another phone is asking for that seat. Try again in a minute.';
 const CROWD = 'Too many phones are waiting for the host. Try again in a minute.';
 const CHANGED = 'The room changed while you waited. Join again.';
-const waitFor = (code: number | null) => `Waiting for a Yes on the host screen. Your number is ${code}.`;
 
 /** How long the host has to answer. */
 export const ASK_MS = 60_000;
@@ -169,11 +185,14 @@ export function nextStep(c: Claim, s: Held): Step {
 
 // --- the desk: phones that have said hello and have no seat yet ---
 
-/** A question on the host screen: may the phone showing `code` have that seat? A page that cannot do keys shows none (null). */
-export interface Ask { id: number; code: number | null; name: string; fresh: boolean }
+/**
+ * A question on the host screen: may the phone showing `code` have that seat? Null: that phone shows
+ * no number (an old page, or plain http). Undefined: still being worked out, not asked yet.
+ */
+export interface Ask { id: number; code: string | null | undefined; name: string; fresh: boolean }
 
 export const askText = ({ name, fresh, code }: Ask): string => {
-  const which = code === null ? 'a phone with an old page (it shows no number)' : `the phone showing ${code}`;
+  const which = code ? `the phone showing ${code}` : 'a phone that shows no number';
   return fresh ? `Let ${name} join from ${which}?` : `Move ${name}’s seat to ${which}?`;
 };
 
@@ -187,12 +206,6 @@ interface Call<C> extends Claim {
   stage: '' | 'prove' | 'check' | 'enrol';
   nonce: string;
   ask: Ask | null;
-}
-
-/** A random number from 10 to 99 that is not in `taken`. */
-function twoDigits(taken: (number | null)[]): number {
-  const n = 10 + (crypto.getRandomValues(new Uint32Array(1))[0] % 90);
-  return taken.includes(n) ? twoDigits(taken) : n;
 }
 
 const claimOf = (c: { pid: string; name: string; seat: string; modern: boolean }) => JSON.stringify([c.pid, c.name, c.seat, c.modern]);
@@ -327,16 +340,18 @@ export class Desk<C> {
     this.hooks.send(call.conn, { t: 'enrol', room: this.book.room });
   }
 
-  /** Puts the question to the host, with a number only this phone is shown. */
+  /** Puts the question to the host, with the number this phone shows, if it shows one. */
   private ask(call: Call<C>, seat: Seat): void {
     call.stage = '';
-    const open = this.all().flatMap((c) => (c.ask ? [c.ask.code] : []));
-    if (open.length >= ASKS_MAX) return this.refuse(call, CROWD);
-    const ask: Ask = { id: ++this.asked, code: call.modern ? twoDigits(open) : null, name: seat.name, fresh: seat.fresh };
+    if (this.all().filter((c) => c.ask).length >= ASKS_MAX) return this.refuse(call, CROWD);
+    const { here, there } = this.hooks.ends(call.conn);
+    const numbered = call.modern && !!here && !!there;
+    const ask: Ask = { id: ++this.asked, code: numbered ? undefined : null, name: seat.name, fresh: seat.fresh };
     call.ask = ask;
     setTimeout(() => this.expire(ask), ASK_MS);
-    this.hooks.send(call.conn, { t: 'wait', why: waitFor(ask.code) });
-    this.show();
+    this.hooks.send(call.conn, { t: 'wait' });
+    if (numbered) void numberOf(here, there).then((code) => { ask.code = code; this.show(); });
+    else this.show();
   }
 
   private expire(ask: Ask): void {
@@ -356,6 +371,6 @@ export class Desk<C> {
   }
 
   private show(): void {
-    this.hooks.asks(this.all().flatMap((c) => (c.ask ? [c.ask] : [])).sort((a, b) => a.id - b.id));
+    this.hooks.asks(this.all().flatMap((c) => (c.ask && c.ask.code !== undefined ? [c.ask] : [])).sort((a, b) => a.id - b.id));
   }
 }

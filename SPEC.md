@@ -885,9 +885,12 @@ about the game, replaces nobody and changes nothing.
   wrong; a key is never sent again. The right proof replaces the seat's old connection at once, even one that still
   looks online, so sleep, reload, Wi-Fi and broker changes need no tap. A wrong or empty proof is
   refused while the seat is online; while it is offline the host is asked.
-- The host is asked on the host screen: "Move Sam's seat to the phone showing 47?" (Yes / No). The
-  waiting phone shows that number ("Waiting for a Yes on the host screen. Your number is 47."), two
-  random digits no other waiting phone has. Yes makes the phone enrol a new key and the old one stops working. The
+- The host is asked on the host screen: "Move Sam's seat to the phone showing 482 913?" (Yes / No).
+  The waiting phone shows that number ("Waiting for a Yes on the host screen. Your number is 482
+  913."). Each screen works the six digits out itself, SHA-256 over the host's and the phone's
+  certificate fingerprints as in a proof; the host sends only `{t: 'wait'}`, the words on the phone
+  are its own, and the question appears once the host has the number. Without fingerprints or
+  `crypto.subtle` there is no number and the prompt says the phone shows none. Yes makes the phone enrol a new key and the old one stops working. The
   question ends when the phone disconnects, the seat's own phone returns with its key, the host
   says no, or a minute passes. A Yes is for the connection that asked, while it lasts; no question
   or Yes moves to another. One phone at a time may ask for or enrol a seat (eight questions in all):
@@ -898,8 +901,8 @@ about the game, replaces nobody and changes nothing.
   do keys) is never open: the host is asked once, and the phone enrols. While the phone in it was
   heard from in the last 5 s, another is closed without a word.
 - A page that cannot do keys (its `hello` has no `keys`) needs the host's Yes on every connection,
-  for a new seat or one without a key, which stays without one ("Let Sam join from a phone with an
-  old page (it shows no number)?", as it cannot show one); for a seat with a key it is told "Reload this page to rejoin."
+  for a new seat or one without a key, which stays without one ("Let Sam join from a phone that
+  shows no number?", as it cannot show one); for a seat with a key it is told "Reload this page to rejoin."
 - A connection is given one seat, once. Leaving, removal and replacement stop the host listening to
   it at once, and end every claim still pending on that seat; moving to a new code ends them all.
   Removal drops the key and blocks the player id for the life of the room, across

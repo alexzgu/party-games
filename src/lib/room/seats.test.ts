@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { KeyRing, askText, ends, newKey, nextStep, proofOf, type Claim, type Held, type Step } from './seats';
+import { KeyRing, askText, ends, newKey, nextStep, numberOf, proofOf, type Claim, type Held, type Step } from './seats';
 import type { HostLink } from './host-link.svelte';
 import type { PhoneLink, BaseView } from './phone-link.svelte';
 
@@ -251,7 +251,7 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
 
     const old = phone(host.link, 'p5', 'Old', undefined, false);
     expect(old.types()).toEqual(['wait']);
-    expect(askText(host.link.asks[0])).toBe('Let Old join from a phone with an old page (it shows no number)?');
+    expect(askText(host.link.asks[0])).toBe('Let Old join from a phone that shows no number?');
     host.link.answer(host.link.asks[0], true);
     expect(old.types()).toEqual(['wait', 'welcome', 'view']);
     const redial = phone(host.link, 'p5', 'Old', undefined, false);
@@ -361,14 +361,41 @@ describe('a question to the host', () => {
     close(host);
   });
 
-  it('shows its number on that phone, and its Yes is for that connection alone', async () => {
+  it('carries the number its phone works out, never sent; a guest in between leaves another on the phone', async () => {
+    const { host } = await room();
+    const numbered = async (near: Sdp, far: Sdp) => {
+      const p = phone(host.link, 'p9', 'Sam', undefined, true, { near, far });
+      await until(() => host.link.asks.length > 0);
+      const { here, there } = ends(near);
+      const [shown, asked] = [await numberOf(there, here), host.link.asks[0]];
+      expect(p.got.at(-1)).toEqual({ t: 'wait' });
+      p.conn.close();
+      return { shown, asked };
+    };
+    const far = (who: string) => ({ currentLocalDescription: sdp('HOST'), currentRemoteDescription: sdp(who) });
+    const near = (who: string) => ({ currentLocalDescription: sdp('SAM'), currentRemoteDescription: sdp(who) });
+    const straight = await numbered(near('HOST'), far('SAM'));
+    expect(straight.shown).toMatch(/^\d{3} \d{3}$/);
+    expect(askText(straight.asked)).toBe(`Move Sam’s seat to the phone showing ${straight.shown}?`);
+    const relayed = await numbered(near('GUEST'), far('GUEST'));
+    expect(relayed.asked.code).toMatch(/^\d{3} \d{3}$/);
+    expect(relayed.asked.code).not.toBe(relayed.shown);
+
+    // Without crypto.subtle neither screen has a number.
+    const early = phone(host.link, 'p9', 'Sam', undefined, true, { near: near('HOST'), far: far('SAM'), mute: true });
+    early.say({ t: 'proof', macs: [] });
+    vi.stubGlobal('crypto', { getRandomValues: (a: Uint8Array) => a });
+    await until(() => host.link.asks.length > 0);
+    expect(host.link.asks.map((a) => a.code)).toEqual([null]);
+    expect(await numberOf('HOST', 'SAM')).toBeNull();
+    close(host);
+  });
+
+  it('is for that connection alone, and so is its Yes', async () => {
     const { host } = await room();
     const first = await ask(host);
     const asked = host.link.asks[0];
-    expect(askText(asked)).toBe(`Move Sam’s seat to the phone showing ${asked.code}?`);
-    expect(first.got.at(-1)!.why).toBe(`Waiting for a Yes on the host screen. Your number is ${asked.code}.`);
-    expect(asked.code).toBeGreaterThanOrEqual(10);
-    expect(asked.code).toBeLessThan(100);
+    expect(askText(asked)).toBe('Move Sam’s seat to a phone that shows no number?'); // no certificates here
 
     // The same claim again: turned back while the first connection lives, a new question once it sleeps.
     const copy = await ask(host);
@@ -443,6 +470,27 @@ describe('the app\'s phone', () => {
     await until(() => p.link === 'live');
     expect(p.link).toBe('live');
     expect(host.link.asks).toEqual([]);
+    close(host);
+  });
+
+  it('waits with its own words and number, whatever the host sends', async () => {
+    const host = await load('snark');
+    const p = await join(host);
+    const { conn, receive } = p as unknown as { conn: End; receive(m: object): void };
+    const say = (m: object) => receive.call(p, m);
+    say({ t: 'wait', why: 'Your number is 111 111.' });
+    expect(p.trouble).toBe('Waiting for a Yes on the host screen.');
+    await until(() => p.trouble.includes('number'), 10);
+    expect(p.trouble).toBe('Waiting for a Yes on the host screen.'); // no certificates here
+
+    conn.peerConnection = { currentLocalDescription: sdp('SAM'), currentRemoteDescription: sdp('HOST') };
+    say({ t: 'wait', why: 'Your number is 111 111.' });
+    await until(() => p.trouble.includes('number'));
+    expect(p.trouble).toBe(`Waiting for a Yes on the host screen. Your number is ${await numberOf('sha-256 host', 'sha-256 sam')}.`);
+    say({ t: 'wait' });
+    say({ t: 'welcome', pid: 'p1' });
+    await until(() => !!p.trouble, 10);
+    expect(p.trouble).toBe('');
     close(host);
   });
 
