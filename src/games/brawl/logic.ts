@@ -67,6 +67,13 @@ export function leave(g: Game, pid: string): Game {
   return { ...g, kicked: [...g.kicked, pid], left: [...(g.left ?? []), pid] };
 }
 
+/** Play again: the same room and players; the removed stay out, whoever left may join anew. */
+export function rematch(g: Game, id: string): Game {
+  const gone = g.left ?? [];
+  return { ...newGame(id, g.code, g.settings), at: g.at + 1, kicked: g.kicked.filter((pid) => !gone.includes(pid)),
+    players: active(g).map((p) => ({ ...p, score: 0 })) };
+}
+
 function enter(g: Game, phase: Phase, now: number, seconds?: number): Game {
   return { ...g, phase, at: g.at + 1, deadline: seconds === undefined ? null : now + seconds * 1000, frozen: null };
 }

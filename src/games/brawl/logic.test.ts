@@ -122,6 +122,9 @@ describe('Doodle Brawl game', () => {
     expect(L.active((L.join(gone, 'c', 'C', seats()) as { game: L.Game }).game)).toHaveLength(3);
     expect(L.join(L.kick(gone, 'c'), 'c', 'C', seats()).error).toMatch(/removed/);
     const lobby = { ...L.newGame('room', 'BCDF', L.DEFAULT_SETTINGS), players };
+    const again = L.rematch(L.kick(gone, 'b'), 'next');
+    expect(L.join(again, 'b', 'B', seats()).error).toMatch(/removed/);
+    expect((L.join(again, 'c', 'C', seats()) as { game: L.Game }).game.players.map((p) => p.pid)).toEqual(['a', 'c']);
     expect(L.leave(lobby, 'c').players.map((p) => p.pid)).toEqual(['a', 'b']);
   });
 });

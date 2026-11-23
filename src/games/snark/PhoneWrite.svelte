@@ -9,7 +9,7 @@
   // One prompt at a time: type, Done, next. A sent answer leaves the screen at once (the host
   // confirms by dropping it from the list); half-typed answers survive a reload. "Give me one"
   // fills the box with the prompt's stock answer (the host halves its points if sent as is).
-  // `lines`: the final's three-line duel. Once done: who is still writing.
+  // `code`: the room and which of its games this is. `lines`: the final's three-line duel. Once done: who is still writing.
   let { code, round, tasks, total, final, lines = false, writers, onsend, onlines }: {
     code: string;
     round: number;

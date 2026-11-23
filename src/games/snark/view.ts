@@ -4,7 +4,7 @@
 // also sent what the host screen shows, so a group can play without a shared screen. The fields
 // that carry it are optional: a phone that is busy writing or voting never gets them, which
 // keeps those messages small.
-import { HOUSE, HOUSE_NAME, NO_ANSWER, authorsOf, currentItem, isFinalRound, isSafety, player, present, promptCount, tasksFor, timeLeft, timerLength, votableFinal, votersFor, type Duel, type Game, type Item, type Lines } from './logic';
+import { HOUSE, HOUSE_NAME, NO_ANSWER, authorsOf, currentItem, isFinalRound, isSafety, matchOf, player, present, promptCount, tasksFor, timeLeft, timerLength, votableFinal, votersFor, type Duel, type Game, type Item, type Lines } from './logic';
 import { leaders, place, standings } from './record';
 
 /** A player as the phones show them. */
@@ -51,6 +51,8 @@ export type Screen =
 
 export interface PlayerView {
   code: string;
+  /** Which game of this room it is (Play again starts the next); a phone's messages carry it back. */
+  match?: number;
   round: number;
   rounds: number;
   final: boolean;
@@ -70,6 +72,7 @@ export function playerView(g: Game, pid: string, now: number): PlayerView | null
   if (!p) return null;
   return {
     code: g.code,
+    match: matchOf(g),
     round: g.round,
     rounds: g.settings.rounds,
     final: g.round > 0 && isFinalRound(g),
