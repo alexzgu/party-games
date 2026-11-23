@@ -320,16 +320,15 @@ export class HostLink {
   private hello(conn: DataConnection, pid: string, raw: string, modern: boolean): void {
     const name = unmarked(raw);
     if (!name.trim() && raw.trim()) return this.refuse(conn, MARK_ONLY);
-    if (!goodPid(pid)) return this.refuse(conn, BAD_PID);
     if (pid.startsWith(BOT_PID)) return this.refuse(conn, BOT_SEAT); // a phone may not take a seat run here
     this.desk.hello(conn, pid, name, modern);
   }
 
   /** The seat the game gives a phone now, unless it is run here or its player was removed. */
   private resolve(pid: string, name: string): Seat | { error: string } {
-    const res = this.hooks.hello(pid, name, this.online);
+    const res = goodPid(pid) ? this.hooks.hello(pid, name, this.online) : { error: BAD_PID };
     if ('error' in res) return res;
-    if (!goodPid(res.pid)) return { error: BAD_PID }; // a row saved before ids were checked
+    if (!goodPid(res.pid)) return { error: BAD_PID }; // by name, a player saved before ids were checked
     if (this.locals.has(res.pid) || res.pid.startsWith(BOT_PID)) return { error: BOT_SEAT };
     return this.book.kicked(pid) || this.book.kicked(res.pid) ? { error: REMOVED } : res;
   }

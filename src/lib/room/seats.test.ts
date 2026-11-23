@@ -267,7 +267,7 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
 });
 
 it('turns away ids the games could not keep records by', async () => {
-  const host = await load('hand');
+  const host = await load('snark');
   for (const pid of ['', '__proto__', 'constructor', 'toString', 'a b', '~house', 'x'.repeat(65)]) {
     const p = phone(host.link, pid, 'Sam');
     expect(p.types().filter((t) => t !== 'reject'), pid).toEqual([]);
