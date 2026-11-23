@@ -7,7 +7,7 @@
   // tap and reaches the buttons inside; a drag never does, and never scrolls the page.
   // `pos` is the top-left corner in px, null for the default spot: with `dock`, the box sits in
   // the page's flow where the parent placed it (a place the page keeps free for it) until it is
-  // first dragged, and again after a double tap on a bare spot of it (not a button); without, it
+  // first dragged, and again after a double tap on a bare spot of it (not a button, or a `data-bare` one); without, it
   // floats at the bottom right.
   let { pos = $bindable(null), dock = false, label, children }: { pos?: Point | null; dock?: boolean; label: string; children: Snippet } = $props();
 
@@ -82,7 +82,7 @@
 
   /** A press that stayed put: the second bare tap of a double tap docks the box again. */
   function tapped(e: PointerEvent) {
-    const bareTap = e.type === 'pointerup' && e.target instanceof Element && !e.target.closest('button');
+    const bareTap = e.type === 'pointerup' && e.target instanceof Element && !e.target.closest('button:not([data-bare])');
     const next: Press = { at: { x: e.clientX, y: e.clientY }, time: e.timeStamp, bareTap };
     const double = dock && isDoubleTap(last, next);
     last = double ? null : next;
