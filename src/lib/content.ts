@@ -54,17 +54,24 @@ const builtinSpectra = ordered(Object.values(dialFiles).flatMap((f) => ('packs' 
 function customStore<T extends { id: string } & PackMeta>(key: string, builtin: T[], game: string) {
   const builtinIds = new Set(builtin.map((b) => b.id));
   // An own pack (custom: true) whose id a later built-in also uses stays the player's own,
-  // under a new id, so it is never mistaken for an edit and "restored" away. What the Community
-  // library knows of it goes with it (shareLog.svelte.ts), so a later share updates the same entry.
-  const stored = (): T[] => {
+  // under a new id, so it is never mistaken for an edit and "restored" away. Reading only shows it
+  // under that id, writing nothing (it happens while pages render); `settle` stores the move.
+  const clashes = (x: T) => !!x.custom && builtinIds.has(x.id);
+  const renamed = (x: T): T => (clashes(x) ? { ...x, id: 'my-' + x.id } : x);
+  const stored = (): T[] => load<T[]>(key, []).map(renamed);
+  // Runs as the app starts, before anything renders, and before each write. What the Community
+  // library knows of a moved pack goes with it (shareLog.svelte.ts), so a later share updates the
+  // same entry.
+  function settle(): T[] {
     const items = load<T[]>(key, []);
-    if (!items.some((x) => x.custom && builtinIds.has(x.id))) return items;
-    const moved = items.map((x) => (x.custom && builtinIds.has(x.id) ? { ...x, id: 'my-' + x.id } : x));
-    save(key, moved);
-    for (const x of items) if (x.custom && builtinIds.has(x.id)) moveShared(game, x.id, 'my-' + x.id);
+    const moved = items.map(renamed);
+    if (items.some(clashes)) save(key, moved);
+    for (const x of items) if (clashes(x)) moveShared(game, x.id, renamed(x).id);
     return moved;
-  };
+  }
+  settle();
   return {
+    settle,
     /** The player's own packs (not edits of built-ins). */
     all: (): T[] => stored().filter((x) => !builtinIds.has(x.id)),
     /** Everything saved, own packs and edits, for merging over the built-ins. */
@@ -75,7 +82,7 @@ function customStore<T extends { id: string } & PackMeta>(key: string, builtin: 
     /** Saves the packs on top, in this order, in one write: all of them, or (no room: false) none. */
     putAll(packs: readonly T[]): boolean {
       const ids = new Set(packs.map((p) => p.id));
-      const items = stored().filter((x) => !ids.has(x.id));
+      const items = settle().filter((x) => !ids.has(x.id));
       const saved = packs.map((item) => {
         const own = !builtinIds.has(item.id);
         const added = item.added ?? (own ? new Date().toISOString() : undefined);
@@ -90,13 +97,13 @@ function customStore<T extends { id: string } & PackMeta>(key: string, builtin: 
      * nothing else changed; false when there is no such pack (deleted meanwhile, or a built-in).
      */
     markShared(id: string): boolean {
-      const items = stored();
+      const items = settle();
       if (builtinIds.has(id) || !items.some((x) => x.id === id)) return false;
       save(key, items.map((x) => (x.id === id ? { ...x, shared: true } : x)));
       return true;
     },
     remove(id: string) {
-      save(key, stored().filter((x) => x.id !== id));
+      save(key, settle().filter((x) => x.id !== id));
     },
     isBuiltin: (id: string) => builtinIds.has(id),
     /** The built-in packs as shipped. */
@@ -109,7 +116,7 @@ function customStore<T extends { id: string } & PackMeta>(key: string, builtin: 
     original: (id: string): T | undefined => builtin.find((b) => b.id === id),
     /** Drops this phone's edit of a built-in pack. */
     restore(id: string) {
-      if (builtinIds.has(id)) save(key, stored().filter((x) => x.id !== id));
+      if (builtinIds.has(id)) save(key, settle().filter((x) => x.id !== id));
     },
   };
 }

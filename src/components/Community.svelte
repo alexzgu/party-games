@@ -73,12 +73,9 @@
     rereadMarks();
     packsSeen++;
   }
-  // Read once per change, not per row (untracked: reading the packs may first move one to a new id).
-  const mine = $derived.by(() => { void packsSeen; const g = game; return untrack(() => ownPackIds(g)); });
-  function owned(p: LibraryPack): boolean {
-    const here = mine; // first: a pack it moves is moved in the marks too
-    return localIdsOf(game, p.id).some((id) => here.has(id));
-  }
+  // Read once per change, not per row.
+  const mine = $derived.by(() => { void packsSeen; return ownPackIds(game); });
+  const owned = (p: LibraryPack): boolean => localIdsOf(game, p.id).some((id) => mine.has(id));
   const fitting = (packs: readonly LibraryPack[]) => packs.filter((p) => fits(filters, { owned: owned(p), skipped: isSkipped(game, p.id) }));
   const shown = $derived(fitting(listing?.packs ?? []));
 

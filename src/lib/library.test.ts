@@ -1,7 +1,7 @@
 // The Community library's phone side without a browser: a fake fetch and a fake pass only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { settings } from './settings.svelte';
-import { afterRun, canShare, failureWords, getPack, importLibraryPack, listPacks, onLibraryNote, packPrint, passedSoFar, publishPack, SHARE_FAILED, shareByHand, shareProblem, shareStatus, shareStatusNow, shareWizardPack, starPack, type LibraryFull } from './library';
+import { afterRun, canShare, failureWords, getPack, importLibraryPack, listPacks, namesIfImported, onLibraryNote, packPrint, passedSoFar, publishPack, SHARE_FAILED, shareByHand, shareProblem, shareStatus, shareStatusNow, shareWizardPack, starPack, type LibraryFull } from './library';
 import { localIdsOf } from './communityMarks.svelte';
 import { lastShared, noteShared } from './shareLog.svelte';
 import { WIZARD_SERVER } from './wizardServer';
@@ -431,11 +431,25 @@ describe('sharing a pack by hand', () => {
     const early = { ...own, id: 'movies', shared: true };
     localStorage.setItem('hr:custom:decks', JSON.stringify([early]));
     noteShared('forehead', 'movies', { print: packPrint('forehead', early), localId: 'movies' });
+    customDecks.settle(); // as the app does when it starts
     expect(customDecks.all().map((d) => d.id)).toEqual(['my-movies']);
     expect([lastShared('forehead', 'movies'), lastShared('forehead', 'my-movies')?.localId]).toEqual([undefined, 'movies']);
     expect(shareStatusNow('forehead', 'my-movies')).toBe('current');
     expect((await shareByHand('forehead', 'my-movies')).ok).toBe(true);
     expect(sentBody(fetch).localId).toBe('movies');
+  });
+
+  it("only reads while working out an import's names, even with a pack still to move off a new built-in's id", () => {
+    localStorage.setItem('hr:custom:decks', JSON.stringify([{ ...own, id: 'movies' }]));
+    noteShared('forehead', 'movies', { print: 'x', localId: 'movies' });
+    const write = vi.spyOn(localStorage, 'setItem');
+    const pack = { id: 'AAAAAAAAAAAA', game: 'forehead' as const, name: 'Hand made', blurb: '', count: 1, stars: 0, created: 0, updated: 0, items: ['Shrek'], extra: {} };
+    expect(namesIfImported('forehead', pack)).toEqual(['Hand made (2)']);
+    expect(customDecks.saved().map((d) => d.id)).toEqual(['my-movies']);
+    expect(write).not.toHaveBeenCalled();
+    expect(lastShared('forehead', 'movies')?.print).toBe('x');
+    customDecks.put({ ...own, id: 'my-new-deck' }); // a write settles it first
+    expect([customDecks.saved().map((d) => d.id), lastShared('forehead', 'my-movies')?.print]).toEqual([['my-new-deck', 'my-movies'], 'x']);
   });
 
   it('says what went wrong in plain words', async () => {
