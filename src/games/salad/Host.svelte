@@ -207,7 +207,7 @@
 {#if ending}
   <Popup title="Close the room?" onclose={() => (ending = false)}>
     <div class="actions">
-      <p>This closes room {game?.code} and sends everyone’s phone back to the start.{#if playing} The game ends.{/if}</p>
+      <p>This closes room {game?.code} and sends everyone’s phone back to the start.{playing ? ' The game ends.' : ''}</p>
       <Button variant="danger" onclick={end}>Close room</Button>
       <Button variant="secondary" onclick={() => (ending = false)}>{playing ? 'Keep playing' : 'Keep it open'}</Button>
     </div>

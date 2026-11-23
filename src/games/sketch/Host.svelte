@@ -143,7 +143,7 @@
 
 {#if confirm}
   <Popup title="Close the room?" onclose={() => (confirm = false)}>
-    <p>This closes room {code} and sends everyone’s phone back to the start.{#if playing} The game ends.{/if}</p>
+    <p>This closes room {code} and sends everyone’s phone back to the start.{playing ? ' The game ends.' : ''}</p>
     <Button variant="danger" onclick={() => { if (!fixed) host.close(); back('/sketch'); }}>Close room</Button>
     <Button variant="secondary" onclick={() => (confirm = false)}>{playing ? 'Keep playing' : 'Keep it open'}</Button>
   </Popup>

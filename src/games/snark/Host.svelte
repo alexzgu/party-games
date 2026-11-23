@@ -179,7 +179,7 @@
 {#if confirmEnd && game}
   <Popup title="Close the room?" onclose={() => (confirmEnd = false)}>
     <div class="confirm">
-      <p>This closes room {game.code} and sends everyone's phone back to the start.{#if playing} The game ends.{/if}{#if playing && anyScored(game)} The scores so far go in History as ended early.{/if}</p>
+      <p>This closes room {game.code} and sends everyone's phone back to the start.{playing ? ' The game ends.' : ''}{playing && anyScored(game) ? ' The scores so far go in History as ended early.' : ''}</p>
       <Button variant="danger" onclick={end}>Close room</Button>
       <Button variant="secondary" onclick={() => (confirmEnd = false)}>{playing ? 'Keep playing' : 'Keep it open'}</Button>
     </div>
