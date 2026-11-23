@@ -1,7 +1,7 @@
 import { PhoneLink } from '../../lib/room/phone-link.svelte';
 import { readArt, type ToHost } from './protocol';
 import type { View } from './view';
-import type { Drawing } from './ink';
+import type { Drawing } from '../../lib/ink';
 
 class Gallery {
   art = $state.raw<Record<string, Drawing>>({});

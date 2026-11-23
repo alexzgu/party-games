@@ -21,6 +21,8 @@
     snark: () => import('./games/snark/Game.svelte'),
     salad: () => import('./games/salad/Game.svelte'),
     brawl: () => import('./games/brawl/Game.svelte'),
+    sketch: () => import('./games/sketch/Game.svelte'),
+    hand: () => import('./games/hand/Game.svelte'),
   };
 
   const segment = $derived(route.path.split('/').filter(Boolean)[0] ?? '');

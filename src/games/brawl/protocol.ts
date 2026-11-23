@@ -1,4 +1,4 @@
-import { readDrawing, type Drawing } from './ink';
+import { readDrawing, type Drawing } from '../../lib/ink';
 import type { Side } from './logic';
 
 export type Action =

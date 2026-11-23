@@ -1,10 +1,10 @@
 <script lang="ts">
-  import InkCard from './InkCard.svelte';
+  import InkCard from '../../components/draw/InkCard.svelte';
   import Button from '../../components/Button.svelte';
   import Avatar from '../../components/room/Avatar.svelte';
   import Confetti from '../../components/room/Confetti.svelte';
   import { ordinal } from '../../lib/room/look';
-  import type { Drawing } from './ink';
+  import type { Drawing } from '../../lib/ink';
   import type { Side } from './logic';
   import type { View } from './view';
   let { v, art, online, onvote, ontag, onkick }: {

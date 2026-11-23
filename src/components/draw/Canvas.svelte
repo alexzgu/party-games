@@ -1,13 +1,17 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
-  import { SIZE, MAX_POINTS, PALETTE, WIDTHS, point, append, pointCount, paint, type Point, type Drawing } from './ink';
-  let { drawing, onchange, disabled = false }: {
-    drawing: Drawing; onchange: (d: Drawing) => void; disabled?: boolean;
+  import { SIZE, MAX_POINTS, PALETTE, WIDTHS, ERASER, point, append, pointCount, paint, type Point, type Drawing } from '../../lib/ink';
+  // The drawing pad shared by Doodle Brawl and Sketchy. `eraser` adds an Eraser tool (a thick
+  // paper-coloured pen) to the tools row; without it the toolbar is Doodle Brawl's.
+  let { drawing, onchange, disabled = false, eraser = false, label = 'Draw your fighter' }: {
+    drawing: Drawing; onchange: (d: Drawing) => void; disabled?: boolean; eraser?: boolean; label?: string;
   } = $props();
   let canvas = $state<HTMLCanvasElement>();
   let width = $state(0);
   let colour = $state(0);
   let pen = $state<number>(WIDTHS[0]);
+  let erasing = $state(false);
+  const ink = () => erasing ? { c: ERASER, w: WIDTHS[1] } : { c: colour, w: pen };
   let pointer: number | null = null;
   let last: Point = [0, 0];
   let overflow = '';
@@ -36,7 +40,7 @@
     last = locate(e);
     count = pointCount(drawing) + 1;
     cleared = null;
-    working = [...drawing, { c: colour, w: pen, p: [...last] }];
+    working = [...drawing, { ...ink(), p: [...last] }];
     onchange(working);
   }
 
@@ -52,7 +56,7 @@
       count++;
     }
     if (p.length === working.at(-1)!.p.length) return;
-    working = [...working.slice(0, -1), { c: colour, w: pen, p }];
+    working = [...working.slice(0, -1), { ...working.at(-1)!, p }];
     onchange(working);
   }
 
@@ -83,18 +87,19 @@
   onDestroy(unlock);
 </script>
 
-<canvas bind:this={canvas} bind:clientWidth={width} aria-label="Draw your fighter"
+<canvas bind:this={canvas} bind:clientWidth={width} aria-label={label}
   onpointerdown={start} onpointermove={move} onpointerup={end} onpointercancel={end} onlostpointercapture={end}></canvas>
 <div class="palette" aria-label="Ink colours">
   {#each PALETTE as name, i}
-    <button type="button" aria-label={name} aria-pressed={i === colour} style:--swatch="var(--ink-{name})"
-      onclick={() => (colour = i)}><span></span></button>
+    <button type="button" aria-label={name} aria-pressed={i === colour && !erasing} style:--swatch="var(--ink-{name})"
+      onclick={() => { colour = i; erasing = false; }}><span></span></button>
   {/each}
 </div>
-<div class="tools">
+<div class="tools" class:eraser>
   {#each WIDTHS as w, i}
-    <button type="button" aria-pressed={w === pen} onclick={() => (pen = w)}>{i === 0 ? 'Thin' : 'Thick'}</button>
+    <button type="button" aria-pressed={w === pen && !erasing} onclick={() => { pen = w; erasing = false; }}>{i === 0 ? 'Thin' : 'Thick'}</button>
   {/each}
+  {#if eraser}<button type="button" aria-pressed={erasing} onclick={() => (erasing = true)}>Eraser</button>{/if}
   <button type="button" disabled={disabled || (!drawing.length && !cleared)} onclick={undo}>{!drawing.length && cleared ? 'Undo clear' : 'Undo'}</button>
   <button type="button" disabled={disabled || !drawing.length} onclick={clear}>Clear</button>
 </div>
@@ -105,7 +110,9 @@
   canvas { width: min(100%, max(200px, 100dvh - var(--draw-chrome, 350px))); margin-inline: auto; aspect-ratio: 1; display: block; background: var(--ink-paper); border-radius: var(--r-md); touch-action: none; }
   .palette, .tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-1); }
   .palette { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .tools.eraser { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   button { min-height: 44px; min-width: 0; background: var(--surface); border-radius: var(--r-sm); border: 2px solid transparent; }
   button[aria-pressed='true'] { border-color: var(--accent); }
-  .palette span { display: block; width: var(--s-5); height: var(--s-5); margin: auto; border-radius: 50%; background: var(--swatch); border: 1px solid var(--ink-paper); }
+  .palette button { padding: 0; }
+  .palette span { display: block; width: min(var(--s-5), 100%); height: auto; aspect-ratio: 1; margin: auto; border-radius: 50%; background: var(--swatch); border: 1px solid var(--ink-paper); }
 </style>

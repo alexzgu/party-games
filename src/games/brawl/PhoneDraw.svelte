@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Canvas from './Canvas.svelte';
-  import InkCard from './InkCard.svelte';
+  import Canvas from '../../components/draw/Canvas.svelte';
+  import InkCard from '../../components/draw/InkCard.svelte';
   import Button from '../../components/Button.svelte';
   import { loadDraft, saveDraft } from './store';
-  import type { Drawing } from './ink';
+  import type { Drawing } from '../../lib/ink';
   import type { View } from './view';
   let { v, art, ondraw, expired, demo = false }: {
     v: View; art: Record<string, Drawing>; expired: boolean; ondraw: (name: string, d: Drawing) => void; demo?: boolean;

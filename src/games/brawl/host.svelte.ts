@@ -6,7 +6,7 @@ import * as L from './logic';
 import { artIds, view } from './view';
 import { readToHost } from './protocol';
 import * as store from './store';
-import type { Drawing } from './ink';
+import type { Drawing } from '../../lib/ink';
 
 function shuffle<T>(items: T[]): T[] {
   for (let i = items.length - 1; i > 0; i--) {

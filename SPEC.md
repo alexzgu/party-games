@@ -39,14 +39,14 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`.
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
 - `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList` and every pack editor), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
   items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
   `ExportPack` (Export), `Community` and `CommunityItems` (browse, preview, import and star
-  Community packs), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box).
+  Community packs), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown).
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
   to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
@@ -783,7 +783,7 @@ games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amo
 
 ## Shared room link (`src/lib/room/`)
 
-Every own-phones game (Snark Tank, Word Salad, Doodle Brawl) uses one link layer: room codes,
+Every own-phones game (Snark Tank, Word Salad, Doodle Brawl, Sketchy, Bad Hand) uses one link layer: room codes,
 broker choice (`?peer=`, stored under the existing `snark:broker` key so the setting carries
 over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone's outbox and the
 host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
@@ -795,7 +795,7 @@ link closes: the player is out like a removed one (no more turns or prompts, nob
 them) but may rejoin with the same code and keeps their score; a removed player may not. A
 refusal or the end of the room is shown on the join screen even on a phone that came by QR code.
 The join screen's name box starts with the phone's username, cut to that game's name limit (Snark
-Tank 14, Word Salad 18, Doodle Brawl 20 characters); after a refused join (a name already taken,
+Tank 14, Word Salad 18, Doodle Brawl, Sketchy and Bad Hand 20 characters); after a refused join (a name already taken,
 say) it keeps what was typed, so it can be fixed. A name typed there is for that room only (kept
 for rejoining it) and never changes the username.
 The browser's or Android's back gesture walks the same path as Back and never lands on a closed host screen. Any message whose JSON is 15,000 UTF-8
@@ -870,7 +870,7 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
   explain the +500 on the keep-or-tag screen. Players who join after a round's drawings are
   handed out are shown as drawing next round (or voting, in round 2).
 - Highest total wins; ties share first. End screen: standings and each bout winner's fighter.
-- **Drawing**: square canvas, 640 × 640 units, Pointer Events, scrolling locked; 8 colours,
+- **Drawing** (shared with Sketchy: `components/draw/`, `lib/ink`): square canvas, 640 × 640 units, Pointer Events, scrolling locked; 8 colours,
   thin/thick pen, undo, clear ("Undo clear" brings a cleared drawing back until the next stroke);
   on a short phone the canvas shrinks so the name and Submit stay on screen. Stored as strokes `{c: colour, w: width, p: [x0, y0, dx1, dy1, …]}`
   (whole units, points closer than 3 units dropped). The host keeps drawings in their own
@@ -892,3 +892,179 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
 - Demos at `#/brawl/host?demo=` and `#/brawl/join?demo=` with
   `lobby|lobby-empty|draw|challenge|title|vote|payout|tag|rematch|scores|over|paused`.
   Phone demos also have `join|wait|late|voted|watching|tagged`.
+
+## Game 10 — Sketchy (`sketch`)
+
+A drawing game in two modes, chosen in Settings: **Telephone** (rules of Gartic Phone's normal
+mode) and **Draw & guess** (rules of skribbl.io). Our words, ideas and look. 3–10 players draw
+on their own phones through the shared room link; a host screen shows the room. Amounts marked
+*house* are ours (the originals do not publish theirs, or we changed them for a party).
+
+- **Drawing**: the Doodle Brawl canvas, moved to shared code (`src/components/draw/`,
+  `src/lib/ink.ts`) so both games use one: same strokes, limits, colours, pens, undo, clear and
+  "Undo clear"; Sketchy adds an Eraser in the tools row (a thick paper-coloured pen: ink 8,
+  width 15, which Doodle Brawl's reader still refuses; Sketchy's host refuses ink 8 at any other
+  width). Drawings live in the host's art store
+  (key `sketch:art`), never in the game state; views carry drawing ids; a phone asks for one it
+  lacks (and for the next album entry's ahead of time); one the host no longer has comes back
+  blank rather than leaving the phone loading. A half-finished drawing and typed text
+  survive a phone reload (`sketch:draft`, one job at a time).
+- **Settings** (`#/sketch/settings`): Mode (Telephone, default; Draw & guess), packs (Classic,
+  After Dark; checkboxes, at least one), and per mode: Telephone, seconds to write 30/45/60
+  (default 45, *house*) and to draw 60/90/120/180 (default 90, *house*); Draw & guess, rounds
+  1/2/3/4 (default 2, *house*: the original's 3 runs long with ten players) and seconds to draw
+  60/80/120 (default 80, the original's). The mode and packs are on the page; the Rules row over
+  Done summarises the mode's timers and opens them, as in Snark Tank. Saved on the device at once;
+  a running game keeps its own, so they apply to the next game.
+
+### Telephone
+
+- **Steps**: as many steps as players at the start (the original's default). Step 1: everyone
+  writes a line (80 characters; "Give me an idea" fills the box with a random idea from the
+  room's packs, picked on the phone so it is instant, *house*). Then steps alternate: draw the
+  line you were handed, then describe the drawing you were handed (80 characters), and so on.
+  Done is ready once something is written or drawn and sends at once; each step ends when every
+  present player is done, or at its timer (at the buzzer the phone sends what it has; the host
+  waits one more second for it). Phones show how many present players (online, still in the room)
+  the step is waiting for.
+- **Who gets what**: each line starts a chain; at every step each player works on a different
+  chain and nobody touches a chain twice (a shuffled Latin square: rows and columns shuffled, so
+  who hands to whom changes from step to step; step 1 is each player's own chain). A player only
+  ever sees the one entry handed to them, never the chain's start; the host screen shows only
+  who is done.
+- **Gaps** (*house*): an empty or missing line becomes the next idea dealt from the packs (then
+  from a short built-in list; only when all are used does one come round again), marked in
+  the album "The game filled this in"; an empty drawing is handed on as blank and the next phone
+  says "Nothing was drawn. Make up what it might have been."
+- **Players**: no late joins into the chains once the game starts (they watch the album; they
+  play the next game). A player who drops keeps their place; their steps are filled as above
+  until they are back. A removed or departed player's remaining steps are filled the same way.
+- **Album**: when the last step ends, the host shows each chain in turn, entry by entry ("Sam
+  wrote", "Alex drew", "Jo thought it was"), the entry before it alongside, one per Next (host
+  button, Space or →; ← goes back). Phones follow the same entry, so a group can play from
+  phones alone; only the host turns pages. No scores. After the last entry of the last chain:
+  Play again (same room and players, back to the lobby, where Start deals new chains) or Close
+  the room. History gets one entry on the host when the album opens: "Telephone · N chains",
+  with each chain's first and last line.
+
+### Draw & guess
+
+- **Turns**: each round every player draws once, in seat order (late joiners guess at once and
+  draw from the next round; a drawer no longer in the room is passed over). The drawer picks one
+  of three words from the packs (15 s, *house*; else the first is taken); words never repeat
+  within a game (after the packs, a built-in list of 40 is dealt; only then could one repeat).
+- **Drawing live**: the drawer's phone sends what it added since its last send about every
+  100 ms, numbered; undo and clear (or a reconnect, or the host asking after a gap) send the
+  whole drawing. The host checks each against the drawing limits, shows it and relays it to every
+  other phone; a phone that misses a number asks for the whole drawing. A phone that (re)connects
+  mid-turn gets the drawing so far. The host saves live ink at most once a second (a reloaded
+  host gets the rest from the drawer) and drops a turn's drawing once its reveal ends.
+- **Guessing**: everyone else types guesses on their phone (40 characters, *house*); each guess
+  appears on the host and every phone with its author ("Jo: lamp"), except a correct one, shown
+  as "Jo got it!". Matching ignores case, accents, spaces, punctuation and a leading "the", "a"
+  or "an". A guess one letter off (a letter changed, added or dropped; words of four or more
+  letters) still shows in the list and tells only that guesser "Close!" until their next guess.
+  A player who has guessed it sees the word and guesses no more.
+- **Hint**: guessers see the word's shape (a box per letter, gaps between words, hyphens and
+  apostrophes shown, the letter count beside it); one letter is shown at half time and another
+  at three quarters (*house*: the original's default is two hints), never more than a third of
+  the letters (so none for a word under three letters).
+- **Turn end**: when every present guesser has it, at the timer, or when the drawer has been
+  offline for 10 s (also while picking: then the turn is passed over; the clock started while
+  picking keeps running once drawing starts). The host's End turn while
+  the drawer is picking passes the turn over too. The word is revealed with the drawing and each
+  player's points (5 s), then the next turn.
+- **Points** (*house*: the original's formula is not published): a correct guess earns
+  50 + 450 × the share of the draw time left, rounded to 5; the drawer earns the average over all
+  guessers (everyone who got it, even if they have since left, and the rest of the room online at
+  the turn's end) of what they earned this turn (non-guessers count as 0), rounded to 5. A drawer
+  removed or gone from the room by the turn's end earns nothing for it. Phones and the host show
+  "N of M got it" over the same guessers. A scoreboard shows between rounds (8 s, or Next); the
+  game ends after the last round with standings and confetti; ties share a place. Play again
+  returns to the lobby with scores reset. History gets one entry on the host.
+
+### Both modes
+
+- Lobby like Doodle Brawl's: big code, QR, players (✕ removes after a confirm), mode and rules
+  summary, Start (3+), Settings. Host controls: pause/resume (the timer stops on every phone;
+  Space; while paused the host ignores lines, drawings, live ink, picks and guesses, and a phone
+  whose entry crossed the pause shows its job again and resends it on resume), skip (End step /
+  End turn / Next; a second tap within 0.8 s is ignored), close the room. The host's back arrow leaves the room open; the start screen shows the room code and
+  Return. Host state is saved after every change; a reloaded host reopens the room (a timer that
+  ran out meanwhile gets 12 s). For 10 s after the host reopens or changes broker (*house*), while
+  phones reconnect, nobody counts as away and "every present player is done" or "every present
+  guesser has it" ends nothing; timers still run. A player who chose Leave room and rejoins after
+  Play again is seated in the new lobby. Reconnects, name rules and Leave room as in the shared room link;
+  name limit 20 characters.
+- **Content** (`src/content/sketch/*.json`): `{"id", "name", "blurb", "added"?, "words": [...],
+  "ideas": [...]}`; words (1–3 words, letters, spaces, hyphens and apostrophes, 24 characters)
+  for Draw & guess, ideas (3–10 words, capital first, no end punctuation) for Telephone; both new
+  across packs. Classic has 300 words and 100 ideas; After Dark 120 and 50. After the chosen
+  packs (or with none), the game deals from built-in spares (`src/games/sketch/spare.ts`).
+- Demos at `#/sketch/host?demo=` and `#/sketch/join?demo=` with
+  `lobby|write|draw|describe|album|pick|guess|reveal|scores|over|paused` (`paused`: a paused
+  Draw & guess turn); phone demos also have `join|wait|watching|guessed|drawing`.
+
+## Game 11 — Bad Hand (`hand`)
+
+Rules of Cards Against Humanity, our cards and look (never its card text, terms or black-and-white
+card style). 3–10 players hold a hand of answer cards on their own phones; a host screen shows the
+prompt and the answers. Amounts marked *house* are ours.
+
+- **Round**: a judge (seat order, starting with a random seat; the original's "most recently
+  pooped" is left to the room) reveals a prompt card on the host and every phone. Everyone else
+  plays one answer card from a hand of ten (two, in order, when the prompt has two blanks); a
+  prompt with no blank is a question answered by one card. Tapping a card selects it (numbered 1,
+  2 on a two-card prompt), the prompt shows filled in (mid-sentence an answer opening with an
+  article, possessive, number word or -ing word loses its capital; names keep theirs), and Play sends it. Answering ends when every
+  present player has played, or at the timer (default 60 s, *house*; 45/60/90/no limit); a player
+  who has not played by then plays nothing that round.
+- **Judging**: the answers, shuffled and anonymous, appear on the host screen and the judge's
+  phone as the prompt filled in. The judge taps one to show it large on the host and read it
+  aloud, then confirms the funniest with "Pick this one" (two taps, as Word Salad's pick). Its
+  player scores 1 point; the reveal shows every answer's author (8 s, or Next). Then everyone
+  draws back to ten and the next player judges.
+- **Missing judge** (*house*): if the judge is offline when judging starts or for 20 s during
+  it, everyone who played votes on their phone instead (one vote, never their own; 30 s); most
+  votes wins, ties drawn at random (no votes at all: a random answer). A judge who leaves or is
+  removed hands judging to the vote at once. After the host screen reloads or changes broker,
+  phones get 10 s to reconnect (*house*): until then nobody counts as offline, so neither "every
+  present player has played" nor a missing judge ends a phase early (a timer that ran out
+  meanwhile still gets its 12 s). No answers from players: the prompt is set aside at
+  once (no reveal) and the next player judges. One answer (the house's counted): it wins without
+  judging. The host can also skip judging to the vote ("Let the room vote").
+- **Winning**: first to the target (5/7/10 points, default 7, *house*: the original plays until
+  the room stops) wins, decided when the point is scored; only players still in the game count (a
+  player who left reaches the target by rejoining and scoring). Standings with confetti, the winning answer of every round, Play again
+  or Close the room. History gets one entry on the host.
+- **Options** (Settings, off by default; house rules printed with the original):
+  - *Trade a point*: a player with a point may, while others answer or during the reveal (never
+    judging or voting, and not once someone has reached the target), give it up to swap any of
+    their cards for new ones; a player who has played still sees their hand to trade.
+  - *House player*: each round, when answering ends, random cards from the deck (as many as the
+    prompt takes, never a blank one) join the answers as the house's. If it wins, the house
+    scores; if the house reaches the target, everyone loses. The standings show the house's points.
+  - *Blank cards*: one blank card per 19 answer cards is shuffled into the deck (about one card in
+    twenty dealt); playing it means typing your own answer (60 characters).
+- **Deck**: answer cards from the chosen packs, shuffled, never dealing a card someone holds;
+  played cards go to a discard pile that is shuffled back in when the deck runs out. Prompts are
+  dealt without repeats until they run out.
+- **Players**: late joiners are dealt ten and play from the next prompt. A player who drops keeps
+  their seat, hand and score; one who is removed or leaves returns their hand to the deck (and,
+  while answering, the card they played; an answer already shown stays in and can still score).
+  One who left may rejoin with their score and is dealt ten. A phone with nothing to do (the judge
+  while others answer, a late joiner) shows who has played, then its hand. If fewer than two
+  players are left when a round would start, the game ends.
+- Lobby, host controls, reconnects, name rules (20 characters) and the open-room Return as in
+  Sketchy. Skip reads End answering, Let the room vote, End voting or Next; pause works in every
+  phase of play and also stops the missing judge's 20 s. A Players button mid-game removes a player (after a confirm). Settings
+  (`#/hand/settings`): packs (Classic, After Dark; Classic by default; if none of the chosen packs
+  exists, all packs are used), answer time, target and the options; they apply to the next game.
+- **Content** (`src/content/hand/*.json`): `{"id", "name", "blurb", "added"?, "prompts": [...],
+  "answers": [...]}`. A prompt has up to two blanks written `___`; one with none ends with "?".
+  Answers are 1–10 words, capital first, no closing full stop, 60 characters. Prompts and answers
+  are new across packs. Classic has 100 prompts and 400 answers; After Dark 50 and 200; about one
+  prompt in six takes two cards.
+- Demos at `#/hand/host?demo=` and `#/hand/join?demo=` with
+  `lobby|play|judge|spotlight|reveal|vote|over|paused`; phone demos also have
+  `join|wait|played|judging|trade|blank` (`wait` is the judge's phone while others answer).

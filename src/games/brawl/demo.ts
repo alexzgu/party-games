@@ -1,4 +1,4 @@
-import type { Drawing } from './ink';
+import type { Drawing } from '../../lib/ink';
 import type { Phase, Result } from './logic';
 import type { View } from './view';
 

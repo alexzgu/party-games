@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { paint, type Drawing } from './ink';
-  let { drawing }: { drawing?: Drawing } = $props();
+  import { paint, type Drawing } from '../../lib/ink';
+  let { drawing, label = 'Fighter drawing', empty = 'Awaiting drawing' }: { drawing?: Drawing; label?: string; empty?: string } = $props();
   let canvas = $state<HTMLCanvasElement>();
   let width = $state(0);
   $effect(() => {
@@ -9,9 +9,9 @@
 </script>
 
 {#if drawing}
-  <canvas bind:this={canvas} bind:clientWidth={width} aria-label="Fighter drawing"></canvas>
+  <canvas bind:this={canvas} bind:clientWidth={width} aria-label={label}></canvas>
 {:else}
-  <div class="empty">Awaiting drawing</div>
+  <div class="empty">{empty}</div>
 {/if}
 
 <style>

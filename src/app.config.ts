@@ -4,10 +4,10 @@ export const APP = {
   shortName: 'Jerk Box',
 } as const;
 
-export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl';
+export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl' | 'sketch' | 'hand';
 
 /** Games whose packs players can make, import and export on a phone. */
-export type PackGameId = Exclude<GameId, 'salad' | 'brawl'>;
+export type PackGameId = Exclude<GameId, 'salad' | 'brawl' | 'sketch' | 'hand'>;
 
 export interface GameInfo {
   id: GameId;
@@ -28,6 +28,8 @@ export const GAMES: GameInfo[] = [
   { id: 'snark', name: 'Snark Tank', players: '3–8 players · own phones', accent: 'var(--c-snark)', emoji: '🦈' },
   { id: 'salad', name: 'Word Salad', players: '2–8 players · own phones', accent: 'var(--c-salad)', emoji: '🥗' },
   { id: 'brawl', name: 'Doodle Brawl', players: '3–8 players · own phones', accent: 'var(--c-brawl)', emoji: '🥊' },
+  { id: 'sketch', name: 'Sketchy', players: '3–10 players · own phones', accent: 'var(--c-sketch)', emoji: '✏️' },
+  { id: 'hand', name: 'Bad Hand', players: '3–10 players · own phones', accent: 'var(--c-hand)', emoji: '🃏' },
 ];
 
 /** Games taken out of the app, by id: an old pack file of one is turned away by name. */

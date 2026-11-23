@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { Assembler, toWire } from '../../lib/room/parts';
-import { append, point, readDrawing, type Drawing } from './ink';
-import { readToHost } from './protocol';
+import { Assembler, toWire } from './room/parts';
+import { ERASER, append, point, readDrawing, type Drawing } from './ink';
+import { readToHost } from '../games/brawl/protocol';
 
 describe('Doodle Brawl ink and wire format', () => {
   it('rounds and clips coordinates, then encodes only points far enough apart', () => {
@@ -21,6 +21,12 @@ describe('Doodle Brawl ink and wire format', () => {
     expect(readDrawing([{ ...dot, c: 8 }])).toBeNull();
     expect(readDrawing(Array.from({ length: 6001 }, () => dot))).toBeNull();
     expect(readToHost({ t: 'draw', at: 1, name: '', d: [{ ...dot, extra: 'é'.repeat(100000) }] })).toBeNull();
+  });
+
+  it('accepts the eraser ink only where a game allows it', () => {
+    const rub = [{ c: ERASER, w: 15, p: [10, 10] }];
+    expect(readDrawing(rub)).toBeNull();
+    expect(readDrawing(rub, ERASER + 1)).toEqual(rub);
   });
 
   it('reassembles a dense 3,000-point submission and art reply through the shared link', () => {

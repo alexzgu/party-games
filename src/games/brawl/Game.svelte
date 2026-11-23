@@ -41,15 +41,6 @@
 <style>
   .game {
     --accent: var(--c-brawl);
-  --ink-paper: #fff;
-  --ink-black: #17141f;
-  --ink-red: #b91c36;
-  --ink-orange: #aa470b;
-  --ink-green: #18713b;
-  --ink-blue: #1648ad;
-  --ink-purple: #6926a3;
-  --ink-pink: #a31a72;
-  --ink-brown: #713f2a;
     display: contents;
   }
   .start { display: grid; gap: var(--s-3); }

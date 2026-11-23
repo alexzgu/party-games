@@ -2,6 +2,9 @@ export const SIZE = 640;
 export const MAX_POINTS = 6000;
 export const PALETTE = ['black', 'red', 'orange', 'green', 'blue', 'purple', 'pink', 'brown'] as const;
 export const WIDTHS = [5, 15] as const;
+/** Every ink a stroke may use: the palette, then paper (Sketchy's eraser, a thick paper-coloured pen). */
+export const INKS = [...PALETTE, 'paper'] as const;
+export const ERASER = PALETTE.length;
 export type Stroke = { c: number; w: number; p: number[] };
 export type Drawing = Stroke[];
 export type Point = [number, number];
@@ -21,12 +24,13 @@ export function append(p: number[], last: Point, next: Point): boolean {
 
 export const pointCount = (d: Drawing) => d.reduce((n, s) => n + s.p.length / 2, 0);
 
-export function readDrawing(raw: unknown): Drawing | null {
+/** A drawing as received, or null when it breaks a limit; `inks` is how many inks are allowed (the palette unless the game has an eraser). */
+export function readDrawing(raw: unknown, inks: number = PALETTE.length): Drawing | null {
   if (!Array.isArray(raw) || raw.length > MAX_POINTS) return null;
   const result: Drawing = [];
   let count = 0;
   for (const s of raw) {
-    if (!s || !Number.isInteger(s.c) || s.c < 0 || s.c >= PALETTE.length ||
+    if (!s || !Number.isInteger(s.c) || s.c < 0 || s.c >= inks ||
       !WIDTHS.some((w) => w === s.w) || !Array.isArray(s.p) || s.p.length < 2 || s.p.length % 2) return null;
     count += s.p.length / 2;
     if (count > MAX_POINTS) return null;
@@ -55,7 +59,7 @@ export function paint(canvas: HTMLCanvasElement, drawing: Drawing, pixels: numbe
   ctx.lineCap = ctx.lineJoin = 'round';
   for (const { c, w, p } of drawing) {
     let [x, y] = p;
-    ctx.strokeStyle = ctx.fillStyle = tokens.getPropertyValue(`--ink-${PALETTE[c]}`).trim() || 'black';
+    ctx.strokeStyle = ctx.fillStyle = tokens.getPropertyValue(`--ink-${INKS[c]}`).trim() || 'black';
     ctx.lineWidth = w;
     ctx.beginPath();
     if (p.length === 2) {

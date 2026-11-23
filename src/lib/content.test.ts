@@ -5,7 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { dedupe, gibberishPacks, quizBoards, slugify, spectrumPacks, wordDecks } from './content';
 import { tabooPacks } from './content';
 import { quickPacks } from './content';
-import { brawlPacks, saladPacks, snarkPacks } from './content';
+import { brawlPacks, handPacks, saladPacks, sketchPacks, snarkPacks } from './content';
+import { BLANK, blanks } from '../games/hand/cards';
 import { cardId, cardProblems } from '../games/taboo/cards';
 import { isIcon } from './icon';
 import { normalise } from '../games/salad/match';
@@ -386,5 +387,82 @@ describe('Doodle Brawl packs', () => {
     const packs = brawlPacks();
     expect(packs.find((p) => p.id === 'classic')?.titles).toHaveLength(120);
     expect(packs.find((p) => p.id === 'after-dark')?.titles).toHaveLength(60);
+  });
+});
+
+/** Two lines are the same card when they match ignoring case, spacing and punctuation. */
+const sameKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+
+describe('Sketchy packs', () => {
+  it('have drawable words and chain-starting ideas, never repeated across packs', () => {
+    const problems: string[] = [];
+    const packs = sketchPacks();
+    packBasics(packs, problems);
+    const seenWords = new Set<string>();
+    const seenIdeas = new Set<string>();
+    for (const p of packs) {
+      if (!Array.isArray(p.words) || !Array.isArray(p.ideas)) { problems.push(`${p.id}: needs "words" and "ideas" lists`); continue; }
+      for (const w of p.words) {
+        if (!/^[A-Za-z][A-Za-z' -]*[A-Za-z]$/.test(w) || words(w) > 3 || w.length > 24) problems.push(`${p.id}: bad word "${w}" (1–3 words, letters only, 24 characters at most)`);
+        const k = sameKey(w);
+        if (seenWords.has(k)) problems.push(`${p.id}: repeated word "${w}"`);
+        seenWords.add(k);
+      }
+      for (const idea of p.ideas) {
+        if (words(idea) < 3 || words(idea) > 10 || !/^[A-Z0-9]/.test(idea) || /[.!?,;:]$/.test(idea) || idea.length > 70) problems.push(`${p.id}: bad idea "${idea}" (3–10 words, capital first, no end punctuation)`);
+        const k = sameKey(idea);
+        if (seenIdeas.has(k)) problems.push(`${p.id}: repeated idea "${idea}"`);
+        seenIdeas.add(k);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('ships complete Classic and After Dark packs', () => {
+    const packs = sketchPacks();
+    const classic = packs.find((p) => p.id === 'classic');
+    const dark = packs.find((p) => p.id === 'after-dark');
+    expect([classic?.words.length, classic?.ideas.length]).toEqual([300, 100]);
+    expect([dark?.words.length, dark?.ideas.length]).toEqual([120, 50]);
+  });
+});
+
+describe('Bad Hand packs', () => {
+  it('have prompts with at most two blanks and short answers, never repeated across packs', () => {
+    const problems: string[] = [];
+    const packs = handPacks();
+    packBasics(packs, problems);
+    const seenPrompts = new Set<string>();
+    const seenAnswers = new Set<string>();
+    for (const p of packs) {
+      if (!Array.isArray(p.prompts) || !Array.isArray(p.answers)) { problems.push(`${p.id}: needs "prompts" and "answers" lists`); continue; }
+      for (const prompt of p.prompts) {
+        const n = blanks(prompt);
+        if (n > 2) problems.push(`${p.id}: more than two blanks in "${prompt}"`);
+        if (prompt.replaceAll(BLANK, '').includes('_')) problems.push(`${p.id}: a blank is exactly three underscores: "${prompt}"`);
+        if (n === 0 && !prompt.endsWith('?')) problems.push(`${p.id}: a prompt with no blank must be a question: "${prompt}"`);
+        if (!/^[A-Z0-9_"]/.test(prompt) || words(prompt.replaceAll(BLANK, 'x')) < 3 || prompt.length > 140) problems.push(`${p.id}: bad prompt "${prompt}" (3+ words, capital first, 140 characters at most)`);
+        const k = sameKey(prompt.replaceAll(BLANK, ' blank '));
+        if (seenPrompts.has(k)) problems.push(`${p.id}: repeated prompt "${prompt}"`);
+        seenPrompts.add(k);
+      }
+      for (const a of p.answers) {
+        if (words(a) > 10 || a.length > 60 || !/^[A-Z0-9"]/.test(a) || /[.,;:]$/.test(a) || a.includes('_')) problems.push(`${p.id}: bad answer "${a}" (1–10 words, capital first, no closing full stop, 60 characters at most)`);
+        const k = sameKey(a);
+        if (seenAnswers.has(k)) problems.push(`${p.id}: repeated answer "${a}"`);
+        seenAnswers.add(k);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('ships complete Classic and After Dark packs, about one prompt in six taking two cards', () => {
+    const packs = handPacks();
+    for (const [id, prompts, answers] of [['classic', 100, 400], ['after-dark', 50, 200]] as const) {
+      const p = packs.find((x) => x.id === id);
+      expect([id, p?.prompts.length, p?.answers.length]).toEqual([id, prompts, answers]);
+      const twos = p!.prompts.filter((x) => blanks(x) === 2).length;
+      expect(twos >= prompts / 10 && twos <= prompts / 4, `${id}: ${twos} two-card prompts`).toBe(true);
+    }
   });
 });

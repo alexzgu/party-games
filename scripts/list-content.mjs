@@ -1,12 +1,12 @@
 // Lists what a game's built-in packs already contain, so a new pack can avoid repeats:
-//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl
+//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl|sketch|hand
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const game = process.argv[2];
 const dir = join(import.meta.dirname, '..', 'src', 'content', game ?? '');
-if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'salad', 'brawl'].includes(game)) {
-  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl');
+if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'salad', 'brawl', 'sketch', 'hand'].includes(game)) {
+  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl|sketch|hand');
   process.exit(1);
 }
 const packs = readdirSync(dir)
@@ -33,6 +33,9 @@ for (const p of packs) {
     else if ('also' in it) console.log(`${it.answer}  [${it.category}, ${it.level}]${it.also.length ? ` — also ${it.also.join(', ')}` : ''}`);
     else { console.log(`${it.answer}  ←  ${it.phrase}`); hints.set(it.hint, (hints.get(it.hint) ?? 0) + 1); }
   }
+  // Sketchy chain-starting ideas and Bad Hand answer cards must be new across packs too.
+  if (p.ideas?.length) console.log(`\n### ideas (${p.ideas.length})\n` + p.ideas.join('\n'));
+  if (p.answers?.length && !p.categories) console.log(`\n### answers (${p.answers.length})\n` + p.answers.join('\n'));
   // Snark Tank finals (three-line duels) must be new across packs too.
   if (p.finals?.length) console.log(`\n### finals (${p.finals.length})\n` + p.finals.map((f) => f.prompt).join('\n'));
 }

@@ -1,6 +1,6 @@
 import { load, save, remove } from '../../lib/storage';
 import { DEFAULT_SETTINGS, DRAW_TIMES, type Game, type Settings } from './logic';
-import type { Drawing } from './ink';
+import type { Drawing } from '../../lib/ink';
 
 export const loadGame = () => load<Game | null>('brawl:host', null);
 export const saveGame = (g: Game | null) => g ? save('brawl:host', g) : remove('brawl:host');

@@ -191,3 +191,13 @@ export const brawlPacks = (): BrawlPack[] => ordered(Object.entries(brawlFiles).
   const name = id === 'after-dark' ? 'After Dark' : id.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
   return { ...pack, id, name };
 }), ['classic', 'after-dark']);
+
+/** Sketchy packs: things to draw (Draw & guess) and lines that can start a chain (Telephone). */
+export interface SketchPack { id: string; name: string; blurb: string; added?: string; words: string[]; ideas: string[] }
+const sketchFiles = import.meta.glob<SketchPack>('../content/sketch/*.json', { eager: true, import: 'default' });
+export const sketchPacks = (): SketchPack[] => ordered(Object.values(sketchFiles), ['classic', 'after-dark']);
+
+/** Bad Hand packs: prompt cards (each `___` is a blank; none means a question) and answer cards. */
+export interface HandPack { id: string; name: string; blurb: string; added?: string; prompts: string[]; answers: string[] }
+const handFiles = import.meta.glob<HandPack>('../content/hand/*.json', { eager: true, import: 'default' });
+export const handPacks = (): HandPack[] => ordered(Object.values(handFiles), ['classic', 'after-dark']);

@@ -171,6 +171,40 @@ something specific and funny a player can draw. Titles must be unique across pac
 needs at least 24 titles to run a full eight-player game on its own. After Dark is cheeky.
 Run `npm run test:content`.
 
+### Sketchy packs (`sketch/`)
+
+Two lists for the drawing game. List what exists first (`npm run list -- sketch`): words and
+ideas must be new across *all* Sketchy packs. Default size 100 words and 30 ideas.
+
+```json
+{"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "added": "2026-11-21T15:40", "words": ["Bunk bed", "Ramen"], "ideas": ["A raccoon cramming for finals"]}
+```
+
+- `words` (Draw & guess: one player draws, the rest type guesses): 1–3 words, letters, spaces,
+  hyphens and apostrophes only, 24 characters at most; things most of the room knows and could
+  draw in 80 seconds on a phone (objects, animals, places, actions, famous things); ~60% easy,
+  30% medium, 10% hard.
+- `ideas` (Telephone: the line that starts a chain): 3–10 words, capital first, no end
+  punctuation; a funny, specific scene someone can draw ("A cat filing its taxes").
+- "After Dark": cheeky, never explicit. Run `npm run test:content`.
+
+### Bad Hand packs (`hand/`)
+
+Fill-in-the-blank cards: a judge reads a prompt and picks the funniest answer card played.
+List what exists first (`npm run list -- hand`): prompts and answers must be new across *all*
+Bad Hand packs. Default size 30 prompts and 120 answers (about four answers per prompt).
+
+```json
+{"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "added": "2026-11-21T15:40", "prompts": ["My RA wrote me up for ___", "What got me through finals?", "___ and ___: the two pillars of dorm life"], "answers": ["A suspiciously large rice cooker", "Crying in the library stairwell"]}
+```
+
+Quality bar: original wording (never Cards Against Humanity's cards). A blank is exactly `___`;
+at most two per prompt (about one prompt in six has two); a prompt with no blank is a question
+ending "?". Answers are 1–10 words, sentence case, no closing full stop, 60 characters at most,
+mostly noun phrases ("My dad's fantasy football league") so one answer fits many prompts. Edgy
+and cheeky for adults, never explicit, no slurs and no punching down at groups. Run
+`npm run test:content`.
+
 ## Other changes
 
 `worker/` is the wizard server for the magic words (Cloudflare Worker; `worker/README.md`). It
