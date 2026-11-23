@@ -508,15 +508,13 @@ shout clues; the holder tilts down for "got it", up for "pass".
   never scores twice or counts the way back. A score needs the angle and speed: the pitch must
   have turned briskly toward that side in the last 0.4 s, since that direction was armed (so
   the way back from one tilt never lends its speed to the next). Until a player calibrates:
-  25° down, 25° up, 150°/s: the owner's calibration from 64 recorded tilts (they turned at
-  175–1100°/s; talking, laughing, looking around, leaning back stayed under ~105°/s), with up
-  raised from 20° because a ~21° wind-up before a fast nod down scored as a pass.
+  25° down, 25° up, 150°/s (tilts turn at 175–1100°/s; talking, laughing, looking around and
+  leaning back stay under ~105°/s; a wind-up before a fast nod down reaches ~21°).
 - Quick tilts in a row: the same direction counts again as soon as the phone is back near rest
   (and 150 ms after the last score), with no pause there. On the way back the head bounces past
   rest by up to ~28°, so right after a score the other direction needs 15° more than the larger
   of its angle and 25° (40° by default). Once the phone settles (150 ms near rest, or held still
-  at least halfway back from the tilt) both directions count at their plain angles. Tuned on
-  three Tilt lab recordings, a speed run among them. Constants in `src/lib/tilt.ts`.
+  at least halfway back from the tilt) both directions count at their plain angles. Constants in `src/lib/tilt.ts`.
 - **Calibrate tilt** (`#/forehead/calibrate`, from Setup and Settings): the phone, on the
   forehead, says "Down" or "Up"; each practice tilt it catches beeps and counts (the way back
   from a tilt never counts: the next one starts only once the phone is halfway back and still).
@@ -524,8 +522,7 @@ shout clues; the holder tilts down for "got it", up for "pass".
   once there are at least 3 of each; with fewer it says how many more and keeps the old
   calibration. Thresholds: 45% of the player's median tilt (12–25°; not lower, so a wind-up before a nod the other way never scores) and half their median speed
   (60–150°/s). Kept on the phone until the next calibration (a damaged stored value is clamped
-  into those limits or ignored); Reset returns to the defaults. Replaces the old Small / Medium /
-  Big setting.
+  into those limits or ignored); Reset returns to the defaults.
 - **Tilt lab** (`#/forehead/lab`, not linked): speaks a ~3.5-minute script of cued tilts and
   non-tilts and records every motion reading with the cue times, for designing detection from
   real data. The file goes to a laptop lab server when the page is served from one, else to
@@ -831,9 +828,9 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
 
 Community: wizard packs, Add more and Fill in stock answers are shared with their stock answers and finals, and imported with them; "🌍 Community" is in Add pack under the pack list in the game settings; prompts a built-in pack has are left out on import.
 
-### Snark Tank: Quiplash 3 options (`snark`, on by setting; defaults unchanged)
+### Snark Tank: Quiplash 3 options (`snark`, on by setting)
 
-Settings gain **Final round**: "Everyone, 3 votes" (today's final, default; also what settings and
+Settings gain **Final round**: "Everyone, 3 votes" (the default; also what settings and
 games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amounts marked
 *house* are ours (the original's are not published).
 
@@ -854,7 +851,7 @@ games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amo
   Authors (and which side is the house) stay hidden until the reveal. Points: vote share × 3000,
   +750 for a clean sweep of 2+ votes (*house*: the head-to-head formula × 3); votes for the house
   score nothing. Phones with nothing to do follow the showing and the reveal like the host. Then
-  the winner screen as today; History gets one line per duel.
+  the winner screen; History gets one line per duel.
 - **Fallbacks**: no finals in the chosen packs → Classic's; none at all, or fewer than 3 players
   left → the 3-vote final.
 - **Content**: a Snark pack may add `"safety": {"<prompt>": "<answer>"}` and
