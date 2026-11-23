@@ -1120,7 +1120,7 @@ on their own phones through the shared room link; a host screen shows the room. 
   whole drawing. The host checks each against the drawing limits, shows it and relays it to every
   other phone; a phone that misses a number asks for the whole drawing. A phone that (re)connects
   mid-turn gets the drawing so far, and the drawer's carries on from it when it has no drawing of
-  its own (it took over the seat). The host saves live ink at most once a second (a reloaded
+  its own (it took over the seat): until that arrives, or for 3 s, it cannot draw. The host saves live ink at most once a second (a reloaded
   host gets the rest from the drawer) and drops a turn's drawing once its reveal ends.
 - **Guessing**: everyone else types guesses on their phone (40 characters, *house*); each guess
   appears on the host and every phone with its author ("Jo: lamp"), except a correct one, shown

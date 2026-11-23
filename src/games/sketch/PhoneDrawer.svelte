@@ -35,11 +35,17 @@
     sent = d;
   }
 
-  // A phone that took over this turn carries on from the drawing the host has.
+  // A phone that took over this turn carries on from the drawing the host has: with none of its
+  // own, its pad opens when the host has sent that (blank or not), or soon anyway.
+  // svelte-ignore state_referenced_locally
+  let ready = $state(demo || draft.drawing.length > 0);
   $effect(() => {
     const had = gallery.art[id];
     if (had?.length && !n && !draft.drawing.length) change(had);
+    if (had) ready = true;
   });
+  const soon = setTimeout(() => { ready = true; }, 3000);
+  onDestroy(() => clearTimeout(soon));
 
   const timer = setInterval(flush, SEND_MS);
   onDestroy(() => clearInterval(timer));
@@ -52,7 +58,7 @@
 
 <WordShape word={v.word} />
 <div class="pad" style:--draw-chrome="420px">
-  <Canvas eraser label="Draw the word" drawing={draft.drawing} onchange={change} disabled={v.paused || expired} />
+  <Canvas eraser label="Draw the word" drawing={draft.drawing} onchange={change} disabled={v.paused || expired || !ready} />
 </div>
 <p class="count">{v.got?.length ?? 0} of {v.guessers ?? 0} got it</p>
 <div class="feed"><Feed feed={v.feed ?? []} {me} /></div>
