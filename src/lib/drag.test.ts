@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampInto, isTap } from './drag';
+import { clampInto, isDoubleTap, isTap } from './drag';
 import { countdown, pause, reset, running, start, timeLeft, toggle } from './countdown';
 
 describe('dragging a floating box', () => {
@@ -13,6 +13,16 @@ describe('dragging a floating box', () => {
   it('tells a tap from a drag', () => {
     expect(isTap({ x: 10, y: 10 }, { x: 14, y: 13 })).toBe(true);
     expect(isTap({ x: 10, y: 10 }, { x: 30, y: 10 })).toBe(false);
+  });
+
+  it('tells a double tap: two quick taps on bare spots close together, nothing else', () => {
+    const press = (x: number, time: number, bareTap = true) => ({ at: { x, y: 10 }, time, bareTap });
+    expect(isDoubleTap(press(10, 0), press(14, 300))).toBe(true);
+    expect(isDoubleTap(null, press(10, 0))).toBe(false);
+    expect(isDoubleTap(press(10, 0), press(10, 600))).toBe(false);
+    expect(isDoubleTap(press(10, 0), press(60, 200))).toBe(false);
+    expect(isDoubleTap(press(10, 0, false), press(10, 200))).toBe(false);
+    expect(isDoubleTap(press(10, 0), press(10, 200, false))).toBe(false);
   });
 });
 

@@ -585,7 +585,8 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   clues: tap to start or pause, ↺ resets, the length button cycles 10/20/30/60 s, × hides it (the
   ⏱ in the board's header shows it again). A new clue resets it without starting it; at zero it
   shows "Time!" with a buzzer (if sound is on) and a light buzz. Drag it anywhere; it stays on
-  screen and the phone remembers its place, length and whether it shows (shown at first).
+  screen and the phone remembers its place, length and whether it shows (shown at first). A double
+  tap on its grip puts it back in its place under the scores.
 - **Board**: fills the screen; categories across, values down; a played tile goes dim with a dot
   in the winning team's colour. Header: back to setup (game saved), Undo, full screen (wide
   screens with the Fullscreen API), "?", End. A score strip shows every team at all times:

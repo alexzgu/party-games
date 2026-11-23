@@ -1,18 +1,20 @@
 <script lang="ts">
   import { untrack, type Snippet } from 'svelte';
-  import { clampInto, isTap, type Point } from '../lib/drag';
+  import { clampInto, isDoubleTap, isTap, type Point, type Press } from '../lib/drag';
 
   // A box floating over the page that can be dragged anywhere with a finger or the mouse and is
   // kept wholly on screen (after drags, rotation and resizes). A press that barely moves is a
   // tap and reaches the buttons inside; a drag never does, and never scrolls the page.
   // `pos` is the top-left corner in px, null for the default spot: with `dock`, the box sits in
   // the page's flow where the parent placed it (a place the page keeps free for it) until it is
-  // first dragged; without, it floats at the bottom right.
+  // first dragged, and again after a double tap on a bare spot of it (not a button); without, it
+  // floats at the bottom right.
   let { pos = $bindable(null), dock = false, label, children }: { pos?: Point | null; dock?: boolean; label: string; children: Snippet } = $props();
 
   let box = $state<HTMLElement>();
   let at = $state<Point>({ x: 0, y: 0 });
   let press: { id: number; from: Point; start: Point; moved: boolean } | null = null;
+  let last: Press | null = null;
   let dragging = $state(false);
   const docked = $derived(dock && pos === null && !dragging);
 
@@ -69,12 +71,22 @@
     press = null;
     stopFollowing();
     dragging = false;
-    if (!dragged) return;
+    if (!dragged) { tapped(e); return; }
+    last = null;
     pos = { ...at };
     // The click that ends a drag must not press the button it was let go over.
     const swallow = (c: MouseEvent) => { c.stopPropagation(); c.preventDefault(); };
     addEventListener('click', swallow, { capture: true, once: true });
     setTimeout(() => removeEventListener('click', swallow, { capture: true }), 50);
+  }
+
+  /** A press that stayed put: the second bare tap of a double tap docks the box again. */
+  function tapped(e: PointerEvent) {
+    const bareTap = e.type === 'pointerup' && e.target instanceof Element && !e.target.closest('button');
+    const next: Press = { at: { x: e.clientX, y: e.clientY }, time: e.timeStamp, bareTap };
+    const double = dock && isDoubleTap(last, next);
+    last = double ? null : next;
+    if (double) pos = null;
   }
 </script>
 

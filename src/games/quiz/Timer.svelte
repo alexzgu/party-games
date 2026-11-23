@@ -1,6 +1,7 @@
 <script lang="ts">
   // A countdown chip for a host who wants one: it sits in a place the play screen keeps free for
-  // it (under the scores) until the host drags it somewhere else. Cosmetic: it never changes
+  // it (under the scores) until the host drags it somewhere else; a double tap on its grip puts it
+  // back there. Cosmetic: it never changes
   // scores or play. Tap the time to start or pause, ↺ to reset, the length to change
   // it (10/20/30/60 s), × to hide (the ⏱ in the board's header brings it back). A new clue resets
   // it to full without starting it.
@@ -71,6 +72,7 @@
 
 <Floating bind:pos={timer.pos} dock label="Timer">
   <div class="chip" class:on class:up>
+    <span class="grip" data-tip="Drag to move the timer; double tap here to put it back under the scores"></span>
     <button class="time" onclick={tap} aria-label={up ? "Time's up. Tap to start again" : on ? `Pause the timer, ${shown} left` : `Start the timer, ${shown}`} data-tip={up ? 'Starts the timer again' : on ? 'Pauses the timer' : 'Starts the timer'}>
       {shown}
     </button>
@@ -88,6 +90,8 @@
   }
   .chip.on { border-color: var(--accent); }
   .chip.up { border-color: var(--c-bad); }
+  .grip { align-self: stretch; min-width: 28px; display: grid; place-items: center; }
+  .grip::before { content: ''; width: 12px; height: 32px; background: radial-gradient(circle, var(--text-faint) 1.5px, transparent 2px) 0 0 / 6px 8px; }
   .time {
     min-width: 104px; min-height: 64px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-md);
     background: var(--surface); color: var(--text);
@@ -100,8 +104,12 @@
     background: transparent; color: var(--text-dim); font-weight: 800; font-size: 0.95rem;
   }
   .x { font-size: 1.5rem; }
-  /* A phone on its side: a slimmer chip, so it fits beside the board under the scores. */
+  /* A phone on its side: a slimmer chip, so it fits beside the board under the scores;
+     the grip runs along its top. */
   @media (orientation: landscape) and (max-height: 500px) {
+    .chip { display: grid; grid-template-columns: repeat(4, auto); row-gap: 0; }
+    .grip { grid-column: 1 / -1; min-height: 20px; }
+    .grip::before { width: 36px; height: 8px; background-size: 6px 4px; }
     .time { min-width: 80px; min-height: 48px; font-size: 1.6rem; padding: 0 var(--s-2); }
     .small { min-height: 48px; }
   }
