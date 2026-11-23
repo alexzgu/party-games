@@ -5,6 +5,7 @@
   import HowTo from '../../components/HowTo.svelte';
   import Popup from '../../components/Popup.svelte';
   import Connection from '../../components/room/Connection.svelte';
+  import SeatAsk from '../../components/room/SeatAsk.svelte';
   import { back, route } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { keepAwake } from '../../lib/wakelock';
@@ -112,6 +113,8 @@
     <Button variant="secondary" onclick={() => (kicking = null)}>Cancel</Button>
   </Popup>
 {/if}
+
+{#if !fixed}<SeatAsk link={host.link} />{/if}
 
 <style>
   .host {

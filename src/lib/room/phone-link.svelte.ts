@@ -1,6 +1,7 @@
 // A phone's link to the host screen of an own-phones room. It keeps trying until it is told to
 // stop: a locked phone, a reload, a dropped Wi-Fi or a reloading host screen all end in a quiet
-// reconnect with the same player id, so the host recognises the phone and its score is kept.
+// reconnect with the same player id and proof of its seat's key (seats.ts), so the host
+// recognises the phone and its score is kept.
 // The game supplies what its views look like and which queued messages a view makes stale.
 import type Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
@@ -8,6 +9,7 @@ import { BROKER_TROUBLE, LINK_TIMEOUT, backoff, classify, makePeer } from './net
 import { currentBroker } from './broker';
 import { hostPeerId, newPid } from './code';
 import { Assembler, toWire } from './parts';
+import { KeyRing, isKey, proofOf } from './seats';
 import { load, remove, save } from '../storage';
 
 /** idle: not in a room. joining/live/lost: trying, connected, reconnecting. stopped: told to stop (see `stopped`). */
@@ -61,8 +63,10 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   private outbox: Out[] = [];
   /** Reconnected: re-send the outbox once the host's fresh view has pruned it. */
   private replay = false;
+  private keys: KeyRing;
 
   constructor(private game: string, private hooks: PhoneHooks<Out, V>) {
+    this.keys = new KeyRing(game);
     this.me = loadMe(game);
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
@@ -215,7 +219,8 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
       clearTimeout(timeout);
       if (this.conn !== conn || !this.me) return;
       this.heard = Date.now();
-      this.write({ t: 'hello', pid: this.me.pid, name: this.me.name });
+      this.trouble = '';
+      this.write({ t: 'hello', pid: this.me.pid, name: this.me.name, keys: 1 });
     });
     conn.on('data', (raw) => {
       if (this.conn !== conn) return;
@@ -253,10 +258,21 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     if (this.link === 'live' && this.conn && Date.now() - this.heard > LINK_TIMEOUT) this.lose(this.conn);
   }
 
-  private receive(msg: { t: string; pid?: string; v?: V; why?: string }): void {
+  /** Shows the host that this phone has its seat's key, without sending the key. */
+  private async prove(room: unknown, nonce: unknown): Promise<void> {
+    const conn = this.conn;
+    if (!isKey(room) || !isKey(nonce)) return;
+    const mac = await proofOf(this.keys.get(room), room, nonce);
+    if (conn && this.conn === conn) this.write({ t: 'proof', mac });
+  }
+
+  private receive(msg: { t: string; pid?: string; v?: V; why?: string; room?: unknown; nonce?: unknown }): void {
     this.heard = Date.now();
     switch (msg.t) {
       case 'ping': this.write({ t: 'pong' }); break;
+      case 'prove': void this.prove(msg.room, msg.nonce); break;
+      case 'enrol': if (isKey(msg.room)) this.write({ t: 'key', key: this.keys.make(msg.room) }); break;
+      case 'wait': this.trouble = msg.why ?? ''; break;
       case 'welcome':
         if (this.me && typeof msg.pid === 'string') this.setMe({ ...this.me, pid: msg.pid, joined: true });
         this.link = 'live';

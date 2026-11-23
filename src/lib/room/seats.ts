@@ -1,0 +1,321 @@
+// Who may sit where in an own-phones room. Each seat has a key that its phone made for this room;
+// a phone coming back proves it has the key (an HMAC over a one-time number) and never sends it
+// again. Where there is no key to prove, the host is asked. The room link (host-link, phone-link)
+// carries the messages; everything decided about seats is decided here.
+import { load, remove, save, trySave } from '../storage';
+
+// --- keys and proofs ---
+
+const hex = (bytes: Uint8Array): string => [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+/** 128 random bits in hex: a seat's key, a room's id, a one-time number. */
+export const newKey = (): string => hex(crypto.getRandomValues(new Uint8Array(16)));
+export const isKey = (x: unknown): x is string => typeof x === 'string' && /^[0-9a-f]{32}$/.test(x);
+
+/** Proof of having `key`, for this room and one-time number; empty without a key or without crypto.subtle (plain http). */
+export async function proofOf(key: string | undefined, room: string, nonce: string): Promise<string> {
+  if (!key || !globalThis.crypto?.subtle) return '';
+  const bytes = (s: string) => new TextEncoder().encode(s);
+  try {
+    const k = await crypto.subtle.importKey('raw', bytes(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return hex(new Uint8Array(await crypto.subtle.sign('HMAC', k, bytes(`${room}.${nonce}`))));
+  } catch { return ''; }
+}
+
+type Pair = [string, string];
+const pairs = (x: unknown, ok: (p: Pair) => boolean): Pair[] =>
+  Array.isArray(x) ? x.filter((p): p is Pair => Array.isArray(p) && p.length === 2 && ok(p as Pair)) : [];
+
+// --- the phone's keys ---
+
+const RING_MAX = 20;
+
+/** A phone's keys in one game, by room id; kept in memory where storage is blocked. */
+export class KeyRing {
+  private held = new Map<string, string>();
+  constructor(private game: string) {}
+
+  get(room: string): string | undefined {
+    return this.held.get(room) ?? this.saved().find(([r]) => r === room)?.[1];
+  }
+
+  /** A new key for the room, replacing any it had. */
+  make(room: string): string {
+    const key = newKey();
+    const all: Pair[] = [...this.saved().filter(([r]) => r !== room), [room, key]];
+    if (trySave(`${this.game}:keys`, all.slice(-RING_MAX))) this.held.delete(room);
+    else this.held.set(room, key);
+    return key;
+  }
+
+  private saved(): Pair[] {
+    return pairs(load<unknown>(`${this.game}:keys`, null), ([r, k]) => isKey(r) && isKey(k));
+  }
+}
+
+// --- the host's record ---
+
+const isPid = (x: unknown): x is string => typeof x === 'string' && x.length <= 64;
+
+/** The room's id, its seats' keys and who was removed: saved beside the game, never part of it. */
+export class SeatBook {
+  room = newKey();
+  private keys = new Map<string, string>();
+  private out = new Set<string>();
+  constructor(private game: string) {}
+
+  /** The room opens: as it was saved with its game, or anew. A record lost or damaged leaves every seat without a key. */
+  open(reopened: boolean): void {
+    const s = reopened ? load<{ room?: unknown; keys?: unknown; kicked?: unknown } | null>(`${this.game}:seats`, null) : null;
+    const saved = s && isKey(s.room) ? s : null;
+    this.room = saved ? (saved.room as string) : newKey();
+    this.keys = new Map(pairs(saved?.keys, ([pid, key]) => isPid(pid) && isKey(key)));
+    this.out = new Set(Array.isArray(saved?.kicked) ? saved.kicked.filter(isPid) : []);
+    this.save();
+  }
+
+  key(pid: string): string | undefined { return this.keys.get(pid); }
+  kicked(pid: string): boolean { return this.out.has(pid); }
+
+  bind(pid: string, key: string): void {
+    this.keys.set(pid, key);
+    this.save();
+  }
+
+  kick(pid: string): void {
+    this.keys.delete(pid);
+    this.out.add(pid);
+    this.save();
+  }
+
+  close(): void {
+    this.room = newKey();
+    this.keys.clear();
+    this.out.clear();
+    remove(`${this.game}:seats`);
+  }
+
+  private save(): void {
+    save(`${this.game}:seats`, { room: this.room, keys: [...this.keys], kicked: [...this.out] });
+  }
+}
+
+// --- the rules ---
+
+export const REMOVED = 'The host removed you from this room.';
+const RELOAD = 'Reload this page to rejoin.';
+const IN_USE = 'That seat is in use on another phone.';
+const SAID_NO = 'The host said no.';
+const NO_ANSWER = 'The host did not answer. Try again.';
+const BUSY = 'The host is already being asked about that seat. Try again in a minute.';
+const CROWD = 'Too many phones are waiting for the host. Try again in a minute.';
+const CHANGED = 'The room changed while you waited. Join again.';
+const WAIT = 'Waiting for a Yes on the host screen…';
+
+/** How long the host has to answer, and how long a Yes waits for a phone that dropped. */
+export const ASK_MS = 60_000;
+const ASKS_MAX = 8;
+
+interface Row { pid: string; name: string }
+/** The seat a game gives a phone: its player, and whether it is new to the game. `then`: what to do once it is welcomed. */
+export interface Seat extends Row { fresh: boolean; then: () => void }
+
+/** The seat a game's join rules gave: whose it is, and whether the game already had that player. */
+export const seatIn = (players: readonly Row[], joined: { pid: string; game: { players: readonly Row[] } }): Omit<Seat, 'then'> => ({
+  pid: joined.pid,
+  name: joined.game.players.find((p) => p.pid === joined.pid)?.name ?? '',
+  fresh: !players.some((p) => p.pid === joined.pid),
+});
+
+/** `modern`: its page can do keys. `approved`: the host tapped Yes. */
+export interface Claim { modern: boolean; proof: 'none' | 'right' | 'wrong'; approved: boolean }
+export interface Held { keyed: boolean; fresh: boolean; online: boolean }
+export type Step = 'admit' | 'enrol' | 'prove' | 'ask' | { refuse: string };
+
+/** What happens next to a phone asking for a seat. */
+export function nextStep(c: Claim, s: Held): Step {
+  if (!s.keyed) {
+    if (!c.modern) return c.approved ? 'admit' : 'ask';
+    return s.fresh || c.approved ? 'enrol' : 'ask';
+  }
+  if (!c.modern) return { refuse: RELOAD };
+  if (c.proof === 'none') return 'prove';
+  if (c.proof === 'right') return 'admit';
+  if (s.online) return { refuse: IN_USE };
+  return c.approved ? 'enrol' : 'ask';
+}
+
+// --- the desk: phones that have said hello and have no seat yet ---
+
+/** A question on the host screen: may this phone have that seat? */
+export interface Ask { id: number; name: string; fresh: boolean }
+
+interface Call<C> extends Claim {
+  conn: C;
+  pid: string;
+  name: string;
+  /** The seat it asks for, once the game has said. */
+  seat: string;
+  /** What it was last sent and may answer now ('check': its proof is being checked). */
+  stage: '' | 'prove' | 'check' | 'enrol';
+  nonce: string;
+  ask: Ask | null;
+}
+
+const claimOf = (c: { pid: string; name: string; seat: string; modern: boolean }) => JSON.stringify([c.pid, c.name, c.seat, c.modern]);
+
+export interface DeskHooks<C> {
+  resolve(pid: string, name: string): Seat | { error: string };
+  online(pid: string): boolean;
+  /** Not heard from lately: likely asleep or gone. */
+  quiet(conn: C): boolean;
+  send(conn: C, msg: object): void;
+  /** Says why, and closes. */
+  refuse(conn: C, why: string): void;
+  /** Closes without a word: the phone tries again by itself. */
+  close(conn: C): void;
+  admit(conn: C, seat: Seat): void;
+  asks(now: Ask[]): void;
+}
+
+export class Desk<C> {
+  private calls = new Map<C, Call<C>>();
+  /** By seat: the phone the host said Yes to, until it sits down. */
+  private granted = new Map<string, { claim: string; until: number }>();
+  private asked = 0;
+  constructor(private book: SeatBook, private hooks: DeskHooks<C>) {}
+
+  hello(conn: C, pid: string, name: string, modern: boolean): void {
+    if (this.calls.has(conn)) return;
+    const call: Call<C> = { conn, pid, name, modern, proof: 'none', approved: false, seat: '', stage: '', nonce: '', ask: null };
+    this.calls.set(conn, call);
+    this.advance(call);
+  }
+
+  async proof(conn: C, mac: unknown): Promise<void> {
+    const call = this.calls.get(conn);
+    if (call?.stage !== 'prove') return;
+    call.stage = 'check';
+    const key = this.book.key(call.seat);
+    const want = await proofOf(key, this.book.room, call.nonce);
+    if (this.calls.get(conn) !== call) return; // gone meanwhile
+    call.proof = want !== '' && mac === want && this.book.key(call.seat) === key ? 'right' : 'wrong';
+    this.advance(call);
+  }
+
+  key(conn: C, key: unknown): void {
+    const call = this.calls.get(conn);
+    if (call?.stage === 'enrol' && isKey(key)) this.advance(call, key);
+  }
+
+  /** The host's answer to a question still on the screen. */
+  answer(ask: Ask, yes: boolean): void {
+    const call = this.all().find((c) => c.ask === ask);
+    if (!call) return;
+    call.ask = null;
+    this.show();
+    if (!yes) return this.refuse(call, SAID_NO);
+    call.approved = true;
+    if (call.modern) this.granted.set(call.seat, { claim: claimOf(call), until: Date.now() + ASK_MS });
+    this.advance(call);
+  }
+
+  /** Waiting for the host: no other clock runs meanwhile. */
+  asking(conn: C): boolean { return !!this.calls.get(conn)?.ask; }
+
+  /** The connection is gone, or may not go on. */
+  drop(conn: C): void {
+    const call = this.calls.get(conn);
+    this.calls.delete(conn);
+    if (call?.ask) this.show();
+  }
+
+  /** The host removed this player: whoever is asking for the seat is out too. */
+  kick(pid: string): void {
+    this.granted.delete(pid);
+    for (const c of this.all()) if (c.seat === pid || c.pid === pid) this.refuse(c, REMOVED);
+  }
+
+  clear(): void {
+    this.calls.clear();
+    this.granted.clear();
+    this.show();
+  }
+
+  private all(): Call<C>[] { return [...this.calls.values()]; }
+
+  /** The next step for a phone, on the room as it is now; `key`: the one it just made for its seat. */
+  private advance(call: Call<C>, key?: string): void {
+    const seat = this.hooks.resolve(call.pid, call.name);
+    if ('error' in seat) return this.refuse(call, seat.error);
+    if (call.seat && call.seat !== seat.pid) return this.refuse(call, CHANGED);
+    call.seat = seat.pid;
+    const grant = this.granted.get(seat.pid);
+    if (grant?.claim === claimOf(call) && grant.until > Date.now()) call.approved = true;
+    const step = nextStep(call, { keyed: this.book.key(seat.pid) !== undefined, fresh: seat.fresh, online: this.hooks.online(seat.pid) });
+    if (typeof step === 'object') return this.refuse(call, step.refuse);
+    if (step === 'prove') return this.prove(call);
+    if (step === 'ask') return this.ask(call, seat);
+    if (step === 'admit') return this.admit(call, seat);
+    if (!key) return this.enrol(call);
+    this.book.bind(seat.pid, key);
+    this.admit(call, seat);
+  }
+
+  private prove(call: Call<C>): void {
+    call.stage = 'prove';
+    call.nonce = newKey();
+    this.hooks.send(call.conn, { t: 'prove', room: this.book.room, nonce: call.nonce });
+  }
+
+  /** Asks the phone for a new key; its own earlier try at the same seat is over. */
+  private enrol(call: Call<C>): void {
+    for (const c of this.all()) {
+      if (c !== call && c.stage === 'enrol' && claimOf(c) === claimOf(call)) this.hooks.close(c.conn);
+    }
+    call.stage = 'enrol';
+    this.hooks.send(call.conn, { t: 'enrol', room: this.book.room });
+  }
+
+  /** Puts the question to the host, one per seat: a phone that asks again after a sleep takes its own question over. */
+  private ask(call: Call<C>, seat: Seat): void {
+    call.stage = '';
+    const waiting = this.all().filter((c) => c.ask);
+    const rival = waiting.find((c) => c.seat === call.seat);
+    if (rival) {
+      if (claimOf(rival) !== claimOf(call)) return this.refuse(call, BUSY);
+      if (!this.hooks.quiet(rival.conn)) return this.hooks.close(call.conn);
+      call.ask = rival.ask;
+      rival.ask = null;
+      this.hooks.close(rival.conn);
+    } else {
+      if (waiting.length >= ASKS_MAX) return this.refuse(call, CROWD);
+      const ask: Ask = { id: ++this.asked, name: seat.name, fresh: seat.fresh };
+      call.ask = ask;
+      setTimeout(() => this.expire(ask), ASK_MS);
+    }
+    this.hooks.send(call.conn, { t: 'wait', why: WAIT });
+    this.show();
+  }
+
+  private expire(ask: Ask): void {
+    const call = this.all().find((c) => c.ask === ask);
+    if (call) this.refuse(call, NO_ANSWER);
+  }
+
+  /** Seated: anyone else asking for the seat starts over. */
+  private admit(call: Call<C>, seat: Seat): void {
+    this.drop(call.conn);
+    this.granted.delete(seat.pid);
+    for (const c of this.all()) if (c.seat === seat.pid) this.hooks.close(c.conn);
+    this.hooks.admit(call.conn, seat);
+  }
+
+  private refuse(call: Call<C>, why: string): void {
+    this.drop(call.conn);
+    this.hooks.refuse(call.conn, why);
+  }
+
+  private show(): void {
+    this.hooks.asks(this.all().flatMap((c) => (c.ask ? [c.ask] : [])).sort((a, b) => a.id - b.id));
+  }
+}

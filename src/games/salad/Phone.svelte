@@ -78,7 +78,7 @@
       <Timer {left} total={view.span} paused={view.paused} size={52} />
       <HowTo><Rules /></HowTo>
     </header>
-    {#if link === 'lost'}<p class="lost" role="status">Reconnecting…</p>{/if}
+    {#if link === 'lost'}<p class="lost" role="status">{phone.trouble || 'Reconnecting…'}</p>{/if}
 
     <main inert={view.paused}>
       {#if view.phase === 'lobby'}

@@ -2,6 +2,7 @@ import { saladPacks } from '../../lib/content';
 import { record } from '../../lib/history';
 import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode } from '../../lib/room/code';
+import { seatIn } from '../../lib/room/seats';
 import { Bots, isBot } from '../../lib/room/bots';
 import { saladBrain } from './bot';
 import * as L from './logic';
@@ -28,12 +29,12 @@ class HostSession {
   game = $state.raw<L.Game | null>(null);
   now = $state(Date.now());
   private ticker: ReturnType<typeof setInterval> | null = null;
-  private link = new HostLink('salad', {
+  readonly link = new HostLink('salad', {
     hello: (pid, name, online) => {
       if (!this.game) return { error: 'This room is closed.' };
       const result = L.join(this.game, pid, name, online);
       if (result.error !== undefined) return { error: result.error };
-      return { pid: result.pid, then: () => {
+      return { ...seatIn(this.game.players, result), then: () => {
         if (result.game === this.game) this.sendView(result.pid);
         else this.commit(result.game);
       } };
@@ -67,7 +68,7 @@ class HostSession {
     const g = saved ? L.afterReload(saved, Date.now())
       : L.newGame(newCode(), packIds, poolFor(packIds), Math.floor(Math.random() * 4294967296), awayMs);
     this.commit(g);
-    this.link.open(g.code);
+    this.link.open(g.code, !!saved);
     this.bots.open();
     this.ticker = setInterval(() => this.tick(), 250);
   }

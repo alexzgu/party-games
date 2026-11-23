@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HostLink, type HostHooks } from './host-link.svelte';
+import { newKey } from './seats';
 import { Bot, Bots, botName, slow, quick, type Brain, type Seat } from './bots';
 
 // A tiny room with the usual join rules: a known id keeps its seat; a name already in use is
@@ -8,12 +9,15 @@ function room(players = new Map<string, string>()) {
   const heard: [string, unknown][] = [];
   const hooks: HostHooks = {
     hello: (pid, name, online) => {
-      if (players.has(pid)) return { pid, then: () => {} };
+      if (players.has(pid)) return { pid, name: players.get(pid)!, fresh: false, then: () => {} };
       const same = [...players].find(([, n]) => n === name)?.[0];
-      if (same) return online.has(same) ? { error: 'That name is already in use.' } : { pid: same, then: () => {} };
+      if (same) return online.has(same) ? { error: 'That name is already in use.' } : { pid: same, name, fresh: false, then: () => {} };
       if (players.size >= 3) return { error: 'This room is full.' };
-      players.set(pid, name);
-      return { pid, then: () => link.send(pid, { t: 'view', v: { left: null, paused: false, n: players.size } }) };
+      const then = () => {
+        players.set(pid, name);
+        link.send(pid, { t: 'view', v: { left: null, paused: false, n: players.size } });
+      };
+      return { pid, name, fresh: true, then };
     },
     message: (pid, raw) => heard.push([pid, raw]),
     left: (pid) => players.delete(pid),
@@ -23,13 +27,13 @@ function room(players = new Map<string, string>()) {
   return { link, players, heard };
 }
 
-/** A phone's link as the host sees it: what the host wrote to it. */
+/** A phone's link as the host sees it: what the host wrote to it (a new seat's key is made at once, as a phone does). */
 function phone(link: HostLink) {
   const handlers: Record<string, (x: unknown) => void> = {};
   const wrote: unknown[] = [];
-  const conn = { open: true, on: (e: string, f: (x: unknown) => void) => { handlers[e] = f; }, send: (m: unknown) => wrote.push(m), close: () => {} };
+  const conn = { open: true, on: (e: string, f: (x: unknown) => void) => { handlers[e] = f; }, send: (m: { t: string }) => { if (m.t === 'enrol') handlers.data({ t: 'key', key: newKey() }); else wrote.push(m); }, close: () => {} };
   (link as unknown as { accept(c: unknown): void }).accept(conn);
-  return { say: (m: object) => handlers.data(m), wrote };
+  return { say: (m: object) => handlers.data({ keys: 1, ...m }), wrote };
 }
 
 beforeEach(() => { vi.useFakeTimers(); });

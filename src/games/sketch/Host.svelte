@@ -6,6 +6,7 @@
   import Popup from '../../components/Popup.svelte';
   import Qr from '../../components/room/Qr.svelte';
   import Connection from '../../components/room/Connection.svelte';
+  import SeatAsk from '../../components/room/SeatAsk.svelte';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import TapToFinish from '../../components/room/TapToFinish.svelte';
   import Timer from '../../components/room/Timer.svelte';
@@ -158,6 +159,8 @@
     <Button variant="secondary" onclick={() => (kicking = null)}>Cancel</Button>
   </Popup>
 {/if}
+
+{#if !fixed}<SeatAsk link={host.link} />{/if}
 
 <style>
   .host {

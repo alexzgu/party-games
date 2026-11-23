@@ -1,5 +1,6 @@
 import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode, newPid } from '../../lib/room/code';
+import { seatIn } from '../../lib/room/seats';
 import { handPacks } from '../../lib/content';
 import { record } from '../../lib/history';
 import { Bots, isBot } from '../../lib/room/bots';
@@ -26,12 +27,12 @@ class Session {
   now = $state(Date.now());
   private timer?: ReturnType<typeof setInterval>;
   private lastSkip = -Infinity;
-  private link = new HostLink('hand', {
+  readonly link = new HostLink('hand', {
     hello: (pid, name, online) => {
       if (!this.game) return { error: 'This room is closed.' };
       const joined = L.join(this.game, pid, name, online);
       if (joined.error !== undefined) return { error: joined.error };
-      return { pid: joined.pid, then: () => {
+      return { ...seatIn(this.game.players, joined), then: () => {
         if (joined.game === this.game) this.send(joined.pid);
         else this.commit(joined.game);
       } };
@@ -63,7 +64,7 @@ class Session {
     this.now = Date.now();
     this.game = old ? L.afterReload(old, this.now) : L.newGame(newPid(), newCode(), store.loadSettings());
     store.saveGame(this.game);
-    this.link.open(this.game.code);
+    this.link.open(this.game.code, !!old);
     this.bots.open();
     this.timer = setInterval(() => this.tick(), 250);
   }

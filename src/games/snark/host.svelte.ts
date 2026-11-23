@@ -4,6 +4,7 @@
 // change is saved, so a reload reopens the same room and phones reconnect by themselves.
 import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode } from '../../lib/room/code';
+import { seatIn } from '../../lib/room/seats';
 import * as L from './logic';
 import { playerView } from './view';
 import { readToHost } from './protocol';
@@ -53,11 +54,11 @@ class HostSession {
   game = $state.raw<L.Game | null>(null);
   now = $state(Date.now());
 
-  private link = new HostLink('snark', {
+  readonly link = new HostLink('snark', {
     hello: (pid, name, online) => {
       const res = L.join(this.game!, pid, name, online);
       if (res.error !== undefined) return { error: res.error };
-      return { pid: res.pid, then: () => { if (res.game === this.game) this.sendView(res.pid); else this.commit(res.game); } };
+      return { ...seatIn(this.game!.players, res), then: () => { if (res.game === this.game) this.sendView(res.pid); else this.commit(res.game); } };
     },
     message: (pid, raw) => this.receive(pid, raw),
     left: (pid) => {
@@ -90,7 +91,7 @@ class HostSession {
     const g = saved ? L.afterReload(saved, Date.now()) : L.newGame(newCode(), loadSettings());
     this.game = g;
     saveGame(g);
-    this.link.open(g.code);
+    this.link.open(g.code, !!saved);
     this.bots.open();
     this.ticker = setInterval(() => this.tick(), 250);
   }
