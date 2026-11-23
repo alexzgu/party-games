@@ -57,7 +57,7 @@
     if (!fixed && view && (view.screen.k === 'write' || view.screen.k === 'vote' || view.screen.k === 'vote3')) haptic.light();
   });
 
-  const send = (m: ToHost) => { if (!fixed) phone.send(m); };
+  const send = (m: ToHost) => { if (!fixed) phone.send({ ...m, match: view?.match } as ToHost); };
 </script>
 
 {#if link === 'idle' || link === 'stopped'}
@@ -83,18 +83,18 @@
       {#if s.k === 'write' || s.k === 'late' || s.k === 'vote' || s.k === 'vote3'}<Timer {left} total={view.span} paused={view.paused} size={52} />{/if}
       <HowTo><Rules /></HowTo>
     </header>
-    {#if link === 'lost'}<p class="lost" role="status">Reconnecting… stay on this screen</p>{/if}
+    {#if link === 'lost'}<p class="lost" role="status">{trouble || 'Reconnecting… stay on this screen'}</p>{/if}
 
     <main class="body">
       {#if s.k === 'write'}
-        {#key `${view.code}:${view.round}`}
-          <PhoneWrite code={view.code} round={view.round} tasks={s.tasks} total={s.total} final={view.final} lines={s.lines} writers={s.writers}
+        {#key `${view.code}:${view.match}:${view.round}`}
+          <PhoneWrite code="{view.code}.{view.match ?? 0}" round={view.round} tasks={s.tasks} total={s.total} final={view.final} lines={s.lines} writers={s.writers}
             onsend={(i, text) => send({ t: 'answer', r: view.round, i, text })} onlines={(i, lines) => send({ t: 'lines', r: view.round, i, lines })} />
         {/key}
       {:else if s.k === 'vote'}
-        {#key `${view.round}:${s.at}`}<PhoneVote screen={s} onvote={(c) => send({ t: 'vote', r: view.round, at: s.at, c })} />{/key}
+        {#key `${view.match}:${view.round}:${s.at}`}<PhoneVote screen={s} onvote={(c) => send({ t: 'vote', r: view.round, at: s.at, c })} />{/key}
       {:else if s.k === 'vote3'}
-        {#key `${view.round}:${s.at}`}<PhoneVote3 screen={s} onsend={(v) => send({ t: 'votes', r: view.round, at: s.at, v })} />{/key}
+        {#key `${view.match}:${view.round}:${s.at}`}<PhoneVote3 screen={s} onsend={(v) => send({ t: 'votes', r: view.round, at: s.at, v })} />{/key}
       {:else}
         <PhoneWatch {view} {left} />
         <button class="leave" onclick={() => (leaving = true)} data-tip="Leaves after asking; the same code lets you back in">Leave room</button>

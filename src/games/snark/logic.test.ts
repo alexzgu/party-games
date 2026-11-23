@@ -175,6 +175,11 @@ describe('joining and reconnecting', () => {
     const k = L.kick(g, 'p3');
     expect(L.join(k, 'p3', 'Name p3', new Set()).error).toMatch(/removed/);
     expect(L.present(k)).toHaveLength(7);
+    // Play again keeps them out; someone who left by choice may join it.
+    const again = L.rematch(L.leave(k, 'p2'));
+    expect(L.join(again, 'p3', 'Name p3', new Set()).error).toMatch(/removed/);
+    expect(L.join(again, 'p2', 'Name p2', new Set()).pid).toBe('p2');
+    expect(L.present(L.startRound(again, draw, 0)).map((p) => p.pid)).toEqual(['p0', 'p1', 'p4', 'p5', 'p6', 'p7']);
   });
   it('a player who left can come back; writing does not wait for them while they are gone', () => {
     const g = L.startRound(room(3), draw, 0);
@@ -397,6 +402,10 @@ describe('messages from phones', () => {
     const [i] = L.tasksFor(g, 'p0');
     expect(L.fromPhone(g, 'p0', { t: 'answer', r: 1, i, text: 'old' })).toBe(g);
     expect(L.fromPhone(g, 'p0', { t: 'answer', r: 2, i, text: 'new' }).items[i].answers.p0).toBe('new');
+    // After Play again, what was queued in the game before is not for this one.
+    const again: L.Game = { ...g, match: 1 };
+    expect(L.fromPhone(again, 'p0', { t: 'answer', match: 0, r: 2, i, text: 'old' })).toBe(again);
+    expect(L.fromPhone(again, 'p0', { t: 'answer', match: 1, r: 2, i, text: 'new' }).items[i].answers.p0).toBe('new');
   });
 });
 

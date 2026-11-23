@@ -3,13 +3,14 @@ import type { PlayerView } from './view';
 
 // Answers and votes say what they are for (round `r`, prompt index `i` or `at`): a phone that
 // was offline re-sends them later, and the host must not apply one to a prompt that moved on.
+// `match`: the room's game it is for, from the view (pages and hosts from before it leave it out).
 export type ToHost =
   | { t: 'hello'; pid: string; name: string }
-  | { t: 'answer'; r: number; i: number; text: string }
+  | { t: 'answer'; match?: number; r: number; i: number; text: string }
   /** Three-line duel: the player's lines (the host trims them and drops blanks). */
-  | { t: 'lines'; r: number; i: number; lines: string[] }
-  | { t: 'vote'; r: number; at: number; c: 'a' | 'b' }
-  | { t: 'votes'; r: number; at: number; v: Record<string, number> }
+  | { t: 'lines'; match?: number; r: number; i: number; lines: string[] }
+  | { t: 'vote'; match?: number; r: number; at: number; c: 'a' | 'b' }
+  | { t: 'votes'; match?: number; r: number; at: number; v: Record<string, number> }
   | { t: 'pong' };
 
 export type ToPhone =
@@ -27,6 +28,11 @@ const lineList = (x: unknown): x is string[] => Array.isArray(x) && x.length >= 
 export function readToHost(x: unknown): ToHost | null {
   if (!x || typeof x !== 'object') return null;
   const m = x as Record<string, unknown>;
+  const read = readShape(m);
+  return read && int(m.match) ? ({ ...read, match: m.match } as ToHost) : read;
+}
+
+function readShape(m: Record<string, unknown>): ToHost | null {
   switch (m.t) {
     case 'hello': return str(m.pid, 64) && str(m.name, 200) ? { t: 'hello', pid: m.pid, name: m.name } : null;
     case 'answer': return int(m.r) && int(m.i) && str(m.text, 1000) ? { t: 'answer', r: m.r, i: m.i, text: m.text } : null;

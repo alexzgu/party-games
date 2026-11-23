@@ -8,10 +8,10 @@ export type { Link } from '../../lib/room/phone-link.svelte';
 /** Drops queued messages the host has clearly received (or that are for a prompt that moved on). */
 function keep(m: ToHost, v: PlayerView): boolean {
   const s = v.screen;
+  if (m.t === 'hello' || m.t === 'pong' || (m.match ?? 0) !== (v.match ?? 0)) return false;
   return m.t === 'answer' || m.t === 'lines' ? s.k === 'write' && m.r === v.round && s.tasks.some((t) => t.i === m.i)
     : m.t === 'vote' ? s.k === 'vote' && m.r === v.round && m.at === s.at && s.voted === null
-    : m.t === 'votes' ? s.k === 'vote3' && m.r === v.round && m.at === s.at && !s.sent
-    : false;
+    : s.k === 'vote3' && m.r === v.round && m.at === s.at && !s.sent;
 }
 
 const make = () => new PhoneLink<ToHost, PlayerView>('snark', { keep });

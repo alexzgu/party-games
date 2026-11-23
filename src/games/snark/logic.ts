@@ -101,6 +101,8 @@ export type Phase = 'lobby' | 'write' | 'show' | 'vote' | 'reveal' | 'scores' | 
 
 export interface Game {
   code: string;
+  /** Which game of this room it is: 0 (or missing), then one more for each Play again. */
+  match?: number;
   settings: Settings;
   players: Player[];
   phase: Phase;
@@ -134,6 +136,7 @@ export function newGame(code: string, settings: Settings): Game {
   return { code, settings, players: [], phase: 'lobby', round: 0, items: [], at: 0, deadline: null, paused: null, log: [], recorded: false, nextColor: 0 };
 }
 
+export const matchOf = (g: Game) => g.match ?? 0;
 export const isFinalRound = (g: Game, round = g.round) => round >= g.settings.rounds;
 export const multiplier = (g: Game) => (isFinalRound(g) ? 3 : g.round);
 export const present = (g: Game) => g.players.filter((p) => !p.kicked);
@@ -302,7 +305,7 @@ export function voteFinal(g: Game, pid: string, byPosition: Record<string, numbe
 /** An answer or vote from a phone, applied only if it is for the round and prompt now in play. */
 export function fromPhone(g: Game, pid: string, msg: ToHost): Game {
   if (msg.t !== 'answer' && msg.t !== 'lines' && msg.t !== 'vote' && msg.t !== 'votes') return g;
-  if (msg.r !== g.round) return g;
+  if (msg.r !== g.round || (msg.match ?? matchOf(g)) !== matchOf(g)) return g;
   if (msg.t === 'answer') return answer(g, pid, msg.i, msg.text);
   if (msg.t === 'lines') return answerLines(g, pid, msg.i, msg.lines);
   if (msg.at !== g.at) return g;
@@ -443,10 +446,10 @@ export function afterReload(g: Game, now: number): Game {
   return g.deadline < now + RELOAD_GRACE_MS ? { ...g, deadline: now + RELOAD_GRACE_MS } : g;
 }
 
-/** Same players, scores back to zero, back in the lobby. */
+/** Same players, scores back to zero, back in the lobby; the removed stay marked, so they stay out. */
 export function rematch(g: Game): Game {
-  const players = present(g).map((p) => ({ ...p, score: 0, active: true }));
-  return { ...newGame(g.code, g.settings), players, nextColor: g.nextColor };
+  const players = g.players.filter((p) => !p.left).map((p) => ({ ...p, score: 0, active: !p.kicked }));
+  return { ...newGame(g.code, g.settings), match: matchOf(g) + 1, players, nextColor: g.nextColor };
 }
 
 /** The full length of the current step's timer (ms), for drawing how much is left. */
