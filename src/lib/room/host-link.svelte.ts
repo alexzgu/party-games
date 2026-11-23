@@ -9,7 +9,7 @@ import { BROKER_TROUBLE, LINK_TIMEOUT, PING_MS, backoff, classify, makePeer } fr
 import { currentBroker } from './broker';
 import { hostPeerId, newPid } from './code';
 import { Assembler, toWire } from './parts';
-import { Desk, REMOVED, SeatBook, type Ask, type Seat } from './seats';
+import { Desk, REMOVED, SeatBook, ends, type Ask, type Seat } from './seats';
 
 export type HostStatus = 'connecting' | 'open' | 'trouble';
 
@@ -70,6 +70,7 @@ export class HostLink {
       resolve: (pid, name) => this.resolve(pid, name),
       online: (pid) => this.online.has(pid),
       quiet: (conn) => Date.now() - (this.heard.get(conn) ?? 0) > 2 * PING_MS,
+      ends: (conn) => ends(conn.peerConnection),
       send: (conn, msg) => this.write(conn, msg),
       refuse: (conn, why) => this.refuse(conn, why),
       close: (conn) => this.cut(conn),

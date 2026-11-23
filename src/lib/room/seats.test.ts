@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { KeyRing, newKey, nextStep, proofOf, type Claim, type Held, type Step } from './seats';
+import { KeyRing, ends, newKey, nextStep, proofOf, type Claim, type Held, type Step } from './seats';
 import type { HostLink } from './host-link.svelte';
 import type { PhoneLink, BaseView } from './phone-link.svelte';
 
@@ -30,7 +30,9 @@ vi.mock('./net', async (original) => ({
   },
 }));
 
-interface End { open: boolean; on_: Handlers; other?: End; on(e: string, f: Handlers[string]): void; send(m: unknown): void; close(): void }
+interface End { open: boolean; peerConnection?: Sdp; on_: Handlers; other?: End; on(e: string, f: Handlers[string]): void; send(m: unknown): void; close(): void }
+interface Sdp { currentLocalDescription: { sdp: string }; currentRemoteDescription: { sdp: string } }
+const sdp = (...prints: string[]) => ({ sdp: ['v=0', ...prints.map((p) => `a=fingerprint:sha-256 ${p}`), ''].join('\r\n') });
 /** One end of a connection: what one side sends, the other hears; either can close both. */
 function end(): End {
   const me: End = {
@@ -56,17 +58,22 @@ const settle = (p: Phone) => until(() => p.types().at(-1) !== 'prove');
 
 interface Phone { got: { t: string; [k: string]: unknown }[]; conn: End; key?: string; asleep?: boolean; say(m: object): void; types(): string[] }
 /** A phone's page: says hello and answers the handshake as the app does (`modern`), with the key it has. */
-function phone(link: HostLink, pid: string, name: string, key?: string, modern = true): Phone {
+function phone(link: HostLink, pid: string, name: string, key?: string, modern = true, secure: { near?: Sdp; far?: Sdp } = {}): Phone {
   const [near, far] = [end(), end()];
   near.other = far;
   far.other = near;
+  near.peerConnection = secure.near;
+  far.peerConnection = secure.far;
   const p: Phone = { got: [], conn: near, key, say: (m) => near.send(m), types: () => p.got.map((m) => m.t) };
   near.on('data', (raw) => {
     const m = raw as Phone['got'][number];
     if (m.t === 'ping') return p.asleep ? undefined : near.send({ t: 'pong' });
     p.got.push(m);
     if (m.t === 'enrol') { p.key = newKey(); near.send({ t: 'key', key: p.key }); }
-    if (m.t === 'prove') void proofOf(p.key, m.room as string, m.nonce as string).then((mac) => near.send({ t: 'proof', mac }));
+    if (m.t === 'prove') {
+      const { here, there } = ends(near.peerConnection);
+      void proofOf(p.key, { room: m.room as string, nonce: m.nonce as string, host: there, phone: here }).then((mac) => near.send({ t: 'proof', mac }));
+    }
   });
   (link as unknown as { accept(c: unknown): void }).accept(far);
   p.say({ t: 'hello', pid, name, ...(modern ? { keys: 1 } : {}) });
@@ -116,8 +123,9 @@ it('a phone keeps one key per room, in memory when storage is blocked, and prove
   vi.stubGlobal('localStorage', undefined);
   const held = ring.make(b);
   expect(ring.get(b)).toBe(held);
-  expect(await proofOf(held, b, a)).toMatch(/^[0-9a-f]{64}$/);
-  expect(await proofOf(undefined, b, a)).toBe('');
+  const c = { room: b, nonce: a, host: 'h', phone: 'p' };
+  expect(await proofOf(held, c)).toMatch(/^[0-9a-f]{64}$/);
+  expect(await proofOf(undefined, c)).toBe('');
 });
 
 const GAMES = {
@@ -243,6 +251,26 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     expect(host.link.asks).toEqual([]);
     close(host);
   });
+});
+
+it('a proof counts only on the connection it was made for: one passed along by a guest in between is wrong', async () => {
+  const host = await load('hand');
+  const sam = phone(host.link, 'p1', 'Sam');
+  const far = { currentLocalDescription: sdp('HOST'), currentRemoteDescription: sdp('SAM') };
+  const straight = phone(host.link, 'p1', 'Sam', sam.key, true, { near: { currentLocalDescription: sdp('SAM'), currentRemoteDescription: sdp('HOST') }, far });
+  await settle(straight);
+  expect(straight.types()).toContain('welcome');
+  // Sam's phone is linked to a guest, the guest to the host; the second try hides the guest's certificate behind the host's.
+  for (const seen of [sdp('GUEST'), sdp('HOST', 'GUEST')]) {
+    const relayed = phone(host.link, 'p1', 'Sam', sam.key, true, {
+      near: { currentLocalDescription: sdp('SAM'), currentRemoteDescription: seen },
+      far: { currentLocalDescription: sdp('HOST'), currentRemoteDescription: sdp(...(seen.sdp.includes('HOST') ? ['SAM', 'GUEST'] : ['GUEST'])) },
+    });
+    await settle(relayed);
+    expect(relayed.types()).toEqual(['prove', 'reject']);
+  }
+  expect(straight.conn.open).toBe(true);
+  close(host);
 });
 
 describe('a question to the host', () => {

@@ -1,6 +1,6 @@
 // Who may sit where in an own-phones room. Each seat has a key that its phone made for this room;
-// a phone coming back proves it has the key (an HMAC over a one-time number) and never sends it
-// again. Where there is no key to prove, the host is asked. The room link (host-link, phone-link)
+// a phone coming back proves it has the key (an HMAC over a one-time number and the connection's
+// own certificates, so it is no use on any other connection) and never sends it again. Where there is no key to prove, the host is asked. The room link (host-link, phone-link)
 // carries the messages; everything decided about seats is decided here.
 import { load, remove, save, trySave } from '../storage';
 
@@ -11,13 +11,24 @@ const hex = (bytes: Uint8Array): string => [...bytes].map((b) => b.toString(16).
 export const newKey = (): string => hex(crypto.getRandomValues(new Uint8Array(16)));
 export const isKey = (x: unknown): x is string => typeof x === 'string' && /^[0-9a-f]{32}$/.test(x);
 
-/** Proof of having `key`, for this room and one-time number; empty without a key or without crypto.subtle (plain http). */
-export async function proofOf(key: string | undefined, room: string, nonce: string): Promise<string> {
+interface Described { currentLocalDescription?: { sdp: string } | null; currentRemoteDescription?: { sdp: string } | null }
+/** Every certificate fingerprint a side's description names (a forged second one changes the whole). */
+const prints = (d?: { sdp: string } | null): string =>
+  [...new Set([...(d?.sdp ?? '').matchAll(/^a=fingerprint:(.*)$/gim)].map((m) => m[1].trim().toLowerCase()))].sort().join(',');
+/** This connection's two ends, as WebRTC itself agreed them: what a proof is good for. Empty where there is none (tests). */
+export const ends = (pc: Described | undefined): { here: string; there: string } =>
+  ({ here: prints(pc?.currentLocalDescription), there: prints(pc?.currentRemoteDescription) });
+
+/** What a proof is for: this room, this one-time number, and the channel between this host and this phone. */
+export interface Challenge { room: string; nonce: string; host: string; phone: string }
+
+/** Proof of having `key`; empty without a key or without crypto.subtle (plain http). */
+export async function proofOf(key: string | undefined, c: Challenge): Promise<string> {
   if (!key || !globalThis.crypto?.subtle) return '';
   const bytes = (s: string) => new TextEncoder().encode(s);
   try {
     const k = await crypto.subtle.importKey('raw', bytes(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    return hex(new Uint8Array(await crypto.subtle.sign('HMAC', k, bytes(`${room}.${nonce}`))));
+    return hex(new Uint8Array(await crypto.subtle.sign('HMAC', k, bytes(JSON.stringify([c.room, c.nonce, c.host, c.phone])))));
   } catch { return ''; }
 }
 
@@ -168,6 +179,8 @@ export interface DeskHooks<C> {
   online(pid: string): boolean;
   /** Not heard from lately: likely asleep or gone. */
   quiet(conn: C): boolean;
+  /** The connection's ends (this host's, the phone's). */
+  ends(conn: C): { here: string; there: string };
   send(conn: C, msg: object): void;
   /** Says why, and closes. */
   refuse(conn: C, why: string): void;
@@ -196,7 +209,8 @@ export class Desk<C> {
     if (call?.stage !== 'prove') return;
     call.stage = 'check';
     const key = this.book.key(call.seat);
-    const want = await proofOf(key, this.book.room, call.nonce);
+    const { here, there } = this.hooks.ends(conn);
+    const want = await proofOf(key, { room: this.book.room, nonce: call.nonce, host: here, phone: there });
     if (this.calls.get(conn) !== call) return; // gone meanwhile
     call.proof = want !== '' && mac === want && this.book.key(call.seat) === key ? 'right' : 'wrong';
     this.advance(call);

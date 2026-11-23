@@ -9,7 +9,7 @@ import { BROKER_TROUBLE, LINK_TIMEOUT, backoff, classify, makePeer } from './net
 import { currentBroker } from './broker';
 import { hostPeerId, newPid } from './code';
 import { Assembler, toWire } from './parts';
-import { KeyRing, isKey, proofOf } from './seats';
+import { KeyRing, ends, isKey, proofOf } from './seats';
 import { load, remove, save } from '../storage';
 
 /** idle: not in a room. joining/live/lost: trying, connected, reconnecting. stopped: told to stop (see `stopped`). */
@@ -262,7 +262,8 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   private async prove(room: unknown, nonce: unknown): Promise<void> {
     const conn = this.conn;
     if (!isKey(room) || !isKey(nonce)) return;
-    const mac = await proofOf(this.keys.get(room), room, nonce);
+    const { here, there } = ends(conn?.peerConnection);
+    const mac = await proofOf(this.keys.get(room), { room, nonce, host: there, phone: here });
     if (conn && this.conn === conn) this.write({ t: 'proof', mac });
   }
 

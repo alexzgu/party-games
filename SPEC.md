@@ -873,8 +873,10 @@ about the game, replaces nobody and changes nothing.
   and sends `{t: 'key', key}`, and the host records it before the welcome. A phone never answers
   `enrol` with a key it already had.
 - A seat with a key: the host sends `{t: 'prove', room, nonce}` (a new random number each time) and
-  the phone answers `{t: 'proof', mac}`, an HMAC-SHA256 of both under its key; the key itself is
-  never sent again. The right proof replaces the seat's old connection at once, even one that still
+  the phone answers `{t: 'proof', mac}`, an HMAC-SHA256 under its key of both and of the two
+  certificate fingerprints of the connection (host's, phone's; each side reads them from its own
+  WebRTC descriptions, never from a message), so a proof passed along by a guest in between is
+  wrong; the key itself is never sent again. The right proof replaces the seat's old connection at once, even one that still
   looks online, so sleep, reload, Wi-Fi and broker changes need no tap. A wrong or empty proof is
   refused while the seat is online; while it is offline the host is asked.
 - The host is asked on the host screen: "Move Sam's seat to this phone?" (Yes / No). The phone shows
