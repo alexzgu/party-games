@@ -18,6 +18,8 @@ const HELLO_TIMEOUT = 10000;
 /** A message as JSON carries it (what a phone would send or get), or null. */
 const wire = (msg: unknown): unknown => { try { return JSON.parse(JSON.stringify(msg)); } catch { return null; } };
 const str = (x: unknown, max: number): x is string => typeof x === 'string' && x.length <= max;
+/** A player id a phone may use: the games keep their records by it, so never a name every object has. */
+const goodPid = (pid: string) => /^[\w-]{1,64}$/.test(pid) && !(pid in {});
 
 /** Marks a seat run on this screen in every list of players; a phone's name may not start with it. */
 export const BOT_MARK = '🤖';
@@ -26,6 +28,7 @@ export const BOT_PID = 'bot-';
 /** A phone's name without the bot mark (and the emoji variation selector that may follow it). */
 export const unmarked = (name: string) => name.replace(/^(?:\s|🤖|\uFE0F)+/u, '');
 const MARK_ONLY = 'Pick a name without 🤖 (it marks bots).';
+const BAD_PID = 'This phone cannot join. Reload the page and try again.';
 const BOT_SEAT = 'That name is already in use. Pick another name.';
 
 /** A pretend phone run by this screen: it gets what a phone would get, as it would read it off the link. */
@@ -315,6 +318,7 @@ export class HostLink {
   private hello(conn: DataConnection, pid: string, raw: string, modern: boolean): void {
     const name = unmarked(raw);
     if (!name.trim() && raw.trim()) return this.refuse(conn, MARK_ONLY);
+    if (!goodPid(pid)) return this.refuse(conn, BAD_PID);
     if (pid.startsWith(BOT_PID)) return this.refuse(conn, BOT_SEAT); // a phone may not take a seat run here
     this.desk.hello(conn, pid, name, modern);
   }
@@ -323,6 +327,7 @@ export class HostLink {
   private resolve(pid: string, name: string): Seat | { error: string } {
     const res = this.hooks.hello(pid, name, this.online);
     if ('error' in res) return res;
+    if (!goodPid(res.pid)) return { error: BAD_PID }; // a row saved before ids were checked
     if (this.locals.has(res.pid) || res.pid.startsWith(BOT_PID)) return { error: BOT_SEAT };
     return this.book.kicked(pid) || this.book.kicked(res.pid) ? { error: REMOVED } : res;
   }

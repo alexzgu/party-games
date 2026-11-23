@@ -862,6 +862,10 @@ bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 5,0
 each) and reassembled before it is read; incomplete parts are dropped after 30 s. (PeerJS errors
 and drops the link on a JSON message of 16,300 bytes or more.)
 
+A player id is 1–64 letters, digits, `_` or `-`, never a name every JavaScript object has; a phone
+makes a new one for each room it joins and keeps it for that room (after leaving, a refusal, a
+reload, or Play again).
+
 **Seat keys** (`seats.ts`; nobody can take another player's seat). Each seat has a secret key its
 phone made for that room; the player id and the name never prove anything. The room has a random
 id of its own (not its code) that lasts through a host reload, a code change and Play again, and

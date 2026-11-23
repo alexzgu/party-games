@@ -266,6 +266,16 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
   });
 });
 
+it('turns away ids the games could not keep records by', async () => {
+  const host = await load('hand');
+  for (const pid of ['', '__proto__', 'constructor', 'toString', 'a b', '~house', 'x'.repeat(65)]) {
+    const p = phone(host.link, pid, 'Sam');
+    expect(p.types().filter((t) => t !== 'reject'), pid).toEqual([]);
+  }
+  expect((host.game as unknown as { players: unknown[] }).players).toEqual([]);
+  close(host);
+});
+
 it('a proof counts only on the connection it was made for: one passed along by a guest in between is wrong', async () => {
   const host = await load('hand');
   const sam = phone(host.link, 'p1', 'Sam');
@@ -396,6 +406,25 @@ describe('the app\'s phone', () => {
     await until(() => p.link === 'live');
     expect(p.link).toBe('live');
     expect(host.link.asks).toEqual([]);
+    close(host);
+  });
+
+  it('uses an id in one room only: kept after leaving or a refusal, new in any other', async () => {
+    const host = await load('snark');
+    const p = await join(host);
+    const pid = p.me!.pid;
+    p.join(host.game!.code, 'Samuel');
+    expect(p.me!.pid).toBe(pid);
+    p.leave();
+    const { PhoneLink } = await import('./phone-link.svelte');
+    const reloaded = new PhoneLink<{ t: string }, BaseView>('snark', { keep: () => false });
+    reloaded.join(host.game!.code, 'Sam');
+    expect(reloaded.me!.pid).toBe(pid);
+    reloaded.leave();
+    net.hosts.set('jerkbox-snark-ZZZZ', () => {});
+    reloaded.join('ZZZZ', 'Sam');
+    expect(reloaded.me!.pid).not.toBe(pid);
+    reloaded.leave();
     close(host);
   });
 

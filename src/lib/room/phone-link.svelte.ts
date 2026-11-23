@@ -15,8 +15,8 @@ import { load, remove, save } from '../storage';
 /** idle: not in a room. joining/live/lost: trying, connected, reconnecting. stopped: told to stop (see `stopped`). */
 export type Link = 'idle' | 'joining' | 'live' | 'lost' | 'stopped';
 
-/** A phone's player: its id, the name it joined with and the room it is in. */
-export interface Me { pid: string; name: string; code: string; /** The host has welcomed this phone into that room. */ joined?: boolean }
+/** A phone's player: its id (for the room `of`, kept after leaving it), the name it joined with and the room it is in. */
+export interface Me { pid: string; name: string; code: string; of?: string; /** The host has welcomed this phone into that room. */ joined?: boolean }
 
 /** Every view carries the time left on its timer (ms, or null) and whether the game is paused. */
 export interface BaseView { left: number | null; paused: boolean }
@@ -79,9 +79,10 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
 
   /** Joins a room by code and name (a new attempt: an unknown code is reported, not retried). */
   join(code: string, name: string): void {
-    const pid = this.me?.pid ?? newPid();
+    // An id belongs to one room: nobody who met it in another can sit on it here.
+    const pid = this.me && (this.me.code || this.me.of) === code ? this.me.pid : newPid();
     this.halt(''); // a fresh peer, on the broker chosen now
-    this.setMe({ pid, name, code, joined: false });
+    this.setMe({ pid, name, code, of: code, joined: false });
     this.room = code;
     this.view = null;
     this.start();
@@ -102,7 +103,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.link = 'idle';
     this.view = null;
     this.room = '';
-    if (this.me) this.setMe({ ...this.me, code: '', joined: false });
+    if (this.me) this.setMe({ ...this.me, of: this.me.code || this.me.of, code: '', joined: false });
   }
 
   /** Sends a game message; kept and re-sent after a reconnect until a view shows it arrived. */
@@ -155,7 +156,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   }
 
   private forget(): void {
-    if (this.me) this.setMe({ ...this.me, code: '', joined: false });
+    if (this.me) this.setMe({ ...this.me, of: this.me.code || this.me.of, code: '', joined: false });
     else remove(`${this.game}:me`);
   }
 
