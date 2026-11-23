@@ -9,18 +9,18 @@
   import AddMore from '../../components/AddMore.svelte';
   import FinalForm from './FinalForm.svelte';
   import WizardItem from './WizardItem.svelte';
-  import { removeFinal, setFinal } from './finals';
-  import { customSnark, snarkPacks, type SnarkPack } from '../../lib/content';
+  import { changeFinal, changePrompt, changeSaved, type Change, type PromptText } from './edits';
+  import { customSnark, snarkPacks, type SnarkFinal, type SnarkPack } from '../../lib/content';
   import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
   import { findPrompts } from './find';
   import { afterRun, shareWizardPack } from '../../lib/library';
   import { fillStock, MORE_RANGE, moreItems, toFill } from './generate';
-  import { addItems, addStock, itemKey, missingStock, packTexts, removePrompt, setPrompt, type SnarkItem, type Stock } from './pack';
+  import { addItems, addStock, itemKey, missingStock, packTexts, type SnarkItem, type Stock } from './pack';
 
   // One pack, every prompt listed with its stock answer: rename, add, edit, delete; every change
-  // saves at once, the finals under them likewise. Editing a built-in saves this device's copy under the same id; "Restore
-  // original" drops it. The player's own packs get "🧙 Add more" and, when some prompts have no
+  // saves at once on the pack as it is saved by then (edits.ts), the finals under them likewise; one that could not be
+  // saved stays open and says why. Editing a built-in saves this device's copy under the same id; "Restore original" drops it. The player's own packs get "🧙 Add more" and, when some prompts have no
   // stock answer (pasted or older packs), "🧙 Fill in stock answers".
   let { id, onback }: { id: string; onback: () => void } = $props();
 
@@ -32,60 +32,67 @@
   // svelte-ignore state_referenced_locally
   let edited = $state(customSnark.isEdited(id));
   let name = $state(initial?.name ?? '');
-  let open = $state<number | 'new' | null>(null);
+  /** Deleted elsewhere; what is open stays open until it is closed. */
+  let gone = $state(false);
+  /** The prompt open in its popup, as it read (null: a new one). */
+  let open = $state.raw<{ was: PromptText | null } | null>(null);
   /** The final open in its popup. */
-  let openFinal = $state<number | 'new' | null>(null);
+  let openFinal = $state.raw<{ was: SnarkFinal | null } | null>(null);
   let draft = $state('');
   let stockDraft = $state('');
   let problem = $state('');
+  let nameProblem = $state('');
   let confirm = $state<'' | 'restore' | 'delete'>('');
   let query = $state('');
   let sort = $state<SortKey>('suggested');
   const shown = $derived(pack ? findPrompts(pack.prompts, query, sort) : []);
 
-  function persist(next: SnarkPack) {
-    const { custom: _, ...plain } = next;
-    customSnark.put($state.snapshot(plain));
-    pack = next;
+  /** Saves a change and shows the pack as it then stands; why it could not be saved, or ''. */
+  function apply(change: Change): string {
+    const r = changeSaved(id, change);
+    gone = !r.pack;
+    if (r.pack) pack = r.pack;
     edited = customSnark.isEdited(id);
+    return r.problem;
   }
 
   function rename() {
     if (!pack) return;
     const n = name.trim().replace(/\s+/g, ' ');
-    if (!n || n === pack.name) { name = pack.name; return; }
-    persist({ ...pack, name: n });
+    nameProblem = n && n !== pack.name ? apply((now) => ({ ...now, name: n })) : '';
+    if (!nameProblem) name = pack.name;
   }
 
-  function edit(i: number | 'new') {
-    open = i;
-    draft = i === 'new' || !pack ? '' : pack.prompts[i];
-    stockDraft = i === 'new' || !pack ? '' : pack.safety?.[pack.prompts[i]] ?? '';
+  function edit(q: string | null) {
+    const was = q === null ? null : { text: q, stock: pack?.safety?.[q] ?? '' };
+    open = { was };
+    draft = was?.text ?? '';
+    stockDraft = was?.stock ?? '';
     problem = '';
   }
 
   function save(e: SubmitEvent) {
     e.preventDefault();
-    if (!pack || open === null) return;
+    if (!open) return;
     const text = draft.trim().replace(/\s+/g, ' ');
-    if (!text) { problem = 'Type a prompt first.'; return; }
-    if (pack.prompts.some((q, i) => i !== open && q.toLowerCase() === text.toLowerCase())) { problem = 'That prompt is already in this pack.'; return; }
-    persist(setPrompt(pack, open, text, stockDraft.trim().replace(/\s+/g, ' ')));
+    problem = text ? apply(changePrompt(open.was, { text, stock: stockDraft.trim().replace(/\s+/g, ' ') })) : 'Type a prompt first.';
+    if (problem) return;
     open = null;
     query = '';
     sfx.correct();
   }
 
-  function remove(i: number) {
-    if (!pack) return;
-    persist(removePrompt(pack, i));
-    open = null;
+  function remove(was: PromptText) {
+    problem = apply(changePrompt(was, null));
+    if (!problem) open = null;
   }
 
-  function putFinal(next: SnarkPack) {
-    persist(next);
+  function saveFinal(was: SnarkFinal | null, to: SnarkFinal | null): string {
+    const why = apply(changeFinal(was, to));
+    if (why) return why;
     openFinal = null;
     sfx.correct();
+    return '';
   }
 
   /** "🧙 Add more" or "🧙 Fill in stock answers", open in place of the editor. */
@@ -93,13 +100,14 @@
   const missing = $derived(pack ? missingStock(pack).length : 0);
   const otherTexts = () => snarkPacks().filter((p) => p.id !== id).flatMap(packTexts);
   /** What the wizard added (prompts, or stock answers) is saved, then the whole pack is shared (when made through a pass). */
-  function added(next: SnarkPack, byPass: boolean) {
-    const marked = afterRun(next, byPass, false);
-    persist(marked);
-    void shareWizardPack('snark', marked, byPass);
+  function added(add: (now: SnarkPack) => SnarkPack, byPass: boolean): string {
+    const why = apply((now) => afterRun(add(now), byPass, false));
+    if (why) return why;
+    void shareWizardPack('snark', $state.snapshot(pack) as SnarkPack, byPass);
     query = '';
     adding = '';
     sfx.correct();
+    return '';
   }
 
   function restore() {
@@ -121,21 +129,21 @@
   {@const p = $state.snapshot(pack) as SnarkPack}
   {#if adding === 'more'}
     <AddMore name={p.name} noun="prompts" range={MORE_RANGE} steerHint="e.g. more about work, sillier"
-      ask={(o) => moreItems(p, otherTexts(), o)} keyOf={itemKey} onadd={(kept: SnarkItem[], byPass: boolean) => added(addItems(p, kept), byPass)} onclose={() => (adding = '')}>
+      ask={(o) => moreItems(p, otherTexts(), o)} keyOf={itemKey} onadd={(kept: SnarkItem[], byPass: boolean) => added((now) => addItems(now, kept), byPass)} onclose={() => (adding = '')}>
       {#snippet item(i: SnarkItem)}<WizardItem {i} />{/snippet}
     </AddMore>
   {:else}
     {@const n = toFill(p).length}
     <AddMore title="🧙 Fill in stock answers" name={p.name} noun="stock answers" range={null} steerHint="e.g. sillier, shorter"
       cta="✨ Write {n} stock {n === 1 ? 'answer' : 'answers'}" ask={(o) => fillStock(p, o)} keyOf={itemKey}
-      onadd={(kept: Stock[], byPass: boolean) => added(addStock(p, kept), byPass)} onclose={() => (adding = '')}>
+      onadd={(kept: Stock[], byPass: boolean) => added((now) => addStock(now, kept), byPass)} onclose={() => (adding = '')}>
       {#snippet size()}<p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer for “Give me one”.{missing > n ? ` Fizzwick does ${n} at a time.` : ''}</p>{/snippet}
       {#snippet item(i: Stock)}<WizardItem {i} />{/snippet}
     </AddMore>
   {/if}
 {:else}
-<Screen title={pack?.name ?? 'Pack'} {onback} fill={!!pack}>
-  {#if !pack}
+<Screen title={pack?.name ?? 'Pack'} {onback} fill={!!pack && !gone}>
+  {#if !pack || gone}
     <p class="muted">This pack is no longer on this device.</p>
   {:else}
     <PinnedPanel kind="editor" label="snark-items-h" foldId="snark-details" foldName="details" foldSpoken="pack details" keep="items">
@@ -160,6 +168,7 @@
             <span>Pack name</span>
             <input type="text" bind:value={name} onchange={rename} maxlength="40" autocomplete="off" enterkeyhint="done" />
           </label>
+          {#if nameProblem}<p class="problem" role="alert">{nameProblem}</p>{/if}
         {/if}
       {/snippet}
       {#snippet row(toggle)}
@@ -176,30 +185,30 @@
       <ul class="prompts">
         {#each shown as { q, i } (i)}
           {@const stock = pack.safety?.[q]}
-          <li><button class="prompt" onclick={() => edit(i)}>{q}{#if stock}<span class="stock">Give me one: {stock}</span>{/if}</button></li>
+          <li><button class="prompt" onclick={() => edit(q)}>{q}{#if stock}<span class="stock">Give me one: {stock}</span>{/if}</button></li>
         {/each}
       </ul>
       <section class="list" aria-label="Finals">
         <h3 class="count">{pack.finals?.length ?? 0} {pack.finals?.length === 1 ? 'final' : 'finals'} for three-line duels</h3>
         <ul class="prompts">
           {#each pack.finals ?? [] as f, i (i)}
-            <li><button class="prompt" onclick={() => (openFinal = i)}>{f.prompt}<span class="stock">House: {f.house.join(' · ')}</span></button></li>
+            <li><button class="prompt" onclick={() => (openFinal = { was: $state.snapshot(f) as SnarkFinal })}>{f.prompt}<span class="stock">House: {f.house.join(' · ')}</span></button></li>
           {/each}
         </ul>
-        <Button variant="secondary" size="sm" onclick={() => (openFinal = 'new')} tip="Type in a prompt for three-line duels and the house's three lines">+ Add a final</Button>
+        <Button variant="secondary" size="sm" onclick={() => (openFinal = { was: null })} tip="Type in a prompt for three-line duels and the house's three lines">+ Add a final</Button>
       </section>
     </PinnedPanel>
   {/if}
   {#snippet actions()}
-    {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = 'more')} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
-    {#if pack}<Button size="lg" onclick={() => edit('new')} tip="Type in a new prompt yourself">+ Add a prompt</Button>{/if}
+    {#if pack && !gone && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = 'more')} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
+    {#if pack && !gone}<Button size="lg" onclick={() => edit(null)} tip="Type in a new prompt yourself">+ Add a prompt</Button>{/if}
   {/snippet}
 </Screen>
 {/if}
 
-{#if pack && open !== null}
-  {@const index = open}
-  <Popup title={index === 'new' ? 'New prompt' : 'Edit prompt'} onclose={() => (open = null)}>
+{#if open}
+  {@const was = open.was}
+  <Popup title={was ? 'Edit prompt' : 'New prompt'} onclose={() => (open = null)}>
     <form class="form" onsubmit={save}>
       <label class="field">
         <span>Prompt</span>
@@ -210,16 +219,15 @@
         <input type="text" bind:value={stockDraft} maxlength="80" autocomplete="off" placeholder="The Unsinkable II" />
       </label>
       {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
-      <Button type="submit">{index === 'new' ? 'Add prompt' : 'Save prompt'}</Button>
-      {#if index !== 'new'}<Button variant="danger" onclick={() => remove(index)}>Delete prompt</Button>{/if}
+      <Button type="submit">{was ? 'Save prompt' : 'Add prompt'}</Button>
+      {#if was}<Button variant="danger" onclick={() => remove(was)}>Delete prompt</Button>{/if}
     </form>
   </Popup>
 {/if}
 
-{#if pack && openFinal !== null}
-  {@const p = $state.snapshot(pack) as SnarkPack}
-  {@const at = openFinal}
-  <FinalForm pack={p} {at} onsave={(f) => putFinal(setFinal(p, at, f))} ondelete={() => { if (at !== 'new') putFinal(removeFinal(p, at)); }} onclose={() => (openFinal = null)} />
+{#if openFinal}
+  {@const was = openFinal.was}
+  <FinalForm {was} save={(f) => saveFinal(was, f)} onclose={() => (openFinal = null)} />
 {/if}
 
 {#if pack && confirm === 'restore'}

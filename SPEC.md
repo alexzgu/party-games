@@ -189,6 +189,9 @@ out by the naming Import uses (`savedNames`) and again when the packs on the pho
 Working it out only reads: an own pack whose id a new built-in takes shows under its new id at once,
 and the move is stored as the app starts and before each save (`settle` in `content.ts`).
 An editor open in two tabs saves no old copy over a newer one: it shows the newer and asks again.
+Snark Tank's puts each change on the pack as saved by then (`snark/edits.ts`): a prompt or final
+changed or deleted elsewhere, a deleted pack or a full phone saves nothing, and the form stays open
+with what was typed and says why.
 A refused share says why in plain words (`failureWords`:
 offline, pass ran out (the box comes back), today's sharing limit, too big, server trouble). What
 goes, and what the button compares, is always the pack as saved on the phone (each editor saves on

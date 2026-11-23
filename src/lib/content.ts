@@ -76,8 +76,8 @@ function customStore<T extends { id: string } & PackMeta>(key: string, builtin: 
     all: (): T[] => stored().filter((x) => !builtinIds.has(x.id)),
     /** Everything saved, own packs and edits, for merging over the built-ins. */
     saved: stored,
-    put(item: T): void {
-      this.putAll([item]);
+    put(item: T): boolean {
+      return this.putAll([item]);
     },
     /** Saves the packs on top, in this order, in one write: all of them, or (no room: false) none. */
     putAll(packs: readonly T[]): boolean {
