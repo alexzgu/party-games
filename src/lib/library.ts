@@ -8,7 +8,7 @@ import type { PackGameId } from '../app.config';
 import { slugify } from './content';
 import { viaPass } from './claude';
 import { cleanExtra, cleanItems, cleanPublish, itemCount, SHAPE, text } from './libraryShape';
-import { builtinPacks, FORMAT, isBuiltinPack, itemsField, listFields, markPackShared, NO_ROOM, ownPack, packParts, readFile, savePacks, unitOf, type AnyPack, type ImportResult } from './packfile';
+import { builtinPacks, FORMAT, isBuiltinPack, itemsField, listFields, markPackShared, NO_ROOM, ownPack, packParts, readFile, savedNames, savePacks, unitOf, type AnyPack, type ImportResult } from './packfile';
 import { isSending, lastShared, noteShared, setSending, type SharedRecord } from './shareLog.svelte';
 import { saveSettings, settings } from './settings.svelte';
 import { getUsername } from './username';
@@ -370,6 +370,19 @@ function asImported(game: PackGameId, pack: LibraryFull, raw: Record<string, unk
   const { items, extra } = packParts(game, ready.pack);
   const leftOut = game === 'quiz' ? ready.skipped : Math.max(0, thingsIn(raw.items, raw.extra) - thingsIn(items, extra));
   return { ...pack, name: ready.pack.name, blurb: ready.pack.blurb, items, extra, count: itemCount(game, items, extra), ready, ...(leftOut ? { leftOut } : {}) };
+}
+
+/** The names a library pack would be saved under now (several for one split into parts, none for one that can't be imported). */
+export function namesIfImported(game: PackGameId, pack: LibraryFull): string[] {
+  const read = pack.ready ?? readLibraryPack(game, pack);
+  return 'error' in read ? [] : savedNames(game, [read.pack]);
+}
+
+/** "Saves as “Movies (2)”." when the saved names are not just the pack's own, else ''. */
+export function namesNote(name: string, names: readonly string[]): string {
+  if (!names.length || (names.length === 1 && names[0] === name)) return '';
+  const list = names.map((n) => `“${n}”`).join(', ');
+  return names.length > 1 ? `Saves as ${names.length} packs: ${list}.` : `Saves as ${list}.`;
 }
 
 /**

@@ -183,7 +183,9 @@ which does the same; nothing is split until it is tapped. (An edit of a built-in
 shared, so it may stay longer.) The server takes such a pack only whole: every item one the game
 itself takes, none twice, and stored as checked; the phone sends no pack the library would cut
 anything from (Snark Tank's stock answers and finals included). A fetched pack is read once, as an
-import reads it: the preview shows exactly what Import saves and says how much it leaves out.
+import reads it: the preview shows exactly what Import saves and says how much it leaves out, under
+the name it is saved under ("Saves as “Movies (2)”." when it is not its own; every part's for a pack saved as several), worked
+out by the naming Import uses (`savedNames`) and again when the packs on the phone may have changed.
 An editor open in two tabs saves no old copy over a newer one: it shows the newer and asks again.
 A refused share says why in plain words (`failureWords`:
 offline, pass ran out (the box comes back), today's sharing limit, too big, server trouble). What

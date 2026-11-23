@@ -360,13 +360,20 @@ export function putSplit<P extends object>(game: PackGameId, pack: P): P[] {
 }
 
 /**
- * Saves the packs as the player's own, each under an id no built-in or saved pack uses, and a
- * name none uses either, so two tiles never look alike; one too long is saved as several. All of
- * them, or none (an empty list) when there is no room.
+ * The packs as `savePacks` would save them now: each under an id no built-in or saved pack uses,
+ * and a name none uses either, so two tiles never look alike; one too long is several.
  */
-export function savePacks(game: PackGameId, packs: readonly AnyPack[]): AnyPack[] {
+function asSaved(game: PackGameId, packs: readonly AnyPack[]): AnyPack[] {
   const fresh = namer(game);
-  const out = packs.flatMap((p) => splitPack({ ...p, ...fresh(p) }, fieldsOf(game), SHAPE.itemsMax, () => fresh(p, true)));
+  return packs.flatMap((p) => splitPack({ ...p, ...fresh(p) }, fieldsOf(game), SHAPE.itemsMax, () => fresh(p, true)));
+}
+
+/** The names `savePacks` would save the packs under now. */
+export const savedNames = (game: PackGameId, packs: readonly AnyPack[]): string[] => asSaved(game, packs).map((p) => p.name);
+
+/** Saves the packs as the player's own (`asSaved`): all of them, or none (an empty list) when there is no room. */
+export function savePacks(game: PackGameId, packs: readonly AnyPack[]): AnyPack[] {
+  const out = asSaved(game, packs);
   return STORES[game].putAll(out) ? out : [];
 }
 

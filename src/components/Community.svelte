@@ -7,7 +7,7 @@
   import CommunityItems from './CommunityItems.svelte';
   import type { PackGameId } from '../app.config';
   import { hasKey } from '../lib/claude';
-  import { failureWords, getPack, hasPass, importLibraryPack, listPacks, starPack, type Failure, type LibraryFull, type Sort } from '../lib/library';
+  import { failureWords, getPack, hasPass, importLibraryPack, listPacks, namesIfImported, namesNote, starPack, type Failure, type LibraryFull, type Sort } from '../lib/library';
   import { cachedListing, keepListing, listingKey, starInListings, withPage, type Listing } from '../lib/communityCache';
   import { addedNote, readView, viewUrl, type CommunityView } from '../lib/communityView';
   import { unitOf, type ImportResult } from '../lib/packfile';
@@ -97,6 +97,10 @@
   /** The pack open in the preview (from the address), while it loads and once it has. */
   const openId = $derived(view.pack);
   let open = $state.raw<LibraryFull | null>(null);
+  /** Bumped when packs may have changed elsewhere (another tab), so the names are worked out again. */
+  let packsSeen = $state(0);
+  /** The names the open pack would be saved under. */
+  const names = $derived.by(() => { void packsSeen; return open ? namesIfImported(game, open) : []; });
   let openFailure = $state<Failure | null>(null);
   let starring = $state(false);
   let starNote = $state('');
@@ -190,13 +194,17 @@
   </div>
 {/snippet}
 
+<svelte:window onstorage={() => packsSeen++} onfocus={() => packsSeen++} />
+<svelte:document onvisibilitychange={() => packsSeen++} />
+
 <div class="community" bind:this={wrap}>
 {#if openId}
-  <Screen title={open?.name ?? 'Community pack'} onback={closePreview} backLabel="Back to the Community packs">
+  <Screen title={names[0] ?? open?.name ?? 'Community pack'} onback={closePreview} backLabel="Back to the Community packs">
     {#if open}
       <div class="about">
         {#if open.blurb}<p class="blurb">{open.blurb}</p>{/if}
         <p class="faint">{count(open.count)} · ★ {open.stars}</p>
+        {#if namesNote(open.name, names)}<p class="small saves">{namesNote(open.name, names)}</p>{/if}
         {#if open.leftOut}<p class="faint small">{open.leftOut} more left out: already in the built-in packs, or not usable in this game.</p>{/if}
         {#if open.username}<p><span class="who">{open.username}</span></p>{/if}
       </div>
@@ -294,6 +302,7 @@
   .about .blurb { -webkit-line-clamp: unset; line-clamp: unset; display: block; }
   .star { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2) var(--s-3); }
   .small { font-size: 0.9rem; }
+  .saves { color: var(--text-dim); font-weight: 600; }
   .hint {
     min-height: 44px; padding: 0 var(--s-3); border: 1.5px dashed var(--line-strong); border-radius: var(--r-pill);
     background: transparent; color: var(--text-dim); font-weight: 600; font-size: 0.9rem;

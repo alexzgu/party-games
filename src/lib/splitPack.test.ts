@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { customHand, type HandPack } from './content';
-import { exportFile, importPacks, NO_ROOM, putSplit, tooLong } from './packfile';
-import { shareProblem } from './library';
+import { exportFile, importPacks, NO_ROOM, putSplit, savedNames, savePacks, tooLong } from './packfile';
+import { namesNote, shareProblem } from './library';
 
 beforeEach(() => {
   const mem = new Map<string, string>();
@@ -22,6 +22,17 @@ describe('a pack too long for one', () => {
     expect(saved[1].id).toMatch(/^mine-[a-z0-9]{12,}$/);
     expect(customHand.all().flatMap((p) => p.answers)).toEqual(pack(501).answers);
     expect(saved.map((p) => [shareProblem('hand', p), tooLong('hand', p)])).toEqual([[null, false], [null, false]]);
+  });
+
+  it('is shown before saving under the names it is saved under, worked out again as packs come', () => {
+    for (const expected of [['Mine', 'Mine (2)'], ['Mine (3)', 'Mine (4)']]) {
+      const names = savedNames('hand', [pack(501)]);
+      expect(names).toEqual(expected);
+      expect(savePacks('hand', [pack(501)]).map((p) => p.name)).toEqual(names);
+    }
+    expect(namesNote('Mine', ['Mine (3)'])).toBe('Saves as “Mine (3)”.');
+    expect(namesNote('Mine', ['Mine', 'Mine (2)'])).toBe('Saves as 2 packs: “Mine”, “Mine (2)”.');
+    expect(namesNote('Mine', ['Mine'])).toBe('');
   });
 
   it('keeps 400 in one pack, and an odd prompt in the first', () => {
