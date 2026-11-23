@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { KeyRing, ends, newKey, nextStep, proofOf, type Claim, type Held, type Step } from './seats';
+import { KeyRing, askText, ends, newKey, nextStep, proofOf, type Claim, type Held, type Step } from './seats';
 import type { HostLink } from './host-link.svelte';
 import type { PhoneLink, BaseView } from './phone-link.svelte';
 
@@ -251,7 +251,7 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
 
     const old = phone(host.link, 'p5', 'Old', undefined, false);
     expect(old.types()).toEqual(['wait']);
-    expect(host.link.asks).toMatchObject([{ name: 'Old', fresh: true }]);
+    expect(askText(host.link.asks[0])).toBe('Let Old join from a phone with an old page (it shows no number)?');
     host.link.answer(host.link.asks[0], true);
     expect(old.types()).toEqual(['wait', 'welcome', 'view']);
     const redial = phone(host.link, 'p5', 'Old', undefined, false);
@@ -365,6 +365,7 @@ describe('a question to the host', () => {
     const { host } = await room();
     const first = await ask(host);
     const asked = host.link.asks[0];
+    expect(askText(asked)).toBe(`Move Sam’s seat to the phone showing ${asked.code}?`);
     expect(first.got.at(-1)!.why).toBe(`Waiting for a Yes on the host screen. Your number is ${asked.code}.`);
     expect(asked.code).toBeGreaterThanOrEqual(10);
     expect(asked.code).toBeLessThan(100);

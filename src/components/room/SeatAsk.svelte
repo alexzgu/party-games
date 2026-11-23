@@ -1,5 +1,6 @@
 <script lang="ts">
   import Button from '../Button.svelte';
+  import { askText } from '../../lib/room/seats';
   import type { HostLink } from '../../lib/room/host-link.svelte';
 
   // Host screen: a phone that cannot show it owns a seat waits for the host's Yes or No. The
@@ -12,9 +13,9 @@
 {#if ask}
   {#key ask.id}
     <div class="ask pop-in" role="alertdialog" aria-label="A phone is waiting">
-      <p>{ask.fresh ? `Let ${ask.name} join from the phone showing ${ask.code}?` : `Move ${ask.name}’s seat to the phone showing ${ask.code}?`}</p>
+      <p>{askText(ask)}</p>
       <div class="answers">
-        <Button size="sm" onclick={() => link.answer(ask, true)} tip="Only if you see that number on their phone">Yes</Button>
+        <Button size="sm" onclick={() => link.answer(ask, true)} tip={ask.code === null ? 'Only if you know whose phone it is' : 'Only if you see that number on their phone'}>Yes</Button>
         <Button size="sm" variant="secondary" onclick={() => link.answer(ask, false)}>No</Button>
       </div>
     </div>

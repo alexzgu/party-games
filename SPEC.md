@@ -898,8 +898,8 @@ about the game, replaces nobody and changes nothing.
   do keys) is never open: the host is asked once, and the phone enrols. While the phone in it was
   heard from in the last 5 s, another is closed without a word.
 - A page that cannot do keys (its `hello` has no `keys`) needs the host's Yes on every connection,
-  for a new seat ("Let Sam join from the phone showing 47?") or one without a key, which stays without one;
-  for a seat with a key it is told "Reload this page to rejoin."
+  for a new seat or one without a key, which stays without one ("Let Sam join from a phone with an
+  old page (it shows no number)?", as it cannot show one); for a seat with a key it is told "Reload this page to rejoin."
 - A connection is given one seat, once. Leaving, removal and replacement stop the host listening to
   it at once, and end every claim still pending on that seat; moving to a new code ends them all.
   Removal drops the key and blocks the player id for the life of the room, across

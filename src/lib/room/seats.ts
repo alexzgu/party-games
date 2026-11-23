@@ -129,7 +129,7 @@ const NO_ANSWER = 'The host did not answer. Try again.';
 const BUSY = 'Another phone is asking for that seat. Try again in a minute.';
 const CROWD = 'Too many phones are waiting for the host. Try again in a minute.';
 const CHANGED = 'The room changed while you waited. Join again.';
-const waitFor = (code: number) => `Waiting for a Yes on the host screen. Your number is ${code}.`;
+const waitFor = (code: number | null) => `Waiting for a Yes on the host screen. Your number is ${code}.`;
 
 /** How long the host has to answer. */
 export const ASK_MS = 60_000;
@@ -169,8 +169,13 @@ export function nextStep(c: Claim, s: Held): Step {
 
 // --- the desk: phones that have said hello and have no seat yet ---
 
-/** A question on the host screen: may the phone showing `code` have that seat? */
-export interface Ask { id: number; code: number; name: string; fresh: boolean }
+/** A question on the host screen: may the phone showing `code` have that seat? A page that cannot do keys shows none (null). */
+export interface Ask { id: number; code: number | null; name: string; fresh: boolean }
+
+export const askText = ({ name, fresh, code }: Ask): string => {
+  const which = code === null ? 'a phone with an old page (it shows no number)' : `the phone showing ${code}`;
+  return fresh ? `Let ${name} join from ${which}?` : `Move ${name}’s seat to ${which}?`;
+};
 
 interface Call<C> extends Claim {
   conn: C;
@@ -185,7 +190,7 @@ interface Call<C> extends Claim {
 }
 
 /** A random number from 10 to 99 that is not in `taken`. */
-function twoDigits(taken: number[]): number {
+function twoDigits(taken: (number | null)[]): number {
   const n = 10 + (crypto.getRandomValues(new Uint32Array(1))[0] % 90);
   return taken.includes(n) ? twoDigits(taken) : n;
 }
@@ -327,7 +332,7 @@ export class Desk<C> {
     call.stage = '';
     const open = this.all().flatMap((c) => (c.ask ? [c.ask.code] : []));
     if (open.length >= ASKS_MAX) return this.refuse(call, CROWD);
-    const ask: Ask = { id: ++this.asked, code: twoDigits(open), name: seat.name, fresh: seat.fresh };
+    const ask: Ask = { id: ++this.asked, code: call.modern ? twoDigits(open) : null, name: seat.name, fresh: seat.fresh };
     call.ask = ask;
     setTimeout(() => this.expire(ask), ASK_MS);
     this.hooks.send(call.conn, { t: 'wait', why: waitFor(ask.code) });
