@@ -173,9 +173,7 @@ function contentOf(game: PackGameId, pack: AnyPack) {
  */
 export async function publishPack(game: PackGameId, pack: AnyPack, mark = false): Promise<Got<{ id: string }>> {
   const sent = ownPack(game, pack.id) ?? pack;
-  // Never sent when the library would not take it whole: it would look shared with items missing.
-  // (A Big Board is never cut, and one with tiles still to fill is shared by the wizard as it is.)
-  if (game !== 'quiz' && shareProblem(game, sent)) return { ok: false, reason: 'broken' };
+  if (unsendable(game, sent)) return { ok: false, reason: 'broken' };
   const localId = lastShared(game, sent.id)?.localId ?? sent.id;
   const body = { game, ...contentOf(game, sent), localId, username: getUsername() };
   setSending(game, sent.id, true);
@@ -278,6 +276,19 @@ export function shareProblem(game: PackGameId, pack: AnyPack): string | null {
   return null;
 }
 
+/**
+ * Why `publishPack` never sends the pack, or null: the library would not take it whole, so it would
+ * look shared with items missing. (A Big Board is never cut, and one with tiles still to fill is
+ * shared by the wizard as it is.)
+ */
+const unsendable = (game: PackGameId, pack: AnyPack): string | null => (game === 'quiz' ? null : shareProblem(game, pack));
+
+/** What a failed share by hand says: what is wrong with the saved pack when that is why, else `failureWords`. */
+export function shareFailure(game: PackGameId, id: string, reason: Failure): string {
+  const saved = reason === 'broken' ? ownPack(game, id) : undefined;
+  return (saved && unsendable(game, saved)) || failureWords(reason, 'share');
+}
+
 // ---- Sharing what the wizard made
 
 const listeners = new Set<(note: string) => void>();
@@ -294,7 +305,8 @@ export function onLibraryNote(fn: (note: string) => void): () => void {
  * host's own key or an invite link, now or in an earlier run, keeps it private even once the
  * phone has a pass. Nothing happens either for a game without the library or a built-in pack.
  * Call it after saving (the saved version is what goes) and don't wait for it: it never throws;
- * a failure only shows a small note, and the pack's editor then offers to share it.
+ * a failure only shows a small note (with what to fix, when that is why), and the pack's editor
+ * then offers to share it.
  */
 export async function shareWizardPack(game: PackGameId, pack: AnyPack, byPass: boolean): Promise<boolean> {
   if (pack.shared !== true || !byPass || !hasPass() || !libraryOn(game) || isBuiltinPack(game, pack.id)) return false;
@@ -304,7 +316,10 @@ export async function shareWizardPack(game: PackGameId, pack: AnyPack, byPass: b
   } catch {
     ok = false;
   }
-  if (!ok) for (const fn of listeners) fn(SHARE_FAILED);
+  if (!ok) {
+    const why = unsendable(game, ownPack(game, pack.id) ?? pack);
+    for (const fn of listeners) fn(why ? `${SHARE_FAILED}. ${why}` : SHARE_FAILED);
+  }
   return ok;
 }
 

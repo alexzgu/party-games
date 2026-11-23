@@ -37,12 +37,11 @@ export function readFinals(raw: readonly unknown[]): { finals: SnarkFinal[]; dro
   return { finals, dropped };
 }
 
-/** "Fix these finals first: “Three things” (repeated).", naming at most two; '' when none are dropped. */
+/** "Fix these finals first: “Three things” (repeated), …", naming every one; '' when none are dropped. */
 export function finalsNote(dropped: readonly DroppedFinal[]): string {
   if (!dropped.length) return '';
-  const named = dropped.slice(0, 2).map((d) => `${d.prompt ? `“${d.prompt}”` : 'one final'} (${d.why})`).join(', ');
-  const rest = dropped.length > 2 ? ` and ${dropped.length - 2} more` : '';
-  return `Fix ${dropped.length === 1 ? 'this final' : 'these finals'} first: ${named}${rest}.`;
+  const named = dropped.map((d) => `${d.prompt ? `“${d.prompt}”` : 'one final'} (${d.why})`).join(', ');
+  return `Fix ${dropped.length === 1 ? 'this final' : 'these finals'} first: ${named}.`;
 }
 
 /** Why final `at` of the pack (or a new one) cannot be saved as typed, or ''. */

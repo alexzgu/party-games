@@ -10,7 +10,7 @@
   import Button from './Button.svelte';
   import MagicWords from './MagicWords.svelte';
   import { hasKey } from '../lib/claude';
-  import { failureWords, hasPass, shareByHand, shareProblem, shareStatusNow } from '../lib/library';
+  import { hasPass, shareByHand, shareFailure, shareProblem, shareStatusNow } from '../lib/library';
   import { ownPack, type AnyPack } from '../lib/packfile';
   import { getUsername } from '../lib/username';
   import { sfx } from '../lib/sound';
@@ -64,7 +64,7 @@
     if (status === 'sending') return;
     const r = await shareByHand(game, pack.id);
     if (!r.ok) {
-      note = failureWords(r.reason, 'share');
+      note = shareFailure(game, pack.id, r.reason);
       // An expired or refused pass was forgotten (library.ts): the words box comes back here.
       if (r.reason === 'pass') asking = true;
       return;

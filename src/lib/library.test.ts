@@ -1,11 +1,11 @@
 // The Community library's phone side without a browser: a fake fetch and a fake pass only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { settings } from './settings.svelte';
-import { afterRun, canShare, failureWords, getPack, importLibraryPack, listPacks, namesIfImported, onLibraryNote, ownedIds, packPrint, passedSoFar, publishPack, SHARE_FAILED, shareByHand, shareProblem, shareStatus, shareStatusNow, shareWizardPack, starPack, type LibraryFull } from './library';
+import { afterRun, canShare, failureWords, getPack, importLibraryPack, listPacks, namesIfImported, onLibraryNote, ownedIds, packPrint, passedSoFar, publishPack, SHARE_FAILED, shareByHand, shareFailure, shareProblem, shareStatus, shareStatusNow, shareWizardPack, starPack, type LibraryFull } from './library';
 import { lastShared, noteShared } from './shareLog.svelte';
 import { WIZARD_SERVER } from './wizardServer';
 import { setUsername } from './username';
-import { customDecks, customHand, customQuick, customQuiz, quizBoards, type HandPack, type QuickPack, type QuizBoard, type SnarkPack, type SpectrumPack, type WordDeck } from './content';
+import { customDecks, customHand, customQuick, customQuiz, customSnark, quizBoards, type HandPack, type QuickPack, type QuizBoard, type SnarkPack, type SpectrumPack, type WordDeck } from './content';
 import { exportFile, importPacks } from './packfile';
 import { addClues } from '../games/quiz/more';
 import { tidyBoard } from '../games/quiz/board';
@@ -272,6 +272,24 @@ describe('browsing and importing', () => {
     expect(shareProblem('snark', { ...p, safety: { 'A bad name for a boat': 'x'.repeat(81) } } as SnarkPack)).toMatch(/stock answers/);
     const final = { prompt: 'Three things to never say on a boat', house: ['Iceberg', 'Oops', 'Swim?'] };
     expect(shareProblem('snark', { ...p, finals: [final, { ...final }] } as SnarkPack)).toBe('Fix this final first: “Three things to never say on a boat” (repeated).');
+  });
+
+  it("says what keeps a wizard pack's share back, naming every final to fix", async () => {
+    const fetch = server();
+    settings.wizardPass = PASS;
+    const notes: string[] = [];
+    const stop = onLibraryNote((n) => notes.push(n));
+    const bad = (prompt: string) => ({ prompt, house: ['a', 'b'] as unknown as [string, string, string] });
+    const p: SnarkPack = { id: 'my-old-finals', name: 'Old', blurb: '', prompts: ['A bad name for a boat'], finals: ['Three old things', 'Three more things', 'Three last things'].map(bad), shared: true };
+    const why = 'Fix these finals first: “Three old things” (needs 3 house lines), “Three more things” (needs 3 house lines), “Three last things” (needs 3 house lines).';
+    expect(await shareWizardPack('snark', p, true)).toBe(false);
+    stop();
+    expect(notes).toEqual([`${SHARE_FAILED}. ${why}`]);
+    expect(fetch).not.toHaveBeenCalled();
+    customSnark.put(p);
+    expect(await shareByHand('snark', p.id)).toEqual({ ok: false, reason: 'broken' });
+    expect(shareFailure('snark', p.id, 'broken')).toBe(why);
+    expect(shareFailure('snark', p.id, 'offline')).toBe(failureWords('offline', 'share'));
   });
 
   it('never sends a pack the library would cut', async () => {

@@ -13,7 +13,7 @@ describe('finals', () => {
     ]);
     expect(finals).toEqual([good]);
     expect(dropped.map((d) => d.why)).toEqual(['repeated', 'too short', 'needs 3 house lines', 'a house line is over 40 characters', 'no prompt']);
-    expect(finalsNote(dropped)).toBe('Fix these finals first: “THREE THINGS TO NEVER SAY ON A BOAT” (repeated), “Three” (too short) and 3 more.');
+    expect(finalsNote(dropped)).toBe('Fix these finals first: “THREE THINGS TO NEVER SAY ON A BOAT” (repeated), “Three” (too short), “Three more things” (needs 3 house lines), “Three long things” (a house line is over 40 characters), one final (no prompt).');
   });
 
   it('are edited, added and removed within the limits', () => {

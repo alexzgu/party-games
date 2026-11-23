@@ -160,7 +160,8 @@ mark once a run not through a pass adds to it; one that started pasted, typed by
 has no mark until it is shared by hand. A pack is shared by itself only while it has the mark and
 the run that just added to it went through a pass; hand edits keep the mark. Pack files never
 carry it. The same pass and pack update one entry. Sharing never holds up saving; when it fails
-the page shows a small note, "Couldn't share to the library". Each wizard form says once, in
+the page shows a small note, "Couldn't share to the library", with what to fix when the phone
+itself refuses the pack. Each wizard form says once, in
 small text, "Packs Fizzwick makes are shared in the Community library." Shared packs stay for
 good (the owner can hide one).
 **Sharing by hand** (`SharePack`, `canShare`, `shareStatus`, `shareProblem`): every pack editor of
@@ -173,8 +174,8 @@ asks once, in place: "Anyone can see and import it. Your username, <name>, shows
 magic words. Say the ones the host told you:", with "Not now") and the share goes ahead once they
 are said; a phone on the host's own key is told sharing needs the magic words. A pack the library
 would not take is a disabled button with the reason under it: no name, a Big Board with empty
-tiles ("Fill the 3 empty tiles first."), Snark Tank finals an import would leave out (the first two
-named, each with why: `readFinals` in `snark/finals.ts`, the rule an import reads them by), nothing in it, more than 400 items in one list
+tiles ("Fill the 3 empty tiles first."), Snark Tank finals an import would leave out (every one
+named, with why: `readFinals` in `snark/finals.ts`, the rule an import reads them by), nothing in it, more than 400 items in one list
 (Bad Hand and Sketchy have two) or over 64 KB (the server's own limits, `libraryShape.ts`). For Doodle Brawl, Bad Hand and Sketchy the
 editor refuses to add a 401st item to a list, and a long paste, Fizzwick's items or a pack file that
 would make a list longer is saved as two or more packs ("Mine", "Mine (2)"), its lists shared out
