@@ -18,6 +18,7 @@ import { cardId as spectrumKey } from '../games/dial/state';
 import { answerKey } from '../games/gibberish/parse';
 import { promptKey } from '../games/quick/logic';
 import { cardId as tabooKey } from '../games/taboo/cards';
+import { finalsNote, readFinals } from '../games/snark/finals';
 import { emptyTiles } from '../games/quiz/board';
 import { titleKey } from '../games/brawl/rules';
 import { promptKey as handPromptKey, sameKey as handKey } from '../games/hand/rules';
@@ -245,7 +246,8 @@ export async function shareByHand(game: PackGameId, id: string): Promise<Got<{ i
 
 /**
  * Why the pack cannot go to the library as it is, in plain words, or null: the library's own
- * rules (libraryShape.ts, the ones the server stores by) and a Big Board's empty tiles.
+ * rules (libraryShape.ts, the ones the server stores by), a Big Board's empty tiles, and Snark Tank
+ * finals an import would leave out.
  */
 export function shareProblem(game: PackGameId, pack: AnyPack): string | null {
   if (!pack.name.trim()) return 'Give the pack a name first.';
@@ -261,6 +263,8 @@ export function shareProblem(game: PackGameId, pack: AnyPack): string | null {
   const big = game === 'quiz' ? -1 : lists.findIndex((l) => l.length > SHAPE.itemsMax);
   if (big >= 0) return `Too big for the Community library: ${SHAPE.itemsMax} ${rest.length ? listFields(game)[big] : unit} at most.`;
   if (Array.isArray(extra.finals) && extra.finals.length > SHAPE.snarkFinals) return `Too big for the Community library: ${SHAPE.snarkFinals} finals at most.`;
+  const unusable = Array.isArray(extra.finals) ? finalsNote(readFinals(extra.finals).dropped) : '';
+  if (unusable) return unusable;
   const kept = cleanExtra(game, extra, items);
   if (rest.some((f, i) => ((kept[f] as unknown[] | undefined)?.length ?? 0) !== lists[i + 1].length)) return `Some ${unit} are too long for the Community library.`;
   if ('problem' in cleanItems(game, items)) return `Some ${unit} are too long for the Community library.`;

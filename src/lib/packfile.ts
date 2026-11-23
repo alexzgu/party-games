@@ -7,7 +7,7 @@
 import { APP, gameName, GAMES, RETIRED_GAMES, type PackGameId } from '../app.config';
 import {
   customBrawl, customDecks, customGibberish, customHand, customQuick, customQuiz, customSketch, customSnark, customSpectra, customTaboo, slugify,
-  type BrawlPack, type GibberishCard, type HandPack, type SketchPack, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkFinal, type SnarkPack,
+  type BrawlPack, type GibberishCard, type HandPack, type SketchPack, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkPack,
   type Spectrum, type SpectrumPack, type TabooCard, type TabooPack, type WordDeck,
 } from './content';
 import { MAX_ITEM_CHARS, MAX_WORDS_PER_ITEM } from '../games/forehead/words';
@@ -18,7 +18,8 @@ import { checkCard } from '../games/gibberish/parse';
 import { MAX_CATEGORIES, MAX_LEVELS, sizeProblem, tidyBoard } from '../games/quiz/board';
 import { cleanPrompt, promptError } from '../games/quick/parse';
 import { promptProblem } from '../games/snark/prompts';
-import { ANSWER_MAX, LINE_MAX } from '../games/snark/logic';
+import { readFinals } from '../games/snark/finals';
+import { ANSWER_MAX } from '../games/snark/logic';
 import { cardId as tabooId, cardProblems, tidy as tidyTaboo } from '../games/taboo/cards';
 import { checked, type ListSpec } from './listSpec';
 import { freshId, freshName, partCount, splitPack } from './splitPack';
@@ -165,19 +166,10 @@ function safety(x: unknown, prompts: string[]): Record<string, string> | null {
   return out.length ? Object.fromEntries(out) : null;
 }
 
-/** A final for three-line duels: a usable prompt and exactly three house lines of 1–40 characters. */
-function final(x: unknown): SnarkFinal | null {
-  if (!isObj(x) || !Array.isArray(x.house) || x.house.length !== 3) return null;
-  const prompt = text(x.prompt);
-  const house = x.house.map(text);
-  if (!prompt || promptProblem(prompt) || house.some((l) => !l || l.length > LINE_MAX)) return null;
-  return { prompt, house: house as SnarkFinal['house'] };
-}
-
 /** A Snark pack's optional extras; absent fields stay absent, so packs without them read back unchanged. */
 function snarkExtras(raw: Record<string, unknown>, prompts: string[]): Partial<SnarkPack> {
   const stock = safety(raw.safety, prompts);
-  const finals = Array.isArray(raw.finals) ? keep(raw.finals, final, (f) => f.prompt.toLowerCase()).items : [];
+  const finals = Array.isArray(raw.finals) ? readFinals(raw.finals.slice(0, MAX_ITEMS)).finals : [];
   return { ...(stock ? { safety: stock } : {}), ...(finals.length ? { finals } : {}) };
 }
 

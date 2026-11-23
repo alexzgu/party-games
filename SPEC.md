@@ -173,7 +173,8 @@ asks once, in place: "Anyone can see and import it. Your username, <name>, shows
 magic words. Say the ones the host told you:", with "Not now") and the share goes ahead once they
 are said; a phone on the host's own key is told sharing needs the magic words. A pack the library
 would not take is a disabled button with the reason under it: no name, a Big Board with empty
-tiles ("Fill the 3 empty tiles first."), nothing in it, more than 400 items in one list
+tiles ("Fill the 3 empty tiles first."), Snark Tank finals an import would leave out (the first two
+named, each with why: `readFinals` in `snark/finals.ts`, the rule an import reads them by), nothing in it, more than 400 items in one list
 (Bad Hand and Sketchy have two) or over 64 KB (the server's own limits, `libraryShape.ts`). For Doodle Brawl, Bad Hand and Sketchy the
 editor refuses to add a 401st item to a list, and a long paste, Fizzwick's items or a pack file that
 would make a list longer is saved as two or more packs ("Mine", "Mine (2)"), its lists shared out
@@ -774,7 +775,9 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   reviewed before saving. The player's own packs have "🧙 Add more" (5–40 prompts, default 15,
   finals likewise) and, while some prompts lack a stock answer (pasted or older packs), "🧙 Fill in
   stock answers" (up to 40 at a time). The editor shows each prompt's stock answer (editable with
-  the prompt; it moves with a reworded prompt and goes with a deleted one) and lists the finals.
+  the prompt; it moves with a reworded prompt and goes with a deleted one) and, under the prompts,
+  the finals: tap one to change its prompt (3–14 words, new in the pack) and the house's three lines
+  (1–40 characters each) or delete it, "+ Add a final" for a new one.
   Wizard lines that break the Snark rules (prompts 3–14 words, stock answers 1–8 words, finals
   starting "Three" with three house lines of 1–6 words and 40 characters) or repeat a prompt or
   final of any Snark pack on the phone are dropped unseen.

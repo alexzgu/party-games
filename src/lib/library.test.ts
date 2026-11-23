@@ -270,6 +270,8 @@ describe('browsing and importing', () => {
     const p = { id: 's', name: 'S', blurb: '', prompts: ['A bad name for a boat'] };
     expect(shareProblem('snark', { ...p, safety: { 'A bad name for a boat': 'Floaty', 'A prompt it lost': 'Old' } } as SnarkPack)).toBeNull();
     expect(shareProblem('snark', { ...p, safety: { 'A bad name for a boat': 'x'.repeat(81) } } as SnarkPack)).toMatch(/stock answers/);
+    const final = { prompt: 'Three things to never say on a boat', house: ['Iceberg', 'Oops', 'Swim?'] };
+    expect(shareProblem('snark', { ...p, finals: [final, { ...final }] } as SnarkPack)).toBe('Fix this final first: “Three things to never say on a boat” (repeated).');
   });
 
   it('never sends a pack the library would cut', async () => {

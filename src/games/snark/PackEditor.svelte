@@ -7,7 +7,9 @@
   import ListTools from '../../components/ListTools.svelte';
   import PinnedPanel from '../../components/PinnedPanel.svelte';
   import AddMore from '../../components/AddMore.svelte';
+  import FinalForm from './FinalForm.svelte';
   import WizardItem from './WizardItem.svelte';
+  import { removeFinal, setFinal } from './finals';
   import { customSnark, snarkPacks, type SnarkPack } from '../../lib/content';
   import type { SortKey } from '../../lib/listing';
   import { sfx } from '../../lib/sound';
@@ -17,7 +19,7 @@
   import { addItems, addStock, itemKey, missingStock, packTexts, removePrompt, setPrompt, type SnarkItem, type Stock } from './pack';
 
   // One pack, every prompt listed with its stock answer: rename, add, edit, delete; every change
-  // saves at once. Editing a built-in saves this device's copy under the same id; "Restore
+  // saves at once, the finals under them likewise. Editing a built-in saves this device's copy under the same id; "Restore
   // original" drops it. The player's own packs get "🧙 Add more" and, when some prompts have no
   // stock answer (pasted or older packs), "🧙 Fill in stock answers".
   let { id, onback }: { id: string; onback: () => void } = $props();
@@ -31,6 +33,8 @@
   let edited = $state(customSnark.isEdited(id));
   let name = $state(initial?.name ?? '');
   let open = $state<number | 'new' | null>(null);
+  /** The final open in its popup. */
+  let openFinal = $state<number | 'new' | null>(null);
   let draft = $state('');
   let stockDraft = $state('');
   let problem = $state('');
@@ -76,6 +80,12 @@
     if (!pack) return;
     persist(removePrompt(pack, i));
     open = null;
+  }
+
+  function putFinal(next: SnarkPack) {
+    persist(next);
+    openFinal = null;
+    sfx.correct();
   }
 
   /** "🧙 Add more" or "🧙 Fill in stock answers", open in place of the editor. */
@@ -169,16 +179,15 @@
           <li><button class="prompt" onclick={() => edit(i)}>{q}{#if stock}<span class="stock">Give me one: {stock}</span>{/if}</button></li>
         {/each}
       </ul>
-      {#if pack.finals?.length}
-        <section class="list" aria-label="Finals">
-          <h3 class="count">{pack.finals.length} {pack.finals.length === 1 ? 'final' : 'finals'} for three-line duels</h3>
-          <ul class="prompts">
-            {#each pack.finals as f (f.prompt)}
-              <li class="final">{f.prompt}<span class="stock">House: {f.house.join(' · ')}</span></li>
-            {/each}
-          </ul>
-        </section>
-      {/if}
+      <section class="list" aria-label="Finals">
+        <h3 class="count">{pack.finals?.length ?? 0} {pack.finals?.length === 1 ? 'final' : 'finals'} for three-line duels</h3>
+        <ul class="prompts">
+          {#each pack.finals ?? [] as f, i (i)}
+            <li><button class="prompt" onclick={() => (openFinal = i)}>{f.prompt}<span class="stock">House: {f.house.join(' · ')}</span></button></li>
+          {/each}
+        </ul>
+        <Button variant="secondary" size="sm" onclick={() => (openFinal = 'new')} tip="Type in a prompt for three-line duels and the house's three lines">+ Add a final</Button>
+      </section>
     </PinnedPanel>
   {/if}
   {#snippet actions()}
@@ -207,6 +216,12 @@
   </Popup>
 {/if}
 
+{#if pack && openFinal !== null}
+  {@const p = $state.snapshot(pack) as SnarkPack}
+  {@const at = openFinal}
+  <FinalForm pack={p} {at} onsave={(f) => putFinal(setFinal(p, at, f))} ondelete={() => { if (at !== 'new') putFinal(removeFinal(p, at)); }} onclose={() => (openFinal = null)} />
+{/if}
+
 {#if pack && confirm === 'restore'}
   <Popup title="Restore original?" onclose={() => (confirm = '')}>
     <div class="form">
@@ -230,7 +245,8 @@
   .act { flex: none; white-space: nowrap; }
   .name, .field { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
   .count { color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700; }
-  .list { display: flex; flex-direction: column; margin-top: var(--s-5); }
+  .list { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); margin-top: var(--s-5); }
+  .list .prompts { width: 100%; }
   .tip { margin: 0; color: var(--text-faint); font-size: 0.8rem; }
   .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   .prompts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
@@ -238,7 +254,6 @@
   .stock { display: block; margin-top: 2px; font-size: 0.85rem; font-weight: 500; color: var(--text-faint); }
   .fill { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border-radius: var(--r-md); border: 1.5px dashed var(--line-strong); }
   .fill p { margin: 0; }
-  .final { padding: var(--s-2) var(--s-4); border-radius: var(--r-md); background: var(--surface); font-weight: 600; line-height: 1.3; }
   .prompt:active { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
   .form { display: flex; flex-direction: column; gap: var(--s-2); }
   .form p { margin-bottom: var(--s-2); }
