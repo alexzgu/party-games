@@ -3,6 +3,7 @@
 // knows it by (the pack's id then: the same pass, game and id update one entry); and which packs
 // are being sent right now. Kept apart from the packs, so no pack save or pack file ever carries
 // or drops it; reactive, so a share that lands while an editor is open updates its button.
+import { moveOwned } from './communityMarks.svelte';
 import { load, save } from './storage';
 
 export interface SharedRecord {
@@ -27,8 +28,9 @@ export function noteShared(game: string, id: string, record: SharedRecord): void
   keep();
 }
 
-/** The pack's id on this phone changed (content.ts moves an own pack off a new built-in's id): its record goes with it. */
+/** The pack's id on this phone changed (content.ts moves an own pack off a new built-in's id): its record goes with it, and it stays owned in Community. */
 export function moveShared(game: string, from: string, to: string): void {
+  moveOwned(game, from, to);
   const r = sent[slot(game, from)];
   if (!r) return;
   sent[slot(game, to)] = r;

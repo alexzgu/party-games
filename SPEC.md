@@ -42,7 +42,7 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, the open pack, the page's tab; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's tab; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone has or skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
 - `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList` and every pack editor), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
@@ -210,25 +210,38 @@ address gains `?community=1`, so Back closes it; the Community page from the mai
 behaviour, is the same browser with a tab per game): a search of pack names and descriptions only
 (not the items, nor usernames), Most stars (then newest) or Newest, 30 at a time with "Show more"; each row
 shows name, description, item count and ★ stars, and the sharer's username as a small, quiet
-chip beside the count (nothing for a pack without one; no "made by" wording); the preview shows the
-same chip under its count. Tapping a pack shows everything in it (Snark
+chip beside the count (nothing for a pack without one; no "made by" wording), then a small
+"Owned" or "Skipped" chip when it is; the preview shows the
+username chip under its count. Tapping a pack shows everything in it (Snark
 Tank: with its stock answers and finals; Bad Hand: prompts, then answers; Sketchy: words, then
 ideas). Everything fetched is rebuilt from each game's own
 fields first (`src/lib/libraryShape.ts`, the same rules the server stores by).
 "Import" saves it through the pack-file import above (same checks, fresh id and name, ticked on
 its own) and leaves out items a built-in pack already has in games whose items must be new
 across packs (Spectrum, Inn Co Hear Ant, Brain Freeze, Don't Say It, Snark Tank, Doodle Brawl,
-Sketchy, Bad Hand). Browsing and
-importing are open to anyone; starring (one star per pass per pack, tap again to take it back)
+Sketchy, Bad Hand).
+Two filters under the order choose among the packs, each on its own (`cown`, `cskip` in the
+address): Owned (All, the default; Owned; Not owned) and Skipped (All; Skipped; Not skipped, the
+default). "Skip" in a preview leaves the pack out on this phone and returns to the list; "Unskip"
+takes that back. A pack is owned when it was imported from Community on this phone, or shared from
+it, and at least one of the packs that made is still there (`src/lib/communityMarks.svelte.ts`:
+each Community id with the ids of this phone's packs, followed when a pack moves to a new id; a
+pack imported with no id kept reads as not owned). The marks stay on the phone. The server knows
+nothing of the filters: the phone chooses among its pages of 30 (`src/lib/communityPages.ts`), and
+a press (opening, a search, order or tab, a filter, "Show more") that shows fewer than 10 packs
+that fit loads the next pages by itself, at most 4 a press and never past page 100. "Show more"
+stays while the server has more, with "None of the packs loaded so far fit these filters." when
+none do.
+Browsing and importing are open to anyone; starring (one star per pass per pack, tap again to take it back)
 needs the magic words, and without them the star is a hint that opens the magic words box; a
 pass the server refuses (expired, or the words changed) is forgotten and the box comes back.
 Loading, empty, offline and server-trouble states are said in plain words. Without a wizard
 server (`WIZARD_SERVER` empty) there is no Community entry.
-The search, the order and the open preview live in the address (`cq`, `csort`, `cpack`;
+The search, the order, the filters and the open preview live in the address (`cq`, `csort`, `cown`, `cskip`, `cpack`;
 `src/lib/communityView.ts`), so a reload finds them. Typing reaches the address once it stops, and
-a new search or order changes the address in place, adding no step. Opening a pack is a step of its
+a new search, order or filter changes the address in place, adding no step. Opening a pack is a step of its
 own (it starts at its top), so phone Back from a preview returns to the list, scrolled where it was.
-Every list loaded, "Show more" pages included, is kept by game, search and order
+Every list loaded, "Show more" pages included, is kept unfiltered by game, search and order
 (`src/lib/communityCache.ts`, in memory and the tab's session storage) from opening Community until
 it is opened anew from the main menu or Add pack, so a list comes back at once, tall enough for its
 scroll; starring updates the kept lists. Over a pack list, "Import" closes Community whole (from a

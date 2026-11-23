@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { settings } from './settings.svelte';
 import { afterRun, canShare, failureWords, getPack, importLibraryPack, listPacks, onLibraryNote, packPrint, passedSoFar, publishPack, SHARE_FAILED, shareByHand, shareProblem, shareStatus, shareStatusNow, shareWizardPack, starPack, type LibraryFull } from './library';
+import { localIdsOf } from './communityMarks.svelte';
 import { lastShared, noteShared } from './shareLog.svelte';
 import { WIZARD_SERVER } from './wizardServer';
 import { setUsername } from './username';
@@ -331,6 +332,7 @@ describe('sharing a pack by hand', () => {
     const r = importLibraryPack('forehead', { id: 'AAAAAAAAAAAA', game: 'forehead', name: 'From the library', blurb: '', count: 1, stars: 0, created: 0, updated: 0, items: ['Shrek'], extra: {} });
     if ('error' in r) throw new Error(r.error);
     expect([r.saved[0].fromLibrary, canShare('forehead', r.saved[0])]).toEqual([true, false]);
+    expect(localIdsOf('forehead', 'AAAAAAAAAAAA')).toEqual([r.saved[0].id]);
     const file = importPacks('forehead', exportFile('forehead', [r.saved[0]]));
     if ('error' in file) throw new Error(file.error);
     expect([file.saved[0].fromLibrary, canShare('forehead', file.saved[0])]).toEqual([undefined, true]);
@@ -375,6 +377,7 @@ describe('sharing a pack by hand', () => {
     expect((await publishPack('forehead', onScreen)).ok).toBe(true);
     expect(sentBody(fetch)).toMatchObject({ name: 'Hand made', items: ['Shrek', 'Pizza'], localId: 'my-saved-deck' });
     expect((await shareByHand('forehead', 'my-saved-deck')).ok).toBe(true);
+    expect(localIdsOf('forehead', 'AAAAAAAAAAAA')).toContain('my-saved-deck');
     expect(customDecks.all().map((d) => [d.id, d.shared])).toEqual([['my-other-deck', undefined], ['my-saved-deck', true]]);
     expect(saved('my-saved-deck')).toMatchObject({ name: 'Hand made', words: ['Shrek', 'Pizza'] });
     expect(shareStatusNow('forehead', 'my-saved-deck')).toBe('current');

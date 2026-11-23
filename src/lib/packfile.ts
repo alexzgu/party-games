@@ -313,6 +313,10 @@ export const savedPacks = (game: PackGameId): AnyPack[] => STORES[game].saved();
 export const ownPack = (game: PackGameId, id: string): AnyPack | undefined =>
   STORES[game].isBuiltin(id) ? undefined : STORES[game].saved().find((p) => p.id === id);
 
+/** The ids of the player's own packs on this phone (never a built-in's edit). */
+export const ownPackIds = (game: PackGameId): Set<string> =>
+  new Set(STORES[game].saved().map((p) => p.id).filter((id) => !STORES[game].isBuiltin(id)));
+
 /** Marks the player's own saved pack as shared, changing nothing else; false when it is gone. */
 export const markPackShared = (game: PackGameId, id: string): boolean => STORES[game].markShared(id);
 

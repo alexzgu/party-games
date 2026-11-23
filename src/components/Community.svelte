@@ -4,21 +4,26 @@
   import Button from './Button.svelte';
   import Segmented from './Segmented.svelte';
   import MagicWords from './MagicWords.svelte';
+  import CommunityFilters from './CommunityFilters.svelte';
   import CommunityItems from './CommunityItems.svelte';
+  import CommunityRow from './CommunityRow.svelte';
   import type { PackGameId } from '../app.config';
   import { hasKey } from '../lib/claude';
-  import { failureWords, getPack, hasPass, importLibraryPack, listPacks, namesIfImported, namesNote, starPack, type Failure, type LibraryFull, type Sort } from '../lib/library';
-  import { cachedListing, keepListing, listingKey, starInListings, withPage, type Listing } from '../lib/communityCache';
-  import { addedNote, readView, viewUrl, type CommunityView } from '../lib/communityView';
-  import { unitOf, type ImportResult } from '../lib/packfile';
+  import { failureWords, getPack, hasPass, importLibraryPack, listPacks, namesIfImported, namesNote, starPack, type Failure, type LibraryFull, type LibraryPack, type Sort } from '../lib/library';
+  import { cachedListing, keepListing, listingKey, starInListings, type Listing } from '../lib/communityCache';
+  import { isSkipped, localIdsOf, rereadMarks, setSkipped } from '../lib/communityMarks.svelte';
+  import { ENOUGH, fits, hasMore, loadPages } from '../lib/communityPages';
+  import { addedNote, readFilters, readView, viewUrl, type CommunityView, type Filters } from '../lib/communityView';
+  import { ownPackIds, unitOf, type ImportResult } from '../lib/packfile';
   import { back, go, route, swap } from '../lib/router.svelte';
   import { sfx } from '../lib/sound';
 
   // The Community library for one game: packs Fizzwick made on friends' phones. Search names and
-  // descriptions, most stars or newest first, tap one to see everything in it, then import it
-  // (saved like a pack file) or star it (with the magic words). Opened over a game's pack list and
-  // as the Community page (pages/CommunityPage.svelte). The search, order and open pack live in
-  // the address (communityView.ts; the preview is its own history entry) and loaded lists in
+  // descriptions, most stars or newest first, filter by what this phone has or skips, tap one to
+  // see everything in it, then import it (saved like a pack file), skip it or star it (with the
+  // magic words). Opened over a game's pack list and as the Community page
+  // (pages/CommunityPage.svelte). The search, order, filters and open pack live in the address
+  // (communityView.ts; the preview is its own history entry) and loaded lists, unfiltered, in
   // communityCache.ts, so Back, a reload or an import finds the list as it was left.
   let { game, onclose, onimport, stay = false, closeLabel = 'Back to the packs', tabs }: {
     game: PackGameId;
@@ -34,7 +39,8 @@
 
   const SORTS = [{ value: 'stars' as Sort, label: 'Most stars' }, { value: 'new' as Sort, label: 'Newest' }];
   const view = $derived(readView(route.params));
-  const setView = (patch: Partial<CommunityView>) => swap(viewUrl(route.path, route.params, patch));
+  const filters = $derived(readFilters(route.params));
+  const setView = (patch: Partial<CommunityView & Filters>) => swap(viewUrl(route.path, route.params, patch));
 
   // What is typed; it reaches the address (and the list) once the typing stops.
   // svelte-ignore state_referenced_locally
@@ -61,22 +67,38 @@
 
   const count = (n: number) => `${n} ${unitOf(game, n)}`;
 
-  async function load(first: boolean) {
+  /** Bumped when packs or marks may have changed elsewhere (another tab), so they are read again. */
+  let packsSeen = $state(0);
+  function look() {
+    rereadMarks();
+    packsSeen++;
+  }
+  // Read once per change, not per row (untracked: reading the packs may first move one to a new id).
+  const mine = $derived.by(() => { void packsSeen; const g = game; return untrack(() => ownPackIds(g)); });
+  function owned(p: LibraryPack): boolean {
+    const here = mine; // first: a pack it moves is moved in the marks too
+    return localIdsOf(game, p.id).some((id) => here.has(id));
+  }
+  const fitting = (packs: readonly LibraryPack[]) => packs.filter((p) => fits(filters, { owned: owned(p), skipped: isSkipped(game, p.id) }));
+  const shown = $derived(fitting(listing?.packs ?? []));
+
+  /** Loads the first page, or the pages after the list's, until `want` packs fit the filters. */
+  async function load(first: boolean, want = ENOUGH) {
     ctrl?.abort();
     const c = (ctrl = new AbortController());
     const k = key;
+    const { q, sort } = view;
     const base = first ? null : listing;
-    if (first) { listing = null; failure = null; } else { loadingMore = true; moreFailure = null; }
-    const r = await listPacks(game, { q: view.q, sort: view.sort, page: base ? base.page + 1 : 1, signal: c.signal });
+    if (first) listing = null;
+    failure = moreFailure = null;
+    loadingMore = true;
+    const reason = await loadPages(base, (page) => listPacks(game, { q, sort, page, signal: c.signal }),
+      (l) => fitting(l.packs).length >= want, (l) => { listing = l; keepListing(k, l); }, () => c.signal.aborted);
     if (c.signal.aborted) return;
     loadingMore = false;
-    if (!r.ok) {
-      const f = r.reason === 'missing' ? 'server' : r.reason; // no list at all: a server without the library
-      if (first) failure = f; else moreFailure = f;
-      return;
-    }
-    listing = withPage(base, r);
-    keepListing(k, listing);
+    if (!reason) return;
+    const f = reason === 'missing' ? 'server' : reason; // no list at all: a server without the library
+    if (listing) moreFailure = f; else failure = f;
   }
 
   // A new game, search or order shows its kept list, else loads its first page.
@@ -84,21 +106,41 @@
     const k = key;
     untrack(() => {
       if (k === shownKey) return;
-      if (shownKey) note = '';
+      const switched = !!shownKey;
+      if (switched) note = '';
       shownKey = k;
       ctrl?.abort();
       loadingMore = false;
       moreFailure = null;
       const kept = cachedListing(k);
-      if (kept) { listing = kept; failure = null; } else void load(true);
+      if (!kept) { void load(true); return; }
+      listing = kept;
+      failure = null;
+      if (switched) fillUp();
     });
   });
+
+  /** A press that left too few packs on screen loads further pages. */
+  function fillUp() {
+    if (listing && !loadingMore && hasMore(listing) && shown.length < ENOUGH) void load(false);
+  }
+
+  function filter(f: Partial<Filters>) {
+    note = '';
+    setView(f);
+    fillUp();
+  }
+
+  function skip() {
+    if (!open) return;
+    const on = !isSkipped(game, open.id);
+    setSkipped(game, open.id, on);
+    if (on) closePreview();
+  }
 
   /** The pack open in the preview (from the address), while it loads and once it has. */
   const openId = $derived(view.pack);
   let open = $state.raw<LibraryFull | null>(null);
-  /** Bumped when packs may have changed elsewhere (another tab), so the names are worked out again. */
-  let packsSeen = $state(0);
   /** The names the open pack would be saved under. */
   const names = $derived.by(() => { void packsSeen; return open ? namesIfImported(game, open) : []; });
   let openFailure = $state<Failure | null>(null);
@@ -125,7 +167,7 @@
       starNote = '';
       importError = '';
       askWords = false;
-      if (!id) { open = null; openFailure = null; return; }
+      if (!id) { open = null; openFailure = null; packsSeen++; return; } // an import just now counts as owned
       // A layer scrolling on its own (the overlay) shows the preview from its top; the page's own
       // scroll is the router's.
       wrap?.closest<HTMLElement>('[data-keep-scroll]')?.scrollTo(0, 0);
@@ -194,8 +236,8 @@
   </div>
 {/snippet}
 
-<svelte:window onstorage={() => packsSeen++} onfocus={() => packsSeen++} />
-<svelte:document onvisibilitychange={() => packsSeen++} />
+<svelte:window onstorage={look} onfocus={look} />
+<svelte:document onvisibilitychange={look} />
 
 <div class="community" bind:this={wrap}>
 {#if openId}
@@ -214,6 +256,7 @@
         {:else}
           <button type="button" class="hint" onclick={() => (askWords = !askWords)} aria-expanded={askWords} data-tip="Starring needs the magic words the host told you">☆ Say the magic words to star packs</button>
         {/if}
+        <Button variant="secondary" size="sm" onclick={skip} tip={isSkipped(game, open.id) ? 'Lists this pack again on this phone' : 'Leaves this pack out of the list on this phone'}>{isSkipped(game, open.id) ? 'Unskip' : 'Skip'}</Button>
       </div>
       {#if askWords}
         {#if hasKey()}<p class="faint small">Stars need the magic words; this phone uses the host's key.</p>
@@ -241,33 +284,28 @@
     <p class="faint intro">Packs Fizzwick made on friends' phones. Open one to see everything in it.</p>
     <input type="text" inputmode="search" placeholder="Search names and descriptions" bind:value={query} maxlength="100" autocomplete="off" enterkeyhint="search" aria-label="Search Community packs" />
     <Segmented label="Order" options={SORTS} bind:value={() => view.sort, (sort) => setView({ sort })} />
+    <CommunityFilters {filters} onchange={filter} />
     {#if failure}
       <div class="state">
         <p>{failureWords(failure)}</p>
         <Button variant="secondary" size="sm" onclick={() => load(true)}>Try again</Button>
       </div>
-    {:else if !listing}
+    {:else if !listing || (loadingMore && !shown.length)}
       <p class="faint state" role="status">Looking through the library…</p>
     {:else if !listing.packs.length}
       <p class="faint state">{view.q ? `No packs match “${view.q}”.` : 'No packs here yet. Packs Fizzwick makes show up here.'}</p>
     {:else}
+      {#if !shown.length}<p class="faint state">{hasMore(listing) ? 'None of the packs loaded so far fit these filters.' : 'No packs fit these filters.'}</p>{/if}
       <ul class="list">
-        {#each listing.packs as p (p.id)}
+        {#each shown as p (p.id)}
           <li>
-            <button class="row" onclick={() => preview(p.id)}>
-              <span class="txt">
-                <span class="name">{p.name}</span>
-                {#if p.blurb}<span class="blurb">{p.blurb}</span>{/if}
-                <span class="faint meta">{count(p.count)}{#if p.username}<span class="who">{p.username}</span>{/if}</span>
-              </span>
-              <span class="stars" class:mine={p.starred} aria-label="{p.stars} stars">★ {p.stars}</span>
-            </button>
+            <CommunityRow pack={p} owned={owned(p)} skipped={isSkipped(game, p.id)} onopen={() => preview(p.id)} />
           </li>
         {/each}
       </ul>
       {#if moreFailure}<p class="bad small" role="status">{failureWords(moreFailure)}</p>{/if}
-      {#if listing.more}
-        <Button variant="secondary" onclick={() => load(false)} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Show more'}</Button>
+      {#if hasMore(listing)}
+        <Button variant="secondary" onclick={() => load(false, shown.length + ENOUGH)} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Show more'}</Button>
       {/if}
     {/if}
   </Screen>
@@ -280,26 +318,14 @@
   .state { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); margin: 0; padding: var(--s-2) 0; }
   .state p { margin: 0; }
   .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
-  .row {
-    width: 100%; display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); min-height: 68px;
-    border: 0; border-radius: var(--r-md); background: var(--surface); text-align: left; color: var(--text);
-    transition: transform var(--dur-fast) var(--ease-out);
-  }
-  .row:active { transform: scale(0.98); }
-  .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  .name { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; overflow-wrap: anywhere; }
-  .blurb { color: var(--text-dim); font-size: 0.9rem; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-  .meta { font-size: 0.85rem; display: flex; align-items: center; flex-wrap: wrap; gap: 2px var(--s-2); }
   /* The sharing phone's username: a small, quiet chip. */
   .who {
     display: inline-block; max-width: 100%; padding: 1px var(--s-2); border-radius: var(--r-pill); background: var(--overlay);
     color: var(--text-faint); font-size: 0.8rem; font-weight: 600; overflow-wrap: anywhere;
   }
-  .stars { flex: none; font-weight: 800; color: var(--text-dim); }
-  .stars.mine { color: var(--accent); }
   .about { display: flex; flex-direction: column; gap: 2px; }
   .about p { margin: 0; }
-  .about .blurb { -webkit-line-clamp: unset; line-clamp: unset; display: block; }
+  .about .blurb { color: var(--text-dim); font-size: 0.9rem; line-height: 1.25; overflow-wrap: anywhere; }
   .star { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2) var(--s-3); }
   .small { font-size: 0.9rem; }
   .saves { color: var(--text-dim); font-weight: 600; }
