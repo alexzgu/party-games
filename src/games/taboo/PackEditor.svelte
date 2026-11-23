@@ -137,7 +137,7 @@
   }
 
   /** A new pack: typed card by card, or asked of the wizard. */
-  const MODES = [{ value: 'write' as const, label: 'Write my own' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
+  const MODES = [{ value: 'write' as const, label: 'Write my own', tip: 'Type or paste your own cards' }, { value: 'claude' as const, label: '🧙 Ask the wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
   let mode = $state<'write' | 'claude'>(hasKey() ? 'claude' : 'write');
   /** The wizard's cards are on screen for review: the mode switch is hidden. */
   let reviewing = $state(false);
@@ -201,7 +201,7 @@
           <div class="add">
             <div class="add-head">
               <h3>{pasting ? 'Paste many' : 'Add a card'}</h3>
-              <button class="link" onclick={() => { pasting = !pasting; pasteNote = ''; pasteBad = []; }}>{pasting ? 'One at a time' : 'Paste many'}</button>
+              <button class="link" onclick={() => { pasting = !pasting; pasteNote = ''; pasteBad = []; }} data-tip={pasting ? 'Type in one card at a time' : 'Add a whole list of cards at once'}>{pasting ? 'One at a time' : 'Paste many'}</button>
             </div>
             {#if pasting}
               <p class="faint hint">One card per line: the word, a colon, then its five banned words split by commas. For example <i>Pizza: Cheese, Slice, Pepperoni, Italian, Delivery</i></p>
@@ -215,7 +215,7 @@
               {#if pasteBad.length}<ul class="bad">{#each pasteBad as b, i (i)}<li><b>{b.line}</b> · {b.why}</li>{/each}</ul>{/if}
             {/if}
           </div>
-          {#if pack.id && !builtin}<Button variant="secondary" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
+          {#if pack.id && !builtin}<Button variant="secondary" onclick={() => (adding = true)} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
         {/if}
       {/snippet}
       {#snippet row(toggle)}
@@ -246,7 +246,7 @@
 
       <!-- At the end of the cards, not pinned: neither is the page's main action. -->
       {#if builtin && edited}
-        <div class="end"><Button variant="secondary" onclick={() => (confirm = 'restore')}>↺ Restore the original cards</Button></div>
+        <div class="end"><Button variant="secondary" onclick={() => (confirm = 'restore')} tip="Undoes your changes and brings back the original pack">↺ Restore the original cards</Button></div>
       {:else if pack.id && !builtin}
         <div class="end"><Button variant="danger" onclick={() => (confirm = 'delete')}>Delete this pack</Button></div>
       {/if}

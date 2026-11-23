@@ -71,10 +71,10 @@
 
 <Floating bind:pos={timer.pos} dock label="Timer">
   <div class="chip" class:on class:up>
-    <button class="time" onclick={tap} aria-label={up ? "Time's up. Tap to start again" : on ? `Pause the timer, ${shown} left` : `Start the timer, ${shown}`}>
+    <button class="time" onclick={tap} aria-label={up ? "Time's up. Tap to start again" : on ? `Pause the timer, ${shown} left` : `Start the timer, ${shown}`} data-tip={up ? 'Starts the timer again' : on ? 'Pauses the timer' : 'Starts the timer'}>
       {shown}
     </button>
-    <button class="small" onclick={nextLength} aria-label="Timer length {timer.seconds} seconds. Tap to change">{timer.seconds}s</button>
+    <button class="small" onclick={nextLength} aria-label="Timer length {timer.seconds} seconds. Tap to change" data-tip="Changes the timer's length and resets it">{timer.seconds}s</button>
     <button class="small" onclick={restart} aria-label="Reset the timer">↺</button>
     <button class="small x" onclick={hide} aria-label="Hide the timer">×</button>
   </div>

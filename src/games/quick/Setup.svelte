@@ -115,8 +115,8 @@
       {#if steal}<Toggle label="A steal uses the stealer's turn" hint="Play then skips them and goes to the player after" bind:checked={stealUsesTurn} />{/if}
     </RulesCard>
     {#if inProgress}
-      <Button size="lg" disabled={names.length < MIN_PLAYERS} onclick={() => { unlockAudio(); keepRoster(); onresume(); }}>{names.length < MIN_PLAYERS ? missing : 'Resume game'}</Button>
-      <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!missing}>
+      <Button size="lg" disabled={names.length < MIN_PLAYERS} onclick={() => { unlockAudio(); keepRoster(); onresume(); }} tip={names.length < MIN_PLAYERS ? undefined : 'Carries on with the game saved on this device'}>{names.length < MIN_PLAYERS ? missing : 'Resume game'}</Button>
+      <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!missing} tip={missing ? undefined : 'Ends the saved game; asks for a second tap first'}>
         {missing || (confirming ? 'Tap again to end it and start over' : 'Start a new game')}
       </Button>
     {:else}

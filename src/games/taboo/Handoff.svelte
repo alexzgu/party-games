@@ -32,7 +32,7 @@
   <header>
     <div class="grow"><Scoreboard {game} scores={scoresBefore(game)} active={team} /></div>
     <Rules />
-    <button class="menu" onclick={() => (menu = 'menu')} aria-label="Game menu" aria-expanded={!!menu}>
+    <button class="menu" onclick={() => (menu = 'menu')} aria-label="Game menu" aria-expanded={!!menu} data-tip="Pause or end the game">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>
     </button>
   </header>
@@ -60,8 +60,8 @@
   <div class="go">
     {#if outOfCards}
       <p class="err" role="alert">Every card in the chosen packs has been played this game.</p>
-      <Button size="lg" onclick={onreuse}>Play those cards again</Button>
-      <Button variant="secondary" onclick={() => (menu = 'end')}>End game</Button>
+      <Button size="lg" onclick={onreuse} tip="Deals the played cards again and starts the clock">Play those cards again</Button>
+      <Button variant="secondary" onclick={() => (menu = 'end')} tip="Ends this game for good, after asking">End game</Button>
     {:else}
       <Button size="lg" onclick={onstart}>Start the clock</Button>
     {/if}

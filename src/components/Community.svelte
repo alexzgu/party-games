@@ -197,13 +197,14 @@
       <div class="about">
         {#if open.blurb}<p class="blurb">{open.blurb}</p>{/if}
         <p class="faint">{count(open.count)} · ★ {open.stars}</p>
+        {#if open.leftOut}<p class="faint small">{open.leftOut} more left out: already in the built-in packs, or not usable in this game.</p>{/if}
         {#if open.username}<p><span class="who">{open.username}</span></p>{/if}
       </div>
       <div class="star">
         {#if hasPass()}
-          <Button variant="secondary" size="sm" onclick={toggleStar} disabled={starring}>{open.starred ? '★ Starred' : '☆ Star it'}</Button>
+          <Button variant="secondary" size="sm" onclick={toggleStar} disabled={starring} tip={open.starred ? 'Takes your star back' : 'Adds your star to this pack'}>{open.starred ? '★ Starred' : '☆ Star it'}</Button>
         {:else}
-          <button type="button" class="hint" onclick={() => (askWords = !askWords)} aria-expanded={askWords}>☆ Say the magic words to star packs</button>
+          <button type="button" class="hint" onclick={() => (askWords = !askWords)} aria-expanded={askWords} data-tip="Starring needs the magic words the host told you">☆ Say the magic words to star packs</button>
         {/if}
       </div>
       {#if askWords}
@@ -211,7 +212,8 @@
         {:else}<MagicWords intro="Say the magic words the host told you:" />{/if}
       {/if}
       {#if starNote}<p class="bad small" role="status">{starNote}</p>{/if}
-      <CommunityItems {game} items={open.items} extra={open.extra} />
+      {#if open.ready && 'error' in open.ready}<p class="faint">{open.ready.error}</p>
+      {:else}<CommunityItems {game} items={open.items} extra={open.extra} />{/if}
     {:else if openFailure}
       <div class="state">
         <p>{failureWords(openFailure)}</p>
@@ -222,7 +224,7 @@
     {/if}
     {#snippet actions()}
       {#if importError}<p class="bad small" role="alert">{importError}</p>{/if}
-      {#if open}<Button size="lg" onclick={take}>Import</Button>{/if}
+      {#if open}<Button size="lg" onclick={take} disabled={!!open.ready && 'error' in open.ready} tip="Saves this pack on this device so you can play it">Import</Button>{/if}
     {/snippet}
   </Screen>
 {:else}

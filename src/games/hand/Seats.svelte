@@ -14,7 +14,7 @@
       <Avatar name={p.name} color={i} size={36} dim={online ? !online.has(p.pid) : false} />
       <div class="who"><strong>{p.name}</strong>{#if status}<span>{status === 'Played' || status === 'Voted' ? '✓ ' : ''}{status}</span>{/if}</div>
       {#if scores}<b>{p.score}</b>{/if}
-      {#if onkick}<button class="remove" aria-label="Remove {p.name}" title="Remove {p.name}" onclick={() => onkick?.(p.pid)}>✕</button>{/if}
+      {#if onkick}<button class="remove" aria-label="Remove {p.name}" onclick={() => onkick?.(p.pid)}>✕</button>{/if}
     </li>
   {/each}
 </ul>

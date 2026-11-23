@@ -151,7 +151,7 @@
         <div class="note" class:edited>
           {#if edited}
             <p><b>Edited</b> on this phone. Your changes replace the original everywhere.</p>
-            <Button size="sm" variant={confirmRestore ? 'danger' : 'secondary'} onclick={restore}>
+            <Button size="sm" variant={confirmRestore ? 'danger' : 'secondary'} onclick={restore} tip="Undoes your changes and brings back the original pack">
               {confirmRestore ? 'Tap again to undo all changes' : 'Restore original'}
             </Button>
           {:else}
@@ -192,10 +192,10 @@
         </div>
         <form class="add" onsubmit={add}>
           <input type="text" placeholder="Type a word, press Enter" bind:value={draft} bind:this={input} enterkeyhint="done" autocapitalize="words" aria-label="New word" />
-          <Button type="submit" size="sm" disabled={!draft.trim()}>Add</Button>
+          <Button type="submit" size="sm" disabled={!draft.trim()} tip="Adds what you typed; commas separate several words">Add</Button>
         </form>
         {#if removed}
-          <p class="undo" role="status">Removed “{removed.word}” <button class="link" onclick={undoRemove}>Undo</button></p>
+          <p class="undo" role="status">Removed “{removed.word}” <button class="link" onclick={undoRemove} data-tip="Puts the removed word back">Undo</button></p>
         {/if}
       </div>
     {/snippet}
@@ -219,8 +219,8 @@
   </PinnedPanel>
 
   {#snippet actions()}
-    {#if deck.id && !builtin}<Button size="lg" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
-    <Button size="lg" variant="secondary" onclick={claude} disabled={!deck.name.trim() && !deck.words.length}>📋 Paste a list</Button>
+    {#if deck.id && !builtin}<Button size="lg" onclick={() => (adding = true)} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
+    <Button size="lg" variant="secondary" onclick={claude} disabled={!deck.name.trim() && !deck.words.length} tip="Add a list of words, or ask Fizzwick for some">📋 Paste a list</Button>
   {/snippet}
 </Screen>
 {/if}

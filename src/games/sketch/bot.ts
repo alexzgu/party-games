@@ -2,7 +2,8 @@
 // draws a random doodle, describes a drawing with a random word. Draw & guess: picks a word at
 // random and streams a random doodle a stroke at a time through the live-ink path, as a phone
 // does; as a guesser it guesses honestly, a few words per turn from the packs that fit the word's
-// shape and the letters shown. It sees only its own phone's view (and the packs a phone has).
+// shape and the letters shown. It sees only its own phone's view, and reads the host
+// screen's packs (its own packs included).
 import { pickOne, quick, slow, type Brain } from '../../lib/room/bots';
 import { doodle } from '../../lib/doodle';
 import { sketchPacks } from '../../lib/content';

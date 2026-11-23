@@ -84,16 +84,16 @@
     </div>
     <div class="controls">
       {#if v && timed}
-        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.pause(); }}>{v.paused ? 'Resume' : 'Pause'}</Button>
-        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }}>{skipLabel}</Button>
+        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.pause(); }} tip={v.paused ? 'Starts the clock again on every phone' : 'Stops the clock on every phone'}>{v.paused ? 'Resume' : 'Pause'}</Button>
+        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }} tip={steps ? 'Stops waiting; missing lines become ideas, missing drawings stay blank' : v.phase === 'pick' ? "Passes over this player's turn" : v.phase === 'guess' ? 'Stops the guessing and shows the word' : 'Moves on without waiting for the timer'}>{skipLabel}</Button>
       {:else if v?.phase === 'album'}
-        <Button size="sm" variant="secondary" disabled={!v.album?.chain && !v.album?.entry} onclick={() => page(-1)} label="Previous entry">← Back</Button>
-        {#if !v.album?.end}<Button size="sm" onclick={() => page(1)} label="Next entry">Next →</Button>{/if}
+        <Button size="sm" variant="secondary" disabled={!v.album?.chain && !v.album?.entry} onclick={() => page(-1)} label="Previous entry" tip="Turns back one page, on every phone too">← Back</Button>
+        {#if !v.album?.end}<Button size="sm" onclick={() => page(1)} label="Next entry" tip="Turns to the next page, on every phone too">Next →</Button>{/if}
       {:else if v?.phase === 'over'}
-        <Button size="sm" onclick={() => { if (!fixed) host.rematch(); }}>Play again</Button>
+        <Button size="sm" onclick={() => { if (!fixed) host.rematch(); }} tip="Back to the lobby with the same players, scores at zero">Play again</Button>
       {/if}
       <HowTo><Rules /></HowTo>
-      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)}>{playing ? 'End game' : 'Close room'}</Button>{/if}
+      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)} tip={playing ? 'Closes the room and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>{playing ? 'End game' : 'Close room'}</Button>{/if}
     </div>
   </header>
   {#if v}
@@ -110,14 +110,14 @@
           <Players players={v.players} online={fixed ? undefined : host.online} onkick={fixed ? undefined : askKick} />
           {#if !fixed}<AddBot onadd={() => host.addBot()} full={v.players.length >= MAX_PLAYERS} />{/if}
           {#if host.trouble && !fixed}
-            <p role="status">{host.trouble} <Button size="sm" variant="secondary" onclick={() => (connection = true)}>Trouble connecting?</Button></p>
+            <p role="status">{host.trouble} <Button size="sm" variant="secondary" onclick={() => (connection = true)} tip="See how phones connect, or use a backup server">Trouble connecting?</Button></p>
           {/if}
           <p class="summary">{summary}</p>
           <div class="controls">
             <Button disabled={fixed ? v.players.length < 3 : !game || !canStart(game)} onclick={() => { if (!fixed) host.start(); }}>
               {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${v.players.length} players`}
             </Button>
-            <Button variant="secondary" onclick={() => go('/sketch/settings')}>Settings</Button>
+            <Button variant="secondary" onclick={() => go('/sketch/settings')} tip="Pick the mode, packs, rounds and times">Settings</Button>
           </div>
           <ConnectionLink onchange={rebroker} />
         </section>
@@ -131,8 +131,8 @@
         <div class="stage"><TapToFinish><HostStage {v} art={fixed ? demoArt : host.art} online={fixed ? undefined : host.online} /></TapToFinish></div>
         {#if v.phase === 'album' && v.album?.end}
           <div class="controls end">
-            <Button onclick={() => { if (!fixed) host.rematch(); }}>Play again</Button>
-            <Button variant="secondary" onclick={() => (confirm = true)}>Close the room</Button>
+            <Button onclick={() => { if (!fixed) host.rematch(); }} tip="Back to the lobby with the same players">Play again</Button>
+            <Button variant="secondary" onclick={() => (confirm = true)} tip="Sends every phone back to the start, after asking">Close the room</Button>
           </div>
         {/if}
       </main>

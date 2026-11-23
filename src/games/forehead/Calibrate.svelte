@@ -160,7 +160,7 @@
         {#if denied}<p class="bad">Motion was refused, so the phone cannot feel tilts. On iPhone: close the app fully, open it again and choose Allow.</p>{/if}
         <p class="faint">
           {th ? `Now: calibrated (got it at ${Math.round(th.down)}°, pass at ${Math.round(th.up)}°).` : 'Now: not calibrated, using the standard settings.'}
-          {#if th}<button class="link" onclick={clearCalibration}>Reset</button>{/if}
+          {#if th}<button class="link" onclick={clearCalibration} data-tip="Goes back to the standard tilt settings">Reset</button>{/if}
         </p>
         <Button size="lg" onclick={start}>Start</Button>
       {/if}

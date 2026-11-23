@@ -22,7 +22,7 @@
   // plus finals for three-line duels; drop the duds, save as a new pack.
   let { onsaved, onback }: { onsaved: (id: string) => void; onback: () => void } = $props();
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste a list', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Ask the wizard', tip: 'Fizzwick writes prompts on a theme you pick' }];
   let mode = $state<'paste' | 'claude'>(hasKey() ? 'claude' : 'paste');
   let name = $state('');
   let theme = $state('');
@@ -111,7 +111,7 @@
       <Stepper label="How many prompts" bind:value={count} min={MAKE_RANGE.min} max={MAKE_RANGE.max} step={MAKE_RANGE.step} />
       <WizardEffort />
       <p class="faint small">Each prompt comes with a stock answer for “Give me one”, plus a few finals for three-line duels. You keep the good ones.</p>
-      <Button type="submit" size="lg" disabled={!theme.trim()}>✨ Make {count} prompts</Button>
+      <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make {count} prompts</Button>
     </form>
   {:else}
     <label class="field">

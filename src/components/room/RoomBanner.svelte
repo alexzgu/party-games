@@ -3,12 +3,12 @@
 
   // The notice on a room game's start screen when this device already has a room: its title,
   // one line under it, and one short action (Return, Rejoin) with a fuller spoken name.
-  let { title, detail, action, label, onclick }: { title: string; detail: string; action: string; label: string; onclick: () => void } = $props();
+  let { title, detail, action, label, tip, onclick }: { title: string; detail: string; action: string; label: string; tip?: string; onclick: () => void } = $props();
 </script>
 
 <div class="banner pop-in" role="status">
   <span><b>{title}</b><span class="muted">{detail}</span></span>
-  <Button size="sm" {onclick} {label}>{action}</Button>
+  <Button size="sm" {onclick} {label} tip={tip}>{action}</Button>
 </div>
 
 <style>

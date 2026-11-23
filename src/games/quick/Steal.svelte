@@ -28,7 +28,7 @@
 
   {#snippet actions()}
     <Button size="lg" onclick={onbegin}>I'm {thief.name}, start my clock</Button>
-    <Button variant="ghost" size="sm" onclick={onundo}>Wrong call? Undo</Button>
+    <Button variant="ghost" size="sm" onclick={onundo} tip="Back to judging the last try">Wrong call? Undo</Button>
   {/snippet}
 </Screen>
 

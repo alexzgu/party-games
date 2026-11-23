@@ -13,8 +13,8 @@
   import type { PackMeta } from '../lib/content';
   import { sfx } from '../lib/sound';
   import { afterRun, shareWizardPack } from '../lib/library';
-  import type { AnyPack } from '../lib/packfile';
-  import { addItems, editProblem, findItems, itemKey, listOf, packItems, removeItem, setItem, type ListItem, type ListPack, type ListSpec } from '../lib/listPack';
+  import { NO_ROOM, putSplit, tooLong, type AnyPack } from '../lib/packfile';
+  import { addItems, editProblem, findItems, itemKey, LIST_MAX, listOf, packItems, removeItem, setItem, type ListItem, type ListPack, type ListSpec } from '../lib/listPack';
   import { moreItems, type ListWizard } from '../lib/listWizard';
 
   // One list pack (Doodle Brawl, Bad Hand, Sketchy), every list shown in turn: rename, add, edit,
@@ -71,6 +71,8 @@
   let problem = $state('');
   let confirm = $state<'' | 'restore' | 'delete'>('');
   let query = $state('');
+  /** What happened to the pack, when it needs saying (items moved to another pack, changed elsewhere). */
+  let notice = $state('');
   let sort = $state<SortKey>('suggested');
   let adding = $state(false);
   const total = $derived(pack ? specs.reduce((n, s) => n + listOf(pack!, s.field).length, 0) : 0);
@@ -89,8 +91,44 @@
     edited = store.isEdited(id);
   }
 
+  /**
+   * Whether the pack on screen is the one saved; when another tab changed (or deleted) it, shows
+   * that one and says so. Asked before every change, so an old copy is never saved over a new one.
+   */
+  function upToDate(): boolean {
+    const saved = packs().find((p) => p.id === id) ?? null;
+    const shape = (p: Pack | null) => p && JSON.stringify([p.name, ...specs.map((s) => listOf(p, s.field))]);
+    if (shape(saved) === shape(pack)) {
+      pack = saved; // its marks too: another tab may have shared it
+      notice = '';
+      return pack !== null;
+    }
+    pack = saved;
+    name = saved?.name ?? '';
+    open = null;
+    confirm = '';
+    notice = 'This pack was changed in another tab. Here it is as saved; make your change again.';
+    return false;
+  }
+
+  /** Saves the pack, as several when it is too long for one, and says where the rest went. */
+  function saveParts(next: Pack): Pack[] {
+    const saved = putSplit(game, next);
+    if (!saved.length) { notice = NO_ROOM; return saved; }
+    notice = '';
+    pack = packs().find((p) => p.id === id) ?? null;
+    if (saved.length > 1) notice = `Too long for one pack (${LIST_MAX} ${specs.length > 1 ? 'in each list' : specs[0].many} at most). The rest is in ${saved.slice(1).map((p) => `“${p.name}”`).join(' and ')}.`;
+    return saved;
+  }
+
+  function split() {
+    if (!pack || !upToDate()) return;
+    const { custom: _, ...plain } = pack;
+    saveParts($state.snapshot(plain) as Pack);
+  }
+
   function rename() {
-    if (!pack) return;
+    if (!pack || !upToDate()) return;
     const n = name.trim().replace(/\s+/g, ' ');
     if (!n || n === pack.name) { name = pack.name; return; }
     persist({ ...pack, name: n });
@@ -105,7 +143,7 @@
 
   function save(e: SubmitEvent) {
     e.preventDefault();
-    if (!pack || !open) return;
+    if (!pack || !open || !upToDate()) return;
     const text = spec.tidy(draft.trim().replace(/\s+/g, ' '));
     problem = editProblem(pack, spec, open.at, text);
     if (problem) return;
@@ -116,17 +154,20 @@
   }
 
   function remove(field: string, at: number) {
-    if (!pack) return;
+    if (!pack || !upToDate()) return;
     persist(removeItem(pack, field, at));
     open = null;
   }
 
   const others = (): ListItem[] => packs().filter((p) => p.id !== id).flatMap((p) => packItems(specs, p));
-  function added(kept: ListItem[], byPass: boolean) {
-    if (!pack) return;
-    const marked = afterRun(addItems($state.snapshot(pack) as Pack, specs, kept), byPass, false);
-    persist(marked);
-    void shareWizardPack(game, marked as unknown as AnyPack, byPass);
+  function added(kept: ListItem[], byPass: boolean): string | void {
+    // On top of the pack as saved now: Fizzwick takes a while, and another tab may have changed it.
+    const now = packs().find((p) => p.id === id);
+    if (!now) return 'This pack could not be found on this device, so nothing was added. It may have been deleted in another tab.';
+    const marked = afterRun(addItems($state.snapshot(now) as Pack, specs, kept), byPass, false);
+    const saved = saveParts(marked);
+    if (!saved.length) return NO_ROOM;
+    for (const p of saved) void shareWizardPack(game, p as unknown as AnyPack, byPass);
     query = '';
     adding = false;
     sfx.correct();
@@ -171,8 +212,9 @@
           <div class="about">
             <p class="muted">{#if builtin}Comes with the app{edited ? ' · edited on this device' : ''}{:else if pack?.shared}<SharedPill />{:else}Your pack, on this device only{/if}</p>
             {#if builtin && edited}
-              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
+              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')} tip="Undoes your changes and brings back the original pack">Restore original</Button></span>
             {:else if !builtin}
+              {#if tooLong(game, pack)}<span class="act"><Button variant="secondary" size="sm" onclick={split} tip="Turns this pack into smaller packs that can each be shared. Nothing is lost.">Split</Button></span>{/if}
               <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
             {/if}
           </div>
@@ -193,6 +235,7 @@
         </ListTools>
       {/snippet}
 
+      {#if notice}<p class="none" role="status">{notice}</p>{/if}
       {#if query && !found}<p class="none">Nothing matches “{query.trim()}”</p>{/if}
       {#each shown as { spec: s, found: items }, n (s.field)}
         <section class="list" class:first={n === 0} aria-label={s.many}>
@@ -207,8 +250,8 @@
     </PinnedPanel>
   {/if}
   {#snippet actions()}
-    {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
-    {#if pack}<Button size="lg" onclick={() => edit(specs[0].field, 'new')}>{addLabel}</Button>{/if}
+    {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = true)} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
+    {#if pack}<Button size="lg" onclick={() => edit(specs[0].field, 'new')} tip="Type in a new one yourself">{addLabel}</Button>{/if}
   {/snippet}
 </Screen>
 {/if}

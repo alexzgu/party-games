@@ -98,7 +98,7 @@
                 {#if i < 9}<span class="num" aria-hidden="true">{i + 1}</span>{/if}<span class="cname">{name}</span>
               </button>
               {#if game.penalty}
-                <button class="x" class:on={wrong} aria-pressed={wrong} onclick={() => settled() && onwrong(i)} aria-label="{name} answered wrong">✗</button>
+                <button class="x" class:on={wrong} aria-pressed={wrong} onclick={() => settled() && onwrong(i)} aria-label="{name} answered wrong" data-tip={wrong ? 'Takes the wrong mark off this team' : "Marks this team wrong; they lose the tile's points"}>✗</button>
               {/if}
             </li>
           {/each}
@@ -122,7 +122,7 @@
           <div class="wbtns" class:compact style:--n={n}>
             {#each game.teams as name, i (i)}
               {@const on = open.wrong.includes(i)}
-              <button class="wbtn" class:on style:--team={teamColor(i)} aria-pressed={on} onclick={() => settled() && onwrong(i)} aria-label="{name} answered wrong">
+              <button class="wbtn" class:on style:--team={teamColor(i)} aria-pressed={on} onclick={() => settled() && onwrong(i)} aria-label="{name} answered wrong" data-tip={on ? 'Takes the wrong mark off this team' : "Marks this team wrong; they lose the tile's points"}>
                 <span aria-hidden="true">✗</span> <span class="wname">{name}</span>
               </button>
             {/each}

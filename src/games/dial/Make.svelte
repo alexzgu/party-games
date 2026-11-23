@@ -33,7 +33,7 @@
   let controller: AbortController | null = null;
   onDestroy(() => controller?.abort());
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste a list', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Ask the wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
   // svelte-ignore state_referenced_locally
   let mode = $state<'paste' | 'claude'>(hasKey() || initial.length ? 'claude' : 'paste');
   let pasteText = $state('');
@@ -152,11 +152,11 @@
 </script>
 
 {#snippet savedActions()}
-  <Button size="lg" onclick={() => savedPack && onuse(savedPack.id)}>Use it now</Button>
+  <Button size="lg" onclick={() => savedPack && onuse(savedPack.id)} tip="Back to setup, with this pack picked">Use it now</Button>
   {#if hasKey()}
-    <Button variant="secondary" onclick={moreLikeSaved}>More like these</Button>
+    <Button variant="secondary" onclick={moreLikeSaved} tip="Fizzwick writes more cards to add to this pack">More like these</Button>
   {:else}
-    <Button variant="secondary" onclick={pasteMore}>Paste more cards</Button>
+    <Button variant="secondary" onclick={pasteMore} tip="Add another list of cards to this pack">Paste more cards</Button>
   {/if}
 {/snippet}
 
@@ -177,11 +177,11 @@
         <input type="text" maxlength="80" placeholder="e.g. 90s cartoons, our office, wine" bind:value={theme} enterkeyhint="go" />
       </label>
       <WizardEffort />
-      <Button type="submit" size="lg">Make 20 cards</Button>
+      <Button type="submit" size="lg" tip="Fizzwick writes them; you choose which to keep">Make 20 cards</Button>
     </form>
     <div class="chips" aria-label="Quick themes">
       {#each THEME_CHIPS as c (c)}
-        <button class="chip" onclick={() => startFresh(c)}>{c}</button>
+        <button class="chip" onclick={() => startFresh(c)} data-tip="Asks Fizzwick for cards about this right away">{c}</button>
       {/each}
     </div>
   {:else if step === 'review'}

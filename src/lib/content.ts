@@ -1,6 +1,6 @@
 // Built-in packs (bundled JSON, precached for offline play) merged with packs players
 // make or edit on the phone (saved in localStorage). An edit of a built-in replaces it in place.
-import { load, save } from './storage';
+import { load, save, trySave } from './storage';
 import { moveShared } from './shareLog.svelte';
 import type { Secret } from '../games/salad/words';
 
@@ -69,13 +69,21 @@ function customStore<T extends { id: string } & PackMeta>(key: string, builtin: 
     all: (): T[] => stored().filter((x) => !builtinIds.has(x.id)),
     /** Everything saved, own packs and edits, for merging over the built-ins. */
     saved: stored,
-    put(item: T) {
-      const items = stored().filter((x) => x.id !== item.id);
-      const own = !builtinIds.has(item.id);
-      const added = item.added ?? (own ? new Date().toISOString() : undefined);
-      // Only the player's own pack can be marked shared, never an edit of a built-in.
-      const { shared, ...rest } = item;
-      save(key, [{ ...rest, custom: own, ...(added ? { added } : {}), ...(own && shared === true ? { shared } : {}) }, ...items]);
+    put(item: T): void {
+      this.putAll([item]);
+    },
+    /** Saves the packs on top, in this order, in one write: all of them, or (no room: false) none. */
+    putAll(packs: readonly T[]): boolean {
+      const ids = new Set(packs.map((p) => p.id));
+      const items = stored().filter((x) => !ids.has(x.id));
+      const saved = packs.map((item) => {
+        const own = !builtinIds.has(item.id);
+        const added = item.added ?? (own ? new Date().toISOString() : undefined);
+        // Only the player's own pack can be marked shared, never an edit of a built-in.
+        const { shared, ...rest } = item;
+        return { ...rest, custom: own, ...(added ? { added } : {}), ...(own && shared === true ? { shared } : {}) } as unknown as T;
+      });
+      return trySave(key, [...saved, ...items]);
     },
     /**
      * Marks the player's own saved pack as shared to the Community library, in place and with

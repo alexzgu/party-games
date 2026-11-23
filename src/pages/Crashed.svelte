@@ -22,7 +22,7 @@
     <pre>{String((error as Error)?.message ?? error)}</pre>
   </details>
   {#snippet actions()}
-    <Button size="lg" onclick={startFresh}>Start this game fresh</Button>
+    <Button size="lg" onclick={startFresh} tip="Clears this game's saved progress and settings; your packs stay">Start this game fresh</Button>
     <Button variant="ghost" onclick={() => { go('/', true); reset(); }}>Home</Button>
   {/snippet}
 </Screen>

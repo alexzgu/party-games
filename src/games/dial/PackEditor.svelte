@@ -207,9 +207,9 @@
 
   {#snippet actions()}
     {#if pack && builtin && edited}
-      <Button variant="secondary" onclick={() => (confirm = 'restore')}>↺ Restore original</Button>
+      <Button variant="secondary" onclick={() => (confirm = 'restore')} tip="Undoes your changes and brings back the original pack">↺ Restore original</Button>
     {:else if pack && !builtin}
-      <Button size="lg" onclick={() => (adding = true)}>🧙 Add more</Button>
+      <Button size="lg" onclick={() => (adding = true)} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>
       <Button variant="danger" onclick={() => (confirm = 'delete')}>Delete this pack</Button>
     {/if}
   {/snippet}

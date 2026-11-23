@@ -5,7 +5,7 @@ import { afterRun, canShare, failureWords, getPack, importLibraryPack, listPacks
 import { lastShared, noteShared } from './shareLog.svelte';
 import { WIZARD_SERVER } from './wizardServer';
 import { setUsername } from './username';
-import { customDecks, customQuick, customQuiz, quizBoards, type QuickPack, type QuizBoard, type SnarkPack, type SpectrumPack, type WordDeck } from './content';
+import { customDecks, customQuick, customQuiz, quizBoards, type HandPack, type QuickPack, type QuizBoard, type SnarkPack, type SpectrumPack, type WordDeck } from './content';
 import { exportFile, importPacks } from './packfile';
 import { addClues } from '../games/quiz/more';
 import { tidyBoard } from '../games/quiz/board';
@@ -176,6 +176,11 @@ describe('the share mark a pack keeps', () => {
 });
 
 describe('browsing and importing', () => {
+  beforeEach(() => {
+    const mem = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => mem.set(k, v), removeItem: (k: string) => mem.delete(k) });
+  });
+
   it('asks for one game, sorted and searched, with the pass when there is one', async () => {
     const fetch = server(() => Response.json({ packs: [], more: false }));
     expect(await listPacks('dial', { q: ' road trip ', sort: 'new', page: 2 })).toEqual({ ok: true, packs: [], more: false });
@@ -196,7 +201,8 @@ describe('browsing and importing', () => {
       items: [{ left: 'Bad snack', right: 'Good snack', deep }], extra: { deep } };
     server(() => new Response(JSON.stringify({ pack }), { headers: { 'content-type': 'application/json' } }));
     const r = await getPack('dial', 'AAAAAAAAAAAA');
-    expect(r).toEqual({ ok: true, pack: { id: 'AAAAAAAAAAAA', game: 'dial', name: 'Road Trip', blurb: 'Snacks', count: 1, stars: 0, created: 1, updated: 2, items: [{ left: 'Bad snack', right: 'Good snack' }], extra: {} } });
+    expect(r).toEqual({ ok: true, pack: { id: 'AAAAAAAAAAAA', game: 'dial', name: 'Road Trip', blurb: 'Snacks', count: 1, stars: 0, created: 1, updated: 2, items: [{ left: 'Bad snack', right: 'Good snack' }], extra: {},
+      ready: { pack: { id: 'road-trip', name: 'Road Trip', blurb: 'Snacks', cards: [{ left: 'Bad snack', right: 'Good snack' }] }, dropped: 0, skipped: 0, problems: [] } } });
     server(() => Response.json({ pack: { ...pack, items: [{ left: 7 }] } }));
     expect(await getPack('dial', 'AAAAAAAAAAAA')).toEqual({ ok: false, reason: 'broken' });
     server(() => Response.json({ pack: { ...pack, game: 'quick' } }));
@@ -242,6 +248,36 @@ describe('browsing and importing', () => {
     const r = importLibraryPack('snark', shared({ game: 'snark', items: ['A bad name for a boat', 'A bad first sentence for a wedding toast'], extra: { safety: { 'A bad first sentence for a wedding toast': 'Hi' } } }));
     if ('error' in r) throw new Error(r.error);
     expect([(r.saved[0] as SnarkPack).prompts, (r.saved[0] as SnarkPack).safety]).toEqual([['A bad name for a boat'], undefined]);
+  });
+
+  it('previews exactly what importing keeps, saying how many are left out', async () => {
+    const body = { pack: { ...shared({ game: 'sketch', items: ['Pup tent', 'Cat'], extra: { ideas: ['A bear roasting marshmallows', `A ${'b'.repeat(70)} bear`] } }) } };
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })));
+    const r = await getPack('sketch', body.pack.id);
+    if (!r.ok) throw new Error(r.reason);
+    expect([r.pack.items, r.pack.extra, r.pack.count, r.pack.leftOut]).toEqual([['Pup tent'], { ideas: ['A bear roasting marshmallows'] }, 2, 2]);
+    const k = importLibraryPack('sketch', r.pack);
+    if ('error' in k) throw new Error(k.error);
+    expect(k.saved[0]).toMatchObject({ words: ['Pup tent'], ideas: ['A bear roasting marshmallows'] });
+    // One with nothing to keep shows nothing, and cannot be imported.
+    body.pack.items = ['Cat'];
+    body.pack.extra = { ideas: [] } as never;
+    const none = await getPack('sketch', body.pack.id);
+    expect(none.ok && [none.pack.items, none.pack.ready]).toEqual([[], { error: 'Everything in this pack is already in the built-in packs.' }]);
+  });
+
+  it('will not send a Snark Tank pack whose stock answers or finals the library would drop', () => {
+    const p = { id: 's', name: 'S', blurb: '', prompts: ['A bad name for a boat'] };
+    expect(shareProblem('snark', { ...p, safety: { 'A bad name for a boat': 'Floaty', 'A prompt it lost': 'Old' } } as SnarkPack)).toBeNull();
+    expect(shareProblem('snark', { ...p, safety: { 'A bad name for a boat': 'x'.repeat(81) } } as SnarkPack)).toMatch(/stock answers/);
+  });
+
+  it('never sends a pack the library would cut', async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    const answers = Array.from({ length: 401 }, (_, i) => `Answer ${i}`);
+    expect(await publishPack('hand', { id: 'x', name: 'X', blurb: '', prompts: ['What got me through finals?'], answers } as HandPack)).toEqual({ ok: false, reason: 'broken' });
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('imports both lists of a Bad Hand or Sketchy pack, leaving out cards the built-ins have', () => {

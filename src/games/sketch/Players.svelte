@@ -17,7 +17,7 @@
       <Avatar name={p.name} color={i} size={36} dim={away(p.pid)} />
       <strong>{p.name}</strong>
       {#if status?.(p.pid)}<span>{status(p.pid)}</span>{:else if away(p.pid)}<span>Away</span>{/if}
-      {#if onkick}<button class="remove" aria-label="Remove {p.name}" title="Remove {p.name}" onclick={() => onkick?.(p.pid)}>✕</button>{/if}
+      {#if onkick}<button class="remove" aria-label="Remove {p.name}" onclick={() => onkick?.(p.pid)}>✕</button>{/if}
     </li>
   {/each}
 </ul>

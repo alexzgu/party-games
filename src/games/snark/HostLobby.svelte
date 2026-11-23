@@ -57,7 +57,7 @@
           <li class="pop-in">
             <Avatar name={p.name} color={p.color} size={40} dim={!here} />
             <span class="name">{p.name}{#if !here}<small>away</small>{/if}</span>
-            <button class="kick" aria-label="Remove {p.name}" title="Remove {p.name}" onclick={() => askKick(p.pid, p.name)}>✕</button>
+            <button class="kick" aria-label="Remove {p.name}" onclick={() => askKick(p.pid, p.name)}>✕</button>
           </li>
         {/each}
       </ul>
@@ -68,7 +68,7 @@
     {#if !route.params.get('demo')}<AddBot onadd={() => host.addBot()} full={players.length >= MAX_PLAYERS} />{/if}
     <div class="settings">
       <span class="sum">{summary}</span>
-      <Button size="sm" variant="secondary" onclick={onsettings}>Settings</Button>
+      <Button size="sm" variant="secondary" onclick={onsettings} tip="Pick packs, rounds, times and the kind of final">Settings</Button>
     </div>
     <Button size="lg" disabled={!canStart(game)} onclick={onstart}>
       {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${players.length} players`}

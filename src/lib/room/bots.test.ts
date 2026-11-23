@@ -76,10 +76,13 @@ describe('local seats', () => {
 
   it('turn away a phone that would take a bot\'s seat or wear the bot mark', () => {
     const { link, players } = room();
-    link.seat('b1', '🤖 Ada', { deliver: () => {} });
+    link.seat('bot-1', '🤖 Ada', { deliver: () => {} });
     const a = phone(link);
-    a.say({ t: 'hello', pid: 'b1', name: 'Sam' });
+    a.say({ t: 'hello', pid: 'bot-1', name: 'Sam' });
     expect(a.wrote).toEqual([{ t: 'reject', why: 'That name is already in use. Pick another name.' }]);
+    const d = phone(link);
+    d.say({ t: 'hello', pid: 'bot-9', name: 'Sam' });
+    expect(d.wrote).toEqual([{ t: 'reject', why: 'That name is already in use. Pick another name.' }]);
     const b = phone(link);
     b.say({ t: 'hello', pid: 'p2', name: '🤖️ ' });
     expect(b.wrote).toEqual([{ t: 'reject', why: 'Pick a name without 🤖 (it marks bots).' }]);
@@ -139,14 +142,15 @@ describe('bots', () => {
     expect(bots.add()).toBeNull();
     expect([...a.players.values()]).toEqual(['🤖 Ada', '🤖 Bix']);
 
-    // The host screen reloads: a new link, the saved game's players, a phone named Sam among them.
-    const b = room(new Map([...a.players, ['p1', 'Sam']]));
+    // The host screen reloads: a new link, the saved game's players, a phone among them that wears
+    // the robot (it joined before names lost it): its seat stays the phone's.
+    const b = room(new Map([...a.players, ['p1', '🤖 Sam']]));
     const lost: string[] = [];
-    const again = new Bots<V>(b.link, voter, () => [...seats(b), { pid: 'gone', name: '🤖 Cog', out: true }, { pid: 'x', name: '🤖 Dot' }], (pid) => lost.push(pid));
+    const again = new Bots<V>(b.link, voter, () => [...seats(b), { pid: 'bot-gone', name: '🤖 Cog', out: true }, { pid: 'bot-x', name: '🤖 Dot' }], (pid) => lost.push(pid));
     again.open();
     expect(new Set(b.link.pids())).toEqual(new Set(a.players.keys()));
     // Removed bots stay out; a bot the room refuses (here: full) is taken out of the game.
-    expect(lost).toEqual(['x']);
+    expect(lost).toEqual(['bot-x']);
     b.link.close();
     again.close();
   });

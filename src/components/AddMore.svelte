@@ -39,8 +39,11 @@
     ask: (o: MoreRun<T>) => Promise<number>;
     keyOf: (t: T) => string;
     item: Snippet<[T]>;
-    /** `byPass`: everything on this screen came through a magic-words pass, so the pack may be shared. */
-    onadd: (kept: T[], byPass: boolean) => void;
+    /**
+     * `byPass`: everything on this screen came through a magic-words pass, so the pack may be
+     * shared. Why they could not be saved, when they could not: the review stays as it is.
+     */
+    onadd: (kept: T[], byPass: boolean) => string | void;
     onclose: () => void;
     /** Shown in place of the count stepper. */
     size?: Snippet;
@@ -58,6 +61,7 @@
   let items = $state<T[]>([]);
   let streaming = $state(false);
   let error = $state('');
+  let unsaved = $state('');
   let ctrl: AbortController | null = null;
   const keyed = $derived(hasKey());
   onDestroy(() => ctrl?.abort());
@@ -109,7 +113,7 @@
         <input type="text" placeholder={steerHint} bind:value={steer} maxlength="120" autocomplete="off" enterkeyhint="go" />
       </label>
       <WizardEffort />
-      <Button type="submit" size="lg">{cta || `✨ Conjure ${count} more ${noun}`}</Button>
+      <Button type="submit" size="lg" tip="Fizzwick writes them; you choose which to keep">{cta || `✨ Conjure ${count} more ${noun}`}</Button>
     </form>
   {:else}
     {#if error}
@@ -122,7 +126,8 @@
     {#if streaming && items.length === 0}
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring more {noun}…</p>
     {/if}
-    <Triage {items} {keyOf} {streaming} onsave={(kept: T[]) => onadd(kept, byPass)} oncancel={cancel} onmore={range && keyed ? run : undefined} {item} />
+    {#if unsaved}<div class="error" role="alert"><p>{unsaved}</p></div>{/if}
+    <Triage {items} {keyOf} {streaming} onsave={(kept: T[]) => { unsaved = onadd(kept, byPass) || ''; }} oncancel={cancel} onmore={range && keyed ? run : undefined} {item} />
   {/if}
 </Screen>
 

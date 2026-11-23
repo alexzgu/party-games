@@ -97,7 +97,7 @@
         {#key `${view.round}:${s.at}`}<PhoneVote3 screen={s} onsend={(v) => send({ t: 'votes', r: view.round, at: s.at, v })} />{/key}
       {:else}
         <PhoneWatch {view} {left} />
-        <button class="leave" onclick={() => (leaving = true)}>Leave room</button>
+        <button class="leave" onclick={() => (leaving = true)} data-tip="Leaves after asking; the same code lets you back in">Leave room</button>
       {/if}
     </main>
 

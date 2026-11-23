@@ -43,7 +43,7 @@
     {#if !demo}<AddBot onadd={() => host.addBot()} full={v.players.length >= MAX_PLAYERS} />{/if}
     <div class="summary">
       <span>{packLine} · {rules}</span>
-      <Button size="sm" variant="secondary" onclick={() => go('/hand/settings')}>Settings</Button>
+      <Button size="sm" variant="secondary" onclick={() => go('/hand/settings')} tip="Pick packs, time to answer, points to win and house rules">Settings</Button>
     </div>
     <Button size="lg" disabled={need > 0 || noCards} onclick={() => { if (!demo) host.start(); }}>
       {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : noCards ? `${cards.problem}: pick packs in Settings` : `Start with ${v.players.length} players`}

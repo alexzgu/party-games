@@ -133,7 +133,7 @@
               {#if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if pack?.shared}<SharedPill />{:else}Your pack, on this phone only{/if}
             </p>
             {#if builtin && edited}
-              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
+              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')} tip="Undoes your changes and brings back the original pack">Restore original</Button></span>
             {:else if !builtin}
               <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
             {/if}
@@ -172,8 +172,8 @@
   {/if}
 
   {#snippet actions()}
-    {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = true)}>🧙 Add more</Button>{/if}
-    {#if pack}<Button size="lg" onclick={() => (open = 'new')}>+ Add a card</Button>{/if}
+    {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = true)} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
+    {#if pack}<Button size="lg" onclick={() => (open = 'new')} tip="Type in a new card yourself">+ Add a card</Button>{/if}
   {/snippet}
 </Screen>
 {/if}

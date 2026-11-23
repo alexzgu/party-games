@@ -22,7 +22,7 @@
       <h4>{t(obj(c).name) || `Category ${i + 1}`}</h4>
       <ol class="list">
         {#each list(obj(c).clues) as k, r (r)}
-          {#if t(obj(k).clue).trim()}
+          {#if t(obj(k).clue).trim() || t(obj(k).answer).trim()}
             <li class="row"><span>{t(obj(k).clue)}</span><span class="answer">{t(obj(k).answer)}</span></li>
           {/if}
         {/each}

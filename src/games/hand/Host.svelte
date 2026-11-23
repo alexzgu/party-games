@@ -66,17 +66,17 @@
     </div>
     <div class="controls">
       {#if playing}
-        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.pause(); }}>{v?.paused ? 'Resume' : 'Pause'}</Button>
-        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }}>{skipLabel}</Button>
-        <Button size="sm" variant="ghost" onclick={() => (showPlayers = true)}>Players</Button>
+        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.pause(); }} tip={v?.paused ? 'Starts the clock again on every phone' : 'Stops the clock on every phone'}>{v?.paused ? 'Resume' : 'Pause'}</Button>
+        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }} tip={v?.phase === 'answer' ? 'Stops waiting; missing answers sit this round out' : v?.phase === 'judge' ? 'Everyone who played votes instead of the judge' : v?.phase === 'vote' ? 'Counts the votes so far now' : 'Moves on without waiting for the timer'}>{skipLabel}</Button>
+        <Button size="sm" variant="ghost" onclick={() => (showPlayers = true)} tip="Remove a player from the room">Players</Button>
       {/if}
       <HowTo><Rules /></HowTo>
-      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)}>{playing ? 'End game' : 'Close room'}</Button>{/if}
+      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)} tip={playing ? 'Closes the room and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>{playing ? 'End game' : 'Close room'}</Button>{/if}
     </div>
   </header>
   {#if !fixed && host.status !== 'open'}
     <p class="connection" role="status">{host.trouble || `Opening room ${code}…`}
-      {#if host.trouble}<Button size="sm" variant="secondary" onclick={() => (connection = true)}>Trouble connecting?</Button>{/if}</p>
+      {#if host.trouble}<Button size="sm" variant="secondary" onclick={() => (connection = true)} tip="See how phones connect, or use a backup server">Trouble connecting?</Button>{/if}</p>
   {/if}
   {#if v}
     {#if v.phase === 'lobby'}

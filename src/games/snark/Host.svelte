@@ -108,21 +108,21 @@
     <div class="tools">
       {#if game && timed}
         {#if game.paused !== null}
-          <button class="tool on" onclick={() => host.resume()} aria-label="Resume">
+          <button class="tool on" onclick={() => host.resume()} aria-label="Resume" data-tip="Starts the clock again on every phone">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M7 5l12 7-12 7z" fill="currentColor"/></svg><span class="lbl">Resume</span>
           </button>
         {:else}
-          <button class="tool" onclick={() => host.pause()} aria-label="Pause">
+          <button class="tool" onclick={() => host.pause()} aria-label="Pause" data-tip="Stops the clock on every phone">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg><span class="lbl">Pause</span>
           </button>
         {/if}
-        {#if game.phase !== 'scores'}<button class="tool" onclick={skip} aria-label={skipLabel}>
+        {#if game.phase !== 'scores'}<button class="tool" onclick={skip} aria-label={skipLabel} data-tip={game.phase === 'write' ? 'Stops writing now; missing answers stay empty' : game.phase === 'show' ? 'Goes straight to the vote' : game.phase === 'vote' ? 'Counts the votes so far now' : 'Moves on without waiting for the timer'}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 5l9 7-9 7zM16 5h3v14h-3z" fill="currentColor"/></svg><span class="lbl">{skipLabel}</span>
         </button>{/if}
       {/if}
       <HowTo><Rules /></HowTo>
       {#if game}
-        <Button size="sm" variant="ghost" onclick={() => (confirmEnd = true)}>{game.phase === 'lobby' ? 'Close room' : 'End game'}</Button>
+        <Button size="sm" variant="ghost" onclick={() => (confirmEnd = true)} tip={game.phase === 'lobby' ? 'Sends every phone back to the start, after asking' : 'Closes the room and sends every phone back, after asking'}>{game.phase === 'lobby' ? 'Close room' : 'End game'}</Button>
       {/if}
     </div>
   </header>
@@ -131,7 +131,7 @@
     <div class="trouble fade-in" role="alert">
       {#if host.trouble}
         <span>{host.trouble}</span>
-        <Button size="sm" variant="secondary" onclick={() => (showConn = true)}>Trouble connecting?</Button>
+        <Button size="sm" variant="secondary" onclick={() => (showConn = true)} tip="See how phones connect, or use a backup server">Trouble connecting?</Button>
       {:else}
         <span>Opening room {game?.code}…</span>
       {/if}

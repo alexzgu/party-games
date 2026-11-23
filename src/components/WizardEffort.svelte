@@ -29,7 +29,7 @@
     <span class="lbl" id="wizard-effort">How hard Fizzwick tries</span>
     <div class="seg" role="radiogroup" aria-labelledby="wizard-effort">
       {#each EFFORTS as e (e.id)}
-        <button type="button" role="radio" aria-checked={e.id === current} class:on={e.id === current} onclick={() => pick(e.id)}>
+        <button type="button" role="radio" aria-checked={e.id === current} class:on={e.id === current} onclick={() => pick(e.id)} data-tip={e.hint}>
           <span class="emoji" aria-hidden="true">{e.emoji}</span>
           <span>{e.label}</span>
         </button>

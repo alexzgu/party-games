@@ -66,13 +66,13 @@
     </div>
     <div class="controls">
       {#if v && v.phase !== 'lobby' && v.phase !== 'over'}
-        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.pause(); }}>{v.paused ? 'Resume' : 'Pause'}</Button>
-        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }}>{skipLabel}</Button>
+        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.pause(); }} tip={v.paused ? 'Starts the clock again on every phone' : 'Stops the clock on every phone'}>{v.paused ? 'Resume' : 'Pause'}</Button>
+        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }} tip={v.phase === 'draw' || v.phase === 'challenge' ? 'Stops the drawing now; missing fighters stay blank' : v.phase === 'vote' ? 'Counts the votes so far now' : 'Moves on without waiting for the timer'}>{skipLabel}</Button>
       {:else if v?.phase === 'over'}
-        <Button size="sm" onclick={() => { if (!fixed) host.rematch(); }}>Play again</Button>
+        <Button size="sm" onclick={() => { if (!fixed) host.rematch(); }} tip="Back to the lobby with the same players, scores at zero">Play again</Button>
       {/if}
       <HowTo><Rules /></HowTo>
-      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)}>{playing ? 'End game' : 'Close room'}</Button>{/if}
+      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)} tip={playing ? 'Closes the room and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>{playing ? 'End game' : 'Close room'}</Button>{/if}
     </div>
   </header>
   {#if v}
@@ -89,13 +89,13 @@
           <Stage {v} art={{}} online={fixed ? undefined : host.online} onkick={fixed ? undefined : askKick} />
           {#if !fixed}<AddBot onadd={() => host.addBot()} full={v.players.length >= 8} />{/if}
           {#if host.trouble && !fixed}
-            <p role="status">{host.trouble} <Button size="sm" variant="secondary" onclick={() => (connection = true)}>Trouble connecting?</Button></p>
+            <p role="status">{host.trouble} <Button size="sm" variant="secondary" onclick={() => (connection = true)} tip="See how phones connect, or use a backup server">Trouble connecting?</Button></p>
           {/if}
           <div class="controls">
             <Button disabled={fixed ? v.players.length < 3 : !game || !canStart(game)} onclick={() => { if (!fixed) host.start(); }}>
               {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${v.players.length} players`}
             </Button>
-            <Button variant="secondary" onclick={() => go('/brawl/settings')}>Settings</Button>
+            <Button variant="secondary" onclick={() => go('/brawl/settings')} tip="Pick the packs and the drawing time">Settings</Button>
           </div>
           <ConnectionLink onchange={rebroker} />
         </section>

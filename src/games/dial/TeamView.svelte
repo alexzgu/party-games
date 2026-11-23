@@ -51,7 +51,7 @@
     <p>When your team agrees, tap <b>Lock it in</b>. The closer to the hidden target, the more points.</p>
   {/snippet}
   {#snippet actions()}
-    <Button size="lg" onclick={() => onlock(value)}>Lock it in</Button>
+    <Button size="lg" onclick={() => onlock(value)} tip="Makes this your team's final guess">Lock it in</Button>
   {/snippet}
 </Frame>
 

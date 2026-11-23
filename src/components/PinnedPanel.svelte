@@ -90,7 +90,7 @@
 
 {#snippet toggle()}
   {#if canFold}
-    <button class="fold-toggle" class:open aria-expanded={open} aria-controls={foldId} aria-label="{open ? 'Hide' : 'Show'} {foldSpoken ?? foldName}" onclick={fold}>
+    <button class="fold-toggle" class:open aria-expanded={open} aria-controls={foldId} aria-label="{open ? 'Hide' : 'Show'} {foldSpoken ?? foldName}" onclick={fold} data-tip="{open ? 'Hide' : 'Show'} {foldSpoken ?? foldName}">
       <span class="fold-name">{foldName}</span>
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>

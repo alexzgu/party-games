@@ -56,10 +56,10 @@
 <div class="tools">
   <div class="row">
     <div class="title">{@render title?.()}</div>
-    <button class="icon" class:on={searching} aria-pressed={searching} aria-label="Search" onclick={toggleSearch}>
+    <button class="icon" class:on={searching} aria-pressed={searching} aria-label="Search" onclick={toggleSearch} data-tip={searching ? 'Closes the search and shows everything' : 'Search this list'}>
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4" /><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" /></svg>
     </button>
-    <button class="icon" class:on={sorting || sort !== 'suggested'} aria-pressed={sorting} aria-label="Sort" onclick={toggleSort}>
+    <button class="icon" class:on={sorting || sort !== 'suggested'} aria-pressed={sorting} aria-label="Sort" onclick={toggleSort} data-tip="Change the order of this list">
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M7 4v15M3.5 15.5 7 19l3.5-3.5M17 20V5M13.5 8.5 17 5l3.5 3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
     </button>
     {@render extra?.()}
@@ -78,7 +78,7 @@
   {#if sorting}
     <div class="sorts fade-in" role="radiogroup" aria-label="Sort by">
       {#each SORTS as s (s.value)}
-        <button role="radio" aria-checked={sort === s.value} class:on={sort === s.value} onclick={() => pick(s.value)}>{s.label}</button>
+        <button role="radio" aria-checked={sort === s.value} class:on={sort === s.value} onclick={() => pick(s.value)} data-tip={s.value === 'suggested' ? 'The order this list comes in' : undefined}>{s.label}</button>
       {/each}
     </div>
   {/if}

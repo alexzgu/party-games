@@ -22,13 +22,23 @@ describe('checkPublish', () => {
     expect(dial.ok && dial.value.items).toEqual([{ left: 'Hot', right: 'Cold' }]);
     expect(dial.ok && dial.value.extra).toEqual({});
     const finals = [
-      { prompt: 'Three things to never say on a boat', house: ['Iceberg', 'Oops', 'Swim?'], junk: {} },
+      { prompt: 'Three things to never say on a boat', house: ['Iceberg', 'Oops', 'Swim?'], junk: {} }];
+    const bad = [
       { prompt: 'Two lines only', house: ['a', 'b'] },
       { prompt: 'Too long a line', house: ['a', 'b', 'x'.repeat(41)] },
       { prompt: { nested: true }, house: ['a', 'b', 'c'] },
     ];
-    const safety = { 'A bad name for a boat': 'Floaty', 'Not a prompt here': 'Nope', 'Another one please': { deep: 1 } };
-    const snark = checkPublish(pack({ game: 'snark', items: ['A bad name for a boat', 'Another one please'], extra: { emoji: 'x', safety, finals } }));
+    const safety = { 'A bad name for a boat': 'Floaty', 'Not a prompt here': 'Nope' };
+    const prompts = ['A bad name for a boat', 'Another one please'];
+    const snark = checkPublish(pack({ game: 'snark', items: prompts, extra: { emoji: 'x', safety, finals } }));
+    // A prompt is known by its text as stored, so its stock answer goes with it; a blank one is none.
+    const spaced = checkPublish(pack({ game: 'snark', items: ['A  bad name'], extra: { safety: { 'A  bad name': 'Floaty', 'Another one': ' ' } } }));
+    expect(spaced.ok && [spaced.value.items, spaced.value.extra]).toEqual([['A bad name'], { safety: { 'A bad name': 'Floaty' } }]);
+    expect(problem({ game: 'snark', items: ['A bad name'], extra: { safety: { 'A bad name': ' ' } } })).toBe('');
+    // One it cannot keep whole is refused: each bad final, a bad stock answer, a 101st final.
+    for (const f of bad) expect(problem({ game: 'snark', items: prompts, extra: { finals: [...finals, f] } })).toMatch(/finals/);
+    expect(problem({ game: 'snark', items: prompts, extra: { safety: { ...safety, 'Another one please': { deep: 1 } } } })).toMatch(/stock answers/);
+    expect(problem({ game: 'snark', items: prompts, extra: { finals: Array.from({ length: 101 }, () => finals[0]) } })).toMatch(/finals/);
     expect(snark.ok && snark.value.extra).toEqual({ safety: { 'A bad name for a boat': 'Floaty' }, finals: [{ prompt: 'Three things to never say on a boat', house: ['Iceberg', 'Oops', 'Swim?'] }] });
     // A prompt called "__proto__" stays a plain key: no prototype is ever set.
     const proto = checkPublish('{"game":"snark","name":"P","localId":"p","items":["__proto__"],"extra":{"safety":{"__proto__":"Sneaky"}}}');
@@ -39,10 +49,23 @@ describe('checkPublish', () => {
   });
 
   it("keeps a Bad Hand pack's answers and a Sketchy pack's ideas beside the items, and counts both lists", () => {
-    const hand = checkPublish(pack({ game: 'hand', items: ['My RA wrote me up for ___'], extra: { answers: ['Spite', { deep: 1 }, 'x'.repeat(201)], emoji: 'x', ideas: ['no'] } }));
+    const hand = checkPublish(pack({ game: 'hand', items: ['My RA wrote me up for ___'], extra: { answers: ['Spite'], emoji: 'x', ideas: ['no'] } }));
     expect(hand.ok && [hand.value.extra, hand.value.count]).toEqual([{ answers: ['Spite'] }, 2]);
     const sketch = checkPublish(pack({ game: 'sketch', items: ['Tent', 'Canoe'], extra: { ideas: ['A bear roasting marshmallows'] } }));
     expect(sketch.ok && [sketch.value.extra, sketch.value.count]).toEqual([{ ideas: ['A bear roasting marshmallows'] }, 3]);
+    // Nothing is cut from a list: one it cannot keep whole is refused.
+    for (const answers of [['Spite', { deep: 1 }], ['Spite', 'x'.repeat(61)], ['Spite', `Cold${' '.repeat(900)}pizza`], ['Spite', 'spite'], Array.from({ length: 401 }, (_, i) => `Answer ${i}`), 'Spite']) {
+      expect(problem({ game: 'hand', items: ['My RA wrote me up for ___'], extra: { answers } })).toMatch(/answers/);
+    }
+    const many = Array.from({ length: 400 }, (_, i) => `Answer ${i}`);
+    expect(problem({ game: 'hand', items: ['My RA wrote me up for ___'], extra: { answers: many } })).toBe('');
+    // What is stored is what was checked, and hostile text costs nothing to refuse.
+    const tidied = checkPublish(pack({ game: 'hand', items: ['Why is ____ here?'], extra: { answers: ['spite.'] } }));
+    expect(tidied.ok && [tidied.value.items, tidied.value.extra]).toEqual([['Why is ___ here?'], { answers: ['Spite'] }]);
+    const t0 = performance.now();
+    expect(problem({ game: 'hand', items: ['My RA wrote me up for ___'], extra: { answers: [`${'.'.repeat(60000)}a`] } })).toMatch(/answers/);
+    expect(performance.now() - t0).toBeLessThan(100);
+    expect(problem({ game: 'sketch', items: ['Tent'], extra: { ideas: [`A ${'b'.repeat(70)} bear`] } })).toMatch(/ideas/);
     const brawl = checkPublish(pack({ game: 'brawl', items: ["World's okayest intern"], extra: { answers: ['x'] } }));
     expect(brawl.ok && [brawl.value.items, brawl.value.extra, brawl.value.count]).toEqual([["World's okayest intern"], {}, 1]);
     expect(problem({ game: 'sketch', items: ['x'.repeat(81)] })).toMatch(/not sketch items/);

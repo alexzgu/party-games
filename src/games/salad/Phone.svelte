@@ -94,7 +94,7 @@
         {#key `${turn}:${view.reshuffled}`}
           <PhonePick offers={view.offers} selected={view.selected} reshuffled={view.reshuffled} serial={view.serial} {send} />
         {/key}
-        <Button variant="secondary" disabled={view.reshuffled} onclick={() => send({ serial: view.serial, t: 'reshuffle' })}>
+        <Button variant="secondary" disabled={view.reshuffled} onclick={() => send({ serial: view.serial, t: 'reshuffle' })} tip={view.reshuffled ? 'You already got new secrets this round' : 'Swaps these secrets for new ones, once per round'}>
           {view.reshuffled ? 'Reshuffle used' : 'Reshuffle'}
         </Button>
       {:else if view.phase === 'prepare' && !view.ready && view.draft}
@@ -137,7 +137,7 @@
         <Standings players={view.players} final={view.phase === 'over'} you={view.you} />
       {/if}
     </main>
-    <Button variant="ghost" onclick={() => (leaving = true)}>Leave room</Button>
+    <Button variant="ghost" onclick={() => (leaving = true)} tip="Leaves after asking; the same code lets you back in">Leave room</Button>
     {#if view.held}
       <div class="paused" role="status"><div><h2>Waiting for {presenter?.name ?? 'the presenter'}</h2><p>Their phone dropped. The clock is stopped until they’re back (up to {awayWords(view.awayMs)}).</p></div></div>
     {:else if view.paused}<div class="paused" role="status"><div><h2>Paused</h2><p>Waiting for the host to resume.</p></div></div>{/if}

@@ -47,7 +47,7 @@
     {#if !route.params.has('demo')}<AddBot onadd={() => host.addBot()} full={seated.length >= MAX_PLAYERS} />{/if}
     <div class="head settings">
       <span>2 rounds · {packNames.join(', ')}</span>
-      <Button size="sm" variant="secondary" onclick={onsettings}>Settings</Button>
+      <Button size="sm" variant="secondary" onclick={onsettings} tip="Pick the packs and how long to wait for a dropped presenter">Settings</Button>
     </div>
     <Button size="lg" disabled={connected < 2} onclick={onstart}>
       {connected < 2 ? `Need ${2 - connected} more ${connected === 1 ? 'player' : 'players'}` : `Start with ${connected} players`}

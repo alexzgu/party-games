@@ -64,7 +64,7 @@
 <div class="scores fade-in" style:--accent={teamColor(next)}>
   <header>
     <p class="kicker">Scores</p>
-    <button class="menu" onclick={() => (menu = true)} aria-label="Game menu" aria-expanded={menu}>
+    <button class="menu" onclick={() => (menu = true)} aria-label="Game menu" aria-expanded={menu} data-tip="Pause or end the game">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>
     </button>
   </header>
@@ -75,7 +75,7 @@
   <p class="status pop-in" style:animation-delay="200ms">{status}</p>
   <div class="go">
     <Button size="lg" onclick={onnext}>Next: {game.names[next]}</Button>
-    <Button variant="ghost" onclick={onfix}>Fix {game.names[last.team]}'s cards</Button>
+    <Button variant="ghost" onclick={onfix} tip="Back to that turn's cards to change how they were marked">Fix {game.names[last.team]}'s cards</Button>
   </div>
 </div>
 

@@ -3,10 +3,11 @@
 // game's own rules, is sent exactly the view a phone would be sent, and acts by sending the
 // messages a phone would, which the host checks like any phone's. What a bot does is its game's
 // brain (`games/<id>/bot.ts`); this file times it, names it and seats it again after a host
-// reload. The game's own saved players are the record: a bot is a player whose name carries the mark.
+// reload. The game's own saved players are the record: a bot's id starts with `BOT_PID`, which
+// the link lets no phone use; its name is only what people see.
 // Today's brains are simple (random choices, stock lines); a smarter one only has to implement
 // `Brain`.
-import { BOT_MARK, type HostLink, type LocalSeat } from './host-link.svelte';
+import { BOT_MARK, BOT_PID, type HostLink, type LocalSeat } from './host-link.svelte';
 import { newPid } from './code';
 
 /** Every view carries the time left on its timer (ms, or null) and whether the game is paused. */
@@ -96,7 +97,8 @@ export function botName(taken: readonly string[]): string {
   }
 }
 
-export const isBot = (name: string) => name.startsWith(BOT_MARK);
+/** True for a bot's seat (by its id, never by its name). */
+export const isBot = (pid: string) => pid.startsWith(BOT_PID);
 
 // --- one bot ---
 
@@ -196,14 +198,14 @@ export class Bots<V extends BotView> {
 
   /** Adds a bot to the room; null, or why it could not join (room full, game started…). */
   add(): string | null {
-    const res = this.seat(newPid(), botName(this.players().map((p) => p.name)));
+    const res = this.seat(BOT_PID + newPid(), botName(this.players().map((p) => p.name)));
     return 'error' in res ? res.error : null;
   }
 
   /** The room (re)opened: seats every bot the game has, with its id and name; one refused leaves the game. */
   open(): void {
     for (const p of this.players()) {
-      if (p.out || !isBot(p.name) || this.bots.has(p.pid)) continue;
+      if (p.out || !isBot(p.pid) || this.bots.has(p.pid)) continue;
       if ('error' in this.seat(p.pid, p.name)) this.lost(p.pid);
     }
   }

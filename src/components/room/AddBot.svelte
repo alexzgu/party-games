@@ -15,7 +15,7 @@
 </script>
 
 <div class="add">
-  <Button size="sm" variant="secondary" disabled={full} onclick={add}>🤖 Add bot</Button>
+  <Button size="sm" variant="secondary" disabled={full} onclick={add} tip="Adds a pretend player that this screen plays">🤖 Add bot</Button>
   {#if why}<span class="why" role="status">{why}</span>{/if}
 </div>
 

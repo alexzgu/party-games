@@ -41,7 +41,7 @@
 
   const destPack = $derived(myPacks.find((p) => p.id === dest));
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste a list', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Ask the wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
   // svelte-ignore state_referenced_locally
   let mode = $state<'paste' | 'claude'>(keyed ? 'claude' : 'paste');
   let pasteText = $state('');
@@ -161,7 +161,7 @@
       {@render saveTo()}
       <WizardEffort />
       <p class="faint small">Fizzwick writes about 24 cards. You keep the good ones.</p>
-      <Button type="submit" size="lg" disabled={!theme.trim()}>✨ Make cards</Button>
+      <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make cards</Button>
     </form>
   {:else}
     {#if !destPack}

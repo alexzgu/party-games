@@ -34,7 +34,7 @@
   }
 
   const secondsOptions = SECONDS.map((s) => ({ value: s as number, label: `${s} s` }));
-  const modeOptions: { value: EndMode; label: string }[] = [{ value: 'score', label: 'Points' }, { value: 'rounds', label: 'Rounds' }];
+  const modeOptions: { value: EndMode; label: string; tip: string }[] = [{ value: 'score', label: 'Points', tip: 'First team to a set score wins' }, { value: 'rounds', label: 'Rounds', tip: 'The team ahead after a set number of rounds wins' }];
 </script>
 
 <Screen fill title={gameName('taboo')} accent="var(--c-taboo)" onback={() => back('/')} backLabel="Home">

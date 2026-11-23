@@ -143,7 +143,7 @@
       {:else if v.phase === 'over'}
         <Standings {v} {name} you={pid} />
       {/if}
-      <Button variant="ghost" onclick={() => (leaving = true)}>Leave room</Button>
+      <Button variant="ghost" onclick={() => (leaving = true)} tip="Leaves after asking; the same code lets you back in">Leave room</Button>
     </div>
     {#if v.paused}<div class="paused" role="status"><div><h2>Paused</h2><p>Waiting for the host to resume.</p></div></div>{/if}
   </Screen>

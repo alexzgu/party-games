@@ -45,7 +45,7 @@
     {#snippet notice()}
       {#if locked}<p class="note">A game is running: these apply to the next one.</p>{/if}
       <div class="mode">
-        <Segmented label="Mode" bind:value={mode} options={[{ value: 'telephone', label: 'Telephone' }, { value: 'guess', label: 'Draw & guess' }]} />
+        <Segmented label="Mode" bind:value={mode} options={[{ value: 'telephone', label: 'Telephone', tip: 'Write, draw, describe, pass it on' }, { value: 'guess', label: 'Draw & guess', tip: 'One draws a word, the rest race to guess it' }]} />
         <span class="hint">{mode === 'telephone' ? 'Write, draw, describe, pass it on.' : 'One draws a word, the rest race to guess it.'}{#if selected.length && !count}{` The picked packs have no ${mode === 'telephone' ? 'ideas' : 'words'}, so the game uses its own spares.`}{/if}</span>
       </div>
     {/snippet}

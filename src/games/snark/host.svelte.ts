@@ -12,7 +12,7 @@ import { gameRecord } from './record';
 import { dedupe, snarkPacks, type SnarkPack } from '../../lib/content';
 import { makeBag } from '../../lib/bag';
 import { record } from '../../lib/history';
-import { Bots } from '../../lib/room/bots';
+import { Bots, isBot } from '../../lib/room/bots';
 import { snarkBrain } from './bot';
 
 export const packNames = (ids: string[]) => snarkPacks().filter((p) => ids.includes(p.id)).map((p) => p.name);
@@ -68,12 +68,12 @@ class HostSession {
     // A brand-new room whose code is taken simply takes another code.
     taken: () => {
       const g = this.game;
-      if (!g || g.phase !== 'lobby' || L.present(g).length) return null;
+      if (!g || g.phase !== 'lobby' || L.present(g).some((p) => !isBot(p.pid))) return null;
       this.commit({ ...g, code: newCode() });
       return this.game!.code;
     },
   });
-  /** Bots: the game's players whose name carries the bot mark; one that cannot be seated again leaves the game. */
+  /** Bots among the game's players; one that cannot be seated again leaves the game. */
   private bots = new Bots(this.link, snarkBrain, () => this.game?.players.map((p) => ({ pid: p.pid, name: p.name, out: p.kicked })) ?? [],
     (pid) => this.kick(pid));
   private ticker: ReturnType<typeof setInterval> | null = null;

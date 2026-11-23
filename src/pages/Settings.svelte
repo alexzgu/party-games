@@ -77,7 +77,7 @@
     <h3>Look</h3>
     <Segmented
       label="Colours"
-      options={[{ value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }, { value: 'system', label: 'Match phone' }]}
+      options={[{ value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }, { value: 'system', label: 'Match phone', tip: "Follows this device's own light or dark setting" }]}
       bind:value={settings.theme}
       onchange={() => { saveSettings(); applyTheme(); }}
     />
@@ -99,7 +99,7 @@
       onchange={saveSettings}
     />
     <p class="faint"><b>Light the edge:</b> the edge on the side you tilted glows. <b>Flash the screen:</b> the whole screen turns green or amber.</p>
-    <Button variant="secondary" onclick={() => go('/forehead/calibrate')}>Calibrate tilt</Button>
+    <Button variant="secondary" onclick={() => go('/forehead/calibrate')} tip="Teaches this phone how you tilt, for reliable scoring">Calibrate tilt</Button>
     <p class="faint">Tilt: {calibration.th ? `calibrated on this phone (got it at ${Math.round(calibration.th.down)}°, pass at ${Math.round(calibration.th.up)}°)` : 'not calibrated yet, standard settings'}. Calibrating takes half a minute and makes tilts count reliably for whoever did it.</p>
     <TiltCheck />
   </section>
@@ -108,7 +108,7 @@
     <h3>The wizard</h3>
     {#if hasWizard}
       <p class="muted small">🧙 Fizzwick the Wizard lives on this phone: he can make packs from any theme.</p>
-      <button type="button" class="remove" onclick={forgetWords}>{sureForget ? 'Tap again: he only comes back with the magic words' : 'Send Fizzwick away'}</button>
+      <button type="button" class="remove" onclick={forgetWords} data-tip="Removes the wizard from this device">{sureForget ? 'Tap again: he only comes back with the magic words' : 'Send Fizzwick away'}</button>
     {/if}
     <MagicWords />
   </section>
@@ -116,13 +116,13 @@
   <section class="stack">
     <h3>Cards</h3>
     <p class="muted small">Cards you have already seen are held back until a pack runs out, so rounds rarely repeat.</p>
-    <Button variant="secondary" onclick={clearSeen}>Reset card history</Button>
+    <Button variant="secondary" onclick={clearSeen} tip="Lets cards you have already seen come up again">Reset card history</Button>
     {#if cleared}<p class="status ok" role="status">Card history cleared. Every card can come up again.</p>{/if}
   </section>
   {#if canRefreshApp}
     <section class="stack">
       <h3>App</h3>
-      <Button variant="secondary" onclick={refreshCache} disabled={refreshing}>
+      <Button variant="secondary" onclick={refreshCache} disabled={refreshing} tip="Downloads the newest version and reloads the app">
         {refreshing ? 'Refreshing app cache…' : 'Refresh app cache'}
       </Button>
       <p class="faint">Checks for updates, downloads a fresh offline copy and reloads the app.</p>

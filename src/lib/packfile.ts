@@ -20,7 +20,12 @@ import { cleanPrompt, promptError } from '../games/quick/parse';
 import { promptProblem } from '../games/snark/prompts';
 import { ANSWER_MAX, LINE_MAX } from '../games/snark/logic';
 import { cardId as tabooId, cardProblems, tidy as tidyTaboo } from '../games/taboo/cards';
-import { checked, type ListSpec } from './listPack';
+import { checked, type ListSpec } from './listSpec';
+import { freshId, freshName, partCount, splitPack } from './splitPack';
+import { newPid as randomId } from './room/code';
+import { SHAPE } from './libraryShape';
+
+export { freshId, freshName };
 import { BRAWL_LISTS } from '../games/brawl/rules';
 import { HAND_LISTS } from '../games/hand/rules';
 import { SKETCH_LISTS } from '../games/sketch/rules';
@@ -303,7 +308,7 @@ function readData(data: unknown, game: PackGameId): ReadResult | { error: string
 
 // ---- Saving on this phone
 
-interface PackStore { saved(): AnyPack[]; put(p: AnyPack): void; markShared(id: string): boolean; isBuiltin(id: string): boolean; names(): string[]; builtins(): readonly AnyPack[] }
+interface PackStore { saved(): AnyPack[]; putAll(p: readonly AnyPack[]): boolean; markShared(id: string): boolean; isBuiltin(id: string): boolean; names(): string[]; builtins(): readonly AnyPack[] }
 const STORES: Record<PackGameId, PackStore> = {
   forehead: customDecks, dial: customSpectra, gibberish: customGibberish, quiz: customQuiz,
   quick: customQuick, snark: customSnark, taboo: customTaboo, brawl: customBrawl, hand: customHand, sketch: customSketch,
@@ -325,40 +330,52 @@ export const isBuiltinPack = (game: PackGameId, id: string): boolean => STORES[g
 /** A game's built-in packs as shipped. */
 export const builtinPacks = (game: PackGameId): readonly AnyPack[] => STORES[game].builtins();
 
-/** `id`, or `id-2`, `id-3`, … : the first that `taken` does not claim. */
-export function freshId(id: string, taken: (id: string) => boolean): string {
-  if (!taken(id)) return id;
-  let n = 2;
-  while (taken(`${id}-${n}`)) n++;
-  return `${id}-${n}`;
+/**
+ * Names for new packs of the player's own that nothing uses: no built-in or saved pack, and no
+ * other name given out here (nor `own`, saved yet or not). A split-off part (`part`) gets a random id: no pack
+ * deleted or shared before, in any tab, ever had it, so sharing it never replaces another's entry.
+ */
+function namer(game: PackGameId, own?: AnyPack) {
+  const store = STORES[game];
+  const ids = new Set([...store.saved(), ...(own ? [own] : [])].map((p) => p.id));
+  const names = new Set([...store.names(), ...(own ? [own.name] : [])].map((n) => n.toLowerCase()));
+  return (p: { id: string; name: string }, part = false): { id: string; name: string } => {
+    const id = part ? `${p.id}-${randomId()}` : freshId(p.id, (x) => ids.has(x) || store.isBuiltin(x));
+    const name = freshName(p.name, (x) => names.has(x));
+    ids.add(id);
+    names.add(name.toLowerCase());
+    return { id, name };
+  };
 }
 
-/** `name`, or `name (2)`, `name (3)`, … : the first that `taken` does not claim (any case). */
-export function freshName(name: string, taken: (lowered: string) => boolean): string {
-  if (!taken(name.toLowerCase())) return name;
-  let n = 2;
-  while (taken(`${name} (${n})`.toLowerCase())) n++;
-  return `${name} (${n})`;
+const fieldsOf = (game: PackGameId): readonly string[] => (LIST_SPECS[game] ?? []).map((s) => s.field);
+
+/** True when a list pack has a list too long for one pack (the Community library's limit). */
+export const tooLong = (game: PackGameId, pack: object): boolean => partCount(pack, fieldsOf(game), SHAPE.itemsMax) > 1;
+
+/** What a save that found no room says. */
+export const NO_ROOM = 'There is no room left on this device to save that. Nothing was changed.';
+
+/**
+ * Saves the player's own list pack under its own id, as several packs when it is too long for one:
+ * all of them, or none (an empty list) when there is no room.
+ */
+export function putSplit<P extends object>(game: PackGameId, pack: P): P[] {
+  const own = pack as unknown as AnyPack;
+  const fresh = namer(game, own);
+  const parts = splitPack(own, fieldsOf(game), SHAPE.itemsMax, () => fresh(own, true));
+  return STORES[game].putAll(parts) ? (parts as unknown as P[]) : [];
 }
 
 /**
  * Saves the packs as the player's own, each under an id no built-in or saved pack uses, and a
- * name none uses either, so two tiles never look alike.
+ * name none uses either, so two tiles never look alike; one too long is saved as several. All of
+ * them, or none (an empty list) when there is no room.
  */
 export function savePacks(game: PackGameId, packs: readonly AnyPack[]): AnyPack[] {
-  const store = STORES[game];
-  const taken = new Set(store.saved().map((p) => p.id));
-  const names = new Set(store.names().map((n) => n.toLowerCase()));
-  const out = packs.map((p) => {
-    const id = freshId(p.id, (x) => taken.has(x) || store.isBuiltin(x));
-    const name = freshName(p.name, (x) => names.has(x));
-    taken.add(id);
-    names.add(name.toLowerCase());
-    return { ...p, id, name };
-  });
-  // Each put goes on top: save the last first so the file's order is kept.
-  for (const p of [...out].reverse()) store.put(p);
-  return out;
+  const fresh = namer(game);
+  const out = packs.flatMap((p) => splitPack({ ...p, ...fresh(p) }, fieldsOf(game), SHAPE.itemsMax, () => fresh(p, true)));
+  return STORES[game].putAll(out) ? out : [];
 }
 
 export type ImportResult = { saved: AnyPack[]; skipped: number; problems: string[] } | { error: string };
@@ -367,7 +384,8 @@ export type ImportResult = { saved: AnyPack[]; skipped: number; problems: string
 export function importPacks(game: PackGameId, content: string): ImportResult {
   const r = readFile(content, game);
   if ('error' in r) return r;
-  return { saved: savePacks(game, r.packs), skipped: r.skipped, problems: r.problems };
+  const saved = savePacks(game, r.packs);
+  return saved.length ? { saved, skipped: r.skipped, problems: r.problems } : { error: NO_ROOM };
 }
 
 /** "Imported 2 packs: Trip, Office. 12 cards skipped." */

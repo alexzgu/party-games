@@ -99,9 +99,9 @@
   {#each WIDTHS as w, i}
     <button type="button" aria-pressed={w === pen && !erasing} onclick={() => { pen = w; erasing = false; }}>{i === 0 ? 'Thin' : 'Thick'}</button>
   {/each}
-  {#if eraser}<button type="button" aria-pressed={erasing} onclick={() => (erasing = true)}>Eraser</button>{/if}
-  <button type="button" disabled={disabled || (!drawing.length && !cleared)} onclick={undo}>{!drawing.length && cleared ? 'Undo clear' : 'Undo'}</button>
-  <button type="button" disabled={disabled || !drawing.length} onclick={clear}>Clear</button>
+  {#if eraser}<button type="button" aria-pressed={erasing} onclick={() => (erasing = true)} data-tip="Rubs out what you draw over">Eraser</button>{/if}
+  <button type="button" disabled={disabled || (!drawing.length && !cleared)} onclick={undo} data-tip={!drawing.length && cleared ? 'Brings back the drawing you cleared' : 'Takes back your last line'}>{!drawing.length && cleared ? 'Undo clear' : 'Undo'}</button>
+  <button type="button" disabled={disabled || !drawing.length} onclick={clear} data-tip="Erases the whole drawing; Undo brings it back">Clear</button>
 </div>
 {#if full}<p role="status">Drawing limit reached. Undo a stroke to add more.</p>{/if}
 

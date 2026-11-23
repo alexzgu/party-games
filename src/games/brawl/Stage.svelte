@@ -37,7 +37,7 @@
         {#if watching(p.pid)}<span>{v.round < 2 ? 'Draws next round' : 'Votes this round'}</span>
         {:else if v.progress?.includes(p.pid)}<span>Ready</span>
         {:else if online && !online.has(p.pid)}<span>Away</span>{/if}
-        {#if onkick}<button class="remove" aria-label="Remove {p.name}" title="Remove {p.name}" onclick={() => onkick?.(p.pid)}>✕</button>{/if}
+        {#if onkick}<button class="remove" aria-label="Remove {p.name}" onclick={() => onkick?.(p.pid)}>✕</button>{/if}
       </li>
     {/each}
   </ul>
@@ -66,7 +66,7 @@
   {#if v.phase === 'tag'}
     {#if v.options && ontag}
       <p class="note">Keep your fighter{v.side !== undefined && v.cards?.[v.side] ? ` (${v.cards[v.side]?.name})` : ''}: if it wins, +500 bonus. Or tag in another of your fighters the room has seen.</p>
-      <Button disabled={v.paused} onclick={() => ontag?.('')}>Keep my fighter</Button>
+      <Button disabled={v.paused} onclick={() => ontag?.('')} tip="Your fighter stays in; 500 extra points if it wins">Keep my fighter</Button>
       {#if v.options.length}<h3>Or tag in a fighter</h3>{/if}
       <div class="gallery">
         {#each v.options as f (f.id)}

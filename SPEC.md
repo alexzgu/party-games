@@ -171,8 +171,18 @@ asks once, in place: "Anyone can see and import it. Your username, <name>, shows
 magic words. Say the ones the host told you:", with "Not now") and the share goes ahead once they
 are said; a phone on the host's own key is told sharing needs the magic words. A pack the library
 would not take is a disabled button with the reason under it: no name, a Big Board with empty
-tiles ("Fill the 3 empty tiles first."), nothing in it, more than 400 items or over 64 KB (the
-server's own limits, `libraryShape.ts`). A refused share says why in plain words (`failureWords`:
+tiles ("Fill the 3 empty tiles first."), nothing in it, more than 400 items in one list
+(Bad Hand and Sketchy have two) or over 64 KB (the server's own limits, `libraryShape.ts`). For Doodle Brawl, Bad Hand and Sketchy the
+editor refuses to add a 401st item to a list, and a long paste, Fizzwick's items or a pack file that
+would make a list longer is saved as two or more packs ("Mine", "Mine (2)"), its lists shared out
+evenly and every mark kept. A pack saved longer than that earlier shows "Split" in its editor,
+which does the same; nothing is split until it is tapped. (An edit of a built-in pack is never
+shared, so it may stay longer.) The server takes such a pack only whole: every item one the game
+itself takes, none twice, and stored as checked; the phone sends no pack the library would cut
+anything from (Snark Tank's stock answers and finals included). A fetched pack is read once, as an
+import reads it: the preview shows exactly what Import saves and says how much it leaves out.
+An editor open in two tabs saves no old copy over a newer one: it shows the newer and asks again.
+A refused share says why in plain words (`failureWords`:
 offline, pass ran out (the box comes back), today's sharing limit, too big, server trouble). What
 goes, and what the button compares, is always the pack as saved on the phone (each editor saves on
 every change), never the editor's own copy. Once the library takes it, the saved pack is marked
@@ -354,6 +364,10 @@ preview, past its list too) and ticks the new pack, as before.
 - **Stacking** (`--z-*` in tokens.css, lowest first): the page's pinned header and actions, things floating over everything without taking taps (confetti,
   flashes, the drag-around timer), full-screen layers (pauses, game menus, the Community packs), a
   pinned bar holding an open popup or menu, popups, the share note.
+- **Tooltips** (`Tooltip.svelte`, one for the whole app): hovering a button with a mouse or pen for
+  about half a second, or reaching it with the keyboard, shows what it does (its `tip`; a
+  picture-only button its spoken name), over it or under it, always on screen. Never on touch; it
+  takes no taps and goes on any press, Escape, scroll or when its button goes.
 - **Double taps**: a button or the rules row ignores taps in its first 400 ms on screen
   (`src/lib/tapGuard.ts`), so the second tap of a double tap never presses what the next screen
   has in the same spot.
@@ -850,14 +864,15 @@ and drops the link on a JSON message of 16,300 bytes or more.)
 bot" in each game's host lobby seats a bot: a pretend phone the host screen runs in a local seat
 of the link (`seat`). It says hello through the game's own join rules (same name limits and
 player limit, so bots fill seats up to it and count toward the minimum: a room of bots alone can
-start), counts as online, is sent exactly the view a phone of its own would be sent, and acts by
+start), counts as online, is sent exactly the view a phone of its own would be sent (a brain may also read the packs on the host screen, its own packs included), and acts by
 sending a phone's messages, which the host checks like any phone's. Its name carries the mark
 ("🤖 Ada", "🤖 Bix", new in the room), so the robot shows wherever players are listed, on the
 host and on phones; a phone's name may not start with 🤖 (it is dropped; a name of only 🤖 is
-refused), nor may a phone take a bot's seat. The lobby's ✕ removes a bot like a player. The saved
-game is the record: when a reloaded host reopens the room, every player in it whose name carries
-the mark is seated again as a bot with the same id and name (one the room refuses is removed from
-the game); closing the room drops them. What a
+refused), nor may a phone take a bot's seat. The lobby's ✕ removes a bot like a player. A bot's
+id starts with `bot-`, which the link lets no phone use: when a reloaded host reopens the room,
+every player in it with such an id is seated again as a bot with the same id and name (one the
+room refuses is removed from the game; a name alone never makes a seat a bot); closing the room drops them. Bots do not count when an empty
+lobby whose code is taken moves to a new code. What a
 bot does is its game's brain (`games/<id>/bot.ts`, behind one interface in `lib/room/bots.ts`, so
 a smarter brain, say one that asks the wizard, can replace it): today's brains are simple and
 *house*. Think times (*house*): 1–4 s to pick or vote; a few seconds up to a good part of the time

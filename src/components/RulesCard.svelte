@@ -24,7 +24,7 @@
   const name = $derived(`${title}: ${summary.replaceAll(' · ', ', ')}. Change`);
 </script>
 
-<button type="button" class="rules-card" class:compact aria-haspopup="dialog" aria-label={name} onclick={() => { if (ready()) open = true; }}>
+<button type="button" class="rules-card" class:compact aria-haspopup="dialog" aria-label={name} onclick={() => { if (ready()) open = true; }} data-tip="Opens these settings so you can change them">
   <span class="text">
     <span class="title">{title}</span>
     <span class="summary">{summary}</span>

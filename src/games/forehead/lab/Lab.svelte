@@ -181,7 +181,7 @@
   <div class="live" role="status">
     <p class="cue" class:down={current?.kind.endsWith('down')} class:up={current?.kind.endsWith('up')}>{current?.text}</p>
     <p class="faint">Step {stepNo} of {total} · {current?.block}</p>
-    <Button variant="ghost" size="sm" onclick={finish}>Stop and keep what was recorded</Button>
+    <Button variant="ghost" size="sm" onclick={finish} tip="Ends the recording now without losing it">Stop and keep what was recorded</Button>
   </div>
 {:else}
   <Screen title="Tilt lab">
@@ -193,8 +193,8 @@
           <span class="faint">Who is holding it, and anything worth noting (optional)</span>
           <input bind:value={label} placeholder="Alex, sitting, couch" />
         </label>
-        <Button size="lg" onclick={() => start('full')}>Full session (3½ min)</Button>
-        <Button variant="secondary" size="lg" onclick={() => start('speed')}>Speed run (2 min): quick tilts in a row</Button>
+        <Button size="lg" onclick={() => start('full')} tip="Records this phone's movement while a voice tells you what to do">Full session (3½ min)</Button>
+        <Button variant="secondary" size="lg" onclick={() => start('speed')} tip="Records this phone's movement during fast tilts">Speed run (2 min): quick tilts in a row</Button>
       </div>
     {:else}
       <div class="stack">

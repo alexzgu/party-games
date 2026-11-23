@@ -25,9 +25,9 @@
   {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
 
   {#if openRoom}
-    <RoomBanner title="Room {openRoom.code} is open" detail="{openRoom.phase === 'lobby' ? 'In the lobby' : 'Game in progress'} on this device" action="Return" label="Return to room {openRoom.code}" onclick={hostHere} />
+    <RoomBanner title="Room {openRoom.code} is open" detail="{openRoom.phase === 'lobby' ? 'In the lobby' : 'Game in progress'} on this device" action="Return" label="Return to room {openRoom.code}" onclick={hostHere} tip="Goes back to the room open on this device" />
   {:else if rejoin}
-    <RoomBanner title="You're in room {rejoin.code}" detail="as {rejoin.name}" action="Rejoin" label="Rejoin room {rejoin.code} as {rejoin.name}" onclick={() => go(`/salad/join?code=${rejoin.code}`)} />
+    <RoomBanner title="You're in room {rejoin.code}" detail="as {rejoin.name}" action="Rejoin" label="Rejoin room {rejoin.code} as {rejoin.name}" onclick={() => go(`/salad/join?code=${rejoin.code}`)} tip="Takes you back into that room under your name" />
   {/if}
 
   <button class="choice" onclick={hostHere}>

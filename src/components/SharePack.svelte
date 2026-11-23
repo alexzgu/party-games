@@ -83,13 +83,13 @@
     {:else if confirming}
       <p class="small">Anyone can see and import it. Your username, {getUsername()}, shows on it.</p>
       <div class="row">
-        <Button size="sm" onclick={go}>Share it</Button>
+        <Button size="sm" onclick={go} tip="Puts the pack in Community under your username">Share it</Button>
         <Button size="sm" variant="ghost" onclick={() => (confirming = false)}>Cancel</Button>
       </div>
     {:else}
       {#if status === 'changed'}<p class="done faint">Shared in Community · changed since</p>
       {:else if status === 'unsent'}<p class="done faint">This phone has no record of sharing it.</p>{/if}
-      <Button variant="secondary" size="sm" onclick={start} disabled={status === 'sending' || !!problem || asking}>{LABEL[status]}</Button>
+      <Button variant="secondary" size="sm" onclick={start} disabled={status === 'sending' || !!problem || asking} tip={status === 'changed' ? 'Updates the copy in Community with your changes' : 'Puts this pack in Community for anyone to import'}>{LABEL[status]}</Button>
       {#if problem}<p class="faint small">{problem}</p>{/if}
     {/if}
     {#if asking}

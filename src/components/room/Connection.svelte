@@ -23,7 +23,7 @@
     <p>Now using: <b>{backup ? `a backup server at ${brokerLabel()}` : 'the usual free service'}</b>.</p>
     {#if backup}
       <p class="muted">Scanning the host's QR code sets each phone to whatever the host screen uses.</p>
-      <Button onclick={() => apply('')}>Go back to the usual service</Button>
+      <Button onclick={() => apply('')} tip="Connects through the usual free online service again">Go back to the usual service</Button>
     {/if}
     <details open={backup}>
       <summary>Use a backup server</summary>
@@ -33,7 +33,7 @@
         <input type="text" bind:value={text} placeholder="192.168.1.20:9000" autocomplete="off" autocapitalize="off" spellcheck="false" oninput={() => (problem = '')} />
       </label>
       {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
-      <Button variant="secondary" onclick={() => apply(text)} disabled={!text.trim()}>Use this server</Button>
+      <Button variant="secondary" onclick={() => apply(text)} disabled={!text.trim()} tip="Connects through the address typed above">Use this server</Button>
     </details>
   </div>
 </Popup>

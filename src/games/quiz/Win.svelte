@@ -55,7 +55,7 @@
   <p class="faint pop-in" style:animation-delay="{after}ms">{game.board.name}</p>
 
   <div class="actions pop-in" style:animation-delay="{after + 100}ms">
-    <Button size="lg" onclick={onnew}>Play another pack</Button>
+    <Button size="lg" onclick={onnew} tip="Back to setup to pick another pack">Play another pack</Button>
     <Button variant="ghost" onclick={onhome}>Home</Button>
   </div>
 </div>

@@ -15,7 +15,7 @@
 </script>
 
 <div class="export">
-  <Button variant="secondary" size="sm" onclick={send} {disabled}>Export</Button>
+  <Button variant="secondary" size="sm" onclick={send} {disabled} tip="Saves or sends this pack as a file">Export</Button>
   <p class="note" role="status">{note}</p>
 </div>
 

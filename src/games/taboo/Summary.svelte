@@ -38,7 +38,7 @@
 
 <Screen title={ran} hideBack accent={teamColor(turn.team)} split>
   {#snippet trailing()}
-    <button class="menu" onclick={() => (menu = true)} aria-label="Game menu" aria-expanded={menu}>
+    <button class="menu" onclick={() => (menu = true)} aria-label="Game menu" aria-expanded={menu} data-tip="Pause or end the game">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>
     </button>
   {/snippet}
@@ -59,7 +59,7 @@
     <ul class="cards">
       {#each turn.cards as c, i (i)}
         <li class="pop-in" style:animation-delay="{Math.min(i, 16) * 25}ms">
-          <button class="c {c.mark}" onclick={() => fix(i)} aria-label="{c.word}: {LABEL[c.mark]}. Tap to change.">
+          <button class="c {c.mark}" onclick={() => fix(i)} aria-label="{c.word}: {LABEL[c.mark]}. Tap to change." data-tip="Click to change how this card was marked">
             <span class="mark" aria-hidden="true">{ICON[c.mark]}</span>
             <span class="text">
               <span class="w">{c.word}</span>

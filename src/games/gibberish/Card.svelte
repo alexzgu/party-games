@@ -131,7 +131,7 @@
       {#if showCategory}
         <div class="category fade-in" role="status"><span>Category</span><b>{card.hint || 'Anything'}</b></div>
       {:else}
-        <button class="show-cat" onclick={revealCategory}><span aria-hidden="true">💡</span> Show category</button>
+        <button class="show-cat" onclick={revealCategory} data-tip="Shows what kind of thing the answer is"><span aria-hidden="true">💡</span> Show category</button>
       {/if}
       <HoldAnswer answer={card.answer} bind:peek />
     </div>
@@ -149,8 +149,8 @@
     </div>
 
     <div class="row">
-      <Button variant="secondary" onclick={onnobody}>Nobody got it</Button>
-      <Button variant="ghost" onclick={onskip}>↻ Skip card</Button>
+      <Button variant="secondary" onclick={onnobody} tip="Shows the answer; nobody scores">Nobody got it</Button>
+      <Button variant="ghost" onclick={onskip} tip="Swaps this card for a new one; nobody scores">↻ Skip card</Button>
     </div>
   </div>
 </div>
@@ -161,7 +161,7 @@
     <p class="muted">{reader.name} was reading. Only {reader.name} should see the next screen.</p>
     <div class="pactions">
       <Button size="lg" onclick={resume}>Resume</Button>
-      <Button variant="secondary" onclick={() => { paused = false; onskip(); }}>Skip this card</Button>
+      <Button variant="secondary" onclick={() => { paused = false; onskip(); }} tip="Swaps this card for a new one; nobody scores">Skip this card</Button>
       <Button variant="ghost" onclick={onleave}>Back to setup (game is saved)</Button>
     </div>
   </div>

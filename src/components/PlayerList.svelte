@@ -105,7 +105,7 @@
               onblur={() => commit(i, false)}
             />
           {:else}
-            <button class="name" onclick={() => startRename(i)} aria-label="Rename {name}">
+            <button class="name" onclick={() => startRename(i)} aria-label="Rename {name}" data-tip="Rename {name}">
               <span>{name}</span>
               <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/></svg>
             </button>
@@ -120,7 +120,7 @@
     </ul>
     </ScrollWindow>
   {/if}
-  <button class="add" onclick={add} disabled={names.length >= max}>
+  <button class="add" onclick={add} disabled={names.length >= max} data-tip={names.length >= max ? undefined : `Adds another ${noun}; click the name to change it`}>
     {names.length >= max ? (full ?? `${max} ${nouns} is the most`) : `Add ${noun}`}
   </button>
   {#if error}<p class="error" role="alert">{error}</p>{/if}

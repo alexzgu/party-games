@@ -46,7 +46,7 @@
     <ul class="words">
       {#each round.shown as s, i (i)}
         <li class="pop-in" style:animation-delay="{Math.min(i, 20) * 22}ms">
-          <button class="w" class:ok={s.ok} onclick={() => fix(i)} aria-label="{s.word}: {s.ok ? 'got it' : 'passed'}. Tap to change.">
+          <button class="w" class:ok={s.ok} onclick={() => fix(i)} aria-label="{s.word}: {s.ok ? 'got it' : 'passed'}. Tap to change." data-tip={s.ok ? 'Got it. Click to change it to passed' : 'Passed. Click to change it to got it'}>
             <span class="mark" aria-hidden="true">{s.ok ? '✓' : '✗'}</span>
             <span class="text">{s.word}</span>
             <span class="state">{s.ok ? 'Got it' : 'Passed'}</span>
@@ -62,7 +62,7 @@
     <section class="session">
       <div class="sess-head">
         <h3>This session</h3>
-        <button class="link" onclick={clearSession}>Clear</button>
+        <button class="link" onclick={clearSession} data-tip="Empties this list of rounds">Clear</button>
       </div>
       <ol>
         {#each session.rounds as r, i (r.id)}

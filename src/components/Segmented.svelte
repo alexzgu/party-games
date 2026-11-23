@@ -5,7 +5,8 @@
   // A row of mutually exclusive options; the chosen one is filled with the accent.
   let { value = $bindable(), options, label, onchange }: {
     value: T;
-    options: { value: T; label: string }[];
+    /** `tip`: what choosing it does, shown on hover when its label does not say enough. */
+    options: { value: T; label: string; tip?: string }[];
     label: string;
     onchange?: () => void;
   } = $props();
@@ -21,7 +22,7 @@
 
 <div class="seg" role="radiogroup" aria-label={label}>
   {#each options as o (o.value)}
-    <button role="radio" aria-checked={o.value === value} class:on={o.value === value} onclick={() => pick(o.value)}>{o.label}</button>
+    <button role="radio" aria-checked={o.value === value} class:on={o.value === value} data-tip={o.tip} onclick={() => pick(o.value)}>{o.label}</button>
   {/each}
 </div>
 

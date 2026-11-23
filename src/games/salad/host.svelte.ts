@@ -2,7 +2,7 @@ import { saladPacks } from '../../lib/content';
 import { record } from '../../lib/history';
 import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode } from '../../lib/room/code';
-import { Bots } from '../../lib/room/bots';
+import { Bots, isBot } from '../../lib/room/bots';
 import { saladBrain } from './bot';
 import * as L from './logic';
 import { readToHost } from './protocol';
@@ -45,13 +45,13 @@ class HostSession {
       this.tick();
     },
     taken: () => {
-      if (!this.game || this.game.phase !== 'lobby' || L.present(this.game).length) return null;
+      if (!this.game || this.game.phase !== 'lobby' || L.present(this.game).some((p) => !isBot(p.pid))) return null;
       this.commit({ ...this.game, code: newCode() });
       return this.game.code;
     },
   });
 
-  /** Bots: the game's players whose name carries the bot mark; one that cannot be seated again leaves the game. */
+  /** Bots among the game's players; one that cannot be seated again leaves the game. */
   private bots = new Bots(this.link, saladBrain, () => this.game?.players.map((p) => ({ pid: p.pid, name: p.name, out: p.kicked })) ?? [],
     (pid) => this.kick(pid));
 

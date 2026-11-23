@@ -43,7 +43,7 @@
     <Button size="lg" onclick={onnext}>
       {#if won}🏆 See who won{:else}Next: {game.players[nextReader].name} reads →{/if}
     </Button>
-    <Button variant="ghost" size="sm" onclick={onundo}>
+    <Button variant="ghost" size="sm" onclick={onundo} tip={scorer >= 0 ? 'Takes the point back and returns to the card' : 'Returns to the card so someone can still score'}>
       {scorer >= 0 ? 'Wrong name? Undo' : 'Undo, back to the card'}
     </Button>
   {/snippet}

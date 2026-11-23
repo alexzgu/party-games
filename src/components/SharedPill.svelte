@@ -40,7 +40,7 @@
 <button type="button" class="pill" bind:this={pill} aria-describedby={id}
   onpointerdown={start} onpointerup={cancelHold} onpointerleave={cancelHold} onpointercancel={hide}
   oncontextmenu={(event) => event.preventDefault()} onblur={hide}
-  onclick={(event) => { if (event.detail === 0) show(); }}>Shared</button>
+  onclick={(event) => { if (event.detail === 0) show(); }} data-tip="In Community; use Share changes to send later edits">Shared</button>
 
 <div {id} bind:this={tooltip} popover="manual" role="tooltip">Shared in the Community library. Edits go out when you tap Share changes or Fizzwick adds to it.</div>
 

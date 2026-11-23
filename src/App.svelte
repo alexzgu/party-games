@@ -9,6 +9,7 @@
   import Joined from './pages/Joined.svelte';
   import CommunityPage from './pages/CommunityPage.svelte';
   import { communityGames, tabOf } from './lib/communityView';
+  import Tooltip from './components/Tooltip.svelte';
   import ShareNote from './components/ShareNote.svelte';
   import { acceptInvite } from './lib/join';
 
@@ -78,3 +79,4 @@
 {/if}
 
 <ShareNote />
+<Tooltip />

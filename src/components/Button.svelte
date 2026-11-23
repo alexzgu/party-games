@@ -11,6 +11,7 @@
     disabled = false,
     type = 'button',
     label,
+    tip,
     guardMs = TAP_GUARD_MS,
     onclick,
     children,
@@ -21,6 +22,8 @@
     disabled?: boolean;
     type?: 'button' | 'submit';
     label?: string;
+    /** What it does, shown on hover (components/Tooltip.svelte), when its words do not say it all. */
+    tip?: string;
     /** Clicks this soon after the button appears are ignored: the second tap of a double
      *  tap must not press the next screen's button sitting in the same spot. */
     guardMs?: number;
@@ -40,7 +43,7 @@
 </script>
 
 <!-- `menu`: what a button opening a menu adds (components/MenuButton.svelte). -->
-<button class="btn {variant} {size}" {type} {disabled} aria-label={label} onclick={click} {...menu}>
+<button class="btn {variant} {size}" {type} {disabled} aria-label={label} data-tip={tip} onclick={click} {...menu}>
   {@render children()}
 </button>
 

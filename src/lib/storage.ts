@@ -15,11 +15,18 @@ export function load<T>(key: string, fallback: T): T {
   }
 }
 
+/** Stores it, or (storage full or blocked) leaves the old value: the game still works, it just forgets. */
 export function save<T>(key: string, value: T): void {
+  trySave(key, value);
+}
+
+/** `save`, saying whether it was stored. */
+export function trySave<T>(key: string, value: T): boolean {
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value));
+    return true;
   } catch {
-    /* storage full or blocked: the game still works, it just forgets */
+    return false;
   }
 }
 

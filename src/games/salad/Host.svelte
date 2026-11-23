@@ -106,20 +106,20 @@
       {#if view && view.phase !== 'lobby'}<span>Room {view.code} · Round {view.round} of 2</span>{/if}
     </div>
     <div class="controls">
-      {#if timed}<Button size="sm" variant="secondary" onclick={togglePause}>{hostPaused ? 'Resume' : 'Pause'}</Button>{/if}
+      {#if timed}<Button size="sm" variant="secondary" onclick={togglePause} tip={hostPaused ? 'Starts the clock again on every phone' : 'Stops the clock on every phone'}>{hostPaused ? 'Resume' : 'Pause'}</Button>{/if}
       {#if view && view.phase !== 'lobby' && view.phase !== 'over'}
-        {#if skipLabel}<Button size="sm" variant="secondary" onclick={skip}>{skipLabel}</Button>{/if}
-        <Button size="sm" variant="ghost" onclick={() => (showPlayers = true)}>Players</Button>
+        {#if skipLabel}<Button size="sm" variant="secondary" onclick={skip} tip={view?.phase === 'pick' ? 'Stops waiting; undecided players get one of their secrets' : view?.phase === 'prepare' ? 'Stops waiting; unfinished opening clues are filled in' : 'Ends this turn now and shows the secret'}>{skipLabel}</Button>{/if}
+        <Button size="sm" variant="ghost" onclick={() => (showPlayers = true)} tip="Remove a player from the room">Players</Button>
       {/if}
       <HowTo><Rules /></HowTo>
-      {#if game}<Button size="sm" variant="ghost" onclick={() => (ending = true)}>{game.phase === 'lobby' ? 'Close room' : 'End game'}</Button>{/if}
+      {#if game}<Button size="sm" variant="ghost" onclick={() => (ending = true)} tip="Closes the room and sends every phone back, after asking">{game.phase === 'lobby' ? 'Close room' : 'End game'}</Button>{/if}
     </div>
   </header>
 
   {#if !fixed && host.status !== 'open'}
     <div class="connection" role="status">
       {host.trouble || `Opening room ${game?.code ?? ''}…`}
-      {#if host.trouble}<Button size="sm" variant="secondary" onclick={() => (connection = true)}>Trouble connecting?</Button>{/if}
+      {#if host.trouble}<Button size="sm" variant="secondary" onclick={() => (connection = true)} tip="See how phones connect, or use a backup server">Trouble connecting?</Button>{/if}
     </div>
   {/if}
 
@@ -179,8 +179,8 @@
             <Standings players={view.players} {final} />
             {#if final}
               <div class="controls">
-                <Button onclick={() => { if (!fixed) host.rematch(); }}>Play again</Button>
-                <Button variant="secondary" onclick={() => (ending = true)}>Close room</Button>
+                <Button onclick={() => { if (!fixed) host.rematch(); }} tip="Back to the lobby with the same players, scores at zero">Play again</Button>
+                <Button variant="secondary" onclick={() => (ending = true)} tip="Sends every phone back to the start, after asking">Close room</Button>
               </div>
               <Confetti colors={['var(--accent)', 'var(--c-good)', 'var(--c-dial)']} />
             {:else}

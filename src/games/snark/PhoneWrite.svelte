@@ -81,7 +81,7 @@
       {#if task.safety && text !== task.safety}
         <div class="stuck">
           <span class="faint">Stuck? Take a stock answer: half points unless you change it.</span>
-          <button type="button" class="give" onclick={() => stock(task.safety!)}>Give me one</button>
+          <button type="button" class="give" onclick={() => stock(task.safety!)} data-tip="Fills in a ready answer, replacing yours; half points unless changed">Give me one</button>
         </div>
       {/if}
       <Button size="lg" type="submit" disabled={!cleanAnswer(text)}>Done</Button>

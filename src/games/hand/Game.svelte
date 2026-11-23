@@ -17,9 +17,9 @@
   brokerFromAddress(route.params);
 
   /** A pack just made joins the picked ones (like an expansion), and settings show it. */
-  function packMade(id: string) {
+  function packMade(ids: string[]) {
     const s = loadSettings();
-    host.settings({ ...s, packs: [...new Set([...s.packs, id])] });
+    host.settings({ ...s, packs: [...new Set([...s.packs, ...ids])] });
     back('/hand/settings');
   }
 </script>

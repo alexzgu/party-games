@@ -32,7 +32,7 @@
   {#if size === 'many' && top.length === 1}
     <!-- A sole leader is pinned here instead of in the row (on a phone), so it shows once. -->
     {@const t = top[0]}
-    <button class="lead" style:--team={teamColor(t)} onclick={() => onfix(t)} aria-label="{game.teams[t]}: {points(s[t])} points, leading. Fix score">
+    <button class="lead" style:--team={teamColor(t)} onclick={() => onfix(t)} aria-label="{game.teams[t]}: {points(s[t])} points, leading. Fix score" data-tip="Fix this team's score">
       <span class="lname"><span class="crown" aria-hidden="true">👑</span>{game.teams[t]}</span>
       <b>{points(s[t])}</b>
       {#if flash && flash.team === t}{#key flash.n}<span class="float" class:down={flash.delta < 0} aria-hidden="true">{signed(flash.delta)}</span>{/key}{/if}
@@ -46,7 +46,7 @@
   <ol class="strip" bind:this={list} style:--n={n} style:--wide={wideCols} style:--phone={size === 'mid' ? Math.ceil(n / 2) : n} aria-label="Scores">
     {#each game.teams as name, i (i)}
       <li style:--team={teamColor(i)} data-team={i} class:pinned={size === 'many' && top.length === 1 && top[0] === i}>
-        <button onclick={() => onfix(i)} aria-label="{name}: {points(s[i])} points{top.includes(i) && n > 1 ? ', leading' : ''}. Fix score">
+        <button onclick={() => onfix(i)} aria-label="{name}: {points(s[i])} points{top.includes(i) && n > 1 ? ', leading' : ''}. Fix score" data-tip="Fix this team's score">
           <span class="name">{#if size !== 'big' && top.includes(i)}<span class="crown" aria-hidden="true">👑</span>{/if}{name}</span>
           <b class="score" class:neg={s[i] < 0}>{points(s[i])}</b>
         </button>

@@ -49,7 +49,7 @@
   <TopBar backLabel="Back to setup (game is saved)" onback={onleave}>
     {#snippet title()}<h2 class="name">{game.board.name}</h2>{/snippet}
     {#snippet tools()}
-      <button class="tool" onclick={onundo} disabled={!undoText} aria-label={undoText ? `Undo: ${undoText}` : 'Nothing to undo'} title={undoText ? `Undo: ${undoText}` : ''}>
+      <button class="tool" onclick={onundo} disabled={!undoText} aria-label={undoText ? `Undo: ${undoText}` : 'Nothing to undo'}>
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span class="wide-only">Undo</span>
       </button>
@@ -64,7 +64,7 @@
       <button class="tool" class:on={timer.shown} aria-pressed={timer.shown} onclick={() => { timer.shown = !timer.shown; saveTimer(); }}
         aria-label={timer.shown ? 'Hide the timer' : 'Show the timer'}>⏱</button>
       <Rules />
-      <button class="tool" onclick={() => (confirmEnd = true)}>End</button>
+      <button class="tool" onclick={() => (confirmEnd = true)} data-tip="Ends the game now, after asking">End</button>
     {/snippet}
   </TopBar>
 
@@ -92,7 +92,7 @@
         <div class="done pop-in">
           <p class="big">Board cleared!</p>
           <Button size="lg" onclick={onwin}>🏆 See who won</Button>
-          <Button variant="ghost" size="sm" onclick={onundo}>Undo the last tile</Button>
+          <Button variant="ghost" size="sm" onclick={onundo} tip="Takes back the last thing scored">Undo the last tile</Button>
         </div>
       </div>
     {/if}

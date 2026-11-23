@@ -47,8 +47,8 @@
     <h3>{title}</h3>
     <p class="muted">{note ? note + ' ' : ''}The game is saved, so you can come back to it.</p>
     <Button size="lg" onclick={onclose}>{resume}</Button>
-    <Button variant="secondary" onclick={onhome}>Pause and go home</Button>
-    <Button variant="danger" onclick={() => (confirmEnd = true)}>End game</Button>
+    <Button variant="secondary" onclick={onhome} tip="The game is saved so you can come back to it">Pause and go home</Button>
+    <Button variant="danger" onclick={() => (confirmEnd = true)} tip="Ends this game for good, after asking">End game</Button>
   {/if}
 </div>
 

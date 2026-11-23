@@ -54,13 +54,13 @@
   </div>
   <div class="tools">
     {#if slot !== 'guess'}
-      <Button size="sm" variant="secondary" onclick={() => send({ serial, frame: draft.index, t: 'more', slot: active })}>More words</Button>
+      <Button size="sm" variant="secondary" onclick={() => send({ serial, frame: draft.index, t: 'more', slot: active })} tip="Deals other word choices for this blank">More words</Button>
     {/if}
     {#if !prepare}
-      <Button size="sm" variant="ghost" onclick={() => send({ serial, frame: draft.index, t: 'skipFrame' })}>Different sentence</Button>
+      <Button size="sm" variant="ghost" onclick={() => send({ serial, frame: draft.index, t: 'skipFrame' })} tip="Swaps this sentence for another one">Different sentence</Button>
     {/if}
   </div>
-  <Button disabled={!complete} onclick={() => send({ serial, frame: draft.index, t: 'publish' })}>
+  <Button disabled={!complete} onclick={() => send({ serial, frame: draft.index, t: 'publish' })} tip={prepare ? 'Saves this clue to open your turn' : 'Shows this clue to everyone'}>
     {prepare ? 'Ready' : 'Send clue'}
   </Button>
 </div>

@@ -39,10 +39,10 @@
   const keyReady = $derived(hasKey());
   type Mode = 'paste' | 'hand' | 'claude';
   // Typing by hand makes a new pack; adding to one is its own editor's job.
-  const MODES: { value: Mode; label: string }[] = [
-    { value: 'paste', label: 'Paste' },
-    ...(start.into ? [] : [{ value: 'hand' as const, label: 'By hand' }]),
-    { value: 'claude', label: '🧙 Wizard' },
+  const MODES: { value: Mode; label: string; tip: string }[] = [
+    { value: 'paste', label: 'Paste', tip: 'Type or paste a whole list of words' },
+    ...(start.into ? [] : [{ value: 'hand' as const, label: 'By hand', tip: 'Type the words in one at a time' }]),
+    { value: 'claude', label: '🧙 Wizard', tip: 'Fizzwick writes words on a theme you pick' },
   ];
   // svelte-ignore state_referenced_locally
   let mode = $state<Mode>(keyReady || start.isDemo ? 'claude' : 'paste');
@@ -150,7 +150,7 @@
     {:else if mode === 'hand'}
       <div class="stack">
         <p class="faint">Name the pack, pick its icon, then type the words in one at a time.</p>
-        <Button size="lg" onclick={() => go('/forehead/deck?id=new', true)}>Type a pack by hand</Button>
+        <Button size="lg" onclick={() => go('/forehead/deck?id=new', true)} tip="Opens a new pack where you type each word">Type a pack by hand</Button>
       </div>
     {:else if !keyReady && demo == null}
       <MagicWords intro={WANTS} />
@@ -169,7 +169,7 @@
         <Stepper label="How many words" bind:value={count} min={20} max={80} step={10} />
         {@render saveTo()}
         <WizardEffort />
-        <Button type="submit" size="lg" disabled={!theme.trim()}>✨ Make {count} words</Button>
+        <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make {count} words</Button>
       </form>
     {/if}
   {:else}

@@ -45,7 +45,7 @@
 <div class="send">
   <input maxlength={30} placeholder="Name your fighter" aria-label="Fighter name" value={draft.name} disabled={sent || v.paused || expired}
     oninput={(e) => update({ name: e.currentTarget.value })} />
-  <Button disabled={sent || v.paused || expired || !draft.drawing.length} onclick={submit}>{sent ? 'Sent' : 'Submit fighter'}</Button>
+  <Button disabled={sent || v.paused || expired || !draft.drawing.length} onclick={submit} tip="Sends your drawing; no changes after this">{sent ? 'Sent' : 'Submit fighter'}</Button>
 </div>
 
 <style>

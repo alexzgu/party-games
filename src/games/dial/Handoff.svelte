@@ -38,7 +38,7 @@
   <header>
     <div class="grow"><Scoreboard teams={game.teams} scores={scoresBefore(game)} goal={game.goal} active={team} /></div>
     {#if onclose && onend}
-      <button class="menu" aria-label="Game menu" aria-expanded={menu} onclick={() => (menu = true)}>
+      <button class="menu" aria-label="Game menu" aria-expanded={menu} onclick={() => (menu = true)} data-tip="Pause or end the game">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="5" cy="12" r="2.2" fill="currentColor"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><circle cx="19" cy="12" r="2.2" fill="currentColor"/></svg>
       </button>
     {:else if onclose}

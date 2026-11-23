@@ -13,7 +13,7 @@
   import { hasKey, WANTS } from '../lib/claude';
   import { sfx } from '../lib/sound';
   import { afterRun, passedSoFar, shareWizardPack } from '../lib/library';
-  import type { AnyPack } from '../lib/packfile';
+  import { NO_ROOM, putSplit, type AnyPack } from '../lib/packfile';
   import { addItems, itemKey, packItems, parseLists, type ListItem, type ListPack, type ListSpec } from '../lib/listPack';
   import { askLine, generateItems, type ListWizard } from '../lib/listWizard';
 
@@ -23,7 +23,6 @@
   let {
     game,
     specs,
-    put,
     packs,
     wizard,
     range,
@@ -39,7 +38,6 @@
   }: {
     game: PackGameId;
     specs: readonly ListSpec[];
-    put: (p: Pack) => void;
     packs: () => Pack[];
     wizard: ListWizard;
     range: { start: number; min: number; max: number; step: number };
@@ -53,11 +51,12 @@
     pasteExamples?: Record<string, string>;
     defaultName: string;
     themeQuestion: string;
-    onsaved: (id: string) => void;
+    /** The packs saved: one, or several when it was too long for one. */
+    onsaved: (ids: string[]) => void;
     onback: () => void;
   } = $props();
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list' }, { value: 'claude' as const, label: '🧙 Ask the wizard' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste a list', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Ask the wizard', tip: 'Fizzwick writes a pack on a theme you pick' }];
   let mode = $state<'paste' | 'claude'>(hasKey() ? 'claude' : 'paste');
   let name = $state('');
   let theme = $state('');
@@ -69,6 +68,8 @@
   let reviewing = $state(false);
   let streaming = $state(false);
   let error = $state('');
+  /** Why the pack could not be saved; everything on screen stays, to try again. */
+  let unsaved = $state('');
   let ctrl: AbortController | null = null;
   onDestroy(() => ctrl?.abort());
   const keyOf = $derived(itemKey(specs));
@@ -89,8 +90,9 @@
   function add(list: ListItem[]) {
     const n = name.trim() || defaultName;
     const id = newId(n);
-    put(addItems(empty(id, n, 'Pasted list'), specs, list));
-    onsaved(id);
+    const saved = putSplit(game, addItems(empty(id, n, 'Pasted list'), specs, list));
+    if (saved.length) onsaved(saved.map((p) => p.id));
+    else unsaved = NO_ROOM;
   }
 
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
@@ -125,10 +127,11 @@
     const n = name.trim() || defaultName;
     const id = newId(n);
     const pack = afterRun(addItems(empty(id, n, `Conjured by Fizzwick: ${theme.trim()}`), specs, $state.snapshot(kept) as ListItem[]), byPass, true);
-    put(pack);
-    void shareWizardPack(game, pack as unknown as AnyPack, byPass);
+    const saved = putSplit(game, pack);
+    if (!saved.length) { unsaved = NO_ROOM; return; }
+    for (const p of saved) void shareWizardPack(game, p as unknown as AnyPack, byPass);
     sfx.correct();
-    onsaved(id);
+    onsaved(saved.map((p) => p.id));
   }
 </script>
 
@@ -145,6 +148,7 @@
       <Segmented label="What you are pasting" bind:value={pasteField} options={specs.map((s) => ({ value: s.field, label: s.many.charAt(0).toUpperCase() + s.many.slice(1) }))} />
       {#if pasteSpec.hint}<p class="faint small">{pasteSpec.hint}</p>{/if}
     {/if}
+    {#if unsaved}<div class="error" role="alert"><p>{unsaved}</p></div>{/if}
     <PasteList label={route ? pasteLabel : `One ${pasteSpec.one} per line`} placeholder={route ? pastePlaceholder : (pasteExamples?.[pasteSpec.field] ?? pasteSpec.example)}
       parse={(text) => parseLists(text, specs, route ?? (() => pasteField))} onadd={(list) => add(list)} />
   {:else if !reviewing && !hasKey()}
@@ -161,7 +165,7 @@
       <Stepper label="How many {specs[0].many}" bind:value={count} min={range.min} max={range.max} step={range.step} />
       <WizardEffort />
       <p class="faint small">Fizzwick writes {lists}. You keep the good ones.</p>
-      <Button type="submit" size="lg" disabled={!theme.trim()}>✨ Make the pack</Button>
+      <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes it; you choose what to keep">✨ Make the pack</Button>
     </form>
   {:else}
     <label class="field">
@@ -177,6 +181,7 @@
     {#if items.length === 0 && streaming}
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” {one}…</p>
     {/if}
+    {#if unsaved}<div class="error" role="alert"><p>{unsaved}</p></div>{/if}
     <Triage {items} {keyOf} {streaming} onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
       {#snippet item(i: ListItem)}
         <span class="it">

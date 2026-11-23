@@ -100,7 +100,7 @@
     {#if judging}
       <JudgeButtons name={who.name} {onjudge} />
     {:else}
-      <Button size="lg" onclick={() => onjudge(true)}>✓ Got all 3</Button>
+      <Button size="lg" onclick={() => onjudge(true)} tip="Stops the clock and scores the point">✓ Got all 3</Button>
     {/if}
   </div>
 </div>

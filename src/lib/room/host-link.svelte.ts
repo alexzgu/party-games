@@ -20,6 +20,8 @@ const str = (x: unknown, max: number): x is string => typeof x === 'string' && x
 
 /** Marks a seat run on this screen in every list of players; a phone's name may not start with it. */
 export const BOT_MARK = '🤖';
+/** How the id of a seat run on this screen starts; no phone may use such an id. */
+export const BOT_PID = 'bot-';
 /** A phone's name without the bot mark (and the emoji variation selector that may follow it). */
 export const unmarked = (name: string) => name.replace(/^(?:\s|🤖|\uFE0F)+/u, '');
 const MARK_ONLY = 'Pick a name without 🤖 (it marks bots).';
@@ -54,6 +56,8 @@ export class HostLink {
   private pinger: ReturnType<typeof setInterval> | null = null;
   private retry: ReturnType<typeof setTimeout> | null = null;
   private attempts = 0;
+  /** The code is taken and the room is leaving it: nobody is let in until the new peer is up. */
+  private moving = false;
 
   constructor(private game: string, private hooks: HostHooks) {}
 
@@ -161,6 +165,7 @@ export class HostLink {
 
   private connect(): void {
     this.status = 'connecting';
+    this.moving = false;
     const peer = makePeer(hostPeerId(this.game, this.code), currentBroker());
     this.peer = peer;
     peer.on('open', () => {
@@ -182,7 +187,12 @@ export class HostLink {
         const code = this.hooks.taken();
         if (code) {
           this.code = code;
-          setTimeout(() => { if (!peer.destroyed) peer.destroy(); this.recover(peer); }, 0);
+          this.moving = true;
+          setTimeout(() => {
+            if (this.peer !== peer) return; // closed, or moved to another peer, meanwhile
+            if (!peer.destroyed) peer.destroy();
+            this.recover(peer);
+          }, 0);
         }
       }
       this.recover(peer);
@@ -259,7 +269,8 @@ export class HostLink {
     const name = unmarked(raw);
     const refuse = (why: string) => { this.write(conn, { t: 'reject', why }); setTimeout(() => conn.close(), 1500); };
     if (!name.trim() && raw.trim()) return refuse(MARK_ONLY);
-    if (this.locals.has(pid)) return refuse(BOT_SEAT); // a phone may not take a seat run here
+    if (this.moving) return; // the room is moving to a new code: the phone asks again there
+    if (pid.startsWith(BOT_PID)) return refuse(BOT_SEAT); // a phone may not take a seat run here
     const res = this.hooks.hello(pid, name, this.online);
     if ('error' in res) return refuse(res.error);
     if (this.locals.has(res.pid)) return refuse(BOT_SEAT);

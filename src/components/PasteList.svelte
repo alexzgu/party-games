@@ -57,7 +57,7 @@
   </label>
   {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
   {@render children?.()}
-  <Button type="submit" size="lg" disabled={!text.trim()}>Add these</Button>
+  <Button type="submit" size="lg" disabled={!text.trim()} tip="Reads your list, skipping lines it can't use">Add these</Button>
 </form>
 
 <style>

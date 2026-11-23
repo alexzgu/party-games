@@ -1,7 +1,7 @@
 // What makes a Bad Hand card usable: the content gate's rules (src/lib/content.test.ts), shared by
 // the pack editor, "Make a pack" (pasted lists), the wizard and pack files (src/lib/listPack.ts).
 import { BLANK, blanks } from './cards';
-import type { ListSpec } from '../../lib/listPack';
+import { stripEnd, type ListSpec } from '../../lib/listSpec';
 
 export const PROMPT_MAX = 140;
 export const ANSWER_MAX = 60;
@@ -18,7 +18,7 @@ const capital = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
 export const tidyPrompt = (p: string): string => capital(p.trim().replace(/_{2,}/g, BLANK));
 
 /** Closing full stop (or comma, colon, semicolon) off; first letter capital. */
-export const tidyAnswer = (a: string): string => capital(a.trim().replace(/[.,;:]+$/, '').trim());
+export const tidyAnswer = (a: string): string => capital(stripEnd(a.trim(), '.,;:').trim());
 
 /** Why a prompt cannot be used, or '' when it can. */
 export function promptProblem(p: string): string {

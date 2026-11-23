@@ -4,9 +4,13 @@
 // known types and lengths only, so nothing else (extra keys, nesting) is ever kept or walked.
 // Pure (its one import is pure too), so the worker can share it.
 import { isIcon } from './icon';
+import { checked, type ListSpec } from './listSpec';
+import { BRAWL_LISTS } from '../games/brawl/rules';
+import { HAND_LISTS } from '../games/hand/rules';
+import { SKETCH_LISTS } from '../games/sketch/rules';
 
 export const SHAPE = {
-  /** Items in one pack, at most (Big Board: its tiles, at most 8 × 10 anyway). */
+  /** Items in one list of a pack, at most (Bad Hand and Sketchy have two lists; Big Board: its tiles, at most 8 × 10 anyway). */
   itemsMax: 400,
   /** A pack's items and the fields beside them as JSON, in bytes, at most (the server's LIBRARY.itemsBytes). */
   bytesMax: 64 * 1024,
@@ -32,6 +36,9 @@ const SECOND: Partial<Record<ShapeGame, { field: string; max: number }>> = {
   hand: { field: 'answers', max: SHAPE.phrase },
   sketch: { field: 'ideas', max: SHAPE.phrase },
 };
+
+/** Games whose items keep their own rules in the library too (each list's, the main one first). */
+const SPECS: Partial<Record<ShapeGame, readonly ListSpec[]>> = { brawl: BRAWL_LISTS, hand: HAND_LISTS, sketch: SKETCH_LISTS };
 
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 
@@ -118,9 +125,9 @@ export function cleanExtra(game: ShapeGame, raw: unknown, items: readonly unknow
   const out: Record<string, unknown> = {};
   if (isObj(raw.safety)) {
     const prompts = new Set(items as string[]);
-    const pairs = Object.entries(raw.safety).slice(0, SHAPE.itemsMax).flatMap(([q, a]) => {
+    const pairs = Object.entries(raw.safety).map(([q, a]) => [text(q, SHAPE.phrase) ?? '', a] as const).filter(([q]) => prompts.has(q)).slice(0, SHAPE.itemsMax).flatMap(([q, a]) => {
       const answer = text(a, SHAPE.stockMax);
-      return prompts.has(q) && answer ? [[q, answer] as const] : [];
+      return answer ? [[q, answer] as const] : [];
     });
     // fromEntries makes own properties, so even a prompt named "__proto__" stays plain data.
     if (pairs.length) out.safety = Object.fromEntries(pairs);
@@ -135,4 +142,49 @@ export function cleanExtra(game: ShapeGame, raw: unknown, items: readonly unknow
     if (finals.length) out.finals = finals;
   }
   return out;
+}
+
+/**
+ * A pack as the library stores it, or why it cannot. For the games in `SPECS` every item of every
+ * list must be one the game itself takes (what an import keeps), no list may be too long or repeat
+ * an item, and what is stored is exactly what was checked; nothing is ever left out. The phone
+ * asks this before it sends, the server before it stores.
+ */
+export function cleanPublish(game: ShapeGame, rawItems: unknown, rawExtra: unknown): { items: Item[]; extra: Record<string, unknown> } | { problem: string } {
+  const c = cleanItems(game, rawItems);
+  if ('problem' in c) return c;
+  const specs = SPECS[game];
+  if (!specs) {
+    const extra = cleanExtra(game, rawExtra, c.items);
+    return game === 'snark' && extrasIn(rawExtra, c.items) !== extrasIn(extra, c.items)
+      ? { problem: 'Some stock answers or finals are not ones the game takes.' } : { items: c.items, extra };
+  }
+  const lists: string[][] = [];
+  for (const [n, spec] of specs.entries()) {
+    const raw = n === 0 ? rawItems : isObj(rawExtra) ? rawExtra[spec.field] : undefined;
+    const list = raw === undefined ? [] : cleanList(spec, raw);
+    if ('problem' in list) return list;
+    lists.push(list);
+  }
+  return { items: lists[0], extra: lists[1]?.length ? { [specs[1].field]: lists[1] } : {} };
+}
+
+/** How many stock answers (written ones, of the pack's own prompts) and finals a Snark Tank pack carries. */
+function extrasIn(extra: unknown, prompts: readonly unknown[]): number {
+  if (!isObj(extra)) return 0;
+  const have = new Set(prompts);
+  // A prompt is known by its text as stored (spaces collapsed); an answer left blank is none.
+  const written = (a: unknown) => typeof a !== 'string' || a.trim() !== '';
+  const stock = isObj(extra.safety) ? new Set(Object.entries(extra.safety).filter(([q, a]) => have.has(text(q, SHAPE.phrase)) && written(a)).map(([q]) => text(q, SHAPE.phrase))).size : 0;
+  return stock + (Array.isArray(extra.finals) ? extra.finals.length : 0);
+}
+
+function cleanList(spec: ListSpec, raw: unknown): string[] | { problem: string } {
+  if (!Array.isArray(raw)) return { problem: `${spec.many} must be a list.` };
+  if (raw.length > SHAPE.itemsMax) return { problem: `A pack holds at most ${SHAPE.itemsMax} ${spec.many}.` };
+  // Length first: nothing long is ever tidied.
+  const list = raw.map((x) => (typeof x === 'string' && x.length <= spec.max ? checked(spec, x) : null));
+  if (!list.every((x) => x !== null)) return { problem: `Some ${spec.many} are not ones the game takes.` };
+  if (new Set(list.map((x) => spec.key(x as string))).size < list.length) return { problem: `Some ${spec.many} are in the pack twice.` };
+  return list as string[];
 }

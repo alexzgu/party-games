@@ -4,6 +4,8 @@
     label: string;
     /** What a screen reader says, starting with the label ("Import packs from a file"). */
     name?: string;
+    /** What choosing it does, shown on hover. */
+    tip?: string;
     onselect: () => void;
   }
 </script>
@@ -19,9 +21,11 @@
   // screen), downward when there is more room below. A tap outside, Escape, Tab or choosing an
   // item closes it with focus back on the button; the arrow keys, Home and End move between the
   // items. `open` lets the bar holding it rise over the page's pinned bars meanwhile.
-  let { label, items, open = $bindable(false), children }: {
+  let { label, tip, items, open = $bindable(false), children }: {
     /** The button's spoken name. */
     label: string;
+    /** What the menu is for, shown on hover while it is closed. */
+    tip?: string;
     items: MenuItem[];
     open?: boolean;
     children: Snippet;
@@ -95,12 +99,12 @@
 
 <div class="menubutton">
   <Button variant="secondary" size="sm" id={buttonId} {label} aria-haspopup="menu" aria-expanded={open} aria-controls={open ? menuId : undefined}
-    onclick={() => (open ? hide() : show(0))} onkeydown={fromButton}>{@render children()}</Button>
+    onclick={() => (open ? hide() : show(0))} onkeydown={fromButton} tip={open ? undefined : tip}>{@render children()}</Button>
   {#if open}
     <div class="outside" role="presentation" onclick={hide}></div>
     <div class="menu" class:up class:down={!up} id={menuId} role="menu" tabindex="-1" aria-labelledby={buttonId} bind:this={menu} onkeydown={inMenu}>
       {#each items as item (item.label)}
-        <button class="item" role="menuitem" tabindex="-1" aria-label={item.name} onclick={() => choose(item)}>
+        <button class="item" role="menuitem" tabindex="-1" aria-label={item.name} onclick={() => choose(item)} data-tip={item.tip}>
           <span class="icon" aria-hidden="true">{item.icon}</span>{item.label}
         </button>
       {/each}

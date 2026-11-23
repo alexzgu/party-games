@@ -55,7 +55,7 @@
         </li>
       {/each}
     </ul>
-    <div class="clear"><Button variant="ghost" onclick={() => (confirmClear = true)}>Clear history</Button></div>
+    <div class="clear"><Button variant="ghost" onclick={() => (confirmClear = true)} tip="Deletes every entry on this device, after asking">Clear history</Button></div>
   {/if}
 </Screen>
 

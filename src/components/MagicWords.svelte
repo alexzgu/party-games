@@ -47,9 +47,9 @@
     <div class="words">
       <input type={show ? 'text' : 'password'} placeholder={hasServer ? 'The magic words: a word or a few' : "For the host: the wizard's key"} autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"
         maxlength="400" bind:value={words} oninput={() => (note = '')} onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void say(); } }} aria-label={hasServer ? 'Magic words' : "The host's key"} />
-      <button type="button" class="show" onclick={() => (show = !show)} aria-pressed={show}>{show ? 'Hide' : 'Show'}</button>
+      <button type="button" class="show" onclick={() => (show = !show)} aria-pressed={show} data-tip={show ? 'Hides what you typed behind dots' : 'Shows what you typed'}>{show ? 'Hide' : 'Show'}</button>
     </div>
-    <Button variant="secondary" onclick={say} disabled={demo || !words.trim() || saying}>{saying ? 'Listening…' : hasServer ? 'Say them' : 'Save it'}</Button>
+    <Button variant="secondary" onclick={say} disabled={demo || !words.trim() || saying} tip={hasServer ? 'Checks the words; the right ones bring Fizzwick to this device' : 'Saves the key on this device'}>{saying ? 'Listening…' : hasServer ? 'Say them' : 'Save it'}</Button>
   </div>
 {/if}
 {#if !demo && note && (!ok || hasKey())}<p class="status" class:ok class:err={!ok} role="status">{note}</p>{/if}

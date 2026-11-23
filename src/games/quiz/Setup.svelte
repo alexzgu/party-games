@@ -113,7 +113,7 @@
       {#if board && gaps}
         <div class="gaps" role="status">
           <p><b>{board.name}</b> is a draft with {gaps === 1 ? 'one empty tile' : `${gaps} empty tiles`}: {describeEmpty(board, rowValues(rows, scale === 'x2'))}.</p>
-          <Button variant="secondary" size="sm" onclick={() => onedit(board.id, emptyTiles(board)[0]?.category)}>{gaps === 1 ? 'Fill it in' : 'Fill them in'}</Button>
+          <Button variant="secondary" size="sm" onclick={() => onedit(board.id, emptyTiles(board)[0]?.category)} tip="Opens the pack at the first category with a gap">{gaps === 1 ? 'Fill it in' : 'Fill them in'}</Button>
         </div>
       {/if}
     {/snippet}
@@ -129,8 +129,8 @@
       <Toggle bind:checked={penalty} label="Wrong answers lose points" hint="A team that guesses wrong loses the tile's value" />
     </RulesCard>
     {#if inProgress}
-      <Button size="lg" onclick={() => { unlockAudio(); keepRoster(); onresume(); }}>Resume game</Button>
-      <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!blocked}>
+      <Button size="lg" onclick={() => { unlockAudio(); keepRoster(); onresume(); }} tip="Carries on with the game saved on this device">Resume game</Button>
+      <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!blocked} tip={blocked ? undefined : 'Ends the saved game; asks for a second tap first'}>
         {blocked || (confirming ? 'Tap again to end it and start over' : 'Start a new game')}
       </Button>
     {:else}

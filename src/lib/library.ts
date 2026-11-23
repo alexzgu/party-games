@@ -7,8 +7,8 @@
 import type { PackGameId } from '../app.config';
 import { slugify } from './content';
 import { viaPass } from './claude';
-import { cleanExtra, cleanItems, itemCount, SHAPE, text } from './libraryShape';
-import { builtinPacks, FORMAT, isBuiltinPack, itemsField, listFields, markPackShared, ownPack, packParts, readFile, savePacks, unitOf, type AnyPack, type ImportResult } from './packfile';
+import { cleanExtra, cleanItems, cleanPublish, itemCount, SHAPE, text } from './libraryShape';
+import { builtinPacks, FORMAT, isBuiltinPack, itemsField, listFields, markPackShared, NO_ROOM, ownPack, packParts, readFile, savePacks, unitOf, type AnyPack, type ImportResult } from './packfile';
 import { isSending, lastShared, noteShared, setSending, type SharedRecord } from './shareLog.svelte';
 import { saveSettings, settings } from './settings.svelte';
 import { getUsername } from './username';
@@ -79,6 +79,10 @@ export interface LibraryFull extends LibraryPack {
   /** Rebuilt with the game's own fields only. */
   items: unknown[];
   extra: Record<string, unknown>;
+  /** The pack as importing saves it, read once: the preview shows this and Import saves this. */
+  ready?: ReadLibrary;
+  /** Things of the pack an import leaves out (not usable here, or in a built-in pack). */
+  leftOut?: number;
 }
 
 export type Sort = 'stars' | 'new';
@@ -145,7 +149,7 @@ export async function getPack(game: PackGameId, id: string, signal?: AbortSignal
   const summary = summaryOf(game, raw);
   const items = cleanItems(game, raw?.items);
   if (!summary || 'problem' in items) return { ok: false, reason: 'broken' };
-  return { ok: true, pack: { ...summary, items: items.items, extra: cleanExtra(game, raw?.extra, items.items) } };
+  return { ok: true, pack: asImported(game, { ...summary, items: items.items, extra: cleanExtra(game, raw?.extra, items.items) }, raw ?? {}) };
 }
 
 export async function starPack(id: string, on: boolean): Promise<Got<{ stars: number; starred: boolean }>> {
@@ -168,6 +172,9 @@ function contentOf(game: PackGameId, pack: AnyPack) {
  */
 export async function publishPack(game: PackGameId, pack: AnyPack, mark = false): Promise<Got<{ id: string }>> {
   const sent = ownPack(game, pack.id) ?? pack;
+  // Never sent when the library would not take it whole: it would look shared with items missing.
+  // (A Big Board is never cut, and one with tiles still to fill is shared by the wizard as it is.)
+  if (game !== 'quiz' && shareProblem(game, sent)) return { ok: false, reason: 'broken' };
   const localId = lastShared(game, sent.id)?.localId ?? sent.id;
   const body = { game, ...contentOf(game, sent), localId, username: getUsername() };
   setSending(game, sent.id, true);
@@ -253,9 +260,12 @@ export function shareProblem(game: PackGameId, pack: AnyPack): string | null {
   const lists = [items, ...rest.map((f) => (Array.isArray(extra[f]) ? (extra[f] as unknown[]) : []))];
   const big = game === 'quiz' ? -1 : lists.findIndex((l) => l.length > SHAPE.itemsMax);
   if (big >= 0) return `Too big for the Community library: ${SHAPE.itemsMax} ${rest.length ? listFields(game)[big] : unit} at most.`;
+  if (Array.isArray(extra.finals) && extra.finals.length > SHAPE.snarkFinals) return `Too big for the Community library: ${SHAPE.snarkFinals} finals at most.`;
   const kept = cleanExtra(game, extra, items);
   if (rest.some((f, i) => ((kept[f] as unknown[] | undefined)?.length ?? 0) !== lists[i + 1].length)) return `Some ${unit} are too long for the Community library.`;
   if ('problem' in cleanItems(game, items)) return `Some ${unit} are too long for the Community library.`;
+  const sent = cleanPublish(game, items, extra);
+  if ('problem' in sent) return game === 'snark' ? 'Some stock answers or finals cannot be used in the Community library.' : `Some ${unit} are repeated or cannot be used in the game.`;
   if (new TextEncoder().encode(JSON.stringify({ items, extra })).length > SHAPE.bytesMax) {
     return `Too big for the Community library: ${SHAPE.bytesMax / 1024} KB at most.`;
   }
@@ -327,25 +337,48 @@ export function withoutBuiltins(game: PackGameId, pack: AnyPack): { pack: AnyPac
   return { pack: next, dropped };
 }
 
-/**
- * Saves a library pack on this phone as the player's own: read like a pack file (each item
- * checked and tidied by its game's own rules), then without what a built-in pack already has,
- * marked `fromLibrary`.
- */
-export function importLibraryPack(game: PackGameId, pack: LibraryFull): ImportResult {
+type ReadLibrary = { pack: AnyPack; dropped: number; skipped: number; problems: string[] } | { error: string };
+
+/** A library pack as an import keeps it: read like a pack file, then without what a built-in pack already has. */
+function readLibraryPack(game: PackGameId, pack: LibraryFull): ReadLibrary {
   // The extras were rebuilt with the game's own fields only (cleanExtra): emoji, stock answers and finals, a second list.
-  const keep = pack.extra;
-  const file = { jerkBox: FORMAT, game, packs: [{ id: slugify(pack.name) || 'community-pack', name: pack.name, blurb: pack.blurb, ...keep, [itemsField(game)]: pack.items }] };
+  const file = { jerkBox: FORMAT, game, packs: [{ id: slugify(pack.name) || 'community-pack', name: pack.name, blurb: pack.blurb, ...pack.extra, [itemsField(game)]: pack.items }] };
   const read = readFile(JSON.stringify(file), game);
   if ('error' in read) return read;
   const { pack: tidied, dropped } = withoutBuiltins(game, read.packs[0]);
-  // Marked as the library's, so it is never shared again from this phone.
-  const clean = { ...tidied, fromLibrary: true };
-  if (!listFields(game).some((f) => ((clean as unknown as Record<string, unknown[]>)[f] ?? []).length)) {
+  if (!listFields(game).some((f) => ((tidied as unknown as Record<string, unknown[]>)[f] ?? []).length)) {
     return { error: dropped ? 'Everything in this pack is already in the built-in packs.' : 'This pack has nothing in it.' };
   }
-  const problems = dropped ? [...read.problems, `${dropped} already in the built-in packs left out.`] : read.problems;
-  return { saved: savePacks(game, [clean]), skipped: read.skipped, problems };
+  return { pack: tidied, dropped, skipped: read.skipped, problems: read.problems };
+}
+
+/** Everything in a pack: its items, its second list, a Snark Tank pack's stock answers and finals. */
+function thingsIn(items: unknown, extra: unknown): number {
+  const e = (extra && typeof extra === 'object' ? extra : {}) as Record<string, unknown>;
+  const n = (x: unknown) => (Array.isArray(x) ? x.length : 0);
+  return n(items) + n(e.answers) + n(e.ideas) + n(e.finals) + Object.keys((e.safety ?? {}) as object).length;
+}
+
+/** A fetched pack as importing it saves it, with how much of `raw` (as the server sent it) that leaves out. */
+function asImported(game: PackGameId, pack: LibraryFull, raw: Record<string, unknown>): LibraryFull {
+  const ready = readLibraryPack(game, pack);
+  if ('error' in ready) return { ...pack, items: [], extra: {}, count: 0, ready };
+  const { items, extra } = packParts(game, ready.pack);
+  const leftOut = game === 'quiz' ? ready.skipped : Math.max(0, thingsIn(raw.items, raw.extra) - thingsIn(items, extra));
+  return { ...pack, name: ready.pack.name, blurb: ready.pack.blurb, items, extra, count: itemCount(game, items, extra), ready, ...(leftOut ? { leftOut } : {}) };
+}
+
+/**
+ * Saves a library pack on this phone as the player's own: exactly what its preview showed (`ready`;
+ * each item checked and tidied by its game's own rules, without what a built-in pack already has),
+ * marked `fromLibrary`, so it is never shared again from this phone.
+ */
+export function importLibraryPack(game: PackGameId, pack: LibraryFull): ImportResult {
+  const read = pack.ready ?? readLibraryPack(game, pack);
+  if ('error' in read) return read;
+  const problems = read.dropped ? [...read.problems, `${read.dropped} already in the built-in packs left out.`] : read.problems;
+  const saved = savePacks(game, [{ ...read.pack, fromLibrary: true }]);
+  return saved.length ? { saved, skipped: read.skipped, problems } : { error: NO_ROOM };
 }
 
 /** What a failed library call means, in plain words; `doing` says what the player was doing. */

@@ -62,7 +62,7 @@
       </div>
       <div class="opt">
         <span class="label">Final round</span>
-        <Segmented label="Final round" bind:value={final} options={[{ value: 'everyone', label: 'Everyone, 3 votes' }, { value: 'duels', label: 'Three-line duels' }]} />
+        <Segmented label="Final round" bind:value={final} options={[{ value: 'everyone', label: 'Everyone, 3 votes', tip: 'One prompt for all; each player gives three votes' }, { value: 'duels', label: 'Three-line duels', tip: 'Players pair off and each writes three short lines' }]} />
         <span class="hint">{final === 'duels'
           ? `Players pair off and each writes up to three short lines; with an odd number, last place takes on the house.${ownFinals ? '' : ' The picked packs have no duel prompts, so Classic’s are used.'}`
           : 'One prompt for everyone; each player spreads 3 votes over the other answers.'}</span>

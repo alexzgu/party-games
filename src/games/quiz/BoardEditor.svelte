@@ -193,7 +193,7 @@
               {#if fresh}Not saved yet{:else if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if board?.shared}<SharedPill />{:else}Your pack, on this phone only{/if}
             </p>
             {#if builtin && edited}
-              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
+              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')} tip="Undoes your changes and brings back the original pack">Restore original</Button></span>
             {:else if !fresh && !builtin}
               <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
             {/if}
@@ -227,7 +227,7 @@
                 {#if gapsIn(i)}<span class="badge" aria-label="{gapsIn(i)} empty">{gapsIn(i)}</span>{/if}
               </button>
             {/each}
-            <button class="tab add" onclick={addCategory} disabled={cats.length >= edit.MAX_CATEGORIES} aria-label="Add a category">+ Category</button>
+            <button class="tab add" onclick={addCategory} disabled={cats.length >= edit.MAX_CATEGORIES} aria-label="Add a category" data-tip="Adds an empty category to this pack">+ Category</button>
           </div>
           {@render toggle()}
         </div>
@@ -272,9 +272,9 @@
 
   {#snippet actions()}
     {#if board && fresh}
-      <Button size="lg" onclick={saveNew}>{gaps.length ? 'Save as a draft' : 'Save pack'}</Button>
+      <Button size="lg" onclick={saveNew} tip={gaps.length ? 'Keeps it with its gaps; playable once every tile is filled' : 'Saves it and picks it for your next game'}>{gaps.length ? 'Save as a draft' : 'Save pack'}</Button>
     {:else}
-      {#if shapes.length}<Button size="lg" variant="secondary" onclick={openMore}>🧙 Add more</Button>{/if}
+      {#if shapes.length}<Button size="lg" variant="secondary" onclick={openMore} tip="Fizzwick writes a new category or harder clues; you choose">🧙 Add more</Button>{/if}
       <Button size="lg" onclick={onback}>Done</Button>
     {/if}
   {/snippet}
@@ -301,8 +301,8 @@
   <Popup title="Save this pack?" onclose={() => (confirm = '')}>
     <div class="confirm">
       <p>“{board.name}” is not saved yet.</p>
-      <Button onclick={saveNew}>{gaps.length ? 'Save as a draft' : 'Save pack'}</Button>
-      <Button variant="danger" onclick={discard}>Throw it away</Button>
+      <Button onclick={saveNew} tip={gaps.length ? 'Keeps it with its gaps; playable once every tile is filled' : 'Saves it and picks it for your next game'}>{gaps.length ? 'Save as a draft' : 'Save pack'}</Button>
+      <Button variant="danger" onclick={discard} tip="Deletes this unsaved pack for good">Throw it away</Button>
       <Button variant="ghost" onclick={() => (confirm = '')}>Keep editing</Button>
     </div>
   </Popup>

@@ -48,10 +48,10 @@
     {/each}
   </ul>
   <div class="actions">
-    <Button onclick={() => onsave(kept)} disabled={kept.length === 0 || streaming} size="lg">Save {kept.length}</Button>
+    <Button onclick={() => onsave(kept)} disabled={kept.length === 0 || streaming} size="lg" tip="Keeps these and leaves out the dropped ones">Save {kept.length}</Button>
     <div class="row">
-      {#if onmore}<Button variant="secondary" onclick={onmore} disabled={streaming}>More</Button>{/if}
-      <Button variant="ghost" onclick={oncancel}>{streaming ? 'Stop' : 'Discard all'}</Button>
+      {#if onmore}<Button variant="secondary" onclick={onmore} disabled={streaming} tip="Asks Fizzwick for another batch to add to these">More</Button>{/if}
+      <Button variant="ghost" onclick={oncancel} tip={streaming ? 'Stops Fizzwick; what is written so far stays' : 'Throws all of these away and goes back'}>{streaming ? 'Stop' : 'Discard all'}</Button>
     </div>
   </div>
 </div>

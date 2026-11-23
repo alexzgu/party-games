@@ -2,7 +2,7 @@ import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode, newPid } from '../../lib/room/code';
 import { brawlPacks } from '../../lib/content';
 import { record } from '../../lib/history';
-import { Bots } from '../../lib/room/bots';
+import { Bots, isBot } from '../../lib/room/bots';
 import { brawlBrain } from './bot';
 import * as L from './logic';
 import { artIds, view } from './view';
@@ -41,14 +41,14 @@ class Session {
       this.tick();
     },
     taken: () => {
-      if (this.game?.phase !== 'lobby' || this.game.players.length) return null;
+      if (this.game?.phase !== 'lobby' || this.game.players.some((p) => !isBot(p.pid))) return null;
       const code = newCode();
       this.commit({ ...this.game, code });
       return code;
     },
   });
 
-  /** Bots: the game's players whose name carries the bot mark; one that cannot be seated again leaves the game. */
+  /** Bots among the game's players; one that cannot be seated again leaves the game. */
   private bots = new Bots(this.link, brawlBrain, () => this.game?.players.map((p) => ({ pid: p.pid, name: p.name, out: this.game!.kicked.includes(p.pid) })) ?? [],
     (pid) => this.kick(pid));
 

@@ -35,7 +35,7 @@
     <ScaleCard card={round.card} />
   </div>
   <div class="row">
-    <Button variant="secondary" size="sm" disabled={round.redrawsLeft <= 0} onclick={onredraw}>
+    <Button variant="secondary" size="sm" disabled={round.redrawsLeft <= 0} onclick={onredraw} tip={round.redrawsLeft > 0 ? 'Swaps this scale for another one, once per round' : 'You already swapped this round'}>
       ↻ {round.redrawsLeft > 0 ? 'Different card (1 free)' : 'No more new cards'}
     </Button>
   </div>
@@ -49,7 +49,7 @@
     <p>Then tap <b>Hide target · show my team</b> and give them the phone.</p>
   {/snippet}
   {#snippet actions()}
-    <Button size="lg" onclick={() => { onclue(clue.trim()); onhide(); }}>Hide target · show my team</Button>
+    <Button size="lg" onclick={() => { onclue(clue.trim()); onhide(); }} tip="Covers the target so your team can guess">Hide target · show my team</Button>
   {/snippet}
 </Frame>
 

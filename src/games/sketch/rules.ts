@@ -1,7 +1,7 @@
 // What makes a Sketchy word or idea usable: the content gate's rules (src/lib/content.test.ts),
 // shared by the pack editor, "Make a pack" (pasted lists), the wizard and pack files
 // (src/lib/listPack.ts).
-import type { ListSpec } from '../../lib/listPack';
+import { stripEnd, type ListSpec } from '../../lib/listSpec';
 
 export const WORD_MAX = 24;
 export const IDEA_MAX = 70;
@@ -13,7 +13,7 @@ export const sameKey = (s: string): string => s.toLowerCase().replace(/[^a-z0-9 
 
 /** Closing punctuation off, first letter capital. */
 function tidy(s: string): string {
-  const t = s.trim().replace(/[.!?,;:]+$/, '').trim();
+  const t = stripEnd(s.trim(), '.!?,;:').trim();
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 

@@ -1,7 +1,7 @@
 // What makes a Doodle Brawl title usable: the content gate's rules (src/lib/content.test.ts),
 // shared by the pack editor, "Make a pack" (pasted lists), the wizard and pack files
 // (src/lib/listPack.ts).
-import type { ListSpec } from '../../lib/listPack';
+import { stripEnd, type ListSpec } from '../../lib/listSpec';
 
 /** Characters in a title, at most (the longest built-in has 47). */
 export const TITLE_MAX = 60;
@@ -17,7 +17,7 @@ export const titleWords = (t: string): number => titleKey(t).split(' ').length;
 
 /** Closing full stop, ! or ? off; first letter capital. */
 function tidyTitle(t: string): string {
-  const s = t.trim().replace(/[.!?]+$/, '').trim();
+  const s = stripEnd(t.trim(), '.!?').trim();
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 

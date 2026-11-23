@@ -71,18 +71,18 @@
   }
 
   const adds: MenuItem[] = $derived([
-    { icon: '✨', label: 'New', name: 'New pack', onselect: onmake },
-    ...(community ? [{ icon: '🌍', label: 'Community', name: 'Community packs', onselect: openCommunity }] : []),
-    { icon: '📂', label: 'Import', name: 'Import packs from a file', onselect: () => input?.click() },
+    { icon: '✨', label: 'New', name: 'New pack', tip: 'Make a pack yourself or with Fizzwick', onselect: onmake },
+    ...(community ? [{ icon: '🌍', label: 'Community', name: 'Community packs', tip: 'Browse packs other people shared and add them here', onselect: openCommunity }] : []),
+    { icon: '📂', label: 'Import', name: 'Import packs from a file', tip: 'Adds the packs in a file you saved or were sent', onselect: () => input?.click() },
   ]);
 </script>
 
 <div class="packfile" class:open={menuOpen}>
   <div class="row">
-    <MenuButton label="Add pack" items={adds} bind:open={menuOpen}>
+    <MenuButton label="Add pack" items={adds} bind:open={menuOpen} tip={community ? 'Make a pack, find one in Community or import a file' : 'Make a pack or import one from a file'}>
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Add pack
     </MenuButton>
-    {#if mine}<Button variant="secondary" size="sm" label="Export my packs to a file" onclick={exportMine}>Export</Button>{/if}
+    {#if mine}<Button variant="secondary" size="sm" label="Export my packs to a file" onclick={exportMine} tip="Saves or sends all packs you made or edited, in one file">Export</Button>{/if}
   </div>
   <input bind:this={input} type="file" accept={PACK_FILE_ACCEPT} hidden onchange={chosen} aria-label="Pack file to import" />
   <p class="status" class:failed role="status">{status}</p>

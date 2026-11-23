@@ -5,26 +5,13 @@
 import { pastedLines } from './paste';
 import { matches, sorted, type SortKey } from './listing';
 import { counted, packTag, type PackEntry } from './packList';
+import { SHAPE } from './libraryShape';
+import { checked, type ListSpec } from './listSpec';
 
-/** One list of a pack: its field, names, and the rules an item must meet. */
-export interface ListSpec {
-  field: string;
-  /** What one item is called, and many ("prompt", "prompts"). */
-  one: string;
-  many: string;
-  /** A typed or pasted item as stored: spaces collapsed, and the game's own tidying. */
-  tidy: (s: string) => string;
-  /** Why a tidied item cannot be used, or '' when it can. */
-  problem: (s: string) => string;
-  /** How two items are told apart: equal keys are the same item. */
-  key: (s: string) => string;
-  /** Characters the editor's box takes. */
-  max: number;
-  /** An example for the editor's empty box. */
-  example: string;
-  /** What the editor says under the box (the format), when it needs saying. */
-  hint?: string;
-}
+export { checked, type ListSpec };
+
+/** Items one list of a pack holds, at most: what the Community library takes. */
+export const LIST_MAX = SHAPE.itemsMax;
 
 /** An item of one list, as the wizard and paste hand them over. */
 export interface ListItem { field: string; text: string }
@@ -41,13 +28,6 @@ const specOf = (specs: readonly ListSpec[], field: string): ListSpec => specs.fi
 
 /** The item's key across lists: the same text in two lists is two items. */
 export const itemKey = (specs: readonly ListSpec[]) => (i: ListItem): string => `${i.field}:${specOf(specs, i.field).key(i.text)}`;
-
-/** `x` as an item of `spec`'s list: tidied, or null when it breaks a rule. */
-export function checked(spec: ListSpec, x: unknown): string | null {
-  if (typeof x !== 'string') return null;
-  const t = spec.tidy(x.trim().replace(/\s+/g, ' '));
-  return t && !spec.problem(t) ? t : null;
-}
 
 /** Every item the pack has, as list items. */
 export const packItems = (specs: readonly ListSpec[], pack: ListPack): ListItem[] =>
@@ -79,6 +59,7 @@ export function editProblem(pack: ListPack, spec: ListSpec, at: number | 'new', 
   if (!text) return `Type a ${spec.one} first.`;
   const why = spec.problem(text);
   if (why) return `That ${spec.one} cannot be used: ${why}.`;
+  if (at === 'new' && listOf(pack, spec.field).length >= LIST_MAX) return `This pack already has ${LIST_MAX} ${spec.many}, the most a pack holds.`;
   const k = spec.key(text);
   return listOf(pack, spec.field).some((x, i) => i !== at && spec.key(x) === k) ? `That ${spec.one} is already in this pack.` : '';
 }

@@ -114,7 +114,7 @@
         </div>
       {/snippet}
       {#snippet extra()}
-        <button class="view" aria-label={rows ? 'Show packs as tiles' : 'Show packs as a list'} onclick={switchView}>
+        <button class="view" aria-label={rows ? 'Show packs as tiles' : 'Show packs as a list'} onclick={switchView} data-tip={rows ? 'Shows packs as tiles, in every game' : 'Shows packs as a list, in every game'}>
           {#if rows}
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></g></svg>
           {:else}
@@ -149,7 +149,7 @@
     {/each}
     {#if !searching}
       <li class="item">
-        <button class="pack make" onclick={() => ready() && onmake()}>
+        <button class="pack make" onclick={() => ready() && onmake()} data-tip="Make a new pack yourself or with Fizzwick">
           <span class="mark spark" aria-hidden="true">✨</span>
           <span class="txt">
             <span class="name">Make a pack</span>

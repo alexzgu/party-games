@@ -1,6 +1,6 @@
 // The community library's rules as pure functions: what a published pack may hold, and what a
 // list request asks for. The Durable Object in libraryObject.ts stores what passes them.
-import { cleanExtra, cleanItems, itemCount, SHAPE } from '../../src/lib/libraryShape';
+import { cleanPublish, itemCount, SHAPE } from '../../src/lib/libraryShape';
 import { cleanUsername } from '../../src/lib/usernameShape';
 import type { Checked } from './validate';
 
@@ -12,7 +12,7 @@ export const LIBRARY = {
   blurbMax: 140,
   /** The pack's items and extras as JSON, at most. */
   itemsBytes: 64 * 1024,
-  /** Items in one pack, at most (Big Board: 8 categories of 10 clues; libraryShape.ts). */
+  /** Items in one list of a pack, at most (Big Board: 8 categories of 10 clues; libraryShape.ts). */
   itemsMax: SHAPE.itemsMax,
   /** The phone's own id for the pack, at most. */
   localIdMax: 100,
@@ -70,10 +70,9 @@ export function checkPublish(raw: string): Checked<PublishPack> {
   if (blurb === null || blurb.length > LIBRARY.blurbMax) return { ok: false, message: `blurb must be at most ${LIBRARY.blurbMax} characters.` };
   if (!str(LIBRARY.localIdMax)(b.localId)) return { ok: false, message: `localId must be 1 to ${LIBRARY.localIdMax} characters.` };
   // Rebuilt from each game's own fields only (libraryShape.ts): nothing else is stored.
-  const cleaned = cleanItems(game, b.items);
+  const cleaned = cleanPublish(game, b.items, b.extra);
   if ('problem' in cleaned) return { ok: false, message: cleaned.problem };
-  const items = cleaned.items;
-  const extra = cleanExtra(game, b.extra, items);
+  const { items, extra } = cleaned;
   if (bytes({ items, extra }) > LIBRARY.itemsBytes) return { ok: false, message: `A pack is limited to ${LIBRARY.itemsBytes / 1024} KB.` };
   const count = itemCount(game, items, extra);
   // Never a reason to refuse the pack: a username that is not one is left out.

@@ -134,7 +134,7 @@
           <div class="about">
             <p class="muted">{#if builtin}Comes with the app{edited ? ' · edited on this device' : ''}{:else if pack?.shared}<SharedPill />{:else}Your pack, on this device only{/if}</p>
             {#if builtin && edited}
-              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')}>Restore original</Button></span>
+              <span class="act"><Button variant="secondary" size="sm" onclick={() => (confirm = 'restore')} tip="Undoes your changes and brings back the original pack">Restore original</Button></span>
             {:else if !builtin}
               <span class="act"><Button variant="ghost" size="sm" onclick={() => (confirm = 'delete')}>Delete pack</Button></span>
             {/if}
@@ -143,7 +143,7 @@
           {#if !builtin && missing}
             <div class="fill">
               <p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer, so “Give me one” can't help there.</p>
-              <Button variant="secondary" onclick={() => (adding = 'fill')}>🧙 Fill in stock answers</Button>
+              <Button variant="secondary" onclick={() => (adding = 'fill')} tip="Fizzwick writes a stock answer for prompts without one">🧙 Fill in stock answers</Button>
             </div>
           {/if}
           <label class="name">
@@ -182,8 +182,8 @@
     </PinnedPanel>
   {/if}
   {#snippet actions()}
-    {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = 'more')}>🧙 Add more</Button>{/if}
-    {#if pack}<Button size="lg" onclick={() => edit('new')}>+ Add a prompt</Button>{/if}
+    {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = 'more')} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
+    {#if pack}<Button size="lg" onclick={() => edit('new')} tip="Type in a new prompt yourself">+ Add a prompt</Button>{/if}
   {/snippet}
 </Screen>
 {/if}
