@@ -4,7 +4,8 @@
   import Popup from '../Popup.svelte';
 
   // Host lobby: Start, which asks first while any player's phone is disconnected (they are dealt
-  // in like the others, so the game would wait for them).
+  // in like the others, so the game would wait for them). Once too few are left to start
+  // (`disabled`), the question closes.
   let { players, online, disabled, size, onstart, children }: {
     /** Everyone who would be in the game. */
     players: readonly { pid: string; name: string }[];
@@ -18,17 +19,18 @@
 
   const away = $derived(online ? players.filter((p) => !online.has(p.pid)) : []);
   let asking = $state(false);
-  $effect(() => { if (!away.length) asking = false; }); // all back: Start asks nothing
+  const ask = $derived(away.length > 0 && !disabled);
+  $effect(() => { if (!ask) asking = false; }); // asked anew next time
 
   function start() {
     asking = false;
-    onstart();
+    if (!disabled) onstart();
   }
 </script>
 
 <Button {size} {disabled} onclick={() => { if (away.length) asking = true; else start(); }}>{@render children()}</Button>
 
-{#if asking && away.length}
+{#if asking && ask}
   <Popup title="{away.length} {away.length === 1 ? 'phone is' : 'phones are'} disconnected. Start anyway?" onclose={() => (asking = false)}>
     <div class="ask">
       <p>Not connected: <b>{away.map((p) => p.name).join(', ')}</b>. They can rejoin with the same code.</p>

@@ -879,7 +879,7 @@ On every host screen the button that closes the room says "Close room" in every 
 first ("Close the room?", with "The game ends." while one is being played); after a game "Back to
 lobby" keeps the room and its players for another. Start asks first while any player's phone is
 disconnected (`StartButton`: "2 phones are disconnected. Start anyway?", naming them), since those
-players are dealt in too.
+players are dealt in too; the question closes when too few are left to start.
 "Leave room" on a phone (any time, after a confirm) tells the host (`{t: 'leave'}`) before the
 link closes: the player is out like a removed one (no more turns or prompts, nobody waits for
 them) but may rejoin with the same code and keeps their score; a removed player may not. A
