@@ -68,7 +68,7 @@ Three routes, in the order the owner chose to rely on them:
 2. **Paste a list** on the phone: each game's "Make a pack" screen (Add pack → New under the
    pack list) takes a pasted list (one item per line, in the game's format) and saves it as a
    custom pack on that phone. Its button says what comes next: "Review words" (cards, prompts,
-   clues) where a review follows (`Triage`; Big Board: the editor), "Save as a new pack" where the
+   clues) where a review follows (`Triage`; Big Board: the editor), "Save these" where the
    list is saved at once (Snark Tank, Doodle Brawl, Bad Hand, Sketchy).
 3. **Ask the wizard in the app**, first way in, the host's own testing route (no screen mentions
    invite links; players are told only about the magic words, route 4): players see live generation as

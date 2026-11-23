@@ -96,7 +96,7 @@
       <span>Pack name</span>
       <input type="text" bind:value={name} maxlength="40" placeholder="Our friend group" autocomplete="off" />
     </label>
-    <PasteList submit="Save as a new pack" label="One prompt per line" placeholder={'The worst thing to say at brunch\nA terrible name for a group chat\nWhat Dave is really doing on his phone'} {parse} onadd={(list) => add(list)} />
+    <PasteList submit="Save these" label="One prompt per line" placeholder={'The worst thing to say at brunch\nA terrible name for a group chat\nWhat Dave is really doing on his phone'} {parse} onadd={(list) => add(list)} />
   {:else if !reviewing && !hasKey()}
     <MagicWords intro={WANTS} />
   {:else if !reviewing}
