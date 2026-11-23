@@ -244,6 +244,16 @@ describe('browsing and importing', () => {
     expect([(r.saved[0] as SnarkPack).prompts, (r.saved[0] as SnarkPack).safety]).toEqual([['A bad name for a boat'], undefined]);
   });
 
+  it('imports both lists of a Bad Hand or Sketchy pack, leaving out cards the built-ins have', () => {
+    const r = importLibraryPack('hand', shared({ game: 'hand', items: ['My RA wrote me up for ___', 'my therapist says my biggest problem is ___'], extra: { answers: ['A rice cooker the size of a dog', 'not a card.'] } }));
+    if ('error' in r) throw new Error(r.error);
+    expect(r.saved[0]).toMatchObject({ prompts: ['My RA wrote me up for ___'], answers: ['A rice cooker the size of a dog', 'Not a card'] });
+    expect(r.problems).toEqual(['1 already in the built-in packs left out.']);
+    const k = importLibraryPack('sketch', shared({ game: 'sketch', items: ['Pup tent', 'Cat'], extra: { ideas: ['A bear roasting marshmallows'] } }));
+    if ('error' in k) throw new Error(k.error);
+    expect(k.saved[0]).toMatchObject({ words: ['Pup tent'], ideas: ['A bear roasting marshmallows'] });
+  });
+
   it("keeps a Heads Down. pack's emoji and every word, built-in or not", () => {
     const r = importLibraryPack('forehead', shared({ game: 'forehead', items: ['Shrek', 'Pizza'], extra: { emoji: '📺' } }));
     if ('error' in r) throw new Error(r.error);
@@ -310,6 +320,11 @@ describe('sharing a pack by hand', () => {
     expect(shareProblem('quick', { id: 'my-q', name: 'Q', blurb: '', prompts: Array.from({ length: 380 }, (_, i) => `${i} ${'y'.repeat(190)}`) })).toBe('Too big for the Community library: 64 KB at most.');
     expect(shareProblem('quiz', board('Folded, crunchy shell.'))).toBeNull();
     expect(shareProblem('quiz', board(' '))).toBe('Fill the empty tile first.');
+    const hand = { id: 'my-hand', name: 'H', blurb: '', prompts: ['What got me through finals?'], answers: ['Spite'] };
+    expect(shareProblem('hand', hand)).toBeNull();
+    expect(shareProblem('hand', { ...hand, prompts: [] })).toBe('Add at least one prompt first.');
+    expect(shareProblem('hand', { ...hand, answers: Array.from({ length: 401 }, (_, i) => `Answer ${i}`) })).toBe('Too big for the Community library: 400 answers at most.');
+    expect(shareProblem('sketch', { id: 'my-s', name: 'S', blurb: '', words: ['Tent'], ideas: ['x'.repeat(201)] })).toBe('Some items are too long for the Community library.');
   });
 
   it('sends and fingerprints the pack as saved, not as an editor shows it, and marks only the saved pack', async () => {

@@ -4,7 +4,9 @@
   import Avatar from '../../components/room/Avatar.svelte';
   import Qr from '../../components/room/Qr.svelte';
   import { MAX_PLAYERS, MIN_PLAYERS, canStart, present, type Game } from './logic';
-  import { packNames } from './host.svelte';
+  import { host, packNames } from './host.svelte';
+  import AddBot from '../../components/room/AddBot.svelte';
+  import { route } from '../../lib/router.svelte';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
 
   // The room before the game: how to join (QR, address, code), who is in, settings, Start.
@@ -63,6 +65,7 @@
       <p class="empty muted">Waiting for players. Scan the code with a phone camera, or type the code on the join screen.</p>
     {/if}
 
+    {#if !route.params.get('demo')}<AddBot onadd={() => host.addBot()} full={players.length >= MAX_PLAYERS} />{/if}
     <div class="settings">
       <span class="sum">{summary}</span>
       <Button size="sm" variant="secondary" onclick={onsettings}>Settings</Button>

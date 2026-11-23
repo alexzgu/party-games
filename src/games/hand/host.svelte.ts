@@ -2,11 +2,14 @@ import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode, newPid } from '../../lib/room/code';
 import { handPacks } from '../../lib/content';
 import { record } from '../../lib/history';
+import { Bots } from '../../lib/room/bots';
+import { handBrain } from './bot';
 import { filled } from './cards';
 import * as L from './logic';
 import { view } from './view';
 import { readToHost, type ToHost } from './protocol';
 import * as store from './store';
+import { roomCards, type RoomCards } from './pack';
 
 /** The chosen packs that exist; every pack when none of them does. */
 export function chosenPacks(ids: string[]) {
@@ -15,10 +18,8 @@ export function chosenPacks(ids: string[]) {
   return some.length ? some : all;
 }
 
-export const content = (ids: string[]): L.Content => {
-  const packs = chosenPacks(ids);
-  return { prompts: packs.flatMap((p) => p.prompts), answers: packs.flatMap((p) => p.answers) };
-};
+/** The room's cards for `players` players: the picks', topped up from other packs when they would stall (pack.ts). */
+export const content = (ids: string[], players: number): RoomCards => roomCards(handPacks(), ids, players);
 
 class Session {
   game = $state.raw<L.Game | null>(null);
@@ -48,6 +49,10 @@ class Session {
     },
   });
 
+  /** Bots: the game's players whose name carries the bot mark; one that cannot be seated again leaves the game. */
+  private bots = new Bots(this.link, handBrain, () => this.game?.players.map((p) => ({ pid: p.pid, name: p.name, out: this.game!.kicked.includes(p.pid) })) ?? [],
+    (pid) => this.kick(pid));
+
   get online() { return this.link.online; }
   get status() { return this.link.status; }
   get trouble() { return this.link.trouble; }
@@ -59,6 +64,7 @@ class Session {
     this.game = old ? L.afterReload(old, this.now) : L.newGame(newPid(), newCode(), store.loadSettings());
     store.saveGame(this.game);
     this.link.open(this.game.code);
+    this.bots.open();
     this.timer = setInterval(() => this.tick(), 250);
   }
 
@@ -116,9 +122,9 @@ class Session {
 
   start() {
     const g = this.game;
-    const c = g && content(g.settings.packs);
-    if (!g || !c || !L.canStart(g) || !c.prompts.length || !c.answers.length) return;
-    this.commit(L.start(g, c, Date.now()));
+    const c = g && content(g.settings.packs, L.active(g).length);
+    if (!g || !c || !L.canStart(g) || c.problem) return;
+    this.commit(L.start(g, { prompts: c.prompts, answers: c.answers }, Date.now()));
   }
 
   settings(settings: L.Settings) {
@@ -146,6 +152,9 @@ class Session {
     this.tick();
   }
 
+  /** Seats a bot (a pretend phone this screen plays); why not, when the room refuses it. */
+  addBot(): string | null { return this.game ? this.bots.add() : null; }
+
   rematch() {
     const g = this.game;
     if (!g) return;
@@ -161,6 +170,7 @@ class Session {
   close() {
     if (this.game && this.game.phase !== 'over') this.history(this.game, false);
     this.link.close();
+    this.bots.close();
     clearInterval(this.timer);
     this.game = null;
     store.saveGame(null);

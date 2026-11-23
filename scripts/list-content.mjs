@@ -11,7 +11,7 @@ if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'salad
 }
 const packs = readdirSync(dir)
   .filter((f) => f.endsWith('.json'))
-  .flatMap((f) => { const d = JSON.parse(readFileSync(join(dir, f), 'utf8')); return d.packs ?? [d.titles ? { ...d, id: f.slice(0, -5), name: f.slice(0, -5).replaceAll('-', ' ') } : d]; });
+  .flatMap((f) => { const d = JSON.parse(readFileSync(join(dir, f), 'utf8')); return d.packs ?? [d]; });
 
 const hints = new Map();
 for (const p of packs) {

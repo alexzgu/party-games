@@ -70,13 +70,26 @@ export function go(path: string, replace = false): void {
 }
 
 /**
+ * Changes the address of this history entry in place, keeping its state, without moving the page:
+ * a search or a tab on screen that Back and a reload should find, but that is no step of its own.
+ */
+export function swap(path: string): void {
+  history.replaceState(entry(), '', '#' + path);
+  const next = parse();
+  route.path = next.path;
+  route.params = next.params;
+}
+
+/**
  * Returns to the page before this one, the way it was reached: a screen left with `go` instead
  * would sit on top of the one it came from, and Back there would return to it in a loop.
+ * `steps`: how many entries to leave at once (a layer with its own steps closing whole); with
+ * fewer steps behind, `fallback` replaces this entry.
  */
-export function back(fallback = '/'): void {
-  if (depth > 0) {
-    depth--;
-    history.back();
+export function back(fallback = '/', steps = 1): void {
+  if (depth >= steps) {
+    depth -= steps;
+    history.go(-steps);
   } else go(fallback, true);
 }
 

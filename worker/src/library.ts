@@ -7,7 +7,7 @@ import type { Checked } from './validate';
 /** Change these to loosen or tighten the library. */
 export const LIBRARY = {
   /** Games whose packs the library takes (the app's pack games). */
-  games: ['forehead', 'dial', 'gibberish', 'quick', 'quiz', 'taboo', 'snark'] as const,
+  games: ['forehead', 'dial', 'gibberish', 'quick', 'quiz', 'taboo', 'snark', 'brawl', 'hand', 'sketch'] as const,
   nameMax: 60,
   blurbMax: 140,
   /** The pack's items and extras as JSON, at most. */
@@ -38,7 +38,7 @@ export interface PublishPack {
   /** The phone's id for this pack: the same pass and id update one entry. */
   localId: string;
   items: unknown[];
-  /** Fields beside the items: a Heads Down. pack's emoji, a Snark Tank pack's stock answers and finals. */
+  /** Fields beside the items: a Heads Down. pack's emoji, a Snark Tank pack's stock answers and finals, Bad Hand's answers, Sketchy's ideas. */
   extra: Record<string, unknown>;
   count: number;
   /**
@@ -75,7 +75,7 @@ export function checkPublish(raw: string): Checked<PublishPack> {
   const items = cleaned.items;
   const extra = cleanExtra(game, b.extra, items);
   if (bytes({ items, extra }) > LIBRARY.itemsBytes) return { ok: false, message: `A pack is limited to ${LIBRARY.itemsBytes / 1024} KB.` };
-  const count = itemCount(game, items);
+  const count = itemCount(game, items, extra);
   // Never a reason to refuse the pack: a username that is not one is left out.
   const username = cleanUsername(b.username);
   return { ok: true, value: { game, name, blurb, localId: (b.localId as string).trim(), items, extra, count, ...(username ? { username } : {}) } };

@@ -7,7 +7,7 @@ export const APP = {
 export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl' | 'sketch' | 'hand';
 
 /** Games whose packs players can make, import and export on a phone. */
-export type PackGameId = Exclude<GameId, 'salad' | 'brawl' | 'sketch' | 'hand'>;
+export type PackGameId = Exclude<GameId, 'salad'>;
 
 export interface GameInfo {
   id: GameId;

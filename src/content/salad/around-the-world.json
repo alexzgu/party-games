@@ -1,0 +1,296 @@
+{
+  "id": "around-the-world",
+  "name": "Around the World",
+  "blurb": "Landmarks, foods, travel gear and globetrotters",
+  "added": "2026-11-23T08:07",
+  "secrets": [
+    {"answer": "Cleopatra", "category": "person", "level": "easy", "also": ["Cleopatra VII", "Queen Cleopatra"],
+      "words": {
+        "noun": ["a pharaoh", "a queen", "a ruler", "a royal"],
+        "verb": ["rule Egypt", "charm Romans", "sail the Nile", "wear eyeliner"],
+        "adjective": ["regal", "clever", "glamorous", "ancient"],
+        "place": ["in Egypt", "on a golden barge", "by the Nile"],
+        "time": ["in ancient times", "during a history class", "before the Romans took over"]
+      }
+    },
+    {"answer": "Dora the Explorer", "category": "person", "level": "easy", "also": ["Dora", "Dora Márquez"],
+      "words": {
+        "noun": ["a little girl", "a cartoon kid", "an adventurer", "a backpacker"],
+        "verb": ["read a map", "ask for help", "speak Spanish", "stop a fox"],
+        "adjective": ["cheerful", "curious", "loud", "helpful"],
+        "place": ["on a cartoon trail", "with a monkey", "on kids' TV"],
+        "time": ["after school", "every morning", "on a road trip"]
+      }
+    },
+    {"answer": "Queen Elizabeth II", "category": "person", "level": "medium", "also": ["Queen Elizabeth", "Elizabeth II", "Elizabeth the Second", "Queen Elizabeth the Second"],
+      "words": {
+        "noun": ["a monarch", "a royal", "a great-grandmother", "a dog lover"],
+        "verb": ["wave politely", "wear a crown", "walk corgis", "drink tea"],
+        "adjective": ["regal", "proper", "long-reigning", "dignified"],
+        "place": ["at a palace", "on a balcony", "on a banknote"],
+        "time": ["at a coronation", "on Christmas Day", "at a royal wedding"]
+      }
+    },
+    {"answer": "Napoleon", "category": "person", "level": "medium", "also": ["Napoleon Bonaparte", "Bonaparte", "Napoléon"],
+      "words": {
+        "noun": ["an emperor", "a general", "a conqueror", "a short ruler"],
+        "verb": ["conquer Europe", "lead armies", "crown himself", "pose on a horse"],
+        "adjective": ["ambitious", "short", "commanding", "French"],
+        "place": ["on a battlefield", "on a horse", "on an exile island"],
+        "time": ["during a war", "after a defeat", "during a revolution"]
+      }
+    },
+    {"answer": "Christopher Columbus", "category": "person", "level": "medium", "also": ["Columbus", "Cristoforo Colombo"],
+      "words": {
+        "noun": ["an explorer", "a sailor", "a navigator", "a captain"],
+        "verb": ["sail west", "find land", "get lost", "cross an ocean"],
+        "adjective": ["lost", "controversial", "stubborn", "seasick"],
+        "place": ["on a ship", "at sea", "across an ocean"],
+        "time": ["in 1492", "on a holiday in October", "during a long voyage"]
+      }
+    },
+    {"answer": "Lionel Messi", "category": "person", "level": "medium", "also": ["Messi", "Leo Messi"],
+      "words": {
+        "noun": ["a soccer star", "a forward", "a captain", "a champion"],
+        "verb": ["score goals", "dribble", "win a World Cup", "take a free kick"],
+        "adjective": ["quick", "humble", "legendary", "Argentine"],
+        "place": ["on a soccer field", "in Barcelona", "in Miami"],
+        "time": ["during a match", "after a goal", "during the World Cup"]
+      }
+    },
+    {"answer": "Marco Polo", "category": "person", "level": "hard", "also": ["Polo"],
+      "words": {
+        "noun": ["a merchant", "a traveler", "an explorer", "a storyteller"],
+        "verb": ["travel the Silk Road", "meet an emperor", "write a travel book", "trade spices"],
+        "adjective": ["Venetian", "adventurous", "well-traveled", "curious"],
+        "place": ["on the Silk Road", "in China", "on a camel"],
+        "time": ["in medieval times", "during a long journey", "during a pool game"]
+      }
+    },
+    {"answer": "Carmen Sandiego", "category": "person", "level": "hard", "also": ["Carmen San Diego", "Carmen"],
+      "words": {
+        "noun": ["a master thief", "a woman in red", "a spy", "a fugitive"],
+        "verb": ["steal landmarks", "vanish", "outsmart detectives", "hop countries"],
+        "adjective": ["mysterious", "sneaky", "stylish", "elusive"],
+        "place": ["on the run", "in a red trench coat", "under a wide hat"],
+        "time": ["during a heist", "in a geography lesson", "every episode"]
+      }
+    },
+    {"answer": "Paris", "category": "place", "level": "easy", "also": ["City of Light", "Paris France"],
+      "words": {
+        "noun": ["a tower", "a café", "a museum", "a bakery"],
+        "verb": ["eat a croissant", "see the Mona Lisa", "stroll a river", "kiss on a bridge"],
+        "adjective": ["romantic", "chic", "elegant", "busy"],
+        "place": ["in France", "by the Seine", "in Europe"],
+        "time": ["in spring", "at night", "on a honeymoon"]
+      }
+    },
+    {"answer": "Hawaii", "category": "place", "level": "easy", "also": ["Hawai'i", "Aloha State", "Hawaiian Islands"],
+      "words": {
+        "noun": ["a volcano", "a surfer", "a flower necklace", "a palm tree"],
+        "verb": ["surf", "hula", "say aloha", "snorkel"],
+        "adjective": ["tropical", "sunny", "volcanic", "breezy"],
+        "place": ["in the Pacific", "on a beach", "on an island"],
+        "time": ["on vacation", "on a honeymoon", "at sunset"]
+      }
+    },
+    {"answer": "Great Wall of China", "category": "place", "level": "medium", "also": ["Great Wall", "The Great Wall", "Chinese Wall"],
+      "words": {
+        "noun": ["a stone barrier", "a watchtower", "a fortification", "a defense"],
+        "verb": ["walk for miles", "climb steps", "keep invaders out", "take photos"],
+        "adjective": ["endless", "ancient", "long", "winding"],
+        "place": ["in Asia", "on a ridge", "over mountains"],
+        "time": ["in ancient times", "on a long hike", "on a clear day"]
+      }
+    },
+    {"answer": "Venice", "category": "place", "level": "medium", "also": ["Venezia", "Venice Italy"],
+      "words": {
+        "noun": ["a canal", "a gondola", "a gondolier", "a mask"],
+        "verb": ["ride a gondola", "cross bridges", "get lost", "wear a mask"],
+        "adjective": ["watery", "romantic", "sinking", "crowded"],
+        "place": ["in Italy", "on the water", "by a canal"],
+        "time": ["during carnival", "on a honeymoon", "at high tide"]
+      }
+    },
+    {"answer": "Colosseum", "category": "place", "level": "medium", "also": ["Coliseum", "Roman Colosseum", "Flavian Amphitheatre"],
+      "words": {
+        "noun": ["an arena", "a gladiator", "a ruin", "a stadium"],
+        "verb": ["watch gladiators", "cheer", "fight lions", "tour ruins"],
+        "adjective": ["ancient", "crumbling", "huge", "round"],
+        "place": ["in Rome", "in Italy", "by a forum"],
+        "time": ["in ancient times", "during a gladiator fight", "on a tour"]
+      }
+    },
+    {"answer": "Taj Mahal", "category": "place", "level": "medium", "also": ["The Taj"],
+      "words": {
+        "noun": ["a marble tomb", "a palace", "a reflecting pool", "a dome"],
+        "verb": ["take photos", "admire marble", "honor a wife", "visit at dawn"],
+        "adjective": ["white", "romantic", "symmetrical", "grand"],
+        "place": ["in India", "by a river", "in Agra"],
+        "time": ["at sunrise", "on a tour", "in the past"]
+      }
+    },
+    {"answer": "Stonehenge", "category": "place", "level": "hard", "also": ["Stone Henge"],
+      "words": {
+        "noun": ["a stone circle", "a monument", "a mystery", "a druid"],
+        "verb": ["watch a solstice", "guess its purpose", "stare at rocks", "chant"],
+        "adjective": ["mysterious", "prehistoric", "ancient", "windy"],
+        "place": ["in England", "on a plain", "in a field"],
+        "time": ["during a solstice", "at dawn", "on the longest day"]
+      }
+    },
+    {"answer": "Easter Island", "category": "place", "level": "hard", "also": ["Rapa Nui", "Isla de Pascua"],
+      "words": {
+        "noun": ["a giant head", "a stone statue", "a volcano", "a remote isle"],
+        "verb": ["stare at statues", "fly for hours", "guess how they moved", "camp"],
+        "adjective": ["remote", "mysterious", "windswept", "rocky"],
+        "place": ["in the Pacific", "off Chile", "far away"],
+        "time": ["after a long flight", "in the past", "at sunset"]
+      }
+    },
+    {"answer": "Passport", "category": "thing", "level": "easy", "also": ["Passports", "Pass Port"],
+      "words": {
+        "noun": ["a booklet", "an ID", "a small book", "a document"],
+        "verb": ["get stamped", "show at customs", "lose it", "renew"],
+        "adjective": ["official", "blue", "stamped", "important"],
+        "place": ["at an airport", "at customs", "at a border"],
+        "time": ["before a trip", "during check-in", "every ten years"]
+      }
+    },
+    {"answer": "Sushi", "category": "thing", "level": "easy", "also": ["Sushi Roll", "Sushi Rolls"],
+      "words": {
+        "noun": ["a roll", "rice and fish", "a seaweed wrap", "a bite"],
+        "verb": ["use chopsticks", "dip in soy sauce", "roll", "eat raw fish"],
+        "adjective": ["raw", "fresh", "fishy", "bite-sized"],
+        "place": ["in Japan", "on a conveyor belt", "at a bar"],
+        "time": ["at dinner", "on date night", "during lunch"]
+      }
+    },
+    {"answer": "Croissant", "category": "thing", "level": "medium", "also": ["Croissants", "Crescent Roll"],
+      "words": {
+        "noun": ["a pastry", "a crescent", "a buttery roll", "a breakfast"],
+        "verb": ["dunk in coffee", "flake", "bake", "eat at a café"],
+        "adjective": ["flaky", "buttery", "golden", "French"],
+        "place": ["in a bakery", "in Paris", "at a café"],
+        "time": ["at breakfast", "every morning", "with coffee"]
+      }
+    },
+    {"answer": "Neck Pillow", "category": "thing", "level": "medium", "also": ["Travel Pillow", "Neck Pillows"],
+      "words": {
+        "noun": ["a cushion", "a horseshoe", "a squishy ring", "a travel accessory"],
+        "verb": ["nap", "rest your head", "drool", "clip it on a bag"],
+        "adjective": ["squishy", "U-shaped", "comfy", "awkward"],
+        "place": ["on a plane", "at an airport", "on a bus"],
+        "time": ["on a long flight", "on a red-eye", "during a layover"]
+      }
+    },
+    {"answer": "Postcard", "category": "thing", "level": "medium", "also": ["Postcards", "Post Card"],
+      "words": {
+        "noun": ["a picture card", "a note", "a souvenir", "a greeting"],
+        "verb": ["write", "mail", "stamp", "stick on a fridge"],
+        "adjective": ["glossy", "scenic", "old-fashioned", "small"],
+        "place": ["at a gift shop", "on a fridge", "in a mailbox"],
+        "time": ["on vacation", "after a trip", "weeks later"]
+      }
+    },
+    {"answer": "Taco", "category": "thing", "level": "medium", "also": ["Tacos"],
+      "words": {
+        "noun": ["a shell", "a tortilla", "a handheld meal", "a street snack"],
+        "verb": ["add salsa", "crunch", "spill", "squeeze lime"],
+        "adjective": ["crunchy", "folded", "spicy", "messy"],
+        "place": ["in Mexico", "at a food truck", "on a street corner"],
+        "time": ["on Tuesday", "late at night", "at lunch"]
+      }
+    },
+    {"answer": "Boomerang", "category": "thing", "level": "hard", "also": ["Boomerangs"],
+      "words": {
+        "noun": ["a throwing stick", "a hunting tool", "a wooden toy", "a bent plank"],
+        "verb": ["throw", "catch", "duck", "come back"],
+        "adjective": ["curved", "wooden", "spinning", "returning"],
+        "place": ["in Australia", "in an open field", "in the outback"],
+        "time": ["on a windy day", "after a throw", "a few seconds later"]
+      }
+    },
+    {"answer": "Bagpipes", "category": "thing", "level": "hard", "also": ["Bagpipe", "Bag Pipes"],
+      "words": {
+        "noun": ["a squealing instrument", "a windbag", "a kilt accessory", "a set of drones"],
+        "verb": ["blow", "squeeze", "march", "wail"],
+        "adjective": ["loud", "wailing", "Scottish", "droning"],
+        "place": ["in Scotland", "at a parade", "on a hilltop"],
+        "time": ["at a funeral", "during a parade", "at a wedding"]
+      }
+    },
+    {"answer": "Moana", "category": "story", "level": "easy", "also": ["Disney's Moana", "Vaiana"],
+      "words": {
+        "noun": ["a chief's daughter", "a demigod", "a sailor", "a rooster"],
+        "verb": ["sail the ocean", "return a heart", "find a demigod", "save her island"],
+        "adjective": ["tropical", "brave", "musical", "salty"],
+        "place": ["on a canoe", "on an island", "at sea"],
+        "time": ["after the fish disappear", "on a long voyage", "during a storm"]
+      }
+    },
+    {"answer": "Aladdin", "category": "story", "level": "easy", "also": ["Disney's Aladdin"],
+      "words": {
+        "noun": ["a street thief", "a genie", "a princess", "a monkey"],
+        "verb": ["make three wishes", "ride a magic carpet", "impress a sultan", "escape a cave"],
+        "adjective": ["magical", "musical", "golden", "sandy"],
+        "place": ["in a desert", "in a palace", "on a flying rug"],
+        "time": ["after rubbing a lamp", "at night", "during a parade"]
+      }
+    },
+    {"answer": "Mulan", "category": "story", "level": "medium", "also": ["Disney's Mulan", "Hua Mulan"],
+      "words": {
+        "noun": ["a daughter", "a soldier", "a tiny dragon", "an army recruit"],
+        "verb": ["disguise herself", "join an army", "save her father", "train with soldiers"],
+        "adjective": ["brave", "secret", "honorable", "snowy"],
+        "place": ["in China", "at an army camp", "on a snowy mountain"],
+        "time": ["during a war", "after a draft notice", "during training"]
+      }
+    },
+    {"answer": "Coco", "category": "story", "level": "medium", "also": ["Pixar's Coco", "Disney's Coco"],
+      "words": {
+        "noun": ["a young guitarist", "a skeleton", "a great-grandmother", "a dog"],
+        "verb": ["play guitar", "meet his ancestors", "get home by sunrise", "remember family"],
+        "adjective": ["colorful", "musical", "bittersweet", "glowing"],
+        "place": ["in Mexico", "among skeletons", "on a marigold bridge"],
+        "time": ["on Día de Muertos", "before sunrise", "after dark"]
+      }
+    },
+    {"answer": "The Amazing Race", "category": "story", "level": "medium", "also": ["Amazing Race", "TAR"],
+      "words": {
+        "noun": ["a pair", "a host", "a team", "a contestant"],
+        "verb": ["finish first", "catch a flight", "do a challenge", "read a clue"],
+        "adjective": ["frantic", "competitive", "sweaty", "global"],
+        "place": ["at an airport", "on a mat", "far away"],
+        "time": ["every week", "in a hurry", "before elimination"]
+      }
+    },
+    {"answer": "Mamma Mia!", "category": "story", "level": "medium", "also": ["Mamma Mia", "Mama Mia"],
+      "words": {
+        "noun": ["a bride", "a mom", "a possible dad", "a hotel owner"],
+        "verb": ["find her father", "sing ABBA", "get married", "dance on a dock"],
+        "adjective": ["sunny", "musical", "cheesy", "joyful"],
+        "place": ["on a Greek island", "by the sea", "at a villa"],
+        "time": ["before a wedding", "in summer", "during a party"]
+      }
+    },
+    {"answer": "Around the World in 80 Days", "category": "story", "level": "hard", "also": ["Around the World in Eighty Days", "80 Days", "Eighty Days"],
+      "words": {
+        "noun": ["a gentleman", "a valet", "a detective", "a rich Brit"],
+        "verb": ["win a bet", "circle a globe", "catch trains", "ride a balloon"],
+        "adjective": ["hurried", "Victorian", "adventurous", "punctual"],
+        "place": ["on a steamship", "on trains", "at a London club"],
+        "time": ["on a deadline", "during a race", "against a clock"]
+      }
+    },
+    {"answer": "The Odyssey", "category": "story", "level": "hard", "also": ["Odyssey", "Homer's Odyssey"],
+      "words": {
+        "noun": ["a warrior", "a king", "a cyclops", "a sea monster"],
+        "verb": ["sail home", "outwit a cyclops", "resist sirens", "beat suitors"],
+        "adjective": ["epic", "ancient", "long", "Greek"],
+        "place": ["at sea", "in Greece", "on an island"],
+        "time": ["after a war", "for ten years", "in ancient times"]
+      }
+    }
+  ]
+}

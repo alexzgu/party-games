@@ -1,0 +1,300 @@
+{
+  "id": "nine-to-five",
+  "name": "Nine to Five",
+  "blurb": "Bosses, meetings and the office fridge",
+  "added": "2026-11-23T08:09",
+  "prompts": [
+    "A terrible name for a team-building retreat",
+    "What your boss actually does all day",
+    "The worst thing to say when you realize you're unmuted",
+    "A meeting title that guarantees nobody shows up",
+    "The real reason the office printer never works",
+    "A terrible name for a company Slack channel",
+    "What HR is really writing in your file",
+    "The worst thing to find in the office fridge",
+    "A rejected company core value",
+    "An honest out-of-office reply",
+    "What the intern is secretly thinking",
+    "The worst thing to put in your email signature",
+    "A terrible prize for employee of the month",
+    "The worst icebreaker question on your first day",
+    "A bad name for a conference room",
+    "What your coworker really does on those long bathroom breaks",
+    "The worst thing to say during your performance review",
+    "A new office buzzword nobody understands",
+    "The worst message to write on an office birthday card",
+    "What your manager really means by let's take this offline",
+    "A terrible theme for the office holiday party",
+    "The worst email to accidentally reply-all to",
+    "A suspicious perk at a new startup",
+    "What the office plant has witnessed",
+    "The worst way to ask for a raise",
+    "A bad excuse for keeping your camera off",
+    "What the CEO named his yacht",
+    "The worst thing to hear at a mandatory fun event",
+    "What the night security guard sees on the cameras",
+    "The worst thing to find in your new desk drawer",
+    "A passive-aggressive sign for the office microwave",
+    "The worst thing to say to your boss on a work flight",
+    "A LinkedIn post that should never exist",
+    "The worst job title to put on a business card",
+    "What really happens at the quarterly all-hands",
+    "A terrible reason to schedule a meeting",
+    "The worst thing to tell the new hire on day one",
+    "What the office vending machine is hiding",
+    "The worst thing to see in your boss's search history",
+    "The worst thing to overhear in the elevator at work",
+    "A sign your company is about to go under",
+    "What your work best friend knows about you",
+    "The worst habit for a desk neighbor to have",
+    "What people are actually doing during a webinar",
+    "The worst answer when your boss asks for honest feedback",
+    "The worst gift to give in an office Secret Santa",
+    "An honest translation of per my last email",
+    "The worst thing to discover in a shared document",
+    "A new rule for the open-plan office",
+    "The real reason the meeting ran an hour over",
+    "A terrible farewell message to the whole office",
+    "The worst thing to admit in an exit interview",
+    "What the break room motivational poster should really say",
+    "The worst place to take an important work call",
+    "A bad name for a company bowling team",
+    "What the office dog would say in a meeting",
+    "The worst item to see on a meeting agenda",
+    "A rejected flavor of office coffee",
+    "A startup idea that would somehow get funded",
+    "What your video call background accidentally reveals",
+    "What the remote worker is wearing below the camera",
+    "A sign your boss is about to give a speech",
+    "The worst possible office nickname",
+    "A terrible reward for hitting the sales goal",
+    "The worst thing to hear from the IT guy",
+    "A terrible piece of career advice",
+    "The worst thing to accidentally share on your screen",
+    "A bad name for a coworking space",
+    "The worst thing to hear in a one-on-one",
+    "The title of the worst workplace training video",
+    "An honest name for casual Friday",
+    "What the office ceiling tiles are hiding",
+    "The worst thing to say when your boss walks past your screen",
+    "A terrible fire drill announcement",
+    "A new work holiday that should exist",
+    "The worst thing to find written on the whiteboard",
+    "A suspicious reason to leave work early",
+    "A terrible name for a company newsletter",
+    "What the boss's kid says on bring-your-kid-to-work day",
+    "A rejected wellness program at work"
+  ],
+  "safety": {
+    "A terrible name for a team-building retreat": "Mandatory Fun Weekend",
+    "What your boss actually does all day": "Practices saying circle back",
+    "The worst thing to say when you realize you're unmuted": "Anyway, that's why I hate Mondays",
+    "A meeting title that guarantees nobody shows up": "Quick sync about the other sync",
+    "The real reason the office printer never works": "It knows it's Monday",
+    "A terrible name for a company Slack channel": "#random-but-mandatory",
+    "What HR is really writing in your file": "Laughs at own emails",
+    "The worst thing to find in the office fridge": "A yogurt older than the intern",
+    "A rejected company core value": "Synergy, but louder",
+    "An honest out-of-office reply": "Out of office, out of patience",
+    "What the intern is secretly thinking": "Is this what thirty looks like",
+    "The worst thing to put in your email signature": "Sent from my bathtub",
+    "A terrible prize for employee of the month": "A slightly bigger stapler",
+    "The worst icebreaker question on your first day": "What's your salary and why",
+    "A bad name for a conference room": "The Panic Room",
+    "What your coworker really does on those long bathroom breaks": "Season three, episode four",
+    "The worst thing to say during your performance review": "I thought this was optional",
+    "A new office buzzword nobody understands": "Hyper-alignment",
+    "The worst message to write on an office birthday card": "Happy birthday, whoever you are",
+    "What your manager really means by let's take this offline": "You're in trouble, but privately",
+    "A terrible theme for the office holiday party": "Tax season luau",
+    "The worst email to accidentally reply-all to": "Ugh, this guy again",
+    "A suspicious perk at a new startup": "Unlimited vacation, zero approved",
+    "What the office plant has witnessed": "Three reorgs and a proposal",
+    "The worst way to ask for a raise": "Pay me or I start singing",
+    "A bad excuse for keeping your camera off": "My face is buffering",
+    "What the CEO named his yacht": "Your Bonus",
+    "The worst thing to hear at a mandatory fun event": "Now everyone share a secret",
+    "What the night security guard sees on the cameras": "The CFO dancing alone",
+    "The worst thing to find in your new desk drawer": "A note that just says run",
+    "A passive-aggressive sign for the office microwave": "Fish people, we know who you are",
+    "The worst thing to say to your boss on a work flight": "So, how much do you make",
+    "A LinkedIn post that should never exist": "Humbled to announce I woke up",
+    "The worst job title to put on a business card": "Chief Vibes Officer",
+    "What really happens at the quarterly all-hands": "Forty slides about one graph",
+    "A terrible reason to schedule a meeting": "To plan future meetings",
+    "The worst thing to tell the new hire on day one": "Good luck, the last one cried",
+    "What the office vending machine is hiding": "Pretzels from 2009",
+    "The worst thing to see in your boss's search history": "How to fire someone nicely",
+    "The worst thing to overhear in the elevator at work": "So we're telling them Friday",
+    "A sign your company is about to go under": "The coffee is now BYO",
+    "What your work best friend knows about you": "Your exact snack schedule",
+    "The worst habit for a desk neighbor to have": "Clips nails, makes eye contact",
+    "What people are actually doing during a webinar": "Laundry with the camera off",
+    "The worst answer when your boss asks for honest feedback": "Honestly? Your vibe",
+    "The worst gift to give in an office Secret Santa": "A framed photo of yourself",
+    "An honest translation of per my last email": "Can you read, buddy",
+    "The worst thing to discover in a shared document": "Your name next to every task",
+    "A new rule for the open-plan office": "No humming, Gary",
+    "The real reason the meeting ran an hour over": "Steve had one more thing",
+    "A terrible farewell message to the whole office": "Bye. I was the fridge thief",
+    "The worst thing to admit in an exit interview": "I never learned anyone's name",
+    "What the break room motivational poster should really say": "Hang in there, legally",
+    "The worst place to take an important work call": "A bouncy castle",
+    "A bad name for a company bowling team": "The Spreadsheets",
+    "What the office dog would say in a meeting": "Who has the cheese",
+    "The worst item to see on a meeting agenda": "Item one: who stole it",
+    "A rejected flavor of office coffee": "Printer toner roast",
+    "A startup idea that would somehow get funded": "Uber, but for socks",
+    "What your video call background accidentally reveals": "A second job on the other screen",
+    "What the remote worker is wearing below the camera": "Swim trunks and confidence",
+    "A sign your boss is about to give a speech": "He's tapping a mug",
+    "The worst possible office nickname": "Microwave Mike",
+    "A terrible reward for hitting the sales goal": "A pizza party, one pizza",
+    "The worst thing to hear from the IT guy": "Huh, never seen that before",
+    "A terrible piece of career advice": "Never answer emails, ever",
+    "The worst thing to accidentally share on your screen": "Your coworkers, ranked",
+    "A bad name for a coworking space": "Shared Despair",
+    "The worst thing to hear in a one-on-one": "Close the door. Actually, lock it",
+    "The title of the worst workplace training video": "So You've Been Bitten at Work",
+    "An honest name for casual Friday": "Pajama Bottoms Day",
+    "What the office ceiling tiles are hiding": "A guy named Kevin",
+    "The worst thing to say when your boss walks past your screen": "That's not a resume, I swear",
+    "A terrible fire drill announcement": "Grab one coworker, any coworker",
+    "A new work holiday that should exist": "National Leave Me Alone Day",
+    "The worst thing to find written on the whiteboard": "Day 41. They suspect nothing",
+    "A suspicious reason to leave work early": "My goldfish has a recital",
+    "A terrible name for a company newsletter": "The Weekly Obligation",
+    "What the boss's kid says on bring-your-kid-to-work day": "My mom says you're replaceable",
+    "A rejected wellness program at work": "Mandatory screaming hour"
+  },
+  "finals": [
+    {
+      "prompt": "Three things you should never write in a performance review",
+      "house": [
+        "Breathes like a desk fan",
+        "Fine, I guess",
+        "Has a weird elbow"
+      ]
+    },
+    {
+      "prompt": "Three rejected names for a conference room",
+      "house": [
+        "The Crying Closet",
+        "Snack Purgatory",
+        "Room 404: Hope Not Found"
+      ]
+    },
+    {
+      "prompt": "Three signs your coworker is secretly a spy",
+      "house": [
+        "Hides behind the ficus",
+        "Knows everyone's salary",
+        "Badge just says Agent"
+      ]
+    },
+    {
+      "prompt": "Three things you shouldn't say on a video call",
+      "house": [
+        "Wait, you can see me",
+        "Hold on, bathtub's overflowing",
+        "Who invited Carl"
+      ]
+    },
+    {
+      "prompt": "Three terrible prizes for the office raffle",
+      "house": [
+        "Half a sandwich",
+        "One day off, expired",
+        "A hug from the CEO"
+      ]
+    },
+    {
+      "prompt": "Three honest requirements for a job listing",
+      "house": [
+        "Must tolerate Gary",
+        "Ten years of free overtime",
+        "Fluent in sighing"
+      ]
+    },
+    {
+      "prompt": "Three things the office fridge would confess",
+      "house": [
+        "I ate the yogurt",
+        "The milk is a lie",
+        "Smell me, I dare you"
+      ]
+    },
+    {
+      "prompt": "Three bad ideas for a team-building activity",
+      "house": [
+        "Trust falls off the roof",
+        "Group therapy, mandatory",
+        "Escape room, no exit"
+      ]
+    },
+    {
+      "prompt": "Three things your boss says right before bad news",
+      "house": [
+        "Got a sec",
+        "Close the door",
+        "Bring your badge"
+      ]
+    },
+    {
+      "prompt": "Three rejected company slogans",
+      "house": [
+        "We exist, technically",
+        "Fine since 1998",
+        "Synergy, or else"
+      ]
+    },
+    {
+      "prompt": "Three excuses for missing the morning standup",
+      "house": [
+        "My alarm unionized",
+        "Stuck in a hammock",
+        "I was standing, elsewhere"
+      ]
+    },
+    {
+      "prompt": "Three useless things in every office supply closet",
+      "house": [
+        "One sad rubber band",
+        "Fax paper, untouched",
+        "Kevin"
+      ]
+    },
+    {
+      "prompt": "Three signs your startup is about to fold",
+      "house": [
+        "Free kombucha stopped",
+        "The CEO is in Bali",
+        "They sold the ping-pong table"
+      ]
+    },
+    {
+      "prompt": "Three skills you only learn from working from home",
+      "house": [
+        "Mute-button reflexes",
+        "Pants-free professionalism",
+        "Faking Wi-Fi lag"
+      ]
+    },
+    {
+      "prompt": "Three things the intern will never tell you",
+      "house": [
+        "I'm the CEO's nephew",
+        "I read your diary",
+        "I know about the stapler"
+      ]
+    },
+    {
+      "prompt": "Three things to say when you forgot what the meeting is about",
+      "house": [
+        "Great point, let's circle back",
+        "Let's take that offline",
+        "Love that energy"
+      ]
+    }
+  ]
+}

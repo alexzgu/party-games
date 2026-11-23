@@ -8,7 +8,7 @@ import type { PackGameId } from '../app.config';
 import { slugify } from './content';
 import { viaPass } from './claude';
 import { cleanExtra, cleanItems, itemCount, SHAPE, text } from './libraryShape';
-import { builtinPacks, FORMAT, isBuiltinPack, itemsField, markPackShared, ownPack, packParts, readFile, savePacks, unitOf, type AnyPack, type ImportResult } from './packfile';
+import { builtinPacks, FORMAT, isBuiltinPack, itemsField, listFields, markPackShared, ownPack, packParts, readFile, savePacks, unitOf, type AnyPack, type ImportResult } from './packfile';
 import { isSending, lastShared, noteShared, setSending, type SharedRecord } from './shareLog.svelte';
 import { saveSettings, settings } from './settings.svelte';
 import { getUsername } from './username';
@@ -19,12 +19,15 @@ import { answerKey } from '../games/gibberish/parse';
 import { promptKey } from '../games/quick/logic';
 import { cardId as tabooKey } from '../games/taboo/cards';
 import { emptyTiles } from '../games/quiz/board';
+import { titleKey } from '../games/brawl/rules';
+import { promptKey as handPromptKey, sameKey as handKey } from '../games/hand/rules';
+import { sameKey as sketchKey } from '../games/sketch/rules';
 
 /**
  * Games with a Community entry in their pack list and whose wizard packs are shared. Adding a
  * game here turns both on; its make page (and Add more) then calls `shareWizardPack`.
  */
-export const LIBRARY_GAMES: readonly PackGameId[] = ['forehead', 'dial', 'gibberish', 'quick', 'quiz', 'taboo', 'snark'];
+export const LIBRARY_GAMES: readonly PackGameId[] = ['forehead', 'dial', 'gibberish', 'quick', 'quiz', 'taboo', 'snark', 'brawl', 'hand', 'sketch'];
 
 export const libraryOn = (game: string): game is PackGameId => !!WIZARD_SERVER && (LIBRARY_GAMES as readonly string[]).includes(game);
 
@@ -243,8 +246,15 @@ export function shareProblem(game: PackGameId, pack: AnyPack): string | null {
   if (gaps) return `Fill the ${gaps === 1 ? 'empty tile' : `${gaps} empty tiles`} first.`;
   const { items, extra } = packParts(game, pack);
   const unit = unitOf(game);
-  if (!items.length || (game === 'quiz' && !itemCount(game, items))) return `Add at least one ${unitOf(game, 1)} first.`;
-  if (game !== 'quiz' && items.length > SHAPE.itemsMax) return `Too big for the Community library: ${SHAPE.itemsMax} ${unit} at most.`;
+  // A two-list pack's main list carries it in the library (Bad Hand: prompts; Sketchy: words).
+  const [main, ...rest] = listFields(game);
+  const one = rest.length ? main.slice(0, -1) : unitOf(game, 1);
+  if (!items.length || (game === 'quiz' && !itemCount(game, items))) return `Add at least one ${one} first.`;
+  const lists = [items, ...rest.map((f) => (Array.isArray(extra[f]) ? (extra[f] as unknown[]) : []))];
+  const big = game === 'quiz' ? -1 : lists.findIndex((l) => l.length > SHAPE.itemsMax);
+  if (big >= 0) return `Too big for the Community library: ${SHAPE.itemsMax} ${rest.length ? listFields(game)[big] : unit} at most.`;
+  const kept = cleanExtra(game, extra, items);
+  if (rest.some((f, i) => ((kept[f] as unknown[] | undefined)?.length ?? 0) !== lists[i + 1].length)) return `Some ${unit} are too long for the Community library.`;
   if ('problem' in cleanItems(game, items)) return `Some ${unit} are too long for the Community library.`;
   if (new TextEncoder().encode(JSON.stringify({ items, extra })).length > SHAPE.bytesMax) {
     return `Too big for the Community library: ${SHAPE.bytesMax / 1024} KB at most.`;
@@ -284,27 +294,37 @@ export async function shareWizardPack(game: PackGameId, pack: AnyPack, byPass: b
 
 // ---- Importing
 
-/** Games whose items must be new across packs, and how one is told apart. */
-const UNIQUE: Partial<Record<PackGameId, (x: never) => string>> = {
-  dial: spectrumKey, gibberish: answerKey, quick: promptKey, taboo: tabooKey, snark: (q: string) => q.trim().toLowerCase(),
+type Key = (x: never) => string;
+/** Games whose items must be new across packs, and how one is told apart, by list. */
+const UNIQUE: Partial<Record<PackGameId, Record<string, Key>>> = {
+  dial: { cards: spectrumKey }, gibberish: { cards: answerKey }, quick: { prompts: promptKey }, taboo: { cards: tabooKey },
+  snark: { prompts: (q: string) => q.trim().toLowerCase() },
+  brawl: { titles: titleKey }, hand: { prompts: handPromptKey, answers: handKey }, sketch: { words: sketchKey, ideas: sketchKey },
 };
 
 /** `pack` without the items a built-in pack already has (for games whose items are unique across packs). */
 export function withoutBuiltins(game: PackGameId, pack: AnyPack): { pack: AnyPack; dropped: number } {
-  const key = UNIQUE[game] as ((x: unknown) => string) | undefined;
-  const field = itemsField(game);
-  const items = (pack as unknown as Record<string, unknown[]>)[field];
-  if (!key) return { pack, dropped: 0 };
-  const taken = new Set(builtinPacks(game).flatMap((p) => ((p as unknown as Record<string, unknown[]>)[field] ?? []).map(key)));
-  const kept = items.filter((x) => !taken.has(key(x)));
-  const next = { ...pack, [field]: kept } as AnyPack & { safety?: Record<string, string> };
+  const keys = UNIQUE[game];
+  if (!keys) return { pack, dropped: 0 };
+  const listOf = (p: AnyPack, f: string): unknown[] => (p as unknown as Record<string, unknown[]>)[f] ?? [];
+  const next = { ...pack } as AnyPack & { safety?: Record<string, string> };
+  let dropped = 0;
+  for (const [field, k] of Object.entries(keys)) {
+    const key = k as (x: unknown) => string;
+    const taken = new Set(builtinPacks(game).flatMap((p) => listOf(p, field).map(key)));
+    const items = listOf(pack, field);
+    const kept = items.filter((x) => !taken.has(key(x)));
+    (next as unknown as Record<string, unknown[]>)[field] = kept;
+    dropped += items.length - kept.length;
+  }
   // A Snark Tank stock answer goes with its prompt.
   if (next.safety) {
-    const stock = Object.entries(next.safety).filter(([q]) => (kept as string[]).includes(q));
+    const kept = listOf(next, 'prompts') as string[];
+    const stock = Object.entries(next.safety).filter(([q]) => kept.includes(q));
     if (stock.length) next.safety = Object.fromEntries(stock);
     else delete next.safety;
   }
-  return { pack: next, dropped: items.length - kept.length };
+  return { pack: next, dropped };
 }
 
 /**
@@ -313,14 +333,15 @@ export function withoutBuiltins(game: PackGameId, pack: AnyPack): { pack: AnyPac
  * marked `fromLibrary`.
  */
 export function importLibraryPack(game: PackGameId, pack: LibraryFull): ImportResult {
-  const keep = game === 'forehead' ? { emoji: pack.extra.emoji } : game === 'snark' ? { safety: pack.extra.safety, finals: pack.extra.finals } : {};
+  // The extras were rebuilt with the game's own fields only (cleanExtra): emoji, stock answers and finals, a second list.
+  const keep = pack.extra;
   const file = { jerkBox: FORMAT, game, packs: [{ id: slugify(pack.name) || 'community-pack', name: pack.name, blurb: pack.blurb, ...keep, [itemsField(game)]: pack.items }] };
   const read = readFile(JSON.stringify(file), game);
   if ('error' in read) return read;
   const { pack: tidied, dropped } = withoutBuiltins(game, read.packs[0]);
   // Marked as the library's, so it is never shared again from this phone.
   const clean = { ...tidied, fromLibrary: true };
-  if (!(clean as unknown as Record<string, unknown[]>)[itemsField(game)].length) {
+  if (!listFields(game).some((f) => ((clean as unknown as Record<string, unknown[]>)[f] ?? []).length)) {
     return { error: dropped ? 'Everything in this pack is already in the built-in packs.' : 'This pack has nothing in it.' };
   }
   const problems = dropped ? [...read.problems, `${dropped} already in the built-in packs left out.`] : read.problems;

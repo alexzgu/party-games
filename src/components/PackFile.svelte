@@ -5,14 +5,17 @@
   // file and saves each pack in it as the player's own (never over a pack already here); export
   // sends every pack made or edited on this phone in one file. Text from a file is only ever shown
   // as text. For a game in the Community library (library.ts) Community opens the Community packs
-  // over the page, at the same address plus `?community=1`, so Back closes them; a pack imported
-  // there goes through `onimported` like one from a file.
+  // over the page, at the same address plus `?community=1`, so Back closes them (a preview there is
+  // a step of its own, so Back from it returns to the list, scrolled as it was); a pack imported
+  // there goes through `onimported` like one from a file, and Community closes whole.
   import type { PackGameId } from '../app.config';
   import Button from './Button.svelte';
   import Community from './Community.svelte';
   import MenuButton, { type MenuItem } from './MenuButton.svelte';
   import { HEAD_BYTES, importMessage, importPacks, MAX_FILE_BYTES, PACK_FILE_ACCEPT, packFile, savedPacks, tooBigMessage, type ImportResult } from '../lib/packfile';
   import { libraryOn } from '../lib/library';
+  import { forgetListings } from '../lib/communityCache';
+  import { readView, withoutCommunity } from '../lib/communityView';
   import { back, go, route } from '../lib/router.svelte';
   import { shareOrDownload } from '../lib/share';
 
@@ -46,14 +49,18 @@
   function openCommunity() {
     const params = new URLSearchParams(route.params);
     params.set('community', '1');
+    forgetListings(); // opened anew: fresh lists
     go(`${route.path}?${params}`);
   }
+
+  /** Back to the pack list; from a preview, past the Community list too. */
+  const closeCommunity = () => back(withoutCommunity(route.path, route.params), readView(route.params).pack ? 2 : 1);
 
   function fromCommunity(r: Exclude<ImportResult, { error: string }>) {
     say(importMessage(game, r));
     mine = savedPacks(game).length;
     onimported?.(r.saved.map((p) => p.id));
-    back(route.path);
+    closeCommunity();
   }
 
   async function exportMine() {
@@ -82,7 +89,7 @@
 </div>
 
 {#if browsing}
-  <div class="layer"><Community {game} onclose={() => back(route.path)} onimport={fromCommunity} /></div>
+  <div class="layer" data-keep-scroll="community"><Community {game} onclose={closeCommunity} onimport={fromCommunity} /></div>
 {/if}
 
 <style>

@@ -23,6 +23,7 @@
   import { loadSettings } from './store';
   import HostStage from './HostStage.svelte';
   import Players from './Players.svelte';
+  import AddBot from '../../components/room/AddBot.svelte';
   import Rules from './Rules.svelte';
 
   const fixed = $derived(route.params.get('demo'));
@@ -107,6 +108,7 @@
         <section>
           <h3>Players · {v.players.length} / {MAX_PLAYERS}</h3>
           <Players players={v.players} online={fixed ? undefined : host.online} onkick={fixed ? undefined : askKick} />
+          {#if !fixed}<AddBot onadd={() => host.addBot()} full={v.players.length >= MAX_PLAYERS} />{/if}
           {#if host.trouble && !fixed}
             <p role="status">{host.trouble} <Button size="sm" variant="secondary" onclick={() => (connection = true)}>Trouble connecting?</Button></p>
           {/if}

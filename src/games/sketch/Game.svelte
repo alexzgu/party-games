@@ -1,29 +1,43 @@
 <script lang="ts">
+  // Sketchy entry. Sub-routes: #/sketch (host or join), #/sketch/host, #/sketch/join?code=ABCD,
+  // #/sketch/settings (mode, packs, timers), #/sketch/pack?id=<pack> (see and edit a pack), #/sketch/make.
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import { gameName } from '../../app.config';
-  import { go, route } from '../../lib/router.svelte';
+  import { back, go, route } from '../../lib/router.svelte';
   import { brokerFromAddress } from '../../lib/room/broker';
   import Host from './Host.svelte';
   import Phone from './Phone.svelte';
   import HostSettings from './HostSettings.svelte';
+  import PackEditor from './PackEditor.svelte';
+  import Make from './Make.svelte';
   import Rules from './Rules.svelte';
   import { host } from './host.svelte';
-  import { loadGame } from './store';
+  import { loadGame, loadSettings } from './store';
 
   const sub = $derived(route.path.split('/')[2]);
   // A room this screen is still hosting (stepped away, or reloaded): the host button goes back to it.
   const openRoom = $derived(sub ? null : host.game ?? loadGame());
   // Before any child screen opens a link, so host and phones use the broker the address names.
   brokerFromAddress(route.params);
+
+  /** A pack just made joins the picked ones, and settings show it. */
+  function packMade(id: string) {
+    const s = loadSettings();
+    host.settings({ ...s, packs: [...new Set([...s.packs, id])] });
+    back('/sketch/settings');
+  }
 </script>
 
 <div class="game">
   {#if sub === 'host'}<Host />
   {:else if sub === 'join'}<Phone />
-  {:else if sub === 'settings'}<HostSettings />
+  {:else if sub === 'settings'}
+    <HostSettings onback={() => back('/sketch/host')} onedit={(id) => go(`/sketch/pack?id=${encodeURIComponent(id)}`)} onmake={() => go('/sketch/make')} />
+  {:else if sub === 'pack'}<PackEditor id={route.params.get('id') ?? ''} onback={() => back('/sketch/settings')} />
+  {:else if sub === 'make'}<Make onsaved={packMade} onback={() => back('/sketch/settings')} />
   {:else}
     <Screen title={gameName('sketch')}>
       {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}

@@ -25,7 +25,13 @@ export const SHAPE = {
   answer: 200,
 };
 
-export type ShapeGame = 'forehead' | 'dial' | 'gibberish' | 'quick' | 'quiz' | 'taboo' | 'snark';
+export type ShapeGame = 'forehead' | 'dial' | 'gibberish' | 'quick' | 'quiz' | 'taboo' | 'snark' | 'brawl' | 'hand' | 'sketch';
+
+/** Two-list games: the second list, beside the items (Bad Hand: prompts are the items, answers beside). */
+const SECOND: Partial<Record<ShapeGame, { field: string; max: number }>> = {
+  hand: { field: 'answers', max: SHAPE.phrase },
+  sketch: { field: 'ideas', max: SHAPE.phrase },
+};
 
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 
@@ -40,8 +46,8 @@ type Item = string | Record<string, unknown>;
 
 /** One item rebuilt with only its game's fields, or null when it does not fit. */
 function item(game: ShapeGame, x: unknown): Item | null {
-  if (game === 'forehead') return text(x, SHAPE.word);
-  if (game === 'quick' || game === 'snark') return text(x, SHAPE.phrase);
+  if (game === 'forehead' || game === 'sketch') return text(x, SHAPE.word);
+  if (game === 'quick' || game === 'snark' || game === 'brawl' || game === 'hand') return text(x, SHAPE.phrase);
   if (!isObj(x)) return null;
   if (game === 'dial') {
     const left = text(x.left, SHAPE.word), right = text(x.right, SHAPE.word);
@@ -69,8 +75,13 @@ function item(game: ShapeGame, x: unknown): Item | null {
   return clues.every((k) => k !== null) ? { name, clues } : null;
 }
 
-/** How many items a pack has: Big Board counts its written clues, the rest their items. */
-export function itemCount(game: ShapeGame, items: readonly unknown[]): number {
+/**
+ * How many items a pack has: Big Board counts its written clues, Bad Hand and Sketchy both their
+ * lists (`extra` as `cleanExtra` made it), the rest their items.
+ */
+export function itemCount(game: ShapeGame, items: readonly unknown[], extra: Record<string, unknown> = {}): number {
+  const second = SECOND[game];
+  if (second) return items.length + (Array.isArray(extra[second.field]) ? (extra[second.field] as unknown[]).length : 0);
   if (game !== 'quiz') return items.length;
   return items.reduce<number>((n, c) => n + (c as { clues: { clue: string }[] }).clues.filter((k) => k.clue).length, 0);
 }
@@ -89,13 +100,19 @@ export function cleanItems(game: ShapeGame, raw: unknown): { items: Item[] } | {
 /**
  * The fields beside the items a game keeps, rebuilt: a Heads Down. icon (exactly one character,
  * icon.ts); a Snark Tank pack's stock answers (only for its own prompts, 1–80 characters) and
- * finals (a prompt and exactly three house lines of 1–40 characters, at most 100). Anything else,
- * or broken, is left out.
+ * finals (a prompt and exactly three house lines of 1–40 characters, at most 100); Bad Hand's
+ * answers and Sketchy's ideas (texts of 1–200 characters, at most 400; broken ones left out).
+ * Anything else, or broken, is left out.
  */
 export function cleanExtra(game: ShapeGame, raw: unknown, items: readonly unknown[]): Record<string, unknown> {
   if (!isObj(raw)) return {};
   if (game === 'forehead') {
     return isIcon(raw.emoji) ? { emoji: raw.emoji } : {};
+  }
+  const second = SECOND[game];
+  if (second) {
+    const list = Array.isArray(raw[second.field]) ? (raw[second.field] as unknown[]).slice(0, SHAPE.itemsMax).map((x) => text(x, second.max)).filter((x) => x !== null) : [];
+    return list.length ? { [second.field]: list } : {};
   }
   if (game !== 'snark') return {};
   const out: Record<string, unknown> = {};

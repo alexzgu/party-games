@@ -1,0 +1,300 @@
+{
+  "id": "very-online",
+  "name": "Very Online",
+  "blurb": "Phones, feeds and the group chat",
+  "added": "2026-11-23T08:09",
+  "prompts": [
+    "The worst old photo to accidentally like while stalking someone",
+    "What your screen time report is trying to tell you",
+    "A terrible name for an influencer's skincare line",
+    "The worst comment to leave on your mom's Facebook post",
+    "What your phone's face unlock thinks of you before coffee",
+    "A new streaming service nobody will subscribe to",
+    "The worst hashtag to see trending with your name in it",
+    "A terrible caption for an engagement announcement",
+    "What your For You page says about you",
+    "An unboxing video nobody needs",
+    "A Wikipedia rabbit hole that ruins your whole night",
+    "A terrible life hack that somehow went viral",
+    "The worst sound your phone can make in a quiet room",
+    "A sign you've been doom-scrolling way too long",
+    "The most embarrassing thing in your year-end music recap",
+    "A terrible name for a prank channel",
+    "What the group chat says about you when you're not in it",
+    "The worst person to accidentally video call",
+    "A rejected new feature for Instagram",
+    "A terrible thing to go live doing",
+    "What the algorithm thinks you need to buy next",
+    "The worst line to read in a one-star restaurant review",
+    "The worst possible gamer tag",
+    "The last words of your phone at one percent",
+    "A terrible tagline for a new cryptocurrency",
+    "The worst line in a celebrity's notes app apology",
+    "What your old MySpace page says about you",
+    "The worst voice note to hear a stranger play on speaker",
+    "What the read receipt is really saying",
+    "A title for the worst influencer apology video",
+    "A terrible thing to crowdfund",
+    "The worst thing your smart fridge could post online",
+    "What people actually search for at 4 in the morning",
+    "A terrible name for a meme page",
+    "The worst ad to get after talking near your phone",
+    "A new rule for viral dances",
+    "A terrible name for a password manager",
+    "What the are-you-a-robot test is really checking for",
+    "What the cloud really does with your photos",
+    "The worst thing an AI chatbot could reply",
+    "The real reason the Wi-Fi always cuts out",
+    "A how-to video nobody needs",
+    "The worst notification to get during a job interview",
+    "An honest bio for your Instagram",
+    "A terrible name for a new social media app",
+    "What your phone does while you're asleep",
+    "The worst way to go viral",
+    "A sign your aunt just discovered memes",
+    "What the people in stock photos are laughing at",
+    "A push notification that would ruin your day",
+    "The worst thing to hear from a tech support hold message",
+    "A terrible way to announce you're quitting social media",
+    "An online personality quiz nobody should take",
+    "The worst moment from your childhood to go viral",
+    "The worst line to hear in a podcast ad read",
+    "A one-star review of the moon",
+    "A terrible influencer brand collab",
+    "What your phone's auto-made memories slideshow chose to feature",
+    "A rejected TikTok trend",
+    "The worst thing to say on a group FaceTime",
+    "A terrible ringtone to have in a quiet office",
+    "What website cookies are actually tracking",
+    "The worst way to find out you've been unfollowed",
+    "The worst subscription you forgot to cancel",
+    "A new rule for every comment section",
+    "What your food delivery driver has learned about you",
+    "The most suspicious listing on an online marketplace",
+    "A terrible name for your family group chat",
+    "An online review of your own apartment",
+    "The worst first post on a brand new account",
+    "What the are-you-still-watching screen is really asking",
+    "A terrible name for a VR headset",
+    "What your dad thinks that emoji means",
+    "The worst top comment to see on your post",
+    "A sign the online seller is a scam",
+    "The worst tip in a cooking video",
+    "What your front-facing camera has seen",
+    "The worst thing to find after your laptop updates overnight",
+    "What's really taking up all your phone storage",
+    "A video game achievement for real life"
+  ],
+  "safety": {
+    "The worst old photo to accidentally like while stalking someone": "Your ex's cousin's 2014 beach photo",
+    "What your screen time report is trying to tell you": "Touch grass, buddy",
+    "A terrible name for an influencer's skincare line": "Glow Up Goo",
+    "The worst comment to leave on your mom's Facebook post": "Who is this man",
+    "What your phone's face unlock thinks of you before coffee": "Access denied, who are you",
+    "A new streaming service nobody will subscribe to": "Just Sneezes Plus",
+    "The worst hashtag to see trending with your name in it": "#WhyIsHeLikeThis",
+    "A terrible caption for an engagement announcement": "Settling, but make it cute",
+    "What your For You page says about you": "Needs therapy, loves raccoons",
+    "An unboxing video nobody needs": "Unboxing a smaller box",
+    "A Wikipedia rabbit hole that ruins your whole night": "Every known shark attack, ranked",
+    "A terrible life hack that somehow went viral": "Iron your toast",
+    "The worst sound your phone can make in a quiet room": "A full-volume ad for diapers",
+    "A sign you've been doom-scrolling way too long": "Your thumb has a six-pack",
+    "The most embarrassing thing in your year-end music recap": "Top artist: the Baby Shark guy",
+    "A terrible name for a prank channel": "Pranksgiving Gone Wrong",
+    "What the group chat says about you when you're not in it": "That you're perfect, obviously",
+    "The worst person to accidentally video call": "Your dentist, from bed",
+    "A rejected new feature for Instagram": "A button that calls your mom",
+    "A terrible thing to go live doing": "Your taxes, poorly",
+    "What the algorithm thinks you need to buy next": "A fourth air fryer",
+    "The worst line to read in a one-star restaurant review": "Saw the chef lick the ladle",
+    "The worst possible gamer tag": "xX_MomSaysBedtime_Xx",
+    "The last words of your phone at one percent": "Tell my charger I loved it",
+    "A terrible tagline for a new cryptocurrency": "Like money, but sadder",
+    "The worst line in a celebrity's notes app apology": "We're sorry you saw it",
+    "What your old MySpace page says about you": "Top 8: all mean to you",
+    "The worst voice note to hear a stranger play on speaker": "And that's why I'm suing Grandma",
+    "What the read receipt is really saying": "Seen, judged, ignored",
+    "A title for the worst influencer apology video": "Taking accountability (kind of)",
+    "A terrible thing to crowdfund": "My third jet ski",
+    "The worst thing your smart fridge could post online": "Look what he eats at midnight",
+    "What people actually search for at 4 in the morning": "Can ducks smell fear",
+    "A terrible name for a meme page": "Dank Aunt Linda",
+    "The worst ad to get after talking near your phone": "Divorce lawyers near you",
+    "A new rule for viral dances": "No hips after thirty",
+    "A terrible name for a password manager": "Sticky Note Pro",
+    "What the are-you-a-robot test is really checking for": "Your will to live",
+    "What the cloud really does with your photos": "Shows them to the other clouds",
+    "The worst thing an AI chatbot could reply": "I've told your mom",
+    "The real reason the Wi-Fi always cuts out": "The router is in a mood",
+    "A how-to video nobody needs": "How to sit down, in 47 parts",
+    "The worst notification to get during a job interview": "Your ex tagged you in a memory",
+    "An honest bio for your Instagram": "Mostly dogs, some sadness",
+    "A terrible name for a new social media app": "Yapr",
+    "What your phone does while you're asleep": "Orders stuff on your behalf",
+    "The worst way to go viral": "Falling into a wedding cake",
+    "A sign your aunt just discovered memes": "Minions, everywhere",
+    "What the people in stock photos are laughing at": "A salad, hilariously",
+    "A push notification that would ruin your day": "Your landlord started following you",
+    "The worst thing to hear from a tech support hold message": "Your call is mildly important",
+    "A terrible way to announce you're quitting social media": "A three-part video series",
+    "An online personality quiz nobody should take": "Which tax form are you",
+    "The worst moment from your childhood to go viral": "My recorder solo, age nine",
+    "The worst line to hear in a podcast ad read": "Use code SADNESS at checkout",
+    "A one-star review of the moon": "Dark half the time, two stars",
+    "A terrible influencer brand collab": "Gas station sushi energy drink",
+    "What your phone's auto-made memories slideshow chose to feature": "Seven photos of your ceiling",
+    "A rejected TikTok trend": "The tax return challenge",
+    "The worst thing to say on a group FaceTime": "Sorry, I'm on the toilet",
+    "A terrible ringtone to have in a quiet office": "A goat screaming your name",
+    "What website cookies are actually tracking": "Your shoe size and fears",
+    "The worst way to find out you've been unfollowed": "Your mom tells you",
+    "The worst subscription you forgot to cancel": "Cheese of the Month, since 2019",
+    "A new rule for every comment section": "Nobody says first anymore",
+    "What your food delivery driver has learned about you": "You eat a lot of wings",
+    "The most suspicious listing on an online marketplace": "Free couch, don't ask why",
+    "A terrible name for your family group chat": "Family Fun Zone (muted)",
+    "An online review of your own apartment": "Smells like soup, three stars",
+    "The worst first post on a brand new account": "Hello, is this thing on",
+    "What the are-you-still-watching screen is really asking": "Are you okay though",
+    "A terrible name for a VR headset": "Face Brick",
+    "What your dad thinks that emoji means": "A nice vegetable for dinner",
+    "The worst top comment to see on your post": "Who's gonna tell him",
+    "A sign the online seller is a scam": "Ships from my basement, trust me",
+    "The worst tip in a cooking video": "First, preheat the microwave",
+    "What your front-facing camera has seen": "Way too many double chins",
+    "The worst thing to find after your laptop updates overnight": "All your files, now in Spanish",
+    "What's really taking up all your phone storage": "Screenshots of screenshots",
+    "A video game achievement for real life": "Left the house: bronze"
+  },
+  "finals": [
+    {
+      "prompt": "Three things your phone would say if it could talk",
+      "house": [
+        "Charge me, coward",
+        "Stop dropping me",
+        "I've read your notes app"
+      ]
+    },
+    {
+      "prompt": "Three signs your parents just joined TikTok",
+      "house": [
+        "Dad's doing the worm",
+        "Mom duets everything",
+        "They follow your ex"
+      ]
+    },
+    {
+      "prompt": "Three terrible hashtags for a wedding",
+      "house": [
+        "#OpenBarOpenWounds",
+        "#ForNowAndMaybeForever",
+        "#SheSaidOkay"
+      ]
+    },
+    {
+      "prompt": "Three things an influencer packs for a hike",
+      "house": [
+        "A ring light",
+        "Three backup outfits",
+        "A guy to film it"
+      ]
+    },
+    {
+      "prompt": "Three things you never want to hear on a podcast",
+      "house": [
+        "Today's episode: my feet",
+        "Sponsored by my mom",
+        "Part one of ninety"
+      ]
+    },
+    {
+      "prompt": "Three red flags in an online product review",
+      "house": [
+        "Five stars, I'm the seller",
+        "Arrived on fire",
+        "My dog loves it, I don't"
+      ]
+    },
+    {
+      "prompt": "Three things you'd find in a stranger's notes app",
+      "house": [
+        "Dream about a lighthouse",
+        "Revenge list, updated",
+        "Groceries: eggs, closure"
+      ]
+    },
+    {
+      "prompt": "Three unhinged comments on a cooking video",
+      "house": [
+        "Too much garlic, who hurt you",
+        "I used ham instead",
+        "Where's the recipe, I'm 90"
+      ]
+    },
+    {
+      "prompt": "Three things your algorithm thinks you're into",
+      "house": [
+        "Sad cowboy edits",
+        "Raccoons doing crimes",
+        "Sheds"
+      ]
+    },
+    {
+      "prompt": "Three rejected features for the next smartphone",
+      "house": [
+        "Mom mode, always on",
+        "Battery lasts until noon",
+        "Calls your ex randomly"
+      ]
+    },
+    {
+      "prompt": "Three bad reasons to go viral",
+      "house": [
+        "Fell into a fountain",
+        "Cried at a Chili's",
+        "Proposed at the wrong wedding"
+      ]
+    },
+    {
+      "prompt": "Three terrible usernames for your grandma",
+      "house": [
+        "NanaDeleted",
+        "xX_Knitslayer_Xx",
+        "GrannyGoneWild"
+      ]
+    },
+    {
+      "prompt": "Three reasons the group chat is on mute",
+      "house": [
+        "Gary's crypto updates",
+        "Wedding planning, month eleven",
+        "Seventy-five thumbs up"
+      ]
+    },
+    {
+      "prompt": "Three worst things to screenshot and send by mistake",
+      "house": [
+        "The chat about them",
+        "Your bank balance",
+        "Your search: how to apologize"
+      ]
+    },
+    {
+      "prompt": "Three signs a how-to video won't help",
+      "house": [
+        "Starts with a life story",
+        "Narrator is eleven",
+        "Step one: buy a new one"
+      ]
+    },
+    {
+      "prompt": "Three captions for a photo of a sad sandwich",
+      "house": [
+        "Lunch is a lie",
+        "Bread, but make it grief",
+        "He tried his best"
+      ]
+    }
+  ]
+}

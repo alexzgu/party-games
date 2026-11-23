@@ -14,6 +14,9 @@ const SAMPLES: Record<PackGameId, AnyPack> = {
   quick: { id: 'kitchen', name: 'Kitchen', blurb: 'Food', prompts: ['things in a fridge', 'songs by Taylor Swift'] },
   snark: { id: 'boats', name: 'Boats', blurb: 'At sea', prompts: ['A terrible name for a boat', 'The worst thing to hear from your pilot'] },
   taboo: { id: 'food', name: 'Food', blurb: 'Eat', cards: [{ word: 'Pizza', banned: ['Cheese', 'Slice', 'Pepperoni', 'Italian', 'Delivery'] }] },
+  brawl: { id: 'office', name: 'Office', blurb: 'Work', titles: ["World's okayest intern", 'Undefeated at hiding in meetings'] },
+  hand: { id: 'dorms', name: 'Dorms', blurb: 'College', prompts: ['My RA wrote me up for ___', 'What got me through finals?'], answers: ['A suspiciously large rice cooker', 'Crying in the stairwell'] },
+  sketch: { id: 'camp', name: 'Camp', blurb: 'Outdoors', words: ['Tent', "S'more", 'Canoe'], ideas: ['A bear roasting marshmallows'] },
 };
 
 const file = (game: string, packs: unknown[]) => JSON.stringify({ jerkBox: 1, game, packs });
@@ -38,6 +41,17 @@ describe('pack files', () => {
       finals: [...extras.finals, { prompt: 'Three more things', house: ['one', 'two'] }, { prompt: 'Three long ones', house: ['a', 'b', 'c'.repeat(41)] }],
     };
     expect(readFile(file('snark', [broken]), 'snark')).toEqual({ packs: [full], skipped: 0, problems: [] });
+  });
+
+  it('checks each list of a two-list pack with its own rules, and reads a pack with one list left out', () => {
+    const hand = { ...SAMPLES.hand, prompts: ['My RA wrote me up for ____', 'No blank here', 'what got me through finals?'], answers: ['a rice cooker.', 'x'.repeat(61), 'A rice cooker'] };
+    expect(readFile(file('hand', [hand]), 'hand')).toEqual({
+      packs: [{ ...SAMPLES.hand, prompts: ['My RA wrote me up for ___', 'What got me through finals?'], answers: ['A rice cooker'] }], skipped: 3, problems: [],
+    });
+    const ideas = { id: 'chains', name: 'Chains', blurb: '', ideas: ['A cat filing its taxes'] };
+    expect(readFile(file('sketch', [ideas]), 'sketch')).toEqual({ packs: [{ ...ideas, words: [] }], skipped: 0, problems: [] });
+    expect(readFile(file('sketch', [{ id: 'x', name: 'Empty', blurb: '' }]), 'sketch')).toEqual({ error: '“Empty” has no items in it.' });
+    expect(readFile(file('brawl', [{ ...SAMPLES.brawl, titles: ['Solo', 'Best at naps.'] }]), 'brawl')).toEqual({ packs: [{ ...SAMPLES.brawl, titles: ['Best at naps'] }], skipped: 1, problems: [] });
   });
 
   it('names the file after the game and the pack', () => {

@@ -3,54 +3,53 @@
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import Segmented from '../../components/Segmented.svelte';
+  import PackList from '../../components/PackList.svelte';
   import RulesCard from '../../components/RulesCard.svelte';
   import { sketchPacks } from '../../lib/content';
-  import { back } from '../../lib/router.svelte';
   import { DRAW_TIMES, GUESS_TIMES, ROUND_CHOICES, WRITE_TIMES, type Mode } from './core';
   import { loadSettings } from './store';
   import { host } from './host.svelte';
   import { settingsSummary } from './summary';
+  import { packEntry } from './find';
 
-  // The room's settings: mode and packs on the page, the mode's timers behind the Rules row.
+  // The room's settings, a pack page: the mode over the packs (built-in, made, imported or from the
+  // Community; each counts what the mode deals), the mode's timers behind the Rules row over Done.
   // Saved on this device at once and into the lobby's game; a game already running keeps its own.
+  let { onback, onedit, onmake }: { onback: () => void; onedit: (id: string) => void; onmake: () => void } = $props();
+
+  let packs = $state.raw(sketchPacks());
   const s = loadSettings();
-  const packs = sketchPacks();
   let mode = $state<Mode>(s.mode);
   let writeSecs = $state(s.writeSecs);
   let drawSecs = $state(s.drawSecs);
   let rounds = $state(s.rounds);
   let guessSecs = $state(s.guessSecs);
-  let chosen = $state(s.packs.filter((id) => packs.some((p) => p.id === id)));
-  const settings = $derived({ mode, writeSecs, drawSecs, rounds, guessSecs, packs: chosen.length ? [...chosen] : s.packs });
+  // svelte-ignore state_referenced_locally
+  let selected = $state(s.packs.filter((id) => packs.some((p) => p.id === id)));
+  const settings = $derived({ mode, writeSecs, drawSecs, rounds, guessSecs, packs: [...selected] });
   const locked = host.game !== null && host.game.phase !== 'lobby';
   const options = (xs: readonly number[]) => xs.map((x) => ({ value: x, label: `${x}` }));
 
   $effect(() => {
-    const next = settings;
-    untrack(() => host.settings(next));
+    const next = $state.snapshot(settings);
+    untrack(() => { if (next.packs.length) host.settings(next); });
   });
-  function toggle(id: string) {
-    const next = chosen.includes(id) ? chosen.filter((p) => p !== id) : [...chosen, id];
-    if (next.length) chosen = next;
-  }
+
+  const picked = $derived(packs.filter((p) => selected.includes(p.id)));
+  const count = $derived(picked.reduce((n, p) => n + (mode === 'telephone' ? p.ideas.length : p.words.length), 0));
 </script>
 
-<Screen title="Room settings" onback={() => back('/sketch/host')}>
-  {#if locked}<p class="note">A game is running: these apply to the next one.</p>{/if}
-  <div class="opt">
-    <span class="label">Mode</span>
-    <Segmented label="Mode" bind:value={mode} options={[{ value: 'telephone', label: 'Telephone' }, { value: 'guess', label: 'Draw & guess' }]} />
-    <span class="hint">{mode === 'telephone' ? 'Write, draw, describe, pass it on; then laugh at the album. No scores.' : 'Take turns drawing a word while the others race to guess it.'}</span>
-  </div>
-  <fieldset>
-    <legend>Packs</legend>
-    {#each packs as p (p.id)}
-      <label>
-        <input type="checkbox" checked={chosen.includes(p.id)} disabled={chosen.length === 1 && chosen.includes(p.id)} onchange={() => toggle(p.id)} />
-        <span>{p.name} · {mode === 'telephone' ? `${p.ideas.length} ideas` : `${p.words.length} words`}</span>
-      </label>
-    {:else}<p class="hint">No packs yet: the game uses a few spare words.</p>{/each}
-  </fieldset>
+<Screen fill title="Room settings" {onback}>
+  <PackList game="sketch" entries={packs.map((p) => packEntry(p, mode))} bind:selected noun={mode === 'telephone' ? 'ideas' : 'words'}
+    placeholder="Search packs, words and ideas" makeHint="Paste a list or ask the wizard" keepOnImport {onedit} {onmake} onimported={() => (packs = sketchPacks())}>
+    {#snippet notice()}
+      {#if locked}<p class="note">A game is running: these apply to the next one.</p>{/if}
+      <div class="mode">
+        <Segmented label="Mode" bind:value={mode} options={[{ value: 'telephone', label: 'Telephone' }, { value: 'guess', label: 'Draw & guess' }]} />
+        <span class="hint">{mode === 'telephone' ? 'Write, draw, describe, pass it on.' : 'One draws a word, the rest race to guess it.'}{#if selected.length && !count}{` The picked packs have no ${mode === 'telephone' ? 'ideas' : 'words'}, so the game uses its own spares.`}{/if}</span>
+      </div>
+    {/snippet}
+  </PackList>
   {#snippet actions()}
     <RulesCard compact summary={settingsSummary(settings)}>
       {#if mode === 'telephone'}
@@ -76,16 +75,14 @@
         </div>
       {/if}
     </RulesCard>
-    <Button size="lg" onclick={() => back('/sketch/host')}>Done</Button>
+    <Button size="lg" onclick={onback} disabled={!selected.length}>{selected.length ? 'Done' : 'Pick at least one pack'}</Button>
   {/snippet}
 </Screen>
 
 <style>
   .opt { display: flex; flex-direction: column; gap: var(--s-2); background: var(--surface); border-radius: var(--r-md); padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4); margin-bottom: var(--s-3); }
-  .label, legend { font-weight: 700; }
+  .label { font-weight: 700; }
+  .mode { display: flex; flex-direction: column; gap: var(--s-1); margin-bottom: var(--s-3); }
   .hint { color: var(--text-faint); font-size: 0.88rem; }
-  fieldset { padding: var(--s-3); margin: 0 0 var(--s-3); border: 1px solid var(--line-strong); border-radius: var(--r-md); }
-  label { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; }
-  input { width: 22px; height: 22px; accent-color: var(--accent); }
   .note { margin-bottom: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: color-mix(in srgb, var(--c-pass) 14%, var(--surface)); font-weight: 600; }
 </style>

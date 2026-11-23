@@ -12,6 +12,8 @@ import { gameRecord } from './record';
 import { dedupe, snarkPacks, type SnarkPack } from '../../lib/content';
 import { makeBag } from '../../lib/bag';
 import { record } from '../../lib/history';
+import { Bots } from '../../lib/room/bots';
+import { snarkBrain } from './bot';
 
 export const packNames = (ids: string[]) => snarkPacks().filter((p) => ids.includes(p.id)).map((p) => p.name);
 
@@ -71,6 +73,9 @@ class HostSession {
       return this.game!.code;
     },
   });
+  /** Bots: the game's players whose name carries the bot mark; one that cannot be seated again leaves the game. */
+  private bots = new Bots(this.link, snarkBrain, () => this.game?.players.map((p) => ({ pid: p.pid, name: p.name, out: p.kicked })) ?? [],
+    (pid) => this.kick(pid));
   private ticker: ReturnType<typeof setInterval> | null = null;
 
   get running() { return this.game !== null; }
@@ -86,6 +91,7 @@ class HostSession {
     this.game = g;
     saveGame(g);
     this.link.open(g.code);
+    this.bots.open();
     this.ticker = setInterval(() => this.tick(), 250);
   }
 
@@ -148,6 +154,9 @@ class HostSession {
     if (this.game?.phase === 'lobby') this.commit({ ...this.game, settings: s });
   }
 
+  /** Seats a bot (a pretend phone this screen plays); why not, when the room refuses it. */
+  addBot(): string | null { return this.game ? this.bots.add() : null; }
+
   rematch(): void { if (this.game) this.commit(L.rematch(this.game)); }
 
   /** Re-registers the room on the broker now chosen in Connection settings. Phones rejoin through the new QR code. */
@@ -164,6 +173,7 @@ class HostSession {
       if (entry) record(entry);
     }
     this.link.close();
+    this.bots.close();
     if (this.ticker) clearInterval(this.ticker);
     this.ticker = null;
     this.game = null;

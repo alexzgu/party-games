@@ -6,6 +6,10 @@
   import Qr from '../../components/room/Qr.svelte';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import type { PlayerView } from './view';
+  import AddBot from '../../components/room/AddBot.svelte';
+  import { route } from '../../lib/router.svelte';
+  import { MAX_PLAYERS } from './logic';
+  import { host } from './host.svelte';
 
   let { players, online, code, link, packNames, onstart, onkick, onsettings, onrebroker }: {
     players: PlayerView['players']; online: ReadonlySet<string>; code: string; link: string; packNames: string[];
@@ -40,6 +44,7 @@
       <p class="empty muted">Waiting for players. Scan the code or type it on the join screen.</p>
     {/if}
 
+    {#if !route.params.has('demo')}<AddBot onadd={() => host.addBot()} full={seated.length >= MAX_PLAYERS} />{/if}
     <div class="head settings">
       <span>2 rounds · {packNames.join(', ')}</span>
       <Button size="sm" variant="secondary" onclick={onsettings}>Settings</Button>

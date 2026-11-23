@@ -1,29 +1,43 @@
 <script lang="ts">
+  // Doodle Brawl entry. Sub-routes: #/brawl (host or join), #/brawl/host, #/brawl/join?code=ABCD,
+  // #/brawl/settings (packs and draw time), #/brawl/pack?id=<pack> (see and edit a pack), #/brawl/make.
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import { gameName } from '../../app.config';
-  import { go, route } from '../../lib/router.svelte';
+  import { back, go, route } from '../../lib/router.svelte';
   import { brokerFromAddress } from '../../lib/room/broker';
   import Host from './Host.svelte';
   import Phone from './Phone.svelte';
   import HostSettings from './HostSettings.svelte';
+  import PackEditor from './PackEditor.svelte';
+  import Make from './Make.svelte';
   import Rules from './Rules.svelte';
   import { host } from './host.svelte';
-  import { loadGame } from './store';
+  import { loadGame, loadSettings } from './store';
 
   const sub = $derived(route.path.split('/')[2]);
   // A room this screen is still hosting (stepped away, or reloaded): the host button goes back to it.
   const openRoom = $derived(sub ? null : host.game ?? loadGame());
   // Before any child screen opens a link, so host and phones use the broker the address names.
   brokerFromAddress(route.params);
+
+  /** A pack just made joins the picked ones, and settings show it. */
+  function packMade(id: string) {
+    const s = loadSettings();
+    host.settings({ ...s, packs: [...new Set([...s.packs, id])] });
+    back('/brawl/settings');
+  }
 </script>
 
 <div class="game">
   {#if sub === 'host'}<Host />
   {:else if sub === 'join'}<Phone />
-  {:else if sub === 'settings'}<HostSettings />
+  {:else if sub === 'settings'}
+    <HostSettings onback={() => back('/brawl/host')} onedit={(id) => go(`/brawl/pack?id=${encodeURIComponent(id)}`)} onmake={() => go('/brawl/make')} />
+  {:else if sub === 'pack'}<PackEditor id={route.params.get('id') ?? ''} onback={() => back('/brawl/settings')} />
+  {:else if sub === 'make'}<Make onsaved={packMade} onback={() => back('/brawl/settings')} />
   {:else}
     <Screen title={gameName('brawl')}>
       {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}

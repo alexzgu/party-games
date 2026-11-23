@@ -18,6 +18,7 @@
   import { view } from './view';
   import { active, canStart } from './logic';
   import Stage from './Stage.svelte';
+  import AddBot from '../../components/room/AddBot.svelte';
   import Rules from './Rules.svelte';
   import { phaseLabel } from './labels';
 
@@ -86,6 +87,7 @@
         <section>
           <h3>Players · {v.players.length} / 8</h3>
           <Stage {v} art={{}} online={fixed ? undefined : host.online} onkick={fixed ? undefined : askKick} />
+          {#if !fixed}<AddBot onadd={() => host.addBot()} full={v.players.length >= 8} />{/if}
           {#if host.trouble && !fixed}
             <p role="status">{host.trouble} <Button size="sm" variant="secondary" onclick={() => (connection = true)}>Trouble connecting?</Button></p>
           {/if}

@@ -1,7 +1,8 @@
 // The host screen's side of an own-phones room: one PeerJS peer under the room's id, a link to
 // each phone, pings, and the hello/welcome/reject/ended handshake. The game decides who may join
 // and what each message means (`HostHooks`); this only moves messages. Big messages travel as
-// parts (parts.ts) both ways.
+// parts (parts.ts) both ways. A seat run on this screen (a bot, `seat`) joins, is sent and acts
+// exactly as a phone would, through the same hooks; only the wire is skipped.
 import type Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
 import { BROKER_TROUBLE, LINK_TIMEOUT, PING_MS, backoff, classify, makePeer } from './net';
@@ -13,7 +14,19 @@ export type HostStatus = 'connecting' | 'open' | 'trouble';
 
 const HELLO_TIMEOUT = 10000;
 
+/** A message as JSON carries it (what a phone would send or get), or null. */
+const wire = (msg: unknown): unknown => { try { return JSON.parse(JSON.stringify(msg)); } catch { return null; } };
 const str = (x: unknown, max: number): x is string => typeof x === 'string' && x.length <= max;
+
+/** Marks a seat run on this screen in every list of players; a phone's name may not start with it. */
+export const BOT_MARK = '🤖';
+/** A phone's name without the bot mark (and the emoji variation selector that may follow it). */
+export const unmarked = (name: string) => name.replace(/^(?:\s|🤖|\uFE0F)+/u, '');
+const MARK_ONLY = 'Pick a name without 🤖 (it marks bots).';
+const BOT_SEAT = 'That name is already in use. Pick another name.';
+
+/** A pretend phone run by this screen: it gets what a phone would get, as it would read it off the link. */
+export interface LocalSeat { deliver(msg: { t: string; [k: string]: unknown }): void }
 
 export interface HostHooks {
   /** A phone said hello: its seat (and what to do once it is welcomed), or why it may not join. */
@@ -37,6 +50,7 @@ export class HostLink {
   private pidOf = new Map<DataConnection, string>();
   private heard = new Map<DataConnection, number>();
   private parts = new Map<DataConnection, Assembler>();
+  private locals = new Map<string, LocalSeat>();
   private pinger: ReturnType<typeof setInterval> | null = null;
   private retry: ReturnType<typeof setTimeout> | null = null;
   private attempts = 0;
@@ -54,13 +68,44 @@ export class HostLink {
   send(pid: string, msg: object): void {
     const conn = this.links.get(pid);
     if (conn) this.write(conn, msg);
+    else if (this.locals.has(pid)) this.deliver(pid, msg);
   }
 
-  /** The phones online now. */
-  pids(): string[] { return [...this.links.keys()]; }
+  /** The phones online now (seats run on this screen included). */
+  pids(): string[] { return [...this.links.keys(), ...this.locals.keys()]; }
+
+  /** Seats a pretend phone run by this screen: it says hello like a phone, under the same rules. */
+  seat(pid: string, name: string, seat: LocalSeat): { pid: string } | { error: string } {
+    const res = this.hooks.hello(pid, name, this.online);
+    if ('error' in res) return res;
+    // A seat run here only ever takes its own id, never someone else's (an offline player's by name).
+    if (res.pid !== pid) return { error: BOT_SEAT };
+    this.locals.set(res.pid, seat);
+    this.refresh();
+    this.deliver(res.pid, { t: 'welcome', pid: res.pid });
+    res.then();
+    return { pid: res.pid };
+  }
+
+  /** A message from a seat run on this screen, read exactly as one from a phone. */
+  act(pid: string, msg: object): void {
+    if (!this.locals.has(pid)) return;
+    const m = wire(msg) as { t?: unknown } | null;
+    if (!m || typeof m !== 'object' || m.t === 'hello' || m.t === 'pong') return;
+    if (m.t !== 'leave') return this.hooks.message(pid, m);
+    this.locals.delete(pid);
+    this.refresh();
+    this.hooks.left(pid);
+  }
 
   /** Tells a phone why it is out and closes its link. */
   remove(pid: string, why: string): void {
+    if (this.locals.has(pid)) {
+      this.deliver(pid, { t: 'reject', why });
+      this.locals.delete(pid);
+      this.refresh();
+      return;
+    }
     const conn = this.links.get(pid);
     if (!conn) return;
     this.write(conn, { t: 'reject', why });
@@ -76,6 +121,8 @@ export class HostLink {
   /** Tells every phone the game ended and closes the room. */
   close(): void {
     for (const conn of this.links.values()) this.write(conn, { t: 'ended' });
+    for (const pid of this.locals.keys()) this.deliver(pid, { t: 'ended' });
+    this.locals.clear();
     const peer = this.peer;
     this.peer = null;
     setTimeout(() => peer?.destroy(), 600);
@@ -97,7 +144,19 @@ export class HostLink {
     this.pidOf.clear();
     this.heard.clear();
     this.parts.clear();
-    this.online = new Set();
+    this.refresh();
+  }
+
+  /** Online: every phone with a link, and every seat run here. */
+  private refresh(): void {
+    this.online = new Set([...this.links.keys(), ...this.locals.keys()]);
+  }
+
+  /** What a seat run here receives: a copy as it would come off the wire, a moment later. */
+  private deliver(pid: string, msg: object): void {
+    const seat = this.locals.get(pid);
+    const copy = wire(msg) as { t: string } | null;
+    if (seat && copy) queueMicrotask(() => seat.deliver(copy));
   }
 
   private connect(): void {
@@ -117,9 +176,14 @@ export class HostLink {
       const kind = classify(err);
       if (kind === 'no-host' || (kind === 'other' && peer.open)) return; // one phone's link failed, not the room
       if (kind === 'broker') { this.status = 'trouble'; this.trouble = BROKER_TROUBLE; }
-      if (kind === 'taken' && peer.destroyed) {
+      // PeerJS reports a taken id before it destroys (or, once registered, disconnects) the peer.
+      // A new code means a new peer: make sure this one is gone, so the retry registers that code.
+      if (kind === 'taken') {
         const code = this.hooks.taken();
-        if (code) this.code = code;
+        if (code) {
+          this.code = code;
+          setTimeout(() => { if (!peer.destroyed) peer.destroy(); this.recover(peer); }, 0);
+        }
       }
       this.recover(peer);
     });
@@ -155,7 +219,7 @@ export class HostLink {
     this.parts.delete(conn);
     if (pid && this.links.get(pid) === conn) {
       this.links.delete(pid);
-      this.online = new Set(this.links.keys());
+      this.refresh();
     }
   }
 
@@ -191,18 +255,19 @@ export class HostLink {
     } else this.hooks.message(pid, msg);
   }
 
-  private hello(conn: DataConnection, pid: string, name: string): void {
+  private hello(conn: DataConnection, pid: string, raw: string): void {
+    const name = unmarked(raw);
+    const refuse = (why: string) => { this.write(conn, { t: 'reject', why }); setTimeout(() => conn.close(), 1500); };
+    if (!name.trim() && raw.trim()) return refuse(MARK_ONLY);
+    if (this.locals.has(pid)) return refuse(BOT_SEAT); // a phone may not take a seat run here
     const res = this.hooks.hello(pid, name, this.online);
-    if ('error' in res) {
-      this.write(conn, { t: 'reject', why: res.error });
-      setTimeout(() => conn.close(), 1500);
-      return;
-    }
+    if ('error' in res) return refuse(res.error);
+    if (this.locals.has(res.pid)) return refuse(BOT_SEAT);
     const old = this.links.get(res.pid);
     if (old && old !== conn) { this.pidOf.delete(old); this.heard.delete(old); this.parts.delete(old); old.close(); }
     this.links.set(res.pid, conn);
     this.pidOf.set(conn, res.pid);
-    this.online = new Set(this.links.keys());
+    this.refresh();
     this.write(conn, { t: 'welcome', pid: res.pid });
     res.then();
   }

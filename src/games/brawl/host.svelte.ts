@@ -2,10 +2,13 @@ import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode, newPid } from '../../lib/room/code';
 import { brawlPacks } from '../../lib/content';
 import { record } from '../../lib/history';
+import { Bots } from '../../lib/room/bots';
+import { brawlBrain } from './bot';
 import * as L from './logic';
 import { artIds, view } from './view';
 import { readToHost } from './protocol';
 import * as store from './store';
+import { dealTitles } from './pack';
 import type { Drawing } from '../../lib/ink';
 
 function shuffle<T>(items: T[]): T[] {
@@ -45,6 +48,10 @@ class Session {
     },
   });
 
+  /** Bots: the game's players whose name carries the bot mark; one that cannot be seated again leaves the game. */
+  private bots = new Bots(this.link, brawlBrain, () => this.game?.players.map((p) => ({ pid: p.pid, name: p.name, out: this.game!.kicked.includes(p.pid) })) ?? [],
+    (pid) => this.kick(pid));
+
   get online() { return this.link.online; }
   get status() { return this.link.status; }
   get trouble() { return this.link.trouble; }
@@ -57,6 +64,7 @@ class Session {
     this.game = old ? L.afterReload(old, this.now) : L.newGame(newPid(), newCode(), store.loadSettings());
     store.saveGame(this.game);
     this.link.open(this.game.code);
+    this.bots.open();
     this.timer = setInterval(() => this.tick(), 250);
   }
 
@@ -120,9 +128,7 @@ class Session {
   start() {
     const g = this.game;
     if (!g || !L.canStart(g)) return;
-    const packs = brawlPacks();
-    const titles = packs.filter((p) => g.settings.packs.includes(p.id)).flatMap((p) => p.titles);
-    this.commit(L.startRound({ ...g, titles: shuffle(titles.length ? titles : [...packs[0].titles]) }, this.ring(), Date.now()));
+    this.commit(L.startRound({ ...g, titles: dealTitles(brawlPacks(), g.settings.packs, shuffle) }, this.ring(), Date.now()));
   }
 
   settings(settings: L.Settings) {
@@ -149,6 +155,9 @@ class Session {
     this.commit(L.kick(this.game, pid));
   }
 
+  /** Seats a bot (a pretend phone this screen plays); why not, when the room refuses it. */
+  addBot(): string | null { return this.game ? this.bots.add() : null; }
+
   rematch() {
     const g = this.game;
     if (g) this.commit({ ...L.newGame(newPid(), g.code, g.settings), at: g.at + 1, players: L.active(g).map((p) => ({ ...p, score: 0 })), kicked: g.kicked });
@@ -159,6 +168,7 @@ class Session {
   close() {
     if (this.game && this.game.phase !== 'over') this.history(this.game, false);
     this.link.close();
+    this.bots.close();
     clearInterval(this.timer);
     this.game = null;
     this.art = {};

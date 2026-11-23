@@ -2,6 +2,8 @@ import { saladPacks } from '../../lib/content';
 import { record } from '../../lib/history';
 import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode } from '../../lib/room/code';
+import { Bots } from '../../lib/room/bots';
+import { saladBrain } from './bot';
 import * as L from './logic';
 import { readToHost } from './protocol';
 import { loadGame, loadSettings, saveGame, saveSettings, type Settings } from './store';
@@ -49,6 +51,10 @@ class HostSession {
     },
   });
 
+  /** Bots: the game's players whose name carries the bot mark; one that cannot be seated again leaves the game. */
+  private bots = new Bots(this.link, saladBrain, () => this.game?.players.map((p) => ({ pid: p.pid, name: p.name, out: p.kicked })) ?? [],
+    (pid) => this.kick(pid));
+
   get running() { return this.game !== null; }
   get status() { return this.link.status; }
   get trouble() { return this.link.trouble; }
@@ -62,6 +68,7 @@ class HostSession {
       : L.newGame(newCode(), packIds, poolFor(packIds), Math.floor(Math.random() * 4294967296), awayMs);
     this.commit(g);
     this.link.open(g.code);
+    this.bots.open();
     this.ticker = setInterval(() => this.tick(), 250);
   }
 
@@ -102,6 +109,9 @@ class HostSession {
   skip(): void { if (this.game) this.commit(L.step(this.game, Date.now(), this.online)); }
   pause(): void { if (this.game) this.commit(L.pause(this.game, Date.now())); }
   resume(): void { if (this.game) this.commit(L.resume(this.game, Date.now())); }
+  /** Seats a bot (a pretend phone this screen plays); why not, when the room refuses it. */
+  addBot(): string | null { return this.game ? this.bots.add() : null; }
+
   rematch(): void { if (this.game?.phase === 'over') this.commit(L.rematch(this.game)); }
   rebroker(): void { if (this.game) this.link.rebroker(); }
 
@@ -123,6 +133,7 @@ class HostSession {
   end(): void {
     if (this.game && !this.game.recorded && this.game.total) recordGame(this.game, false);
     this.link.close();
+    this.bots.close();
     if (this.ticker) clearInterval(this.ticker);
     this.ticker = null;
     this.game = null;

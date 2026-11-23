@@ -3,6 +3,8 @@ import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode, newPid } from '../../lib/room/code';
 import { sketchPacks } from '../../lib/content';
 import { record } from '../../lib/history';
+import { Bots } from '../../lib/room/bots';
+import { sketchBrain } from './bot';
 import { shuffle } from '../../lib/random';
 import type { Drawing } from '../../lib/ink';
 import { active, newGame, standings, type Game, type Settings } from './core';
@@ -52,6 +54,10 @@ class Session {
     },
   });
 
+  /** Bots: the game's players whose name carries the bot mark; one that cannot be seated again leaves the game. */
+  private bots = new Bots(this.link, sketchBrain, () => this.game?.players.map((p) => ({ pid: p.pid, name: p.name, out: this.game!.kicked.includes(p.pid) })) ?? [],
+    (pid) => this.kick(pid));
+
   get online() { return this.link.online; }
   get trouble() { return this.link.trouble; }
 
@@ -63,6 +69,7 @@ class Session {
     this.game = old ? L.afterReload(old, this.now) : newGame(newPid(), newCode(), store.loadSettings());
     store.saveGame(this.game);
     this.link.open(this.game.code);
+    this.bots.open();
     this.timer = setInterval(() => this.tick(), 250);
   }
 
@@ -199,6 +206,9 @@ class Session {
     this.commit(L.kick(this.game, pid));
   }
 
+  /** Seats a bot (a pretend phone this screen plays); why not, when the room refuses it. */
+  addBot(): string | null { return this.game ? this.bots.add() : null; }
+
   /** Play again: the same room and players, back in the lobby with the settings now chosen. */
   rematch() {
     const g = this.game;
@@ -219,6 +229,7 @@ class Session {
   close() {
     if (this.game && this.game.phase !== 'over' && this.game.phase !== 'album') this.history(this.game, false);
     this.link.close();
+    this.bots.close();
     clearInterval(this.timer);
     this.game = null;
     this.art = {};

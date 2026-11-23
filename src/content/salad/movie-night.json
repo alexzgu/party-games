@@ -1,0 +1,296 @@
+{
+  "id": "movie-night",
+  "name": "Movie Night",
+  "blurb": "Famous films, characters, stars and props",
+  "added": "2026-11-23T08:07",
+  "secrets": [
+    {"answer": "Harry Potter", "category": "person", "level": "easy", "also": ["Harry", "The Boy Who Lived"],
+      "words": {
+        "noun": ["a young wizard", "an orphan", "a schoolboy", "a seeker"],
+        "verb": ["cast spells", "fly a broomstick", "talk to snakes", "fight a dark lord"],
+        "adjective": ["brave", "scarred", "bespectacled", "famous"],
+        "place": ["under the stairs", "on a broomstick", "in a castle"],
+        "time": ["after his eleventh birthday", "during a school year", "at a feast"]
+      }
+    },
+    {"answer": "Elsa", "category": "person", "level": "easy", "also": ["Queen Elsa", "Elsa of Arendelle"],
+      "words": {
+        "noun": ["a princess", "a snow queen", "an older sister", "a royal"],
+        "verb": ["make ice", "build a palace", "let it go", "sing a power ballad"],
+        "adjective": ["icy", "lonely", "regal", "gloved"],
+        "place": ["on a mountain", "in an ice palace", "in a snowy kingdom"],
+        "time": ["at a coronation", "during an endless winter", "in winter"]
+      }
+    },
+    {"answer": "Jack Sparrow", "category": "person", "level": "medium", "also": ["Captain Jack Sparrow", "Captain Sparrow"],
+      "words": {
+        "noun": ["a pirate", "a captain", "a scoundrel", "a sailor"],
+        "verb": ["steal a ship", "sword fight", "drink rum", "talk his way out"],
+        "adjective": ["tipsy", "sneaky", "flamboyant", "lucky"],
+        "place": ["on a ship", "in the Caribbean", "on a deserted island"],
+        "time": ["during a mutiny", "after a shipwreck", "at high tide"]
+      }
+    },
+    {"answer": "Indiana Jones", "category": "person", "level": "medium", "also": ["Indy", "Indiana", "Henry Jones Jr"],
+      "words": {
+        "noun": ["an archaeologist", "a professor", "an adventurer", "a treasure hunter"],
+        "verb": ["crack a whip", "dodge traps", "outrun a boulder", "dig up relics"],
+        "adjective": ["daring", "dusty", "rugged", "scared of snakes"],
+        "place": ["in a tomb", "in a temple", "in a jungle"],
+        "time": ["during a dig", "after class", "during a chase"]
+      }
+    },
+    {"answer": "Willy Wonka", "category": "person", "level": "medium", "also": ["Wonka", "Mr. Wonka"],
+      "words": {
+        "noun": ["a candy maker", "a chocolatier", "a factory owner", "an inventor"],
+        "verb": ["make chocolate", "give a tour", "invent sweets", "hide golden tickets"],
+        "adjective": ["eccentric", "whimsical", "secretive", "sugary"],
+        "place": ["in a chocolate factory", "by a chocolate river", "on a candy boat"],
+        "time": ["during a factory tour", "after a contest", "at dessert"]
+      }
+    },
+    {"answer": "Tom Cruise", "category": "person", "level": "medium", "also": ["Thomas Cruise Mapother IV", "Thomas Cruise"],
+      "words": {
+        "noun": ["an action star", "a movie star", "a stunt lover", "a fighter pilot"],
+        "verb": ["do his own stunts", "run very fast", "hang off a plane", "jump on a couch"],
+        "adjective": ["intense", "fearless", "ageless", "smiling"],
+        "place": ["on a red carpet", "off a cliff", "in a cockpit"],
+        "time": ["during a stunt", "during a premiere", "every summer"]
+      }
+    },
+    {"answer": "Hannibal Lecter", "category": "person", "level": "hard", "also": ["Hannibal", "Dr. Lecter", "Hannibal Lector"],
+      "words": {
+        "noun": ["a psychiatrist", "a cannibal", "a prisoner", "a doctor"],
+        "verb": ["eat people", "read minds", "escape prison", "cook a fancy meal"],
+        "adjective": ["creepy", "polite", "brilliant", "masked"],
+        "place": ["in a cell", "behind glass", "at a dinner party"],
+        "time": ["during an interview", "at dinner", "after an escape"]
+      }
+    },
+    {"answer": "Audrey Hepburn", "category": "person", "level": "hard", "also": ["Hepburn", "Audrey"],
+      "words": {
+        "noun": ["a film icon", "an actress", "a style icon", "a princess"],
+        "verb": ["eat a pastry", "wear pearls", "act", "ride a scooter"],
+        "adjective": ["elegant", "graceful", "classic", "chic"],
+        "place": ["by a jewelry store", "on a scooter", "in Rome"],
+        "time": ["at breakfast", "in the past", "at dawn"]
+      }
+    },
+    {"answer": "Hollywood", "category": "place", "level": "easy", "also": ["Tinseltown", "Hollywood Hills"],
+      "words": {
+        "noun": ["a famous sign", "a movie studio", "a walk of fame", "a celebrity"],
+        "verb": ["spot celebrities", "chase fame", "audition", "tour a studio"],
+        "adjective": ["glamorous", "sunny", "famous", "starry"],
+        "place": ["in Los Angeles", "in California", "on a studio lot"],
+        "time": ["during awards season", "during a premiere", "on a sunny day"]
+      }
+    },
+    {"answer": "Neverland", "category": "place", "level": "easy", "also": ["Never Land", "Never Never Land"],
+      "words": {
+        "noun": ["a lost boy", "a pirate ship", "a mermaid lagoon", "a fairy"],
+        "verb": ["fly", "stay a kid forever", "fight pirates", "play with lost boys"],
+        "adjective": ["magical", "ageless", "faraway", "carefree"],
+        "place": ["past the second star", "across the sea", "on an island"],
+        "time": ["at bedtime", "forever", "while you sleep"]
+      }
+    },
+    {"answer": "Wakanda", "category": "place", "level": "medium", "also": ["Kingdom of Wakanda"],
+      "words": {
+        "noun": ["a hidden kingdom", "a high-tech city", "a panther statue", "a throne"],
+        "verb": ["mine vibranium", "crown a king", "train warriors", "stay hidden"],
+        "adjective": ["advanced", "secretive", "royal", "powerful"],
+        "place": ["in Africa", "behind a force field", "by a waterfall"],
+        "time": ["during a challenge", "after a coronation", "in the future"]
+      }
+    },
+    {"answer": "Gotham City", "category": "place", "level": "medium", "also": ["Gotham"],
+      "words": {
+        "noun": ["a bat signal", "a dark skyline", "a crime boss", "a masked vigilante"],
+        "verb": ["fight crime", "watch the sky", "dodge villains", "hide a secret identity"],
+        "adjective": ["gloomy", "crime-ridden", "dangerous", "rainy"],
+        "place": ["on a rooftop", "in an alley", "under a cave"],
+        "time": ["after dark", "late at night", "on a rainy day"]
+      }
+    },
+    {"answer": "Narnia", "category": "place", "level": "medium", "also": ["Chronicles of Narnia"],
+      "words": {
+        "noun": ["a wardrobe", "a talking lion", "a faun", "a lamppost"],
+        "verb": ["step through a wardrobe", "meet a lion", "become royalty", "defeat a witch"],
+        "adjective": ["snowy", "enchanted", "secret", "frozen"],
+        "place": ["behind some coats", "past a lamppost", "in the snow"],
+        "time": ["during a war", "during an endless winter", "after hide and seek"]
+      }
+    },
+    {"answer": "Mordor", "category": "place", "level": "medium", "also": ["Land of Mordor"],
+      "words": {
+        "noun": ["a volcano", "a dark tower", "a giant eye", "an orc army"],
+        "verb": ["destroy a ring", "climb a volcano", "sneak past orcs", "walk for miles"],
+        "adjective": ["fiery", "bleak", "evil", "ashy"],
+        "place": ["in Middle-earth", "by a volcano", "past a black gate"],
+        "time": ["after a long walk", "during a battle", "all night"]
+      }
+    },
+    {"answer": "Arrakis", "category": "place", "level": "hard", "also": ["Dune", "Dune Planet"],
+      "words": {
+        "noun": ["a sandworm", "a desert planet", "a spice harvester", "a sand dune"],
+        "verb": ["ride a worm", "harvest spice", "walk without rhythm", "save water"],
+        "adjective": ["sandy", "scorching", "dry", "spicy"],
+        "place": ["in a desert", "in space", "under the sand"],
+        "time": ["during a sandstorm", "in the future", "at sunset"]
+      }
+    },
+    {"answer": "Overlook Hotel", "category": "place", "level": "hard", "also": ["The Overlook", "Overlook"],
+      "words": {
+        "noun": ["a mountain lodge", "a hedge maze", "creepy twins", "a long hallway"],
+        "verb": ["write a novel", "ride a tricycle", "get snowed in", "chase family"],
+        "adjective": ["haunted", "isolated", "snowbound", "eerie"],
+        "place": ["in the mountains", "in Colorado", "in a maze"],
+        "time": ["in winter", "during a blizzard", "after closing season"]
+      }
+    },
+    {"answer": "Lightsaber", "category": "thing", "level": "easy", "also": ["Light Saber", "Laser Sword"],
+      "words": {
+        "noun": ["an energy sword", "a laser blade", "a weapon", "a flashlight"],
+        "verb": ["duel", "hum", "slice", "glow"],
+        "adjective": ["glowing", "humming", "colorful", "deadly"],
+        "place": ["in space", "on a Jedi's belt", "in a duel"],
+        "time": ["during a duel", "during a battle", "in a galaxy far away"]
+      }
+    },
+    {"answer": "Movie Ticket", "category": "thing", "level": "easy", "also": ["Cinema Ticket", "Ticket Stub", "Film Ticket"],
+      "words": {
+        "noun": ["a stub", "a pass", "a receipt", "a slip"],
+        "verb": ["buy online", "scan", "show an usher", "keep as a souvenir"],
+        "adjective": ["paper", "pricey", "torn", "small"],
+        "place": ["at a box office", "at a theater", "in a wallet"],
+        "time": ["before the show", "on opening night", "on a date night"]
+      }
+    },
+    {"answer": "3D Glasses", "category": "thing", "level": "medium", "also": ["3-D Glasses", "Three D Glasses"],
+      "words": {
+        "noun": ["eyewear", "cardboard specs", "tinted lenses", "goggles"],
+        "verb": ["put on", "squint", "duck", "see depth"],
+        "adjective": ["red and blue", "flimsy", "goofy", "tinted"],
+        "place": ["at a theater", "on your face", "at a theme park ride"],
+        "time": ["during an action movie", "during a trailer", "during a big blockbuster"]
+      }
+    },
+    {"answer": "Red Carpet", "category": "thing", "level": "medium", "also": ["The Red Carpet"],
+      "words": {
+        "noun": ["a long rug", "a walkway", "a runway", "a celebrity path"],
+        "verb": ["pose", "strut", "wave", "sign autographs"],
+        "adjective": ["glamorous", "long", "crowded", "fancy"],
+        "place": ["at a premiere", "at an awards show", "by the paparazzi"],
+        "time": ["during awards season", "before a premiere", "on opening night"]
+      }
+    },
+    {"answer": "Oscar Trophy", "category": "thing", "level": "medium", "also": ["Oscar", "Academy Award", "Oscar Statue", "Oscars"],
+      "words": {
+        "noun": ["a statuette", "a gold man", "an award", "a prize"],
+        "verb": ["give a speech", "thank your mom", "cry", "hold it up"],
+        "adjective": ["golden", "shiny", "heavy", "coveted"],
+        "place": ["on a stage", "on a mantel", "at an awards show"],
+        "time": ["during awards season", "after a big speech", "once a year"]
+      }
+    },
+    {"answer": "Ruby Slippers", "category": "thing", "level": "medium", "also": ["Ruby Shoes", "Dorothy's Slippers"],
+      "words": {
+        "noun": ["a pair of heels", "magic heels", "a pair of sequined shoes", "glittery pumps"],
+        "verb": ["click your heels", "go home", "follow a road", "sparkle"],
+        "adjective": ["sparkly", "red", "magical", "sequined"],
+        "place": ["on a yellow brick road", "in Kansas", "on a witch's feet"],
+        "time": ["after a tornado", "when you miss home", "during a journey"]
+      }
+    },
+    {"answer": "Clapperboard", "category": "thing", "level": "hard", "also": ["Clapper Board", "Clapper", "Film Slate", "Slate"],
+      "words": {
+        "noun": ["a little board", "a chalkboard", "a hinged sign", "a sign"],
+        "verb": ["snap shut", "clap", "call action", "mark a take"],
+        "adjective": ["striped", "snappy", "black and white", "loud"],
+        "place": ["on a film set", "in front of a camera", "in a studio"],
+        "time": ["before every take", "right before action", "during filming"]
+      }
+    },
+    {"answer": "Proton Pack", "category": "thing", "level": "hard", "also": ["Proton Packs", "Ghostbusters Backpack"],
+      "words": {
+        "noun": ["a backpack", "a ghost trap", "a laser wand", "a nuclear battery"],
+        "verb": ["bust ghosts", "zap", "cross the streams", "carry"],
+        "adjective": ["heavy", "nuclear", "buzzing", "bulky"],
+        "place": ["on your back", "in a haunted library", "in a firehouse"],
+        "time": ["during a haunting", "when ghosts appear", "in the eighties"]
+      }
+    },
+    {"answer": "Star Wars", "category": "story", "level": "easy", "also": ["A New Hope", "Star Wars: A New Hope"],
+      "words": {
+        "noun": ["a farm boy", "a princess", "a smuggler", "a rebel"],
+        "verb": ["blow up a space station", "fly a starship", "use the force", "rescue a princess"],
+        "adjective": ["epic", "galactic", "heroic", "futuristic"],
+        "place": ["in space", "on a desert planet", "in a galaxy far away"],
+        "time": ["a long time ago", "during a rebellion", "after a distress call"]
+      }
+    },
+    {"answer": "The Avengers", "category": "story", "level": "easy", "also": ["Avengers", "Marvel's Avengers"],
+      "words": {
+        "noun": ["a team of heroes", "a god of thunder", "a billionaire", "a super soldier"],
+        "verb": ["save New York", "assemble", "stop an alien invasion", "work together"],
+        "adjective": ["explosive", "heroic", "quippy", "super"],
+        "place": ["in New York", "on a flying ship", "above a city"],
+        "time": ["during an invasion", "after a portal opens", "during a final battle"]
+      }
+    },
+    {"answer": "Back to the Future", "category": "story", "level": "medium", "also": ["BTTF", "Back to the Future 1985"],
+      "words": {
+        "noun": ["a teenager", "a mad scientist", "a time traveler", "a skateboarder"],
+        "verb": ["travel through time", "get home", "save his parents", "catch lightning"],
+        "adjective": ["retro", "chaotic", "electric", "fast"],
+        "place": ["at a high school dance", "by a clock tower", "on a small town square"],
+        "time": ["in 1955", "at 88 mph", "during a storm"]
+      }
+    },
+    {"answer": "The Matrix", "category": "story", "level": "medium", "also": ["Matrix", "The Matrix 1999"],
+      "words": {
+        "noun": ["a hacker", "a chosen one", "an agent", "a rebel"],
+        "verb": ["dodge bullets", "wake up", "pick a pill", "learn kung fu"],
+        "adjective": ["green", "slick", "mind-bending", "simulated"],
+        "place": ["in a simulation", "on a hovercraft", "by a phone booth"],
+        "time": ["after a red pill", "someday", "after a phone call"]
+      }
+    },
+    {"answer": "Jaws", "category": "story", "level": "medium", "also": ["Jaws 1975"],
+      "words": {
+        "noun": ["a police chief", "a giant shark", "a fisherman", "a scientist"],
+        "verb": ["hunt a shark", "close a beach", "get a bigger boat", "swim"],
+        "adjective": ["tense", "bloody", "suspenseful", "salty"],
+        "place": ["on a beach", "on a boat", "on an island town"],
+        "time": ["in summer", "on a holiday weekend", "during a swim"]
+      }
+    },
+    {"answer": "Inside Out", "category": "story", "level": "medium", "also": ["Pixar's Inside Out", "Inside Out 2015"],
+      "words": {
+        "noun": ["a girl", "a feeling", "a sad blue friend", "an imaginary friend"],
+        "verb": ["keep memories", "cry", "find joy", "get home"],
+        "adjective": ["emotional", "colorful", "bittersweet", "clever"],
+        "place": ["in a mind", "in a control room", "in San Francisco"],
+        "time": ["after a move", "during a hockey game", "at age eleven"]
+      }
+    },
+    {"answer": "Inception", "category": "story", "level": "hard", "also": ["Inception 2010"],
+      "words": {
+        "noun": ["a thief", "a dream team", "a spinning top", "an architect"],
+        "verb": ["plant an idea", "steal secrets", "wake up", "fall asleep"],
+        "adjective": ["mind-bending", "layered", "dreamy", "twisty"],
+        "place": ["in a dream", "on a folding city", "in a hallway"],
+        "time": ["while you sleep", "during a kick", "on a long flight"]
+      }
+    },
+    {"answer": "The Godfather", "category": "story", "level": "hard", "also": ["Godfather", "The Godfather 1972"],
+      "words": {
+        "noun": ["a crime family", "a mob boss", "a youngest son", "a horse head"],
+        "verb": ["make an offer", "run a family", "take revenge", "kiss a ring"],
+        "adjective": ["violent", "Italian", "loyal", "dark"],
+        "place": ["in New York", "in Sicily", "at a wedding"],
+        "time": ["at a wedding", "after a shooting", "in 1945"]
+      }
+    }
+  ]
+}

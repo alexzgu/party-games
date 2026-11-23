@@ -3,6 +3,8 @@
   import { go } from '../lib/router.svelte';
   import { unlockAudio, sfx } from '../lib/sound';
   import { haptic } from '../lib/haptics';
+  import { forgetListings } from '../lib/communityCache';
+  import { communityGames } from '../lib/communityView';
 
   const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
   const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -13,6 +15,13 @@
     sfx.tap();
     haptic.light();
     go('/' + id);
+  }
+
+  // The Community page, while the library is on; opened anew, so its lists load fresh.
+  const community = communityGames().length > 0;
+  function openCommunity() {
+    forgetListings();
+    open('community');
   }
 </script>
 
@@ -46,6 +55,17 @@
       </li>
     {/each}
   </ul>
+
+  {#if community}
+    <button class="community pop-in" style:animation-delay="{60 + GAMES.length * 70}ms" onclick={openCommunity}>
+      <span class="emoji" aria-hidden="true">🌍</span>
+      <span class="txt">
+        <span class="cname">Community packs</span>
+        <span class="players">Browse packs friends made</span>
+      </span>
+      <svg class="chev" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  {/if}
 
   {#if !standalone}
     <div class="install">
@@ -102,6 +122,16 @@
   .name.long { font-size: min(1.32rem, 6vw); white-space: nowrap; }
   .players { color: var(--text-dim); font-weight: 700; font-size: 0.92rem; margin-top: 2px; }
   .chev { color: var(--text-faint); flex: none; }
+  /* Community: a quieter row under the games, in the page's own colours. */
+  .community {
+    width: 100%; text-align: left; display: flex; align-items: center; gap: var(--s-3);
+    padding: var(--s-4); border-radius: var(--r-lg); border: 1.5px solid var(--line-strong); background: var(--surface);
+    color: var(--text); transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .community:active { transform: scale(0.98); }
+  .community .emoji { font-size: 1.9rem; }
+  /* One line on a 320 px phone too. */
+  .cname { font-family: var(--font-display); font-weight: 800; font-size: min(1.25rem, 5.6vw); letter-spacing: -0.01em; white-space: nowrap; }
   .install { margin-top: auto; }
   .install-btn { width: 100%; min-height: var(--tap); border-radius: var(--r-md); border: 1.5px dashed var(--line-strong); background: transparent; color: var(--text-dim); font-weight: 600; }
   .how { color: var(--text-dim); padding: var(--s-3) var(--s-2); font-size: 0.95rem; }

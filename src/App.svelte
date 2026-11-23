@@ -7,6 +7,8 @@
   import History from './pages/History.svelte';
   import Crashed from './pages/Crashed.svelte';
   import Joined from './pages/Joined.svelte';
+  import CommunityPage from './pages/CommunityPage.svelte';
+  import { communityGames, tabOf } from './lib/communityView';
   import ShareNote from './components/ShareNote.svelte';
   import { acceptInvite } from './lib/join';
 
@@ -39,9 +41,13 @@
     invite = untrack(() => acceptInvite(path)) ? 'ok' : 'broken';
   });
 
-  // The page glow and every default accent follow the game on screen.
+  // The Community page, while the library is on (a wizard server); otherwise its address shows Home.
+  const community = communityGames();
+
+  // The page glow and every default accent follow the game on screen (Community: the open tab's).
   $effect(() => {
-    const game = GAMES.find((g) => g.id === segment);
+    const id = segment === 'community' ? tabOf(route.path, community) : segment;
+    const game = GAMES.find((g) => g.id === id);
     document.documentElement.style.setProperty('--accent', game ? game.accent : 'var(--c-gibberish)');
   });
 </script>
@@ -56,6 +62,8 @@
   <Settings />
 {:else if segment === 'history'}
   <History />
+{:else if segment === 'community' && community.length}
+  <CommunityPage />
 {:else if games[segment]}
   <svelte:boundary>
     {#await games[segment]() then mod}

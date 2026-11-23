@@ -184,20 +184,23 @@ const saladFiles = import.meta.glob<SaladPack>('../content/salad/*.json', { eage
 const builtinSalad = ordered(Object.values(saladFiles), ['classic']);
 export const saladPacks = (): SaladPack[] => builtinSalad.slice();
 
-export interface BrawlPack { id: string; name: string; titles: string[] }
-const brawlFiles = import.meta.glob<{ titles: string[] }>('../content/brawl/*.json', { eager: true, import: 'default' });
-export const brawlPacks = (): BrawlPack[] => ordered(Object.entries(brawlFiles).map(([file, pack]) => {
-  const id = file.split('/').at(-1)!.replace(/\.json$/, '');
-  const name = id === 'after-dark' ? 'After Dark' : id.split('-').map((word) => word[0].toUpperCase() + word.slice(1)).join(' ');
-  return { ...pack, id, name };
-}), ['classic', 'after-dark']);
+// Doodle Brawl: titles for fighters ("World's okayest roommate").
+export interface BrawlPack extends PackMeta { id: string; name: string; blurb: string; titles: string[] }
+const brawlFiles = import.meta.glob<BrawlPack>('../content/brawl/*.json', { eager: true, import: 'default' });
+const builtinBrawl = ordered(Object.values(brawlFiles), ['classic', 'after-dark']);
+export const customBrawl = customStore<BrawlPack>('custom:brawl', builtinBrawl, 'brawl');
+export const brawlPacks = (): BrawlPack[] => merged(customBrawl.saved(), builtinBrawl);
 
 /** Sketchy packs: things to draw (Draw & guess) and lines that can start a chain (Telephone). */
-export interface SketchPack { id: string; name: string; blurb: string; added?: string; words: string[]; ideas: string[] }
+export interface SketchPack extends PackMeta { id: string; name: string; blurb: string; words: string[]; ideas: string[] }
 const sketchFiles = import.meta.glob<SketchPack>('../content/sketch/*.json', { eager: true, import: 'default' });
-export const sketchPacks = (): SketchPack[] => ordered(Object.values(sketchFiles), ['classic', 'after-dark']);
+const builtinSketch = ordered(Object.values(sketchFiles), ['classic', 'after-dark']);
+export const customSketch = customStore<SketchPack>('custom:sketch', builtinSketch, 'sketch');
+export const sketchPacks = (): SketchPack[] => merged(customSketch.saved(), builtinSketch);
 
 /** Bad Hand packs: prompt cards (each `___` is a blank; none means a question) and answer cards. */
-export interface HandPack { id: string; name: string; blurb: string; added?: string; prompts: string[]; answers: string[] }
+export interface HandPack extends PackMeta { id: string; name: string; blurb: string; prompts: string[]; answers: string[] }
 const handFiles = import.meta.glob<HandPack>('../content/hand/*.json', { eager: true, import: 'default' });
-export const handPacks = (): HandPack[] => ordered(Object.values(handFiles), ['classic', 'after-dark']);
+const builtinHand = ordered(Object.values(handFiles), ['classic', 'after-dark']);
+export const customHand = customStore<HandPack>('custom:hand', builtinHand, 'hand');
+export const handPacks = (): HandPack[] => merged(customHand.saved(), builtinHand);

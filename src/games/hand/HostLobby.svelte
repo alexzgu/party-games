@@ -6,9 +6,10 @@
   import { go } from '../../lib/router.svelte';
   import { brokerSetting } from '../../lib/room/broker';
   import { joinLink } from '../../lib/room/look';
-  import { host, chosenPacks } from './host.svelte';
+  import { host, content } from './host.svelte';
   import { DEFAULT_SETTINGS, MAX_PLAYERS, MIN_PLAYERS } from './logic';
   import Seats from './Seats.svelte';
+  import AddBot from '../../components/room/AddBot.svelte';
   import type { View } from './view';
 
   let { v, code, demo, brokerChanged, online, onkick, onrebroker }: {
@@ -17,13 +18,15 @@
   } = $props();
   const link = $derived.by(() => { void brokerChanged; return joinLink('hand', code, brokerSetting()); });
   const s = $derived(host.game?.settings ?? DEFAULT_SETTINGS);
-  const packs = $derived(chosenPacks(s.packs));
+  // The same cards Start deals from, so Start is off exactly when it would do nothing.
+  const cards = $derived(content(s.packs, v.players.length));
   const rules = $derived([
     `First to ${s.target}`, s.seconds ? `${s.seconds} s to answer` : 'No time limit',
     ...(s.trade ? ['Trade a point'] : []), ...(s.house ? ['House player'] : []), ...(s.blanks ? ['Blank cards'] : []),
   ].join(' · '));
   const need = $derived(Math.max(0, MIN_PLAYERS - v.players.length));
-  const noCards = $derived(!packs.length);
+  const noCards = $derived(!!cards.problem);
+  const packLine = $derived(cards.packs.map((p) => p.name).join(', ') + (cards.added.length ? ` (+ cards from ${cards.added.join(', ')})` : ''));
 </script>
 
 <main class="lobby">
@@ -37,12 +40,13 @@
     <h2>Players · {v.players.length} / {MAX_PLAYERS}</h2>
     {#if v.players.length}<Seats {v} {online} {onkick} />
     {:else}<p class="empty muted">Waiting for players. Scan the code or type it on the join screen.</p>{/if}
+    {#if !demo}<AddBot onadd={() => host.addBot()} full={v.players.length >= MAX_PLAYERS} />{/if}
     <div class="summary">
-      <span>{noCards ? 'No card packs found' : packs.map((p) => p.name).join(', ')} · {rules}</span>
+      <span>{packLine} · {rules}</span>
       <Button size="sm" variant="secondary" onclick={() => go('/hand/settings')}>Settings</Button>
     </div>
     <Button size="lg" disabled={need > 0 || noCards} onclick={() => { if (!demo) host.start(); }}>
-      {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${v.players.length} players`}
+      {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : noCards ? `${cards.problem}: pick packs in Settings` : `Start with ${v.players.length} players`}
     </Button>
     <ConnectionLink onchange={onrebroker} />
   </section>

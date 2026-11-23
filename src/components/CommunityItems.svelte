@@ -2,7 +2,8 @@
   import type { PackGameId } from '../app.config';
 
   // A Community pack's contents before it is imported, as plain text in a simple list per game
-  // (Snark Tank: with each prompt's stock answer, then its finals). The items come from strangers'
+  // (Snark Tank: with each prompt's stock answer, then its finals; Bad Hand: prompts, then answers;
+  // Sketchy: words, then ideas). The items come from strangers'
   // phones, already rebuilt field by field (libraryShape.ts); each field is still read as text.
   let { game, items, extra = {} }: { game: PackGameId; items: unknown[]; extra?: Record<string, unknown> } = $props();
 
@@ -11,6 +12,8 @@
   const list = (x: unknown): unknown[] => (Array.isArray(x) ? x : []);
   const stock = $derived(obj(extra.safety));
   const finals = $derived(list(extra.finals));
+  /** Two-list games: the second list's heading and items. */
+  const second = $derived(game === 'hand' ? { name: 'answers', items: list(extra.answers) } : game === 'sketch' ? { name: 'ideas', items: list(extra.ideas) } : null);
 </script>
 
 {#if game === 'quiz'}
@@ -27,10 +30,11 @@
     </section>
   {/each}
 {:else}
-  <ul class="list" class:words={game === 'forehead'}>
+  {#if second}<h4 class="finals">{items.length} {game === 'hand' ? 'prompts' : 'words'}</h4>{/if}
+  <ul class="list" class:words={game === 'forehead' || game === 'sketch'}>
     {#each items as x, i (i)}
       {@const o = obj(x)}
-      {#if game === 'forehead'}<li class="word">{t(x)}</li>
+      {#if game === 'forehead' || game === 'sketch'}<li class="word">{t(x)}</li>
       {:else if game === 'dial'}<li class="row line">{t(o.left)} <span class="sep" aria-label="to">↔</span> {t(o.right)}</li>
       {:else if game === 'gibberish'}<li class="row"><span>{t(o.phrase)}</span><span class="answer">→ {t(o.answer)}{#if t(o.hint)} · {t(o.hint)}{/if}</span></li>
       {:else if game === 'quick'}<li class="row line"><span class="dim">Name 3</span> {t(x)}</li>
@@ -40,6 +44,12 @@
       {/if}
     {/each}
   </ul>
+  {#if second?.items.length}
+    <h4 class="finals">{second.items.length} {second.name}</h4>
+    <ul class="list">
+      {#each second.items as x, i (i)}<li class="row line">{t(x)}</li>{/each}
+    </ul>
+  {/if}
   {#if game === 'snark' && finals.length}
     <h4 class="finals">{finals.length} {finals.length === 1 ? 'final' : 'finals'} for three-line duels</h4>
     <ul class="list">

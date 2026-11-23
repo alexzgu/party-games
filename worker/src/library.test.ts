@@ -38,6 +38,16 @@ describe('checkPublish', () => {
     expect(taboo.ok && taboo.value.items).toEqual([{ word: 'Dorm', banned: ['Bed', 'Roommate'] }]);
   });
 
+  it("keeps a Bad Hand pack's answers and a Sketchy pack's ideas beside the items, and counts both lists", () => {
+    const hand = checkPublish(pack({ game: 'hand', items: ['My RA wrote me up for ___'], extra: { answers: ['Spite', { deep: 1 }, 'x'.repeat(201)], emoji: 'x', ideas: ['no'] } }));
+    expect(hand.ok && [hand.value.extra, hand.value.count]).toEqual([{ answers: ['Spite'] }, 2]);
+    const sketch = checkPublish(pack({ game: 'sketch', items: ['Tent', 'Canoe'], extra: { ideas: ['A bear roasting marshmallows'] } }));
+    expect(sketch.ok && [sketch.value.extra, sketch.value.count]).toEqual([{ ideas: ['A bear roasting marshmallows'] }, 3]);
+    const brawl = checkPublish(pack({ game: 'brawl', items: ["World's okayest intern"], extra: { answers: ['x'] } }));
+    expect(brawl.ok && [brawl.value.items, brawl.value.extra, brawl.value.count]).toEqual([["World's okayest intern"], {}, 1]);
+    expect(problem({ game: 'sketch', items: ['x'.repeat(81)] })).toMatch(/not sketch items/);
+  });
+
   it('caps a Big Board at 8 categories of 10 tiles, blank ones included', () => {
     const cat = (n: number) => ({ name: 'C', clues: Array.from({ length: n }, (_, i) => ({ clue: i ? '' : 'One', answer: '' })) });
     expect(problem({ game: 'quiz', items: Array.from({ length: 8 }, () => cat(10)) })).toBe('');

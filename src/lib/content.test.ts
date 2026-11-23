@@ -7,6 +7,10 @@ import { tabooPacks } from './content';
 import { quickPacks } from './content';
 import { brawlPacks, handPacks, saladPacks, sketchPacks, snarkPacks } from './content';
 import { BLANK, blanks } from '../games/hand/cards';
+import { checked, listOf, type ListPack, type ListSpec } from './listPack';
+import { BRAWL_LISTS, titleKey, titleWords } from '../games/brawl/rules';
+import { HAND_LISTS } from '../games/hand/rules';
+import { SKETCH_LISTS } from '../games/sketch/rules';
 import { cardId, cardProblems } from '../games/taboo/cards';
 import { isIcon } from './icon';
 import { normalise } from '../games/salad/match';
@@ -370,11 +374,12 @@ describe('Doodle Brawl packs', () => {
   it('has short, unique titles across packs', () => {
     const seen = new Set<string>();
     const problems: string[] = [];
+    packBasics(brawlPacks(), problems);
     for (const pack of brawlPacks()) {
       if (pack.titles.length < 24) problems.push(`${pack.id} needs at least 24 titles for a full room`);
       for (const title of pack.titles) {
-        const key = title.trim().toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ');
-        const count = key.split(' ').length;
+        const key = titleKey(title);
+        const count = titleWords(title);
         if (count < 2 || count > 8 || !/^[A-Z]/.test(title) || /[.!?]$/.test(title)) problems.push(`Invalid title: ${title}`);
         if (seen.has(key)) problems.push(`Repeated title: ${title}`);
         seen.add(key);
@@ -387,6 +392,21 @@ describe('Doodle Brawl packs', () => {
     const packs = brawlPacks();
     expect(packs.find((p) => p.id === 'classic')?.titles).toHaveLength(120);
     expect(packs.find((p) => p.id === 'after-dark')?.titles).toHaveLength(60);
+  });
+});
+
+describe('Doodle Brawl, Bad Hand and Sketchy built-ins on the phone', () => {
+  it("pass the phone's own checks, so an exported built-in imports whole", () => {
+    const problems: string[] = [];
+    const check = (game: string, packs: ListPack[], specs: readonly ListSpec[]) => {
+      for (const p of packs) for (const s of specs) for (const x of listOf(p, s.field)) {
+        if (checked(s, x) !== x) problems.push(`${game} ${p.id}: ${s.one} "${x}" ${s.problem(s.tidy(x)) || 'changes when tidied'}`);
+      }
+    };
+    check('brawl', brawlPacks(), BRAWL_LISTS);
+    check('hand', handPacks(), HAND_LISTS);
+    check('sketch', sketchPacks(), SKETCH_LISTS);
+    expect(problems).toEqual([]);
   });
 });
 

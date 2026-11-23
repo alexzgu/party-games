@@ -6,8 +6,8 @@
 // nothing on the phone uses yet, so an import never overwrites a pack.
 import { APP, gameName, GAMES, RETIRED_GAMES, type PackGameId } from '../app.config';
 import {
-  customDecks, customGibberish, customQuick, customQuiz, customSnark, customSpectra, customTaboo, slugify,
-  type GibberishCard, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkFinal, type SnarkPack,
+  customBrawl, customDecks, customGibberish, customHand, customQuick, customQuiz, customSketch, customSnark, customSpectra, customTaboo, slugify,
+  type BrawlPack, type GibberishCard, type HandPack, type SketchPack, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkFinal, type SnarkPack,
   type Spectrum, type SpectrumPack, type TabooCard, type TabooPack, type WordDeck,
 } from './content';
 import { MAX_ITEM_CHARS, MAX_WORDS_PER_ITEM } from '../games/forehead/words';
@@ -20,6 +20,10 @@ import { cleanPrompt, promptError } from '../games/quick/parse';
 import { promptProblem } from '../games/snark/prompts';
 import { ANSWER_MAX, LINE_MAX } from '../games/snark/logic';
 import { cardId as tabooId, cardProblems, tidy as tidyTaboo } from '../games/taboo/cards';
+import { checked, type ListSpec } from './listPack';
+import { BRAWL_LISTS } from '../games/brawl/rules';
+import { HAND_LISTS } from '../games/hand/rules';
+import { SKETCH_LISTS } from '../games/sketch/rules';
 
 export const FORMAT = 1;
 export const MAX_FILE_BYTES = 1_000_000;
@@ -27,15 +31,25 @@ export const MAX_FILE_BYTES = 1_000_000;
 export const MAX_PACKS = 100;
 export const MAX_ITEMS = 1000;
 
-export type AnyPack = WordDeck | SpectrumPack | GibberishPack | QuizBoard | QuickPack | SnarkPack | TabooPack;
-type Field = 'words' | 'cards' | 'categories' | 'prompts';
+export type AnyPack = WordDeck | SpectrumPack | GibberishPack | QuizBoard | QuickPack | SnarkPack | TabooPack | BrawlPack | SketchPack | HandPack;
+type Field = 'words' | 'cards' | 'categories' | 'prompts' | 'titles' | 'answers' | 'ideas';
 
-const FIELD: Record<PackGameId, Field> = {
-  forehead: 'words', dial: 'cards', gibberish: 'cards', quiz: 'categories', quick: 'prompts', snark: 'prompts', taboo: 'cards',
+/** Games whose packs are plain text lists, checked by their specs (listPack.ts). */
+const LIST_SPECS: Partial<Record<PackGameId, readonly ListSpec[]>> = { brawl: BRAWL_LISTS, hand: HAND_LISTS, sketch: SKETCH_LISTS };
+
+/**
+ * Each game's item lists, the main one first: what the Community library calls a pack's items.
+ * Bad Hand's answers and Sketchy's ideas go beside them (`packParts` extra).
+ */
+const LISTS: Record<PackGameId, readonly Field[]> = {
+  forehead: ['words'], dial: ['cards'], gibberish: ['cards'], quiz: ['categories'], quick: ['prompts'], snark: ['prompts'], taboo: ['cards'],
+  brawl: ['titles'], hand: ['prompts', 'answers'], sketch: ['words', 'ideas'],
 };
-/** What the items are called on screen, plural. */
+const FIELD = (game: PackGameId): Field => LISTS[game][0];
+/** What the items are called on screen, plural (all of a pack's lists together). */
 const UNIT: Record<PackGameId, string> = {
   forehead: 'words', dial: 'cards', gibberish: 'cards', quiz: 'clues', quick: 'prompts', snark: 'prompts', taboo: 'cards',
+  brawl: 'titles', hand: 'cards', sketch: 'items',
 };
 
 /** What a game's items are called on screen: plural, and one of them ("words", "word"). */
@@ -47,24 +61,29 @@ const NOT_A_PACK_FILE = `This isn't a ${APP.name} pack file.`;
 
 /**
  * The pack as it goes in a file: id, name, emoji (Heads Down. only), blurb and items (Snark Tank:
- * stock answers and finals too, when it has them).
+ * stock answers and finals too, when it has them; Bad Hand and Sketchy: both their lists).
  */
 function plain(game: PackGameId, p: AnyPack): Record<string, unknown> {
-  const field = FIELD[game];
   const { safety, finals } = game === 'snark' ? (p as SnarkPack) : {};
+  const lists = Object.fromEntries(LISTS[game].map((f) => [f, (p as unknown as Record<Field, unknown>)[f] ?? []]));
   return {
     id: p.id, name: p.name, ...(game === 'forehead' ? { emoji: (p as WordDeck).emoji } : {}), blurb: p.blurb,
-    [field]: (p as unknown as Record<Field, unknown>)[field],
-    ...(safety ? { safety } : {}), ...(finals ? { finals } : {}),
+    ...lists, ...(safety ? { safety } : {}), ...(finals ? { finals } : {}),
   };
 }
 
-/** The name of a game's items field in a pack ('words', 'cards', …). */
-export const itemsField = (game: PackGameId): Field => FIELD[game];
+/** The name of a game's (main) items field in a pack ('words', 'cards', …). */
+export const itemsField = (game: PackGameId): Field => FIELD(game);
 
-/** A pack's items, and the fields beside them a file keeps (emoji; Snark Tank's stock answers and finals). */
+/** Every item list of a game's packs, the main one first (Bad Hand: prompts, answers). */
+export const listFields = (game: PackGameId): readonly Field[] => LISTS[game];
+
+/**
+ * A pack's (main) items, and the fields beside them a file keeps (emoji; Snark Tank's stock
+ * answers and finals; Bad Hand's answers, Sketchy's ideas).
+ */
 export function packParts(game: PackGameId, p: AnyPack): { items: unknown[]; extra: Record<string, unknown> } {
-  const { [FIELD[game]]: items, id: _id, name: _name, blurb: _blurb, ...extra } = plain(game, p);
+  const { [FIELD(game)]: items, id: _id, name: _name, blurb: _blurb, ...extra } = plain(game, p);
   return { items: items as unknown[], extra };
 }
 
@@ -189,8 +208,10 @@ function board(raw: unknown[]): Kept<QuizCategory> & { clues: number } {
   return { items, skipped, clues };
 }
 
-function items(game: PackGameId, raw: unknown[]): Kept<unknown> & { usable: number } {
+function items(game: PackGameId, raw: unknown[], field: Field): Kept<unknown> & { usable: number } {
   const done = <T>(k: Kept<T>) => ({ ...k, usable: k.items.length });
+  const spec = LIST_SPECS[game]?.find((s) => s.field === field);
+  if (spec) return done(keep(raw, (x) => checked(spec, x), spec.key));
   switch (game) {
     case 'forehead': return done(keep(raw, word, (w) => w.toLowerCase()));
     case 'dial': return done(keep(raw, spectrum, spectrumId));
@@ -199,6 +220,7 @@ function items(game: PackGameId, raw: unknown[]): Kept<unknown> & { usable: numb
     case 'snark': return done(keep(raw, snark, (q) => q.toLowerCase()));
     case 'taboo': return done(keep(raw, taboo, tabooId));
     case 'quiz': { const b = board(raw); return { items: b.items, skipped: b.skipped, usable: b.clues }; }
+    default: return { items: [], skipped: raw.length, usable: 0 };
   }
 }
 
@@ -207,20 +229,23 @@ type ReadPack = { pack: AnyPack; skipped: number } | { problem: string };
 function readPack(game: PackGameId, raw: unknown): ReadPack {
   if (!isObj(raw)) return { problem: 'One pack in the file is damaged.' };
   const name = text(raw.name).slice(0, 40) || 'My pack';
-  const all = raw[FIELD[game]];
-  if (!Array.isArray(all)) return { problem: `“${name}” has no ${UNIT[game]} in it.` };
-  const got = items(game, all);
+  // A two-list pack may leave one list out (a Sketchy pack of ideas only); never every list.
+  const fields = LISTS[game];
+  if (!fields.some((f) => Array.isArray(raw[f]))) return { problem: `“${name}” has no ${UNIT[game]} in it.` };
+  const lists = fields.map((f) => items(game, Array.isArray(raw[f]) ? raw[f] : [], f));
+  const got = { usable: lists.reduce((n, l) => n + l.usable, 0), skipped: lists.reduce((n, l) => n + l.skipped, 0) };
   if (!got.usable && got.skipped) return { problem: `None of the ${UNIT[game]} in “${name}” could be used.` };
   const base = { id: slugify(text(raw.id) || name), name, blurb: text(raw.blurb).slice(0, 80) };
+  const fieldsRead = Object.fromEntries(fields.map((f, i) => [f, lists[i].items]));
   if (game === 'quiz') {
-    const b = { ...base, categories: got.items as QuizCategory[] };
+    const b = { ...base, categories: lists[0].items as QuizCategory[] };
     const why = sizeProblem(b);
     return why ? { problem: `“${name}” cannot be played: ${why}.` } : { pack: tidyBoard(b), skipped: got.skipped };
   }
   // Any one character is an icon (older files have one of the 14 the picker used to offer).
   const extra = game === 'forehead' ? { emoji: oneIcon(text(raw.emoji)) || DEFAULT_ICON }
-    : game === 'snark' ? snarkExtras(raw, got.items as string[]) : {};
-  return { pack: { ...base, ...extra, [FIELD[game]]: got.items } as unknown as AnyPack, skipped: got.skipped };
+    : game === 'snark' ? snarkExtras(raw, lists[0].items as string[]) : {};
+  return { pack: { ...base, ...extra, ...fieldsRead } as unknown as AnyPack, skipped: got.skipped };
 }
 
 export interface ReadResult { packs: AnyPack[]; /** Items dropped across all packs. */ skipped: number; /** Packs left out, and why. */ problems: string[] }
@@ -281,7 +306,7 @@ function readData(data: unknown, game: PackGameId): ReadResult | { error: string
 interface PackStore { saved(): AnyPack[]; put(p: AnyPack): void; markShared(id: string): boolean; isBuiltin(id: string): boolean; names(): string[]; builtins(): readonly AnyPack[] }
 const STORES: Record<PackGameId, PackStore> = {
   forehead: customDecks, dial: customSpectra, gibberish: customGibberish, quiz: customQuiz,
-  quick: customQuick, snark: customSnark, taboo: customTaboo,
+  quick: customQuick, snark: customSnark, taboo: customTaboo, brawl: customBrawl, hand: customHand, sketch: customSketch,
 } as Record<PackGameId, PackStore>;
 
 /** Every pack saved on this phone for a game: the player's own and their edits of built-ins. */

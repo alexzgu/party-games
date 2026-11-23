@@ -24,14 +24,17 @@ the home screen, and works offline once loaded. Names shown to players live in
 ## Stack and layout
 
 Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Hash routing
-(`#/forehead`, `#/dial`, `#/gibberish`, `#/quiz`, `#/settings`, `#/join/<key>`) so any static host works.
+(`#/forehead`, `#/dial`, `#/gibberish`, `#/quiz`, `#/settings`, `#/community/<game>`, `#/join/<key>`) so any static host works.
 
 - `src/lib/` — shared logic: `storage` (guarded localStorage), `router.svelte` (each history
   entry carries how many in-app steps lie behind it, so `back()` returns to the screen a page
   came from, also after the browser's or Android's back gesture or a reload, and never leaves the
   app; a screen leaving to the one it came from uses `back()`, never a new `go()`, or Back there
   would return to it in a loop; a game's Home button uses `backHome()`, which walks back to the
-  main menu; a new screen opens at the top and Back restores the scroll it was left at),
+  main menu; a new screen opens at the top and Back restores the scroll it was left at; `swap()`
+  changes the current entry's address in place without moving the page, for a search or a tab
+  that Back and a reload should find but that is no step of its own; `back(fallback, steps)`
+  leaves several entries at once, for a layer with steps of its own closing whole),
   `settings.svelte`, `players` (default names, and `reseating`: a saved game's players after
   its setup list was edited, which `PlayerList` tracks by place),
   `sound` (synthesised cues; call `unlockAudio()` in the first tap), `haptics`, `wakelock`,
@@ -39,14 +42,16 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, the open pack, the page's tab; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
 - `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList` and every pack editor), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
   items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
   `ExportPack` (Export), `Community` and `CommunityItems` (browse, preview, import and star
-  Community packs), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown).
+  Community packs, over a pack list or on the Community page), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown).
+- `src/pages/` — the pages that are not a game: `Home`, `Settings`, `History`, `CommunityPage`
+  (the Community packs with a tab per game), `Joined` (an invite link) and `Crashed`.
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
   to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
@@ -129,7 +134,7 @@ icon (`emoji`, any one character) for Heads Down., blurb, items) without `custom
 can share it; import also takes `.json`). "Export" sits in every pack editor (built-ins
 included); Add pack → "Import" (packs from a file) and "Export" (every pack made or edited on this
 phone; hidden when there are none) sit in the row under every game's pack list (the
-setup's, Snark Tank's in its game settings). Export uses the
+setup's; Snark Tank's, Doodle Brawl's, Sketchy's and Bad Hand's in their room settings). Export uses the
 share sheet when the browser can share the file, else a download. Import reads a file of at most
 1 MB and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
 pack editor's or the paste route's; Big Board: 1–8 categories × 1–10 clues, cut and padded like a
@@ -186,25 +191,52 @@ Each share (and each update) carries the phone's username at that moment; the se
 when it is a username by the same rules as the phone's (tidied, 1–24 characters) and otherwise
 stores the pack without one. Packs shared before usernames have none.
 Add pack → "🌍 Community" (beside "Import" in that menu) opens the Community packs over the pack list (the
-address gains `?community=1`, so Back closes it): a search of pack names and descriptions only
+address gains `?community=1`, so Back closes it; the Community page from the main menu, under Shared
+behaviour, is the same browser with a tab per game): a search of pack names and descriptions only
 (not the items, nor usernames), Most stars (then newest) or Newest, 30 at a time with "Show more"; each row
 shows name, description, item count and ★ stars, and the sharer's username as a small, quiet
 chip beside the count (nothing for a pack without one; no "made by" wording); the preview shows the
 same chip under its count. Tapping a pack shows everything in it (Snark
-Tank: with its stock answers and finals). Everything fetched is rebuilt from each game's own
+Tank: with its stock answers and finals; Bad Hand: prompts, then answers; Sketchy: words, then
+ideas). Everything fetched is rebuilt from each game's own
 fields first (`src/lib/libraryShape.ts`, the same rules the server stores by).
 "Import" saves it through the pack-file import above (same checks, fresh id and name, ticked on
 its own) and leaves out items a built-in pack already has in games whose items must be new
-across packs (Spectrum, Inn Co Hear Ant, Brain Freeze, Don't Say It, Snark Tank). Browsing and
+across packs (Spectrum, Inn Co Hear Ant, Brain Freeze, Don't Say It, Snark Tank, Doodle Brawl,
+Sketchy, Bad Hand). Browsing and
 importing are open to anyone; starring (one star per pass per pack, tap again to take it back)
 needs the magic words, and without them the star is a hint that opens the magic words box; a
 pass the server refuses (expired, or the words changed) is forgotten and the box comes back.
 Loading, empty, offline and server-trouble states are said in plain words. Without a wizard
 server (`WIZARD_SERVER` empty) there is no Community entry.
+The search, the order and the open preview live in the address (`cq`, `csort`, `cpack`;
+`src/lib/communityView.ts`), so a reload finds them. Typing reaches the address once it stops, and
+a new search or order changes the address in place, adding no step. Opening a pack is a step of its
+own (it starts at its top), so phone Back from a preview returns to the list, scrolled where it was.
+Every list loaded, "Show more" pages included, is kept by game, search and order
+(`src/lib/communityCache.ts`, in memory and the tab's session storage) from opening Community until
+it is opened anew from the main menu or Add pack, so a list comes back at once, tall enough for its
+scroll; starring updates the kept lists. Over a pack list, "Import" closes Community whole (from a
+preview, past its list too) and ticks the new pack, as before.
 
 ## Shared behaviour
 
 - **Home** shows every game in `GAMES` (name, emoji, player count), History and Settings. No blurbs.
+  Under the games, while the Community library is on, a quieter row "🌍 Community packs" ("Browse
+  packs friends made") opens the Community page (a row, not a header button: the pinned header has
+  no room on a 320 px phone for a third button, and a bare icon would not say what it opens).
+- **Community page** (`#/community/<game>`, `src/pages/CommunityPage.svelte`): the Community packs
+  browser of the pack lists (see Community library) with one tab per game in `LIBRARY_GAMES`, in
+  that order, across the top: each tab the game's emoji and name in its colour (outlined; filled
+  when open), a row pinned under the header that scrolls sideways when the games overflow it,
+  keeping the open tab in view; arrow keys, Home and End move between tabs. The page and its glow
+  take the open tab's game colour. A tab changes the address in place, keeps the search and order,
+  and starts that game's list from its top, so Back from the page always returns to the main menu.
+  Opened from the main menu it starts on the first game with fresh lists. "Import" in a preview
+  saves the pack in that game's packs (not ticked) and returns to the list exactly as it was left
+  (same tab, search, order, loaded pages and scroll), with a note pinned at the bottom,
+  "“<name>” added to your packs in <game>." (plus anything skipped or left out), until the next
+  search, order, tab or preview, or its ✕. Without a wizard server the address shows Home.
   Any other address, such as one of a game taken out of the app (`#/song`), shows Home.
 - **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours; pack lists as Tiles or List, the same choice as the switch on every pack list), Heads Down. (scored-word feedback,
   "Calibrate tilt" with the calibration note under it, "Check tilt" with its notes under it),
@@ -247,10 +279,10 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
   focused field) stops clear of the pinned header and actions (`src/lib/scrollPadding.ts`). The
   page's glow is one layer fixed to the screen, and each pinned bar paints the same glow placed
   where it sits, so the bars match the page on iPhones too.
-- **Pack pages** (every setup with packs, and Snark Tank's game settings; `Screen` with `fill`,
+- **Pack pages** (every setup with packs, and the room settings of Snark Tank, Doodle Brawl, Sketchy and Bad Hand; `Screen` with `fill`,
   `PackList`): the page fits the screen and only the packs scroll. Above them, pinned under the
   header, stay any notice (a compact "Game in progress" card with the leading scores, Big Board's
-  draft warning, Snark Tank's "A game is running"), the players or teams, and the packs row
+  draft warning, the room games' "A game is running", Sketchy's mode), the players or teams, and the packs row
   (title, counts, search, sort, tiles/list, and the open search bar or sort chips); under them,
   pinned over the actions, the Add pack row. A hairline (with a soft shade) marks the packs' top
   edge only while some are scrolled away above, and their bottom edge only while more are below,
@@ -270,7 +302,7 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
     button is gone; once enough are added they stay shown for this visit. The choice is read when
     the page opens, so a keyboard shrinking the screen never folds them. The button and the
     tiles/list switch ignore taps in their first 400 ms (the tail of a double tap on the screen
-    before). Heads Down. and Snark Tank have nothing above their packs row and no button.
+    before). Heads Down. and the room games have nothing above their packs row and no button.
   - **Players and teams that grow** (Inn Co Hear Ant and Brain Freeze players, Big Board
     teams; one list, `PlayerList`: two tiles a row, tap a name to rename it in place, ✕ removes,
     the count and "need N+" in its head) show in a window about three rows tall that scrolls on
@@ -305,6 +337,13 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
   - Inn Co Hear Ant, Brain Freeze, Snark Tank: details hold the status line with its small
     Restore or Delete button, Export, Share, name (Snark Tank: Fill in stock answers too);
     Snark Tank's finals follow its prompts in the list.
+  - Doodle Brawl, Bad Hand, Sketchy (`ListPackEditor`, one shared editor): details hold the
+    status line with its small Restore or Delete button, Export, Share and name; the list shows
+    each of the pack's lists in turn under its own count (Bad Hand: prompts, then answers;
+    Sketchy: words, then ideas), one search and sort over all of them. Tapping an item edits it
+    in a popup (its rules said under the box; a broken or repeated one is refused in plain
+    words); the add button ("+ Add a title", "+ Add a card", "+ Add a word or idea") opens the
+    same popup, with a switch for which list on a two-list pack. Own packs have "🧙 Add more".
   - Heads Down.: details hold the built-in note (with Restore), name, icon, Export, Share and
     Delete; the word box ("Type a word, press Enter", Add, and the Undo line) stays pinned under
     the Words row, never folded, since typing words in is the page's main job.
@@ -319,8 +358,9 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
   (`src/lib/tapGuard.ts`), so the second tap of a double tap never presses what the next screen
   has in the same spot.
 - **Pack list** (`PackList`, `src/lib/packList.ts`): the one way every pack game (Heads Down.,
-  Spectrum, Inn Co Hear Ant, Big Board, Don't Say It, Brain Freeze, and Snark Tank's game settings)
-  picks, edits, makes and shares packs. Header: "Packs" (Snark Tank: "Prompt packs") with what is
+  Spectrum, Inn Co Hear Ant, Big Board, Don't Say It, Brain Freeze, and the room settings of Snark
+  Tank, Doodle Brawl, Sketchy and Bad Hand) picks, edits, makes and shares packs. Header: "Packs"
+  (Snark Tank: "Prompt packs"; Doodle Brawl: "Title packs"; Bad Hand: "Card packs") with what is
   picked under it ("2 picked · 320 words"; Big Board: "25 clues"; "pick one or more" when none),
   then search, sort and a tiles/list switch (one choice for every game, kept on the phone; default
   tiles). Tiles: a grid of at least 150 px columns (two on a phone); each shows the mark top right,
@@ -341,8 +381,8 @@ server (`WIZARD_SERVER` empty) there is no Community entry.
   outside, Escape or choosing closes it, with focus back on the button; it is a proper menu
   (the button says whether it is open; the arrow keys, Home and End move between the items; Tab
   closes it and moves on). Reduced motion: it appears without growing. An import plays the
-  imported packs on their own (Big Board: picks the first; Snark Tank: adds them to the picked
-  ones). Brain Freeze's list ignores taps in its first 400 ms (the tail of a double
+  imported packs on their own (Big Board: picks the first; Snark Tank, Doodle Brawl, Sketchy and
+  Bad Hand: adds them to the picked ones, as a made pack is). Brain Freeze's list ignores taps in its first 400 ms (the tail of a double
   tap on the screen before).
 - **A saved game and its setup**: with a game in progress, setup shows that game's players
   (Big Board: teams). Adding, renaming or removing them changes the saved game on Resume (or on
@@ -742,6 +782,9 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   `#/snark/join?demo=join|lobby|late|write|wait|vote|voted|vote-own|vote3|voted3|reveal|reveal3|scores|over|duel-write|duel-vote|duel-reveal`.
 - **Packs**: `src/content/snark/*.json`, `{"prompts": [...]}`, 3–14 words (Classic 200, After
   Dark 80); optional `safety` and `finals`, below.
+- **Bots** (see Shared room link): answer with the prompt's stock answer when sent one, else a
+  short stock line or a random two-word phrase; three short lines in a three-line duel; vote at
+  random (3 votes spread at random in the final).
 
 Community: wizard packs, Add more and Fill in stock answers are shared with their stock answers and finals, and imported with them; "🌍 Community" is in Add pack under the pack list in the game settings; prompts a built-in pack has are left out on import.
 
@@ -803,6 +846,24 @@ bytes or more is sent as numbered parts (`{t: 'part', id, i, n, s}`, at most 5,0
 each) and reassembled before it is read; incomplete parts are dropped after 30 s. (PeerJS errors
 and drops the link on a JSON message of 16,300 bytes or more.)
 
+**Bots** (for playtesting: a whole game on one host screen, with one real phone or none). "🤖 Add
+bot" in each game's host lobby seats a bot: a pretend phone the host screen runs in a local seat
+of the link (`seat`). It says hello through the game's own join rules (same name limits and
+player limit, so bots fill seats up to it and count toward the minimum: a room of bots alone can
+start), counts as online, is sent exactly the view a phone of its own would be sent, and acts by
+sending a phone's messages, which the host checks like any phone's. Its name carries the mark
+("🤖 Ada", "🤖 Bix", new in the room), so the robot shows wherever players are listed, on the
+host and on phones; a phone's name may not start with 🤖 (it is dropped; a name of only 🤖 is
+refused), nor may a phone take a bot's seat. The lobby's ✕ removes a bot like a player. The saved
+game is the record: when a reloaded host reopens the room, every player in it whose name carries
+the mark is seated again as a bot with the same id and name (one the room refuses is removed from
+the game); closing the room drops them. What a
+bot does is its game's brain (`games/<id>/bot.ts`, behind one interface in `lib/room/bots.ts`, so
+a smarter brain, say one that asks the wizard, can replace it): today's brains are simple and
+*house*. Think times (*house*): 1–4 s to pick or vote; a few seconds up to a good part of the time
+left to write or draw; every wait ends before the timer does; never instant, never while paused. Drawing
+bots draw a random doodle (`lib/doodle.ts`) within the drawing limits.
+
 ## Game 8 — Word Salad (`salad`)
 
 2–8 players join a host screen by code or QR using the shared room link. Two rounds, with
@@ -845,6 +906,9 @@ new room) and how long a dropped presenter is waited for: 30 s, 1 min (default),
   `lobby`, `pick`, `prepare`, `present`, `reveal`, `unsolved`, `scores`, `over` and
   `paused`. The phone also has `join`, `late`, `picking` (a tile selected), `wait`, `comparison`
   and `guess` views.
+- **Bots** (see Shared room link): pick one of their secrets at random, fill every blank with its
+  first word and publish; presenting, publish up to three follow-ups; guessing, read the category
+  off the opening clue and guess that category's answers from the packs, up to five a turn.
 
 ## Game 9 — Doodle Brawl (`brawl`)
 
@@ -877,8 +941,19 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
   store (key `brawl:art`), never in the game state; views carry drawing ids; a phone asks for a
   drawing it lacks (`{t: 'art?', id}`) and keeps the answer. Drawings travel through the shared
   link's parts.
-- **Content** (`src/content/brawl/*.json`): `{"titles": ["..."]}`; titles and rematch titles
-  come from one pool, never repeating within a game.
+- **Content** (`src/content/brawl/*.json`): `{"id", "name", "blurb", "added"?, "titles": ["..."]}`; titles and rematch titles
+  come from one pool, never repeating within a game: the picked packs' titles shuffled, then
+  every other pack's (*house*), so a small pack of a player's own never runs out.
+- **Settings** (`#/brawl/settings`, a pack page like Snark Tank's): title packs (search/sort,
+  editor, Make a pack or Add pack → New / 🌍 Community / Import, Export; a pack just made or
+  imported joins the picked ones; under 24 titles picked, a note says the game adds some from the
+  other packs) and a Rules row over Done opening seconds per drawing. Make a pack: paste titles
+  (one per line) or ask the wizard (a theme or a suggestion, 10–60 titles, default 30); own packs
+  have "🧙 Add more" (5–40, default 15). Every route keeps a title only when it meets the content
+  rules (2–8 words, capital first, no closing . ! or ?, 60 characters; `src/games/brawl/rules.ts`),
+  and the wizard's are also new to every Doodle Brawl pack on the phone; anything else is dropped
+  unseen. Community: wizard packs and Add more are shared; titles a built-in has are left out on
+  import.
 - The drawing timer applies to each pass. Submit early or let the phone send your drawing at
   the buzzer. A half-finished drawing survives a phone reload. Drawings over 200 KB
   or 6,000 points are rejected. The host removes stored art when the room closes.
@@ -892,6 +967,8 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
 - Demos at `#/brawl/host?demo=` and `#/brawl/join?demo=` with
   `lobby|lobby-empty|draw|challenge|title|vote|payout|tag|rematch|scores|over|paused`.
   Phone demos also have `join|wait|late|voted|watching|tagged`.
+- **Bots** (see Shared room link): draw a random doodle and name it from a short list, vote at
+  random, keep or tag in at random.
 
 ## Game 10 — Sketchy (`sketch`)
 
@@ -909,13 +986,26 @@ on their own phones through the shared room link; a host screen shows the room. 
   lacks (and for the next album entry's ahead of time); one the host no longer has comes back
   blank rather than leaving the phone loading. A half-finished drawing and typed text
   survive a phone reload (`sketch:draft`, one job at a time).
-- **Settings** (`#/sketch/settings`): Mode (Telephone, default; Draw & guess), packs (Classic,
-  After Dark; checkboxes, at least one), and per mode: Telephone, seconds to write 30/45/60
+- **Settings** (`#/sketch/settings`, a pack page like Snark Tank's): Mode (Telephone, default;
+  Draw & guess) over the packs, which count what the mode deals ("100 ideas" or "300 words"; a
+  note when the picked packs have none, so the spares are used); packs as in Snark Tank (search/sort,
+  editor, Make a pack or Add pack → New / 🌍 Community / Import, Export; at least one picked; a
+  pack just made or imported joins the picked ones), and per mode: Telephone, seconds to write 30/45/60
   (default 45, *house*) and to draw 60/90/120/180 (default 90, *house*); Draw & guess, rounds
   1/2/3/4 (default 2, *house*: the original's 3 runs long with ten players) and seconds to draw
   60/80/120 (default 80, the original's). The mode and packs are on the page; the Rules row over
   Done summarises the mode's timers and opens them, as in Snark Tank. Saved on the device at once;
   a running game keeps its own, so they apply to the next game.
+- **Making packs**: paste words or ideas (a switch says which the list is), or ask the wizard (a
+  theme or a suggestion, 15–120 words, default 45, plus one idea per three words, at least five);
+  own packs have "🧙 Add more" (15–90 words, default 30, ideas likewise). Every route keeps an item
+  only when it meets the content rules below (`src/games/sketch/rules.ts`), and the wizard's are
+  also new to every Sketchy pack on the phone; anything else is dropped unseen. A pack may hold
+  only words or only ideas; the Community library takes one with at least one word. Community:
+  wizard packs and Add more are shared with both lists; words and ideas a built-in has are left
+  out on import. "Give me an idea" picks from the packs on the player's own phone (the room's
+  picks where that phone has them, else all its packs), so a host's own pack's ideas are not
+  offered there.
 
 ### Telephone
 
@@ -1004,6 +1094,10 @@ on their own phones through the shared room link; a host screen shows the room. 
 - Demos at `#/sketch/host?demo=` and `#/sketch/join?demo=` with
   `lobby|write|draw|describe|album|pick|guess|reveal|scores|over|paused` (`paused`: a paused
   Draw & guess turn); phone demos also have `join|wait|watching|guessed|drawing`.
+- **Bots** (see Shared room link): Telephone, write a random idea from the room's packs, draw a
+  random doodle, describe with a random word; Draw & guess, pick a word at random and draw a
+  random doodle live, a stroke about every second; guess honestly, up to four words a turn from
+  the packs that fit the word's shape and the letters shown.
 
 ## Game 11 — Bad Hand (`hand`)
 
@@ -1058,8 +1152,21 @@ prompt and the answers. Amounts marked *house* are ours.
 - Lobby, host controls, reconnects, name rules (20 characters) and the open-room Return as in
   Sketchy. Skip reads End answering, Let the room vote, End voting or Next; pause works in every
   phase of play and also stops the missing judge's 20 s. A Players button mid-game removes a player (after a confirm). Settings
-  (`#/hand/settings`): packs (Classic, After Dark; Classic by default; if none of the chosen packs
-  exists, all packs are used), answer time, target and the options; they apply to the next game.
+  (`#/hand/settings`, a pack page like Snark Tank's): card packs (Classic by default; search/sort,
+  editor, Make a pack or Add pack → New / 🌍 Community / Import, Export; a pack just made or
+  imported joins the picked ones, like an expansion; if none of the chosen packs exists, all packs
+  are used), and a Rules row over Done opening answer time, target and the options; they apply to
+  the next game. Done says "Pick a pack with prompts" (or answers) while the picks lack either, and
+  a note warns when under 50 answer cards are picked (hands of ten run short).
+- **Making packs**: paste cards, one per line (a line with `___` or ending in "?" is a prompt, the
+  rest answers), or ask the wizard (a theme or a suggestion, 5–40 prompts, default 20, and four
+  answers per prompt); own packs have "🧙 Add more" (5–30 prompts, default 10, answers likewise).
+  Every route keeps a card only when it meets the content rules below (`src/games/hand/rules.ts`;
+  pasted and wizard cards are tidied first: any run of underscores is one blank, first letter
+  capital, an answer's closing full stop dropped), and the wizard's are also new to every Bad Hand
+  pack on the phone; anything else is dropped unseen. The editor lists prompts, then answers. The
+  Community library takes a pack with at least one prompt. Community: wizard packs and Add more are
+  shared with both lists; cards a built-in has are left out on import.
 - **Content** (`src/content/hand/*.json`): `{"id", "name", "blurb", "added"?, "prompts": [...],
   "answers": [...]}`. A prompt has up to two blanks written `___`; one with none ends with "?".
   Answers are 1–10 words, capital first, no closing full stop, 60 characters. Prompts and answers
@@ -1068,3 +1175,6 @@ prompt and the answers. Amounts marked *house* are ours.
 - Demos at `#/hand/host?demo=` and `#/hand/join?demo=` with
   `lobby|play|judge|spotlight|reveal|vote|over|paused`; phone demos also have
   `join|wait|played|judging|trade|blank` (`wait` is the judge's phone while others answer).
+- **Bots** (see Shared room link): play random cards (a short stock line on a blank card); as
+  judge show each answer large for about 3 s, then pick one at random; vote at random, never for
+  their own answer; never trade.

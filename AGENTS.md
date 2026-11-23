@@ -166,7 +166,7 @@ they fit, and run `npm run test:content`.
 
 Original titles for fighters in a drawing contest. List existing titles with
 `npm run list -- brawl`. Put the pack in `src/content/brawl/<id>.json` as
-`{"titles": ["World's okayest roommate"]}`. Use 2–8 words in sentence case and write
+`{"id": "<id>", "name": "...", "blurb": "...", "added": "...", "titles": ["World's okayest roommate"]}`. Use 2–8 words (60 characters at most) in sentence case, no closing . ! or ?, and write
 something specific and funny a player can draw. Titles must be unique across packs. A pack
 needs at least 24 titles to run a full eight-player game on its own. After Dark is cheeky.
 Run `npm run test:content`.
