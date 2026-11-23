@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ERASER, type Drawing } from '../../lib/ink';
-import { apply, diff } from './live';
+import { apply, diff, outgoing } from './live';
 import { readToHost } from './protocol';
 
 const a: Drawing = [{ c: 0, w: 5, p: [10, 10, 5, 0] }];
@@ -13,6 +13,15 @@ describe('Draw & guess live ink', () => {
     expect(apply(a, delta)).toEqual(grown);
     expect(diff([], a)).toEqual({ i: 0, o: 0, d: a });
     expect(apply([], { i: 0, o: 0, d: a })).toEqual(a);
+  });
+
+  it('sends all first, then additions; an empty pad only when it was cleared here', () => {
+    expect(outgoing(null, 0, [])).toBeNull();
+    expect(outgoing(null, 0, a)).toEqual({ all: a });
+    expect(outgoing(a, 1, a)).toBeNull();
+    expect(outgoing(a, 1, [...a, ...a])).toEqual({ i: 0, o: 4, d: [{ ...a[0], p: [] }, ...a] });
+    expect(outgoing(a, 1, [])).toEqual({ all: [] });
+    expect(outgoing(null, 3, [])).toEqual({ all: [] });
   });
 
   it('asks for the whole drawing after undo or clear, and refuses a delta made from another drawing', () => {

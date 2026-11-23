@@ -2,8 +2,7 @@
   import { onDestroy } from 'svelte';
   import Canvas from '../../components/draw/Canvas.svelte';
   import type { Drawing } from '../../lib/ink';
-  import { diff, SEND_MS } from './live';
-  import type { Ink } from './protocol';
+  import { outgoing, SEND_MS } from './live';
   import { loadDraft, saveDraft } from './store';
   import { gallery, phone } from './player.svelte';
   import WordShape from './WordShape.svelte';
@@ -30,13 +29,17 @@
 
   function flush() {
     const d = draft.drawing;
-    if (demo || phone.link !== 'live' || d === sent) return;
-    const delta = sent && n ? diff(sent, d) : null;
-    n++;
-    const m: Ink = delta ? { t: 'ink', at, n, ...delta } : { t: 'ink', at, n, all: d };
-    phone.ask(m);
+    const ink = demo || phone.link !== 'live' ? null : outgoing(sent, n, d);
+    if (!ink) return;
+    phone.ask({ t: 'ink', at, n: ++n, ...ink });
     sent = d;
   }
+
+  // A phone that took over this turn carries on from the drawing the host has.
+  $effect(() => {
+    const had = gallery.art[id];
+    if (had?.length && !n && !draft.drawing.length) change(had);
+  });
 
   const timer = setInterval(flush, SEND_MS);
   onDestroy(() => clearInterval(timer));
