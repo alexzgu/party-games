@@ -67,12 +67,8 @@ class HostSession {
       this.tick();
     },
     // A brand-new room whose code is taken simply takes another code.
-    taken: () => {
-      const g = this.game;
-      if (!g || g.phase !== 'lobby' || L.present(g).some((p) => !isBot(p.pid))) return null;
-      this.commit({ ...g, code: newCode() });
-      return this.game!.code;
-    },
+    vacant: () => this.game?.phase === 'lobby' && L.present(this.game).every((p) => isBot(p.pid)),
+    move: (code) => this.commit({ ...this.game!, code }),
   });
   /** Bots among the game's players; one that cannot be seated again leaves the game. */
   private bots = new Bots(this.link, snarkBrain, () => this.game?.players.map((p) => ({ pid: p.pid, name: p.name, out: p.kicked })) ?? [],

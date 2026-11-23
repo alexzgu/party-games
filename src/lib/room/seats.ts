@@ -122,11 +122,21 @@ export class SeatBook {
     this.save();
   }
 
+  /** The empty room moves to another code: a room of its own from now on, as another tab may hold the old one. */
+  fork(): void {
+    this.clear();
+    this.save();
+  }
+
   close(): void {
+    this.clear();
+    remove(`${this.game}:seats`);
+  }
+
+  private clear(): void {
     this.room = newKey();
     this.keys.clear();
     this.out.clear();
-    remove(`${this.game}:seats`);
   }
 
   /** The old record goes first: where a new one will not fit, seats ask the host rather than trust an old key. */

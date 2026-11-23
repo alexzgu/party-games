@@ -41,12 +41,8 @@ class Session {
       this.commit(L.leave(this.game, pid));
       this.tick();
     },
-    taken: () => {
-      if (this.game?.phase !== 'lobby' || this.game.players.some((p) => !isBot(p.pid))) return null;
-      const code = newCode();
-      this.commit({ ...this.game, code });
-      return code;
-    },
+    vacant: () => this.game?.phase === 'lobby' && this.game.players.every((p) => isBot(p.pid)),
+    move: (code) => this.commit({ ...this.game!, code }),
   });
 
   /** Bots among the game's players; one that cannot be seated again leaves the game. */

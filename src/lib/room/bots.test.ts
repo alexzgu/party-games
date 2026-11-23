@@ -21,7 +21,8 @@ function room(players = new Map<string, string>()) {
     },
     message: (pid, raw) => heard.push([pid, raw]),
     left: (pid) => players.delete(pid),
-    taken: () => null,
+    vacant: () => false,
+    move: () => {},
   };
   const link = new HostLink('test', hooks);
   return { link, players, heard };

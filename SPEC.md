@@ -868,7 +868,7 @@ reload, or Play again).
 
 **Seat keys** (`seats.ts`; nobody can take another player's seat). Each seat has a secret key its
 phone made for that room; the player id and the name never prove anything. The room has a random
-id of its own (not its code) that lasts through a host reload, a code change and Play again, and
+id of its own (not its code) that lasts through a host reload, a broker change and Play again, and
 ends when the room closes. A phone's `hello` says it can do keys (`keys: 1`); the game's join rules
 then say which seat it would get, and until the steps below are done the phone is sent nothing
 about the game, replaces nobody and changes nothing.
@@ -905,6 +905,8 @@ about the game, replaces nobody and changes nothing.
   shows no number?", as it cannot show one); for a seat with a key it is told "Reload this page to rejoin."
 - A connection is given one seat, once. Leaving, removal and replacement stop the host listening to
   it at once, and end every claim still pending on that seat; moving to a new code ends them all.
+  Only an empty lobby moves (its code is taken, as when a second tab opens it), and it becomes a room
+  of its own, with a new id and an empty record before its game is saved under the new code.
   Removal drops the key and blocks the player id for the life of the room, across
   reload and Play again; a player who left keeps their key and may return.
 - The host keeps the room's id, the keys and who was removed in one record per game

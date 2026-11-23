@@ -7,7 +7,7 @@ import type Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
 import { BROKER_TROUBLE, LINK_TIMEOUT, PING_MS, backoff, classify, makePeer } from './net';
 import { currentBroker } from './broker';
-import { hostPeerId, newPid } from './code';
+import { hostPeerId, newCode, newPid } from './code';
 import { Assembler, toWire } from './parts';
 import { Desk, REMOVED, SeatBook, ends, type Ask, type Seat } from './seats';
 
@@ -41,8 +41,10 @@ export interface HostHooks {
   message(pid: string, raw: unknown): void;
   /** The player tapped "Leave room" on their phone: they stop getting turns. */
   left(pid: string): void;
-  /** The room's id is taken on the broker: a new code to try, or null to keep retrying this one. */
-  taken(): string | null;
+  /** The code is taken on the broker: whether the room is still an empty lobby that may take another; else this one is retried. */
+  vacant(): boolean;
+  /** The room has a new code (and is a new room: `room` has changed). */
+  move(code: string): void;
 }
 
 export class HostLink {
@@ -217,11 +219,12 @@ export class HostLink {
       // PeerJS reports a taken id before it destroys (or, once registered, disconnects) the peer.
       // A new code means a new peer: make sure this one is gone, so the retry registers that code.
       if (kind === 'taken') {
-        const code = this.hooks.taken();
-        if (code) {
-          this.code = code;
+        if (this.hooks.vacant()) {
           this.moving = true;
           this.desk.clear();
+          this.book.fork(); // before the game is saved under its new code
+          this.code = newCode();
+          this.hooks.move(this.code);
           setTimeout(() => {
             if (this.peer !== peer) return; // closed, or moved to another peer, meanwhile
             if (!peer.destroyed) peer.destroy();

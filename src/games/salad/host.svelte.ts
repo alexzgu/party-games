@@ -45,11 +45,8 @@ class HostSession {
       this.commit(L.leave(this.game, pid));
       this.tick();
     },
-    taken: () => {
-      if (!this.game || this.game.phase !== 'lobby' || L.present(this.game).some((p) => !isBot(p.pid))) return null;
-      this.commit({ ...this.game, code: newCode() });
-      return this.game.code;
-    },
+    vacant: () => this.game?.phase === 'lobby' && L.present(this.game).every((p) => isBot(p.pid)),
+    move: (code) => this.commit({ ...this.game!, code }),
   });
 
   /** Bots among the game's players; one that cannot be seated again leaves the game. */

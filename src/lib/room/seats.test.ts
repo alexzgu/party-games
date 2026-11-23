@@ -11,7 +11,7 @@ vi.mock('./net', async (original) => ({
   makePeer: (id: string | null) => {
     const on: Handlers = {};
     const peer = {
-      on_: on, open: true, destroyed: false, disconnected: false, destroy: () => {}, reconnect: () => {},
+      on_: on, open: true, destroyed: false, disconnected: false, destroy: () => { peer.destroyed = true; }, reconnect: () => {},
       on: (e: string, f: Handlers[string]) => {
         on[e] = f;
         if (id && e === 'connection') net.hosts.set(id, f);
@@ -264,6 +264,30 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     localStorage.setItem(`hr:${game}:host`, JSON.stringify({ ...saved, room: undefined }));
     host = await load(game);
     expect(phone(host.link, 'p1', 'Sam', sam.key).types()).toEqual(['wait']);
+    close(host);
+  });
+
+  it('are never shared by two lobbies: one that moves to another code is a room of its own', async () => {
+    const tab = await load(game); // room A, an empty lobby
+    const second = await load(game); // the same, in a second tab: A's code is taken there
+    const [room, code] = [tab.link.room, tab.game!.code];
+    expect(second.link.room).toBe(room);
+    (second.link as unknown as { peer: { on_: Handlers } }).peer.on_.error({ type: 'unavailable-id' });
+    expect(second.game!.code).not.toBe(code);
+    expect(second.link.room).not.toBe(room);
+    expect(JSON.parse(localStorage.getItem(`hr:${game}:host`)!)).toMatchObject({ code: second.game!.code, room: second.link.room });
+    expect(JSON.parse(localStorage.getItem(`hr:${game}:seats`)!)).toEqual({ room: second.link.room, keys: [], kicked: [] });
+
+    // Sam joins A; a guest enrols Sam's id in the other; then A saves its game and reloads.
+    phone(tab.link, 'p1', 'Sam');
+    await vi.advanceTimersByTimeAsync(1000); // the second tab's new peer
+    const guest = phone(second.link, 'p1', 'Guest');
+    expect(guest.types()).toContain('welcome');
+    expect(tab.addBot()).toBeNull();
+    const host = await load(game);
+    expect(host.game!.code).toBe(code);
+    const thief = phone(host.link, 'p1', 'Sam', guest.key);
+    expect(thief.types()).toEqual(['wait']);
     close(host);
   });
 
