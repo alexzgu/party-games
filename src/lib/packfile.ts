@@ -1,6 +1,6 @@
 // Pack files: packs saved to a file to keep or send to friends, and read back in on any phone.
 // A file is {"jerkBox": 1, "game": "<game id>", "packs": [...]}, each pack in its stored shape
-// without the fields that only mean something on one phone (custom, added). Reading a file
+// without the fields that only mean something on one phone (custom, added, the Community marks). Reading a file
 // checks every item with that game's own rules (the ones its pack editor or paste route uses),
 // drops the items that fail with a count, and saves each pack as the player's own under an id
 // nothing on the phone uses yet, so an import never overwrites a pack.
@@ -313,9 +313,8 @@ export const savedPacks = (game: PackGameId): AnyPack[] => STORES[game].saved();
 export const ownPack = (game: PackGameId, id: string): AnyPack | undefined =>
   STORES[game].isBuiltin(id) ? undefined : STORES[game].saved().find((p) => p.id === id);
 
-/** The ids of the player's own packs on this phone (never a built-in's edit). */
-export const ownPackIds = (game: PackGameId): Set<string> =>
-  new Set(STORES[game].saved().map((p) => p.id).filter((id) => !STORES[game].isBuiltin(id)));
+/** The player's own packs on this phone (never a built-in's edit). */
+export const ownPacks = (game: PackGameId): AnyPack[] => STORES[game].saved().filter((p) => !STORES[game].isBuiltin(p.id));
 
 /** Marks the player's own saved pack as shared, changing nothing else; false when it is gone. */
 export const markPackShared = (game: PackGameId, id: string): boolean => STORES[game].markShared(id);

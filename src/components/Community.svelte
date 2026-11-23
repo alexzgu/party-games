@@ -9,12 +9,13 @@
   import CommunityRow from './CommunityRow.svelte';
   import type { PackGameId } from '../app.config';
   import { hasKey } from '../lib/claude';
-  import { failureWords, getPack, hasPass, importLibraryPack, listPacks, namesIfImported, namesNote, starPack, type Failure, type LibraryFull, type LibraryPack, type Sort } from '../lib/library';
+  import { failureWords, getPack, hasPass, importLibraryPack, listPacks, namesIfImported, namesNote, ownedIds, starPack, type Failure, type LibraryFull, type LibraryPack, type Sort } from '../lib/library';
   import { cachedListing, keepListing, listingKey, starInListings, type Listing } from '../lib/communityCache';
-  import { isSkipped, localIdsOf, rereadMarks, setSkipped } from '../lib/communityMarks.svelte';
+  import { isSkipped, rereadMarks, setSkipped } from '../lib/communityMarks.svelte';
+  import { rereadShared } from '../lib/shareLog.svelte';
   import { ENOUGH, fits, hasMore, loadPages } from '../lib/communityPages';
   import { addedNote, readFilters, readView, viewUrl, type CommunityView, type Filters } from '../lib/communityView';
-  import { ownPackIds, unitOf, type ImportResult } from '../lib/packfile';
+  import { NO_ROOM, unitOf, type ImportResult } from '../lib/packfile';
   import { back, go, route, swap } from '../lib/router.svelte';
   import { sfx } from '../lib/sound';
 
@@ -71,11 +72,12 @@
   let packsSeen = $state(0);
   function look() {
     rereadMarks();
+    rereadShared();
     packsSeen++;
   }
   // Read once per change, not per row.
-  const mine = $derived.by(() => { void packsSeen; return ownPackIds(game); });
-  const owned = (p: LibraryPack): boolean => localIdsOf(game, p.id).some((id) => mine.has(id));
+  const mine = $derived.by(() => { void packsSeen; return ownedIds(game); });
+  const owned = (p: LibraryPack): boolean => mine.has(p.id);
   const fitting = (packs: readonly LibraryPack[]) => packs.filter((p) => fits(filters, { owned: owned(p), skipped: isSkipped(game, p.id) }));
   const shown = $derived(fitting(listing?.packs ?? []));
 
@@ -131,8 +133,9 @@
   function skip() {
     if (!open) return;
     const on = !isSkipped(game, open.id);
-    setSkipped(game, open.id, on);
-    if (on) closePreview();
+    starNote = '';
+    if (!setSkipped(game, open.id, on)) starNote = NO_ROOM;
+    else if (on) closePreview();
   }
 
   /** The pack open in the preview (from the address), while it loads and once it has. */

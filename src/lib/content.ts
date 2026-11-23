@@ -1,7 +1,7 @@
 // Built-in packs (bundled JSON, precached for offline play) merged with packs players
 // make or edit on the phone (saved in localStorage). An edit of a built-in replaces it in place.
 import { load, save, trySave } from './storage';
-import { moveShared } from './shareLog.svelte';
+import { forgetShared, moveShared } from './shareLog.svelte';
 import type { Secret } from '../games/salad/words';
 
 /** What a pack saved on this phone carries beside its content; pack files never carry it. */
@@ -14,6 +14,8 @@ export interface PackMeta {
   shared?: boolean;
   /** Imported from the Community library, so it is someone else's shared pack and never shared again from here. */
   fromLibrary?: boolean;
+  /** The Community pack it was imported from (packs imported before this was kept have none). */
+  communityId?: string;
 }
 
 export interface WordDeck extends PackMeta { id: string; name: string; emoji: string; blurb: string; words: string[] }
@@ -104,6 +106,7 @@ function customStore<T extends { id: string } & PackMeta>(key: string, builtin: 
     },
     remove(id: string) {
       save(key, settle().filter((x) => x.id !== id));
+      forgetShared(game, id);
     },
     isBuiltin: (id: string) => builtinIds.has(id),
     /** The built-in packs as shipped. */

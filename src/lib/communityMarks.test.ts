@@ -1,47 +1,32 @@
-// Community packs this phone has or skips, and the list filtered by them.
+// Community packs this phone skips, and the list filtered by what it has and skips.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isSkipped, localIdsOf, moveOwned, noteOwned, rereadMarks, setSkipped } from './communityMarks.svelte';
+import { isSkipped, setSkipped } from './communityMarks.svelte';
 import { fits, hasMore, LAST_PAGE, loadPages } from './communityPages';
 import { readFilters, viewUrl, withoutCommunity } from './communityView';
 import type { Listing } from './communityCache';
 import type { LibraryPack } from './library';
-import { moveShared } from './shareLog.svelte';
 
 let mem: Map<string, string>;
 beforeEach(() => {
   mem = new Map();
   vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => mem.set(k, v), removeItem: (k: string) => mem.delete(k) });
-  rereadMarks();
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe('Community packs marked on this phone', () => {
-  it('remembers which packs came from one, through a move to a new id, per game', () => {
-    noteOwned('dial', 'AAA', ['trip', 'trip-x']);
-    noteOwned('dial', 'AAA', ['trip', 'again']);
-    noteOwned('quick', 'AAA', ['trip']);
-    moveShared('dial', 'trip', 'my-trip'); // no share record needed
-    rereadMarks();
-    expect(localIdsOf('dial', 'AAA')).toEqual(['my-trip', 'trip-x', 'again']);
-    expect(localIdsOf('quick', 'AAA')).toEqual(['trip']);
-    moveOwned('quick', 'trip', 'q');
-    expect(localIdsOf('quick', 'AAA')).toEqual(['q']);
-    expect(localIdsOf('dial', 'BBB')).toEqual([]);
-  });
-
-  it('skips and unskips, apart from owning', () => {
-    noteOwned('dial', 'AAA', ['trip']);
+describe('Community packs skipped on this phone', () => {
+  it('are marked one by one, per game, so nothing overwrites another mark', () => {
     setSkipped('dial', 'AAA', true);
-    rereadMarks();
-    expect([isSkipped('dial', 'AAA'), isSkipped('quick', 'AAA'), localIdsOf('dial', 'AAA')]).toEqual([true, false, ['trip']]);
-    setSkipped('dial', 'AAA', false);
-    expect([isSkipped('dial', 'AAA'), localIdsOf('dial', 'AAA')]).toEqual([false, ['trip']]);
+    mem.set('hr:community:skip:dial:BBB', 'true'); // another tab, at the same time
+    setSkipped('dial', 'CCC', true);
+    expect(['AAA', 'BBB', 'CCC', 'DDD'].map((id) => isSkipped('dial', id))).toEqual([true, true, true, false]);
+    expect(isSkipped('quick', 'AAA')).toBe(false);
+    expect(setSkipped('dial', 'AAA', false)).toBe(true);
+    expect(['AAA', 'BBB'].map((id) => isSkipped('dial', id))).toEqual([false, true]);
   });
 
-  it('reads a broken store as nothing marked', () => {
-    mem.set('hr:community:marks', JSON.stringify({ owned: { 'dial:A': 'x', 'dial:B': ['ok', 7] }, skipped: [] }));
-    rereadMarks();
-    expect([localIdsOf('dial', 'A'), localIdsOf('dial', 'B'), isSkipped('dial', 'A')]).toEqual([[], ['ok'], false]);
+  it('say so when there is no room, and read a broken mark as none', () => {
+    vi.stubGlobal('localStorage', { getItem: () => '{"x":', setItem: () => { throw new Error('full'); }, removeItem: () => {} });
+    expect([setSkipped('dial', 'AAA', true), isSkipped('dial', 'AAA')]).toEqual([false, false]);
   });
 });
 

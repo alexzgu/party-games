@@ -42,7 +42,7 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's tab; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone has or skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's tab; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
 - `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList` and every pack editor), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
@@ -201,7 +201,7 @@ behaves like a shared wizard pack; the button is a quiet "✓ Shared in Communit
 change it reads "Share changes", under "Shared in Community · changed since". The phone keeps, for
 each pack the library took, a fingerprint of the version it took and the id the library knows it
 by (`shareLog.svelte.ts`, noted on every share that lands, Fizzwick's included; a pack moved off a
-new built-in's id keeps both, so its next share updates the same entry). A pack marked for
+new built-in's id keeps both, so its next share updates the same entry; a deleted pack's record goes). A pack marked for
 sharing with no such record (Fizzwick's automatic share failed, or it was shared before records
 were kept) says "This phone has no record of sharing it." over "Share now", asking nothing
 first; while any share of the pack is on its way the button reads "Sharing…" and waits. The
@@ -228,10 +228,12 @@ Sketchy, Bad Hand).
 Two filters under the order choose among the packs, each on its own (`cown`, `cskip` in the
 address): Owned (All, the default; Owned; Not owned) and Skipped (All; Skipped; Not skipped, the
 default). "Skip" in a preview leaves the pack out on this phone and returns to the list; "Unskip"
-takes that back. A pack is owned when it was imported from Community on this phone, or shared from
-it, and at least one of the packs that made is still there (`src/lib/communityMarks.svelte.ts`:
-each Community id with the ids of this phone's packs, followed when a pack moves to a new id; a
-pack imported with no id kept reads as not owned). The marks stay on the phone. The server knows
+takes that back. A pack is owned while one of this phone's own packs was imported from it (each
+carries the Community id it came from, `communityId`, saved with it and on every part of a split
+one; pack files and shares never carry it) or was shared as it (the share record keeps the id the
+library answered with, and goes when the pack is deleted): `ownedIds` in `library.ts`. Packs
+imported or last shared before those ids were kept read as not owned. Skips stay on the phone, one
+storage key per pack (`src/lib/communityMarks.svelte.ts`); skipping on a full phone says so. The server knows
 nothing of the filters: the phone chooses among its pages of 30 (`src/lib/communityPages.ts`), and
 a press (opening, a search, order or tab, a filter, "Show more") that shows fewer than 10 packs
 that fit loads the next pages by itself, at most 4 a press and never past page 100. "Show more"

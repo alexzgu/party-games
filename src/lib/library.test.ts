@@ -1,12 +1,11 @@
 // The Community library's phone side without a browser: a fake fetch and a fake pass only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { settings } from './settings.svelte';
-import { afterRun, canShare, failureWords, getPack, importLibraryPack, listPacks, namesIfImported, onLibraryNote, packPrint, passedSoFar, publishPack, SHARE_FAILED, shareByHand, shareProblem, shareStatus, shareStatusNow, shareWizardPack, starPack, type LibraryFull } from './library';
-import { localIdsOf } from './communityMarks.svelte';
+import { afterRun, canShare, failureWords, getPack, importLibraryPack, listPacks, namesIfImported, onLibraryNote, ownedIds, packPrint, passedSoFar, publishPack, SHARE_FAILED, shareByHand, shareProblem, shareStatus, shareStatusNow, shareWizardPack, starPack, type LibraryFull } from './library';
 import { lastShared, noteShared } from './shareLog.svelte';
 import { WIZARD_SERVER } from './wizardServer';
 import { setUsername } from './username';
-import { customDecks, customQuick, customQuiz, quizBoards, type HandPack, type QuickPack, type QuizBoard, type SnarkPack, type SpectrumPack, type WordDeck } from './content';
+import { customDecks, customHand, customQuick, customQuiz, quizBoards, type HandPack, type QuickPack, type QuizBoard, type SnarkPack, type SpectrumPack, type WordDeck } from './content';
 import { exportFile, importPacks } from './packfile';
 import { addClues } from '../games/quiz/more';
 import { tidyBoard } from '../games/quiz/board';
@@ -332,7 +331,7 @@ describe('sharing a pack by hand', () => {
     const r = importLibraryPack('forehead', { id: 'AAAAAAAAAAAA', game: 'forehead', name: 'From the library', blurb: '', count: 1, stars: 0, created: 0, updated: 0, items: ['Shrek'], extra: {} });
     if ('error' in r) throw new Error(r.error);
     expect([r.saved[0].fromLibrary, canShare('forehead', r.saved[0])]).toEqual([true, false]);
-    expect(localIdsOf('forehead', 'AAAAAAAAAAAA')).toEqual([r.saved[0].id]);
+    expect([...ownedIds('forehead')]).toEqual(['AAAAAAAAAAAA']);
     const file = importPacks('forehead', exportFile('forehead', [r.saved[0]]));
     if ('error' in file) throw new Error(file.error);
     expect([file.saved[0].fromLibrary, canShare('forehead', file.saved[0])]).toEqual([undefined, true]);
@@ -377,7 +376,7 @@ describe('sharing a pack by hand', () => {
     expect((await publishPack('forehead', onScreen)).ok).toBe(true);
     expect(sentBody(fetch)).toMatchObject({ name: 'Hand made', items: ['Shrek', 'Pizza'], localId: 'my-saved-deck' });
     expect((await shareByHand('forehead', 'my-saved-deck')).ok).toBe(true);
-    expect(localIdsOf('forehead', 'AAAAAAAAAAAA')).toContain('my-saved-deck');
+    expect([...ownedIds('forehead')]).toEqual(['AAAAAAAAAAAA']);
     expect(customDecks.all().map((d) => [d.id, d.shared])).toEqual([['my-other-deck', undefined], ['my-saved-deck', true]]);
     expect(saved('my-saved-deck')).toMatchObject({ name: 'Hand made', words: ['Shrek', 'Pizza'] });
     expect(shareStatusNow('forehead', 'my-saved-deck')).toBe('current');
@@ -437,6 +436,57 @@ describe('sharing a pack by hand', () => {
     expect(shareStatusNow('forehead', 'my-movies')).toBe('current');
     expect((await shareByHand('forehead', 'my-movies')).ok).toBe(true);
     expect(sentBody(fetch).localId).toBe('movies');
+  });
+
+  it('counts a Community pack as owned while a pack imported from it, or shared as it, is on the phone', async () => {
+    const get = (id: string, name = 'Trip') => importLibraryPack('hand', { id, game: 'hand', name, blurb: '', count: 1, stars: 0, created: 0, updated: 0,
+      items: [], extra: { answers: Array.from({ length: 2 }, (_, i) => `My ${name} answer ${i}`) } });
+    const a = get('AAAAAAAAAAAA');
+    if ('error' in a) throw new Error(a.error);
+    expect(a.saved[0].communityId).toBe('AAAAAAAAAAAA');
+    expect(exportFile('hand', a.saved)).not.toContain('AAAAAAAAAAAA');
+    customHand.remove(a.saved[0].id);
+    const b = get('BBBBBBBBBBBB'); // the same name, so the same id on this phone
+    if ('error' in b) throw new Error(b.error);
+    expect([b.saved[0].id, [...ownedIds('hand')]]).toEqual([a.saved[0].id, ['BBBBBBBBBBBB']]);
+
+    // Through a move off a new built-in's id, and to each part of a pack split on import.
+    localStorage.setItem('hr:custom:hand', JSON.stringify([{ ...b.saved[0], custom: true, id: customHand.builtins()[0].id }]));
+    customHand.settle();
+    expect([...ownedIds('hand')]).toEqual(['BBBBBBBBBBBB']);
+    const parts = importLibraryPack('hand', { id: 'CCCCCCCCCCCC', game: 'hand', name: 'Big', blurb: '', count: 401, stars: 0, created: 0, updated: 0,
+      items: [], extra: { answers: Array.from({ length: 401 }, (_, i) => `Big answer ${i}`) } });
+    if ('error' in parts) throw new Error(parts.error);
+    expect(parts.saved.map((p) => p.communityId)).toEqual(['CCCCCCCCCCCC', 'CCCCCCCCCCCC']);
+  });
+
+  it('never counts a new pack under a deleted one\'s id as shared', async () => {
+    settings.wizardPass = PASS;
+    const deck2 = { ...own, id: 'my-reused-deck' };
+    server();
+    customDecks.put(deck2);
+    await shareByHand('forehead', deck2.id);
+    expect([...ownedIds('forehead')]).toEqual(['AAAAAAAAAAAA']);
+    customDecks.remove(deck2.id);
+    customDecks.put(deck2);
+    expect([lastShared('forehead', deck2.id), [...ownedIds('forehead')]]).toEqual([undefined, []]);
+    // Deleted while its share was on its way, too.
+    const slow = slowServer();
+    const going = shareByHand('forehead', deck2.id);
+    customDecks.remove(deck2.id);
+    slow.answer();
+    await going;
+    customDecks.put(deck2);
+    expect([...ownedIds('forehead')]).toEqual([]);
+  });
+
+  it('keeps what another tab noted as shared meanwhile', () => {
+    noteShared('forehead', 'mine-a', { print: 'a', localId: 'mine-a' });
+    const other = { ...JSON.parse(localStorage.getItem('hr:library:sent')!), 'forehead:theirs': { print: 'b', localId: 'theirs' } };
+    localStorage.setItem('hr:library:sent', JSON.stringify(other));
+    noteShared('forehead', 'mine-c', { print: 'c', localId: 'mine-c' });
+    const stored = JSON.parse(localStorage.getItem('hr:library:sent')!);
+    expect(['mine-a', 'theirs', 'mine-c'].map((id) => stored[`forehead:${id}`]?.print)).toEqual(['a', 'b', 'c']);
   });
 
   it("only reads while working out an import's names, even with a pack still to move off a new built-in's id", () => {

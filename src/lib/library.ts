@@ -8,8 +8,7 @@ import type { PackGameId } from '../app.config';
 import { slugify } from './content';
 import { viaPass } from './claude';
 import { cleanExtra, cleanItems, cleanPublish, itemCount, SHAPE, text } from './libraryShape';
-import { builtinPacks, FORMAT, isBuiltinPack, itemsField, listFields, markPackShared, NO_ROOM, ownPack, packParts, readFile, savedNames, savePacks, unitOf, type AnyPack, type ImportResult } from './packfile';
-import { noteOwned } from './communityMarks.svelte';
+import { builtinPacks, FORMAT, isBuiltinPack, itemsField, listFields, markPackShared, NO_ROOM, ownPack, ownPacks, packParts, readFile, savedNames, savePacks, unitOf, type AnyPack, type ImportResult } from './packfile';
 import { isSending, lastShared, noteShared, setSending, type SharedRecord } from './shareLog.svelte';
 import { saveSettings, settings } from './settings.svelte';
 import { getUsername } from './username';
@@ -170,8 +169,7 @@ function contentOf(game: PackGameId, pack: AnyPack) {
  * pass, game and id update the entry made before; a pack whose id changed since keeps the id the
  * library knows. While it is on its way the pack counts as sending; once the server takes it,
  * what was sent is noted (`packPrint`), so the pack's editor can tell when it has changed since,
- * and with `mark` the saved pack is marked shared (`markPackShared`) in the same step. It counts as
- * owned under the id the library gives it.
+ * and with `mark` the saved pack is marked shared (`markPackShared`) in the same step.
  */
 export async function publishPack(game: PackGameId, pack: AnyPack, mark = false): Promise<Got<{ id: string }>> {
   const sent = ownPack(game, pack.id) ?? pack;
@@ -189,8 +187,9 @@ export async function publishPack(game: PackGameId, pack: AnyPack, mark = false)
   }
   if (!r.ok) return r;
   if (mark) markPackShared(game, sent.id);
-  noteShared(game, sent.id, { print: packPrint(game, sent), localId });
-  if (typeof r.body.id === 'string') noteOwned(game, r.body.id, [sent.id]);
+  const communityId = typeof r.body.id === 'string' ? r.body.id : lastShared(game, sent.id)?.communityId;
+  // Deleted meanwhile: nothing is kept of it, so a new pack under its id was never shared.
+  if (ownPack(game, sent.id)) noteShared(game, sent.id, { print: packPrint(game, sent), localId, ...(communityId ? { communityId } : {}) });
   return { ok: true, id: String(r.body.id) };
 }
 
@@ -391,17 +390,20 @@ export function namesNote(name: string, names: readonly string[]): string {
 /**
  * Saves a library pack on this phone as the player's own: exactly what its preview showed (`ready`;
  * each item checked and tidied by its game's own rules, without what a built-in pack already has),
- * marked `fromLibrary`, so it is never shared again from this phone, and owned (communityMarks).
+ * marked `fromLibrary`, so it is never shared again from this phone, and with its Community id.
  */
 export function importLibraryPack(game: PackGameId, pack: LibraryFull): ImportResult {
   const read = pack.ready ?? readLibraryPack(game, pack);
   if ('error' in read) return read;
   const problems = read.dropped ? [...read.problems, `${read.dropped} already in the built-in packs left out.`] : read.problems;
-  const saved = savePacks(game, [{ ...read.pack, fromLibrary: true }]);
+  const saved = savePacks(game, [{ ...read.pack, fromLibrary: true, communityId: pack.id }]);
   if (!saved.length) return { error: NO_ROOM };
-  noteOwned(game, pack.id, saved.map((p) => p.id));
   return { saved, skipped: read.skipped, problems };
 }
+
+/** The Community packs this phone has: an own pack was imported from it, or shared as it. */
+export const ownedIds = (game: PackGameId): Set<string> =>
+  new Set(ownPacks(game).flatMap((p) => [p.communityId, lastShared(game, p.id)?.communityId].filter((id) => id !== undefined)));
 
 /** What a failed library call means, in plain words; `doing` says what the player was doing. */
 export function failureWords(reason: Failure, doing: 'star' | 'share' = 'star'): string {
