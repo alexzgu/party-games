@@ -303,16 +303,17 @@ export class HostLink {
   }
 
   private receive(conn: DataConnection, raw: unknown): void {
-    const msg = this.parts.get(conn)?.take(raw) as { t?: unknown; pid?: unknown; name?: unknown; keys?: unknown; macs?: unknown; key?: unknown } | null | undefined;
+    const msg = this.parts.get(conn)?.take(raw) as { t?: unknown; pid?: unknown; name?: unknown; keys?: unknown; macs?: unknown; key?: unknown; commit?: unknown; value?: unknown } | null | undefined;
     if (!msg || typeof msg !== 'object') return;
     this.heard.set(conn, Date.now());
     if (msg.t === 'pong') return;
     const pid = this.pidOf.get(conn);
-    if (msg.t === 'hello' || msg.t === 'proof' || msg.t === 'key') {
+    if (msg.t === 'hello' || msg.t === 'proof' || msg.t === 'key' || msg.t === 'reveal') {
       if (pid || this.moving) return; // seated already; or moving to a new code, where the phone asks again
       if (msg.t === 'proof') void this.desk.proof(conn, msg.macs);
       else if (msg.t === 'key') this.desk.key(conn, msg.key);
-      else if (str(msg.pid, 64) && str(msg.name, 200)) this.hello(conn, msg.pid, msg.name, msg.keys === 1);
+      else if (msg.t === 'reveal') void this.desk.reveal(conn, msg.value);
+      else if (str(msg.pid, 64) && str(msg.name, 200)) this.hello(conn, msg.pid, msg.name, msg.keys === 1, msg.commit);
       return;
     }
     if (!pid) return;
@@ -323,11 +324,11 @@ export class HostLink {
     } else this.hooks.message(pid, msg);
   }
 
-  private hello(conn: DataConnection, pid: string, raw: string, modern: boolean): void {
+  private hello(conn: DataConnection, pid: string, raw: string, modern: boolean, commit: unknown): void {
     const name = unmarked(raw);
     if (!name.trim() && raw.trim()) return this.refuse(conn, MARK_ONLY);
     if (pid.startsWith(BOT_PID)) return this.refuse(conn, BOT_SEAT); // a phone may not take a seat run here
-    this.desk.hello(conn, pid, name, modern);
+    this.desk.hello(conn, pid, name, modern, commit);
   }
 
   /** The seat the game gives a phone now, unless it is run here or its player was removed. */

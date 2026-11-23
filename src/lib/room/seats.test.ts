@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { KeyRing, askText, ends, newKey, nextStep, numberOf, proofOf, type Claim, type Held, type Step } from './seats';
+import { KeyRing, askText, commitOf, ends, newKey, nextStep, numberOf, proofOf, type Claim, type Held, type Step } from './seats';
 import type { HostLink } from './host-link.svelte';
 import type { PhoneLink, BaseView } from './phone-link.svelte';
 
 // A broker in memory: a host's peer under its id, and phones' peers that connect to it.
 type Handlers = Record<string, (x?: unknown) => void>;
-const net = vi.hoisted(() => ({ hosts: new Map<string, (conn: unknown) => void>() }));
+const net = vi.hoisted(() => ({ hosts: new Map<string, (conn: unknown) => void>(), secure: false }));
 vi.mock('./net', async (original) => ({
   ...(await original<typeof import('./net')>()),
   makePeer: (id: string | null) => {
@@ -21,6 +21,10 @@ vi.mock('./net', async (original) => ({
         const [near, far] = [end(), end()];
         near.other = far;
         far.other = near;
+        if (net.secure) {
+          near.peerConnection = { currentLocalDescription: sdp('SAM'), currentRemoteDescription: sdp('HOST') };
+          far.peerConnection = { currentLocalDescription: sdp('HOST'), currentRemoteDescription: sdp('SAM') };
+        }
         net.hosts.get(to)!(far);
         queueMicrotask(() => near.on_.open?.());
         return near;
@@ -54,22 +58,23 @@ const realTimeout = setTimeout;
 const until = (what: () => boolean, tries = 200): Promise<void> =>
   new Promise((done) => { realTimeout(() => { done(what() || !tries ? undefined : until(what, tries - 1)); }, 5); });
 /** Until the phone's proof has been answered. */
-const settle = (p: Phone) => until(() => p.types().at(-1) !== 'prove' || !p.conn.open);
+const settle = (p: Phone) => until(() => (p.got.length > 0 && p.types().at(-1) !== 'prove') || !p.conn.open);
 
-interface Phone { got: { t: string; [k: string]: unknown }[]; conn: End; key?: string; asleep?: boolean; say(m: object): void; types(): string[] }
+interface Phone { /** Its value for the number. */ value: string; got: { t: string; [k: string]: unknown }[]; conn: End; key?: string; asleep?: boolean; say(m: object): void; types(): string[] }
 /** A phone's page: says hello and answers the handshake as the app does (`modern`), with the key it has. */
-function phone(link: HostLink, pid: string, name: string, key?: string, modern = true, opts: { near?: Sdp; far?: Sdp; mute?: boolean } = {}): Phone {
+function phone(link: HostLink, pid: string, name: string, key?: string, modern = true, opts: { near?: Sdp; far?: Sdp; mute?: boolean; reveal?: string | null } = {}): Phone {
   const [near, far] = [end(), end()];
   near.other = far;
   far.other = near;
   near.peerConnection = opts.near;
   far.peerConnection = opts.far;
-  const p: Phone = { got: [], conn: near, key, say: (m) => near.send(m), types: () => p.got.map((m) => m.t) };
+  const p: Phone = { value: newKey(), got: [], conn: near, key, say: (m) => near.send(m), types: () => p.got.map((m) => m.t) };
   near.on('data', (raw) => {
     const m = raw as Phone['got'][number];
     if (m.t === 'ping') return p.asleep ? undefined : near.send({ t: 'pong' });
     p.got.push(m);
     if (opts.mute) return;
+    if (m.t === 'wait' && m.value && opts.reveal !== null) near.send({ t: 'reveal', value: opts.reveal ?? p.value });
     if (m.t === 'enrol') { p.key = newKey(); near.send({ t: 'key', key: p.key }); }
     if (m.t === 'prove') {
       const { here, there } = ends(near.peerConnection);
@@ -77,7 +82,9 @@ function phone(link: HostLink, pid: string, name: string, key?: string, modern =
     }
   });
   (link as unknown as { accept(c: unknown): void }).accept(far);
-  p.say({ t: 'hello', pid, name, ...(modern ? { keys: 1 } : {}) });
+  const hello = { t: 'hello', pid, name, ...(modern ? { keys: 1 } : {}) };
+  if (opts.near && modern) void commitOf(p.value).then((commit) => p.say({ ...hello, commit }));
+  else p.say(hello);
   return p;
 }
 const why = (p: Phone) => p.got.find((m) => m.t === 'reject')?.why;
@@ -92,6 +99,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  net.secure = false;
 });
 
 it('decides each step from the proof, the key on record and the host', () => {
@@ -415,33 +423,67 @@ describe('a question to the host', () => {
     close(host);
   });
 
-  it('carries the number its phone works out, never sent; a guest in between leaves another on the phone', async () => {
-    const { host } = await room();
-    const numbered = async (near: Sdp, far: Sdp) => {
-      const p = phone(host.link, 'p9', 'Sam', undefined, true, { near, far });
-      await until(() => host.link.asks.length > 0);
-      const { here, there } = ends(near);
-      const [shown, asked] = [await numberOf(there, here), host.link.asks[0]];
-      expect(p.got.at(-1)).toEqual({ t: 'wait' });
-      p.conn.close();
-      return { shown, asked };
-    };
-    const far = (who: string) => ({ currentLocalDescription: sdp('HOST'), currentRemoteDescription: sdp(who) });
-    const near = (who: string) => ({ currentLocalDescription: sdp('SAM'), currentRemoteDescription: sdp(who) });
-    const straight = await numbered(near('HOST'), far('SAM'));
-    expect(straight.shown).toMatch(/^\d{3} \d{3}$/);
-    expect(askText(straight.asked)).toBe(`Move Sam’s seat to the phone showing ${straight.shown}?`);
-    const relayed = await numbered(near('GUEST'), far('GUEST'));
-    expect(relayed.asked.code).toMatch(/^\d{3} \d{3}$/);
-    expect(relayed.asked.code).not.toBe(relayed.shown);
+  const far = (who: string): Sdp => ({ currentLocalDescription: sdp('HOST'), currentRemoteDescription: sdp(who) });
+  const near = (who: string): Sdp => ({ currentLocalDescription: sdp('SAM'), currentRemoteDescription: sdp(who) });
+  const numbered = (host: Host, opts: { near?: Sdp; far?: Sdp; reveal?: string | null } = {}) =>
+    phone(host.link, 'p9', 'Sam', undefined, true, { near: near('HOST'), far: far('SAM'), ...opts });
+  const waits = async (p: Phone) => { await until(() => p.types().includes('wait') || !p.conn.open); return p; };
+  /** The number the phone works out from what it was sent. */
+  const shown = (p: Phone) => {
+    const { here, there } = ends(p.conn.peerConnection);
+    return numberOf({ hostValue: p.got.at(-1)!.value as string, phoneValue: p.value, host: there, phone: here });
+  };
 
-    // Without crypto.subtle neither screen has a number.
-    const early = phone(host.link, 'p9', 'Sam', undefined, true, { near: near('HOST'), far: far('SAM'), mute: true });
-    early.say({ t: 'proof', macs: [] });
-    vi.stubGlobal('crypto', { getRandomValues: (a: Uint8Array) => a });
+  it('carries the number both ends work out, never sent; a guest in between leaves another on the phone', async () => {
+    const { host } = await room();
+    const seen: string[] = [];
+    // The second phone is Sam's behind a guest who passes every message on, both ways.
+    for (const guest of [false, true]) {
+      const p = await waits(numbered(host, guest ? { near: near('GUEST'), far: far('GUEST') } : {}));
+      expect(p.got.at(-1)).toEqual({ t: 'wait', value: expect.stringMatching(/^[0-9a-f]{32}$/) });
+      await until(() => host.link.asks.length > 0);
+      const number = await shown(p);
+      expect(number).toMatch(/^\d{3} \d{3}$/);
+      const text = askText(host.link.asks[0]);
+      if (guest) expect(text).not.toContain(number);
+      else expect(text).toBe(`Move Sam’s seat to the phone showing ${number}?`);
+      seen.push(p.got.at(-1)!.value as string);
+      p.say({ t: 'reveal', value: newKey() }); // once each
+      await until(() => !p.conn.open, 10);
+      expect(askText(host.link.asks[0])).toBe(text);
+      host.link.answer(host.link.asks[0], true);
+      expect(p.types()).toContain('welcome');
+      p.conn.close();
+    }
+    expect(seen[0]).not.toBe(seen[1]);
+    const e = { hostValue: 'h', phoneValue: 'p', host: 'H', phone: 'P' };
+    const all = [e, { ...e, hostValue: 'x' }, { ...e, phoneValue: 'x' }, { ...e, host: 'x' }, { ...e, phone: 'x' }];
+    expect(new Set(await Promise.all(all.map(numberOf))).size).toBe(5);
+    close(host);
+  });
+
+  it('never comes from a phone that shows another value than its hello promised, or none; and its seat rests', async () => {
+    const { host } = await room();
+    const other = await waits(numbered(host, { reveal: newKey() }));
+    await until(() => !other.conn.open);
+    expect([other.conn.open, host.link.asks]).toEqual([false, []]);
+    const soon = numbered(host);
+    await until(() => !soon.conn.open);
+    expect([soon.types(), soon.conn.open]).toEqual([['prove'], false]);
+
+    await vi.advanceTimersByTimeAsync(5000);
+    const silent = await waits(numbered(host, { reveal: null }));
+    expect(silent.types()).toEqual(['prove', 'wait']);
+    const old = phone(host.link, 'p5', 'Old', undefined, false);
+    expect(host.link.asks).toMatchObject([{ name: 'Old', code: null }]);
+    old.conn.close();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect([silent.conn.open, host.link.asks]).toEqual([false, []]);
+
+    await vi.advanceTimersByTimeAsync(5000);
+    await waits(numbered(host));
     await until(() => host.link.asks.length > 0);
-    expect(host.link.asks.map((a) => a.code)).toEqual([null]);
-    expect(await numberOf('HOST', 'SAM')).toBeNull();
+    expect(host.link.asks).toHaveLength(1);
     close(host);
   });
 
@@ -527,24 +569,60 @@ describe('the app\'s phone', () => {
     close(host);
   });
 
-  it('waits with its own words and number, whatever the host sends', async () => {
+  it('waits with its own words, and the number the host screen shows in a place no host text goes', async () => {
+    const host = await load('snark');
+    const owner = phone(host.link, 'p1', 'Sam');
+    owner.conn.close();
+    net.secure = true;
+    const { PhoneLink } = await import('./phone-link.svelte');
+    const p = new PhoneLink<{ t: string }, BaseView>('snark', { keep: () => false });
+    const sent: { t: string; commit?: string; value?: string }[] = [];
+    const inner = p as unknown as { write(m: object): void; receive(m: object): void };
+    const write = inner.write.bind(p);
+    inner.write = (m) => { sent.push(JSON.parse(JSON.stringify(m)) as { t: string }); write(m); };
+    p.join(host.game!.code, 'Sam');
+    await until(() => !!p.number && host.link.asks.length > 0);
+    expect(p.trouble).toBe('Waiting for a Yes on the host screen.');
+    expect(askText(host.link.asks[0])).toBe(`Move Sam’s seat to the phone showing ${p.number}?`);
+    expect(sent.map((m) => m.t)).toEqual(['hello', 'proof', 'reveal']);
+    expect(sent[0].commit).toBe(await commitOf(sent[2].value!));
+    expect(JSON.stringify(sent)).not.toContain(p.number);
+
+    // Told to wait again, with any words: nothing more is sent, nothing changes.
+    const number = p.number;
+    inner.receive({ t: 'wait', value: newKey(), why: 'Your number is 111 111.' });
+    await until(() => p.number !== number, 10);
+    expect([p.number, p.trouble, sent.length]).toEqual([number, 'Waiting for a Yes on the host screen.', 3]);
+
+    host.link.answer(host.link.asks[0], true);
+    await until(() => p.link === 'live');
+    expect([p.link, p.number, p.trouble]).toEqual(['live', '', '']);
+    // Back with its key: a new promise, nothing else more.
+    sent.length = 0;
+    (p as unknown as { conn: End }).conn.close();
+    await vi.advanceTimersByTimeAsync(1000);
+    await until(() => p.link === 'live');
+    expect(sent.map((m) => m.t)).toEqual(['hello', 'proof']);
+    expect(sent[0].commit).toMatch(/^[0-9a-f]{64}$/);
+
+    // A fake host's refusal: its text is the reason it stopped, never the number.
+    inner.receive({ t: 'wait', value: newKey() });
+    await until(() => !!p.number);
+    expect(p.number).not.toBe('');
+    inner.receive({ t: 'reject', why: 'Your number is 111 111.' });
+    await until(() => !!p.number, 10);
+    expect([p.number, p.stopped]).toEqual(['', 'Your number is 111 111.']);
+    close(host);
+  });
+
+  it('shows no number, and promises none, where there is nothing to work it out from', async () => {
     const host = await load('snark');
     const p = await join(host);
-    const { conn, receive } = p as unknown as { conn: End; receive(m: object): void };
-    const say = (m: object) => receive.call(p, m);
-    say({ t: 'wait', why: 'Your number is 111 111.' });
-    expect(p.trouble).toBe('Waiting for a Yes on the host screen.');
-    await until(() => p.trouble.includes('number'), 10);
-    expect(p.trouble).toBe('Waiting for a Yes on the host screen.'); // no certificates here
-
-    conn.peerConnection = { currentLocalDescription: sdp('SAM'), currentRemoteDescription: sdp('HOST') };
-    say({ t: 'wait', why: 'Your number is 111 111.' });
-    await until(() => p.trouble.includes('number'));
-    expect(p.trouble).toBe(`Waiting for a Yes on the host screen. Your number is ${await numberOf('sha-256 host', 'sha-256 sam')}.`);
-    say({ t: 'wait' });
-    say({ t: 'welcome', pid: 'p1' });
-    await until(() => !!p.trouble, 10);
-    expect(p.trouble).toBe('');
+    (p as unknown as { receive(m: object): void }).receive({ t: 'wait', value: newKey() });
+    await until(() => !!p.number, 10);
+    expect([p.number, p.trouble]).toEqual(['', 'Waiting for a Yes on the host screen.']);
+    vi.stubGlobal('crypto', { getRandomValues: (x: Uint8Array) => x });
+    expect([await commitOf('a'), await numberOf({ hostValue: 'a', phoneValue: 'b', host: 'H', phone: 'P' })]).toEqual(['', null]);
     close(host);
   });
 

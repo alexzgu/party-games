@@ -7,6 +7,7 @@
   import { keepAwake } from '../../lib/wakelock';
   import { haptic } from '../../lib/haptics';
   import Screen from '../../components/Screen.svelte';
+  import SeatNumber from '../../components/room/SeatNumber.svelte';
   import Button from '../../components/Button.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Rules from './Rules.svelte';
@@ -59,6 +60,8 @@
 
   const send = (m: ToHost) => { if (!fixed) phone.send({ ...m, match: view?.match } as ToHost); };
 </script>
+
+{#if !fixed}<SeatNumber number={phone.number} />{/if}
 
 {#if link === 'idle' || link === 'stopped'}
   <Join code={routeCode || (phone.me?.code ?? '')} name={phone.me?.name ?? ''} {stopped} />

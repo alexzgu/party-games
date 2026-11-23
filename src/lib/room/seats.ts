@@ -32,18 +32,28 @@ export async function proofOf(key: string | undefined, c: Challenge): Promise<st
   } catch { return ''; }
 }
 
-/**
- * The number a waiting phone and the host screen both show ("482 913"): each works it out from its
- * own connection's ends and never sends it, so a guest passing messages along cannot pass it along.
- * Null without fingerprints or crypto.subtle: no number to compare.
- */
-export async function numberOf(host: string, phone: string): Promise<string | null> {
-  if (!host || !phone || !globalThis.crypto?.subtle) return null;
-  try {
-    const sum = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(['seat number', host, phone])));
-    const n = String(new DataView(sum).getUint32(0) % 1_000_000).padStart(6, '0');
-    return `${n.slice(0, 3)} ${n.slice(3)}`;
-  } catch { return null; }
+// The number a waiting phone and the host screen both show ("482 913"), never sent: each works it
+// out from a value of each end's and its own connection's ends. The phone's hello commits to its
+// value (a hash), the host then sends its own, and only then does the phone show its value: a guest
+// in between, holding one connection to each, has to choose on both before it can know either
+// number, so it cannot search for two that match.
+
+const sha256 = async (text: string): Promise<ArrayBuffer | null> => {
+  try { return await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)); } catch { return null; }
+};
+/** What a hello carries of the phone's value; empty without crypto.subtle (plain http). */
+export async function commitOf(value: string): Promise<string> {
+  const sum = await sha256(value);
+  return sum ? hex(new Uint8Array(sum)) : '';
+}
+export const isCommit = (x: unknown): x is string => typeof x === 'string' && /^[0-9a-f]{64}$/.test(x);
+
+/** The two ends' values and fingerprints. Null without fingerprints or crypto.subtle: no number to compare. */
+export async function numberOf(e: { hostValue: string; phoneValue: string; host: string; phone: string }): Promise<string | null> {
+  const sum = e.host && e.phone ? await sha256(JSON.stringify(['seat number', e.hostValue, e.phoneValue, e.host, e.phone])) : null;
+  if (!sum) return null;
+  const n = String(new DataView(sum).getUint32(0) % 1_000_000).padStart(6, '0');
+  return `${n.slice(0, 3)} ${n.slice(3)}`;
 }
 
 /** What a waiting phone shows: its own words, whatever the host sends. */
@@ -159,6 +169,8 @@ const CHANGED = 'The room changed while you waited. Join again.';
 
 /** How long the host has to answer. */
 export const ASK_MS = 60_000;
+/** After a phone was sent a value and its question never came, how long until its seat can be asked for again: no fast guessing. */
+export const COOL_MS = 5_000;
 const ASKS_MAX = 8;
 
 interface Row { pid: string; name: string }
@@ -197,7 +209,7 @@ export function nextStep(c: Claim, s: Held): Step {
 
 /**
  * A question on the host screen: may the phone showing `code` have that seat? Null: that phone shows
- * no number (an old page, or plain http). Undefined: still being worked out, not asked yet.
+ * no number (an old page, or plain http). Undefined: its phone has yet to show its value, not asked yet.
  */
 export interface Ask { id: number; code: string | null | undefined; name: string; fresh: boolean }
 
@@ -213,8 +225,11 @@ interface Call<C> extends Claim {
   /** The seat it asks for, once the game has said. */
   seat: string;
   /** What it was last sent and may answer now ('check': its proof is being checked). */
-  stage: '' | 'prove' | 'check' | 'enrol';
+  stage: '' | 'prove' | 'check' | 'enrol' | 'reveal';
+  /** The random value it was last sent, for its proof or its number. */
   nonce: string;
+  /** The hash of the phone's own value for the number; empty when it shows none. */
+  commit: string;
   ask: Ask | null;
 }
 
@@ -240,11 +255,15 @@ export interface DeskHooks<C> {
 export class Desk<C> {
   private calls = new Map<C, Call<C>>();
   private asked = 0;
+  /** By seat: until when it may not be asked for. */
+  private cooling = new Map<string, number>();
   constructor(private book: SeatBook, private hooks: DeskHooks<C>) {}
 
-  hello(conn: C, pid: string, name: string, modern: boolean): void {
+  hello(conn: C, pid: string, name: string, modern: boolean, commit: unknown): void {
     if (this.calls.has(conn)) return;
-    const call: Call<C> = { conn, pid, name, modern, proof: 'none', approved: false, seat: '', stage: '', nonce: '', ask: null };
+    const call: Call<C> = {
+      conn, pid, name, modern, commit: isCommit(commit) ? commit : '', proof: 'none', approved: false, seat: '', stage: '', nonce: '', ask: null,
+    };
     this.calls.set(conn, call);
     this.advance(call);
   }
@@ -266,6 +285,20 @@ export class Desk<C> {
     if (call?.stage === 'enrol' && isKey(key)) this.advance(call, key);
   }
 
+  /** The phone shows the value it committed to, once: its question appears, with the number. */
+  async reveal(conn: C, value: unknown): Promise<void> {
+    const call = this.calls.get(conn);
+    if (call?.stage !== 'reveal') return;
+    call.stage = '';
+    const { here, there } = this.hooks.ends(conn);
+    const right = isKey(value) && (await commitOf(value)) === call.commit;
+    const number = right ? await numberOf({ hostValue: call.nonce, phoneValue: value, host: here, phone: there }) : null;
+    if (this.calls.get(conn) !== call || !call.ask) return;
+    if (!number) return this.hooks.close(conn);
+    call.ask.code = number;
+    this.show();
+  }
+
   /** The host's answer to a question still on the screen: for that connection only, while it lasts. */
   answer(ask: Ask, yes: boolean): void {
     const call = this.all().find((c) => c.ask === ask);
@@ -278,13 +311,18 @@ export class Desk<C> {
   }
 
   /** Waiting for the host: no other clock runs meanwhile. */
-  asking(conn: C): boolean { return !!this.calls.get(conn)?.ask; }
+  asking(conn: C): boolean {
+    const ask = this.calls.get(conn)?.ask;
+    return !!ask && ask.code !== undefined;
+  }
 
   /** The connection is gone, or may not go on. */
   drop(conn: C): void {
     const call = this.calls.get(conn);
     this.calls.delete(conn);
-    if (call?.ask) this.show();
+    if (!call?.ask) return;
+    if (call.ask.code === undefined) this.cooling.set(call.seat, Date.now() + COOL_MS);
+    this.show();
   }
 
   /** The host removed this player: whoever is asking for the seat is out too. */
@@ -350,18 +388,23 @@ export class Desk<C> {
     this.hooks.send(call.conn, { t: 'enrol', room: this.book.room });
   }
 
-  /** Puts the question to the host, with the number this phone shows, if it shows one. */
+  /** Puts the question to the host: at once, or for a phone that shows a number once it has shown its value. */
   private ask(call: Call<C>, seat: Seat): void {
     call.stage = '';
+    if ((this.cooling.get(call.seat) ?? 0) > Date.now()) return this.hooks.close(call.conn);
     if (this.all().filter((c) => c.ask).length >= ASKS_MAX) return this.refuse(call, CROWD);
     const { here, there } = this.hooks.ends(call.conn);
-    const numbered = call.modern && !!here && !!there;
+    const numbered = call.modern && !!call.commit && !!here && !!there && !!globalThis.crypto?.subtle;
     const ask: Ask = { id: ++this.asked, code: numbered ? undefined : null, name: seat.name, fresh: seat.fresh };
     call.ask = ask;
     setTimeout(() => this.expire(ask), ASK_MS);
-    this.hooks.send(call.conn, { t: 'wait' });
-    if (numbered) void numberOf(here, there).then((code) => { ask.code = code; this.show(); });
-    else this.show();
+    if (!numbered) {
+      this.hooks.send(call.conn, { t: 'wait' });
+      return this.show();
+    }
+    call.stage = 'reveal';
+    call.nonce = newKey();
+    this.hooks.send(call.conn, { t: 'wait', value: call.nonce });
   }
 
   private expire(ask: Ask): void {

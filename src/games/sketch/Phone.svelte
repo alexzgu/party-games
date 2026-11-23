@@ -2,6 +2,7 @@
   import { gameName } from '../../app.config';
   import { untrack } from 'svelte';
   import Screen from '../../components/Screen.svelte';
+  import SeatNumber from '../../components/room/SeatNumber.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Popup from '../../components/Popup.svelte';
   import Button from '../../components/Button.svelte';
@@ -87,6 +88,8 @@
     if (!fixed && v) phone.ask({ t: 'guess', at: v.at, text });
   }
 </script>
+
+{#if !fixed}<SeatNumber number={phone.number} />{/if}
 
 {#if !v || (!fixed && phone.stopped)}
   {#key code}<Join code={code || phone.me?.code || ''} fixed={!!fixed} />{/key}

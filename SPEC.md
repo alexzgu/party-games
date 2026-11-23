@@ -886,11 +886,19 @@ about the game, replaces nobody and changes nothing.
   looks online, so sleep, reload, Wi-Fi and broker changes need no tap. A wrong or empty proof is
   refused while the seat is online; while it is offline the host is asked.
 - The host is asked on the host screen: "Move Sam's seat to the phone showing 482 913?" (Yes / No).
-  The waiting phone shows that number ("Waiting for a Yes on the host screen. Your number is 482
-  913."). Each screen works the six digits out itself, SHA-256 over the host's and the phone's
-  certificate fingerprints as in a proof; the host sends only `{t: 'wait'}`, the words on the phone
-  are its own, and the question appears once the host has the number. Without fingerprints or
-  `crypto.subtle` there is no number and the prompt says the phone shows none. Yes makes the phone enrol a new key and the old one stops working. The
+  The waiting phone shows "Waiting for a Yes on the host screen." and, in a panel of its own that no
+  text from a host ever fills, the same number. Neither end sends it. A phone's `hello` carries
+  `commit`, the SHA-256 of a random 128-bit value new for each connection; when the host is to be
+  asked, `wait` carries the host's own new random value, the phone answers once with its value
+  (`{t: 'reveal', value}`), and the host checks it against the hash before the question appears.
+  Each end then works out the number: SHA-256 over the host's value, the phone's value and the two
+  certificate fingerprints as in a proof, as six digits. A guest in between thus cannot search for
+  two connections whose numbers match. One `wait` and one `reveal` per connection; a wrong value, or
+  none within the 10 s limit on joining, closes the connection without a question, and that seat
+  cannot be asked for again for 5 s (a phone is closed without a word and retries). An old page, or
+  one without fingerprints or `crypto.subtle`, sends no `commit`: no number, and the prompt says the
+  phone shows none.
+  Yes makes the phone enrol a new key and the old one stops working. The
   question ends when the phone disconnects, the seat's own phone returns with its key, the host
   says no, or a minute passes. A Yes is for the connection that asked, while it lasts; no question
   or Yes moves to another. One phone at a time may ask for or enrol a seat (eight questions in all):
