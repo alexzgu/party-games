@@ -68,8 +68,11 @@ export class HostLink {
     this.book = new SeatBook(game);
     this.desk = new Desk(this.book, {
       resolve: (pid, name) => this.resolve(pid, name),
-      online: (pid) => this.online.has(pid),
-      quiet: (conn) => Date.now() - (this.heard.get(conn) ?? 0) > 2 * PING_MS,
+      holder: (pid) => {
+        const conn = this.links.get(pid);
+        return { online: this.online.has(pid), live: !!conn && !this.quiet(conn) };
+      },
+      quiet: (conn) => this.quiet(conn),
       ends: (conn) => ends(conn.peerConnection),
       send: (conn, msg) => this.write(conn, msg),
       refuse: (conn, why) => this.refuse(conn, why),
@@ -254,6 +257,8 @@ export class HostLink {
       else this.cut(conn);
     }, HELLO_TIMEOUT);
   }
+
+  private quiet(conn: DataConnection): boolean { return Date.now() - (this.heard.get(conn) ?? 0) > 2 * PING_MS; }
 
   /** Stops listening to a connection at once and closes it. */
   private cut(conn: DataConnection): void {

@@ -54,21 +54,22 @@ const realTimeout = setTimeout;
 const until = (what: () => boolean, tries = 200): Promise<void> =>
   new Promise((done) => { realTimeout(() => { done(what() || !tries ? undefined : until(what, tries - 1)); }, 5); });
 /** Until the phone's proof has been answered. */
-const settle = (p: Phone) => until(() => p.types().at(-1) !== 'prove');
+const settle = (p: Phone) => until(() => p.types().at(-1) !== 'prove' || !p.conn.open);
 
 interface Phone { got: { t: string; [k: string]: unknown }[]; conn: End; key?: string; asleep?: boolean; say(m: object): void; types(): string[] }
 /** A phone's page: says hello and answers the handshake as the app does (`modern`), with the key it has. */
-function phone(link: HostLink, pid: string, name: string, key?: string, modern = true, secure: { near?: Sdp; far?: Sdp } = {}): Phone {
+function phone(link: HostLink, pid: string, name: string, key?: string, modern = true, opts: { near?: Sdp; far?: Sdp; mute?: boolean } = {}): Phone {
   const [near, far] = [end(), end()];
   near.other = far;
   far.other = near;
-  near.peerConnection = secure.near;
-  far.peerConnection = secure.far;
+  near.peerConnection = opts.near;
+  far.peerConnection = opts.far;
   const p: Phone = { got: [], conn: near, key, say: (m) => near.send(m), types: () => p.got.map((m) => m.t) };
   near.on('data', (raw) => {
     const m = raw as Phone['got'][number];
     if (m.t === 'ping') return p.asleep ? undefined : near.send({ t: 'pong' });
     p.got.push(m);
+    if (opts.mute) return;
     if (m.t === 'enrol') { p.key = newKey(); near.send({ t: 'key', key: p.key }); }
     if (m.t === 'prove') {
       const { here, there } = ends(near.peerConnection);
@@ -95,7 +96,7 @@ afterEach(() => {
 
 it('decides each step from the proof, the key on record and the host', () => {
   const c = (x: Partial<Claim> = {}): Claim => ({ modern: true, proof: 'none', approved: false, ...x });
-  const s = (x: Partial<Held> = {}): Held => ({ keyed: false, fresh: false, online: false, ...x });
+  const s = (x: Partial<Held> = {}): Held => ({ keyed: false, fresh: false, online: false, live: false, ...x });
   const refused = { refuse: expect.any(String) };
   const cases: [Claim, Held, unknown][] = [
     [c(), s({ fresh: true }), 'enrol'],
@@ -104,8 +105,10 @@ it('decides each step from the proof, the key on record and the host', () => {
     [c({ modern: false }), s({ fresh: true }), 'ask'],
     [c({ modern: false, approved: true }), s(), 'admit'],
     [c({ modern: false, approved: true }), s({ keyed: true }), refused],
-    [c(), s({ keyed: true, online: true }), 'prove'],
-    [c({ proof: 'right' }), s({ keyed: true, online: true }), 'admit'],
+    [c(), s({ online: true, live: true }), 'retry'],
+    [c(), s({ online: true }), 'ask'],
+    [c(), s({ keyed: true, online: true, live: true }), 'prove'],
+    [c({ proof: 'right' }), s({ keyed: true, online: true, live: true }), 'admit'],
     [c({ proof: 'wrong' }), s({ keyed: true }), 'ask'],
     [c({ proof: 'wrong', approved: true }), s({ keyed: true }), 'enrol'],
     [c({ proof: 'wrong', approved: true }), s({ keyed: true, online: true }), refused],
@@ -246,8 +249,12 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     host.link.answer(host.link.asks[0], true);
     expect(old.types()).toEqual(['wait', 'welcome', 'view']);
     const redial = phone(host.link, 'p5', 'Old', undefined, false);
-    expect(redial.types()).toEqual(['wait']);
-    redial.conn.close();
+    expect(redial.types()).toEqual([]); // its other connection is still alive: later, without a word
+    expect([redial.conn.open, old.conn.open]).toEqual([false, true]);
+    old.conn.close();
+    const again = phone(host.link, 'p5', 'Old', undefined, false);
+    expect(again.types()).toEqual(['wait']);
+    again.conn.close();
     expect(host.link.asks).toEqual([]);
     close(host);
   });
@@ -302,21 +309,44 @@ describe('a question to the host', () => {
     close(host);
   });
 
-  it('and its Yes both outlast the phone\'s sleep', async () => {
+  it('shows its number on that phone, and its Yes is for that connection alone', async () => {
     const { host } = await room();
-    const asleep = await ask(host);
+    const first = await ask(host);
     const asked = host.link.asks[0];
-    asleep.asleep = true;
+    expect(first.got.at(-1)!.why).toBe(`Waiting for a Yes on the host screen. Your number is ${asked.code}.`);
+    expect(asked.code).toBeGreaterThanOrEqual(10);
+    expect(asked.code).toBeLessThan(100);
+
+    // The same claim again: turned back while the first connection lives, a new question once it sleeps.
+    const copy = await ask(host);
+    expect([copy.types(), copy.conn.open, host.link.asks]).toEqual([['prove'], false, [asked]]);
+    first.asleep = true;
     await vi.advanceTimersByTimeAsync(6000);
-    const awake = await ask(host);
-    expect(asleep.conn.open).toBe(false);
-    expect(host.link.asks).toEqual([asked]);
-    // Yes, but the phone is gone again before it hears.
-    awake.conn.other!.send = () => {};
+    const second = await ask(host);
+    expect(first.conn.open).toBe(false);
+    expect(host.link.asks).toHaveLength(1);
+    expect(host.link.asks[0].id).not.toBe(asked.id);
     host.link.answer(asked, true);
-    awake.conn.close();
+    expect(second.types()).toEqual(['prove', 'wait']);
+
+    // A Yes the phone did not live to hear is spent: whoever says the same next is asked about.
+    second.conn.other!.send = () => {};
+    host.link.answer(host.link.asks[0], true);
+    const thief = await ask(host, 'p6');
+    expect(why(thief)).toMatch(/Another phone/);
+    second.conn.close();
     const third = await ask(host);
-    expect(third.types()).toEqual(['prove', 'enrol', 'welcome', 'view']);
+    expect(third.types()).toEqual(['prove', 'wait']);
+    close(host);
+  });
+
+  it('a new seat being enrolled is kept for that phone', async () => {
+    const host = await load('hand');
+    const slow = phone(host.link, 'p1', 'Sam', undefined, true, { mute: true });
+    expect(slow.types()).toEqual(['enrol']);
+    expect(why(phone(host.link, 'p1', 'Sam', undefined, false))).toMatch(/Another phone/);
+    slow.say({ t: 'key', key: newKey() });
+    expect(slow.types()).toContain('welcome');
     close(host);
   });
 });

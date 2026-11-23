@@ -879,16 +879,20 @@ about the game, replaces nobody and changes nothing.
   wrong; the key itself is never sent again. The right proof replaces the seat's old connection at once, even one that still
   looks online, so sleep, reload, Wi-Fi and broker changes need no tap. A wrong or empty proof is
   refused while the seat is online; while it is offline the host is asked.
-- The host is asked on the host screen: "Move Sam's seat to this phone?" (Yes / No). The phone shows
-  that it is waiting. Yes makes the phone enrol a new key and the old one stops working. The
+- The host is asked on the host screen: "Move Sam's seat to the phone showing 47?" (Yes / No). The
+  waiting phone shows that number ("Waiting for a Yes on the host screen. Your number is 47."), two
+  random digits no other waiting phone has. Yes makes the phone enrol a new key and the old one stops working. The
   question ends when the phone disconnects, the seat's own phone returns with its key, the host
-  says no, or a minute passes. One question per seat, eight in all; a phone that slept and asks
-  again takes its own question over, and a Yes waits up to a minute for it to come back. The 10 s
-  limit on joining stands still while the host is asked.
+  says no, or a minute passes. A Yes is for the connection that asked, while it lasts; no question
+  or Yes moves to another. One phone at a time may ask for or enrol a seat (eight questions in all):
+  another phone is turned away, and the same one on a new connection is closed without a word (it
+  retries) until its earlier connection has said nothing for 5 s, then asks anew. The 10 s limit on
+  joining stands still while the host is asked.
 - A seat without a key (a game saved without its seat record, or a seat held by a page that cannot
-  do keys) is never open: the host is asked once, and the phone enrols.
+  do keys) is never open: the host is asked once, and the phone enrols. While the phone in it was
+  heard from in the last 5 s, another is closed without a word.
 - A page that cannot do keys (its `hello` has no `keys`) needs the host's Yes on every connection,
-  for a new seat ("Let Sam join from this phone?") or one without a key, which stays without one;
+  for a new seat ("Let Sam join from the phone showing 47?") or one without a key, which stays without one;
   for a seat with a key it is told "Reload this page to rejoin."
 - A connection is given one seat, once. Leaving, removal and replacement stop the host listening to
   it at once. Removal drops the key and blocks the player id for the life of the room, across
