@@ -456,6 +456,12 @@ describe('sharing a pack by hand', () => {
     expect(sentBody(fetch).localId).toBe('movies');
   });
 
+  it("moves a pack off a new built-in's id to one no other pack has", () => {
+    localStorage.setItem('hr:custom:decks', JSON.stringify([{ ...own, id: 'movies' }, { ...own, id: 'my-movies', words: ['Other'] }]));
+    expect(customDecks.settle().map((d) => d.id)).toEqual(['my-movies-2', 'my-movies']);
+    expect(customDecks.all().map((d) => d.id)).toEqual(['my-movies-2', 'my-movies']);
+  });
+
   it('counts a Community pack as owned while a pack imported from it, or shared as it, is on the phone', async () => {
     const get = (id: string, name = 'Trip') => importLibraryPack('hand', { id, game: 'hand', name, blurb: '', count: 1, stars: 0, created: 0, updated: 0,
       items: [], extra: { answers: Array.from({ length: 2 }, (_, i) => `My ${name} answer ${i}`) } });

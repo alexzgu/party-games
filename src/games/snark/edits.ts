@@ -3,7 +3,7 @@
 import { customSnark, snarkPacks, type SnarkFinal, type SnarkPack } from '../../lib/content';
 import { NO_ROOM } from '../../lib/packfile';
 import { finalProblem, removeFinal, setFinal } from './finals';
-import { removePrompt, setPrompt } from './pack';
+import { packTexts, promptKey, removePrompt, setPrompt } from './pack';
 
 /** The pack changed, or why it cannot be. */
 export type Change = (now: SnarkPack) => SnarkPack | { problem: string };
@@ -40,6 +40,6 @@ export const changePrompt = (was: PromptText | null, to: PromptText | null): Cha
   const at = was ? now.prompts.findIndex((q) => q === was.text && (now.safety?.[q] ?? '') === was.stock) : 'new';
   if (at === -1) return { problem: moved('prompt') };
   if (!to) return at === 'new' ? now : removePrompt(now, at);
-  const taken = now.prompts.some((q, i) => i !== at && q.toLowerCase() === to.text.toLowerCase());
+  const taken = packTexts({ ...now, prompts: now.prompts.filter((_, i) => i !== at) }).some((q) => promptKey(q) === promptKey(to.text));
   return taken ? { problem: 'That prompt is already in this pack.' } : setPrompt(now, at, to.text, to.stock);
 };

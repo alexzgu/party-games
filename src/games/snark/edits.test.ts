@@ -38,6 +38,7 @@ describe('changing a saved pack', () => {
     }
     expect(changeSaved(pack.id, changeFinal(null, pet)).problem).toMatch(/already/);
     expect(changeSaved(pack.id, changePrompt(null, { text: 'a bad name for a BOAT', stock: '' })).problem).toMatch(/already/);
+    expect(changeSaved(pack.id, changePrompt(null, { text: pet.prompt, stock: '' })).problem).toMatch(/already/);
     expect(saved()).toEqual(before);
   });
 

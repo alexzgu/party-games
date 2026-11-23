@@ -2,6 +2,7 @@
 // make or edit on the phone (saved in localStorage). An edit of a built-in replaces it in place.
 import { load, save, trySave } from './storage';
 import { forgetShared, moveShared } from './shareLog.svelte';
+import { freshId } from './splitPack';
 import type { Secret } from '../games/salad/words';
 
 /** What a pack saved on this phone carries beside its content; pack files never carry it. */
@@ -59,16 +60,24 @@ function customStore<T extends { id: string } & PackMeta>(key: string, builtin: 
   // under a new id, so it is never mistaken for an edit and "restored" away. Reading only shows it
   // under that id, writing nothing (it happens while pages render); `settle` stores the move.
   const clashes = (x: T) => !!x.custom && builtinIds.has(x.id);
-  const renamed = (x: T): T => (clashes(x) ? { ...x, id: 'my-' + x.id } : x);
-  const stored = (): T[] => load<T[]>(key, []).map(renamed);
+  const renamed = (items: T[]): T[] => {
+    const taken = new Set([...builtinIds, ...items.map((x) => x.id)]);
+    return items.map((x) => {
+      if (!clashes(x)) return x;
+      const id = freshId('my-' + x.id, (t) => taken.has(t));
+      taken.add(id);
+      return { ...x, id };
+    });
+  };
+  const stored = (): T[] => renamed(load<T[]>(key, []));
   // Runs as the app starts, before anything renders, and before each write. What the Community
   // library knows of a moved pack goes with it (shareLog.svelte.ts), so a later share updates the
   // same entry.
   function settle(): T[] {
     const items = load<T[]>(key, []);
-    const moved = items.map(renamed);
+    const moved = renamed(items);
     if (items.some(clashes)) save(key, moved);
-    for (const x of items) if (clashes(x)) moveShared(game, x.id, renamed(x).id);
+    items.forEach((x, i) => { if (clashes(x)) moveShared(game, x.id, moved[i].id); });
     return moved;
   }
   settle();
