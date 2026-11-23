@@ -60,11 +60,11 @@ class Session {
 
   open() {
     if (this.game) return;
-    const old = store.loadGame();
+    const { game: old, room } = store.loadRoom();
     this.now = Date.now();
     this.game = old ? L.afterReload(old, this.now) : L.newGame(newPid(), newCode(), store.loadSettings());
-    store.saveGame(this.game);
-    this.link.open(this.game.code, !!old);
+    this.link.open(this.game.code, room);
+    store.saveGame(this.game, this.link.room);
     this.bots.open();
     this.timer = setInterval(() => this.tick(), 250);
   }
@@ -111,7 +111,7 @@ class Session {
     if (next === this.game) return;
     const finished = next.phase === 'over' && this.game?.phase !== 'over';
     this.game = next;
-    store.saveGame(next);
+    store.saveGame(next, this.link.room);
     if (finished) this.history(next, true);
     for (const pid of this.link.pids()) this.send(pid);
   }
@@ -174,7 +174,7 @@ class Session {
     this.bots.close();
     clearInterval(this.timer);
     this.game = null;
-    store.saveGame(null);
+    store.saveGame(null, '');
   }
 }
 

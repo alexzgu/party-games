@@ -237,6 +237,36 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     close(host);
   });
 
+  it('never trust another room\'s record: a forgotten tab\'s game, or one saved without its room, asks', async () => {
+    const tab = await load(game); // room A, left open in a second tab
+    const sam = phone(tab.link, 'p1', 'Sam');
+    const dan = phone(tab.link, 'p2', 'Dan');
+    close(await load(game));
+    const other = await load(game); // room B, where a guest enrols Sam's id and Dan's is removed
+    const guest = phone(other.link, 'p1', 'Guest');
+    phone(other.link, 'p2', 'Nan');
+    other.kick('p2');
+    expect(tab.addBot()).toBeNull(); // the second tab writes its game
+
+    let host = await load(game);
+    expect(host.game).not.toHaveProperty('room');
+    expect(JSON.stringify(host.game)).toContain('Sam');
+    for (const [pid, name, key] of [['p1', 'Sam', guest.key], ['p2', 'Dan', dan.key]]) {
+      const p = phone(host.link, pid!, name!, key);
+      expect(p.types()).toEqual(['wait']);
+      host.link.answer(host.link.asks[0], true);
+      expect(p.types()).toEqual(['wait', 'enrol', 'welcome', 'view']);
+      sam.key = pid === 'p1' ? p.key : sam.key;
+    }
+
+    const saved = JSON.parse(localStorage.getItem(`hr:${game}:host`)!) as { room?: string };
+    expect(saved.room).toBe(host.link.room);
+    localStorage.setItem(`hr:${game}:host`, JSON.stringify({ ...saved, room: undefined }));
+    host = await load(game);
+    expect(phone(host.link, 'p1', 'Sam', sam.key).types()).toEqual(['wait']);
+    close(host);
+  });
+
   it('with the record missing, and old pages, need the host; bots come back by themselves', async () => {
     let host = await load(game);
     const sam = phone(host.link, 'p1', 'Sam');

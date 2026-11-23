@@ -8,7 +8,7 @@ import { seatIn } from '../../lib/room/seats';
 import * as L from './logic';
 import { playerView } from './view';
 import { readToHost } from './protocol';
-import { loadGame, loadSettings, saveGame, saveSettings } from './store';
+import { loadRoom, loadSettings, saveGame, saveSettings } from './store';
 import { gameRecord } from './record';
 import { dedupe, snarkPacks, type SnarkPack } from '../../lib/content';
 import { makeBag } from '../../lib/bag';
@@ -87,11 +87,11 @@ class HostSession {
   /** Reopens the saved room, or opens a new one. Does nothing when already open. */
   open(): void {
     if (this.game) return;
-    const saved = loadGame();
+    const { game: saved, room } = loadRoom();
     const g = saved ? L.afterReload(saved, Date.now()) : L.newGame(newCode(), loadSettings());
     this.game = g;
-    saveGame(g);
-    this.link.open(g.code, !!saved);
+    this.link.open(g.code, room);
+    saveGame(g, this.link.room);
     this.bots.open();
     this.ticker = setInterval(() => this.tick(), 250);
   }
@@ -122,7 +122,7 @@ class HostSession {
       next = { ...next, recorded: true };
     }
     this.game = next;
-    saveGame(next);
+    saveGame(next, this.link.room);
     for (const pid of this.link.pids()) this.sendView(pid);
   }
 
@@ -178,7 +178,7 @@ class HostSession {
     if (this.ticker) clearInterval(this.ticker);
     this.ticker = null;
     this.game = null;
-    saveGame(null);
+    saveGame(null, '');
   }
 }
 

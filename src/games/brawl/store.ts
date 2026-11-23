@@ -1,9 +1,11 @@
 import { load, save, remove } from '../../lib/storage';
+import { keepGame, loadSaved } from '../../lib/room/saved';
 import { DEFAULT_SETTINGS, DRAW_TIMES, type Game, type Settings } from './logic';
 import type { Drawing } from '../../lib/ink';
 
-export const loadGame = () => load<Game | null>('brawl:host', null);
-export const saveGame = (g: Game | null) => g ? save('brawl:host', g) : remove('brawl:host');
+export const loadRoom = () => loadSaved('brawl:host', (x) => x as Game);
+export const loadGame = () => loadRoom().game;
+export const saveGame = (g: Game | null, room: string) => keepGame('brawl:host', g, room);
 export const loadArt = () => load<Record<string, Drawing>>('brawl:art', {});
 export const saveArt = (a: Record<string, Drawing>) => save('brawl:art', a);
 export const clearArt = () => remove('brawl:art');

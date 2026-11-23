@@ -98,10 +98,10 @@ export class SeatBook {
   private out = new Set<string>();
   constructor(private game: string) {}
 
-  /** The room opens: as it was saved with its game, or anew. A record lost or damaged leaves every seat without a key. */
-  open(reopened: boolean): void {
-    const s = reopened ? load<{ room?: unknown; keys?: unknown; kicked?: unknown } | null>(`${this.game}:seats`, null) : null;
-    const saved = s && isKey(s.room) ? s : null;
+  /** The room opens; `room`: the id saved with its game. No record of that very room: a new id, and no seat has a key. */
+  open(room: string): void {
+    const s = load<{ room?: unknown; keys?: unknown; kicked?: unknown } | null>(`${this.game}:seats`, null);
+    const saved = s && isKey(s.room) && s.room === room ? s : null;
     this.room = saved ? (saved.room as string) : newKey();
     this.keys = new Map(pairs(saved?.keys, ([pid, key]) => isPid(pid) && isKey(key)));
     this.out = new Set(Array.isArray(saved?.kicked) ? saved.kicked.filter(isPid) : []);

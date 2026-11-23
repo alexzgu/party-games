@@ -7,7 +7,7 @@ import { Bots, isBot } from '../../lib/room/bots';
 import { saladBrain } from './bot';
 import * as L from './logic';
 import { readToHost } from './protocol';
-import { loadGame, loadSettings, saveGame, saveSettings, type Settings } from './store';
+import { loadRoom, loadSettings, saveGame, saveSettings, type Settings } from './store';
 import { playerView } from './view';
 
 function selected(ids: string[]) {
@@ -63,12 +63,12 @@ class HostSession {
 
   open(): void {
     if (this.game) return;
-    const saved = loadGame();
+    const { game: saved, room } = loadRoom();
     const { packIds, awayMs } = loadSettings();
     const g = saved ? L.afterReload(saved, Date.now())
       : L.newGame(newCode(), packIds, poolFor(packIds), Math.floor(Math.random() * 4294967296), awayMs);
+    this.link.open(g.code, room);
     this.commit(g);
-    this.link.open(g.code, !!saved);
     this.bots.open();
     this.ticker = setInterval(() => this.tick(), 250);
   }
@@ -84,7 +84,7 @@ class HostSession {
       next = { ...next, recorded: true };
     }
     this.game = next;
-    saveGame(next);
+    saveGame(next, this.link.room);
     for (const pid of this.link.pids()) this.sendView(pid);
   }
 
@@ -138,7 +138,7 @@ class HostSession {
     if (this.ticker) clearInterval(this.ticker);
     this.ticker = null;
     this.game = null;
-    saveGame(null);
+    saveGame(null, '');
   }
 }
 

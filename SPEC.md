@@ -909,7 +909,10 @@ about the game, replaces nobody and changes nothing.
   reload and Play again; a player who left keeps their key and may return.
 - The host keeps the room's id, the keys and who was removed in one record per game
   (`<game>:seats`), outside the game, cleared when the room closes and before each write, so a write
-  that fails leaves none rather than an old one. A phone keeps its keys by room
+  that fails leaves none rather than an old one. The saved game carries its room's id too (added as
+  it is saved, taken off as it is loaded). On reopening, the record counts only if it names the same
+  room; with none, another or no id in the save, the room gets a new id, no keys and no bans, and
+  every player in it needs the host's Yes. A phone keeps its keys by room
   id (`<game>:keys`, the last 200; in memory when storage is blocked). Keys are in no URL, log,
   view, History entry or player row. Proofs need `crypto.subtle` (https, or localhost): a page on
   plain http sends an empty one.

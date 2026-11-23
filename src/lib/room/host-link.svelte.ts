@@ -85,10 +85,13 @@ export class HostLink {
     });
   }
 
-  /** Registers the room on the broker under its code and starts pinging; `reopened`: a saved room, with its seats' keys. */
-  open(code: string, reopened: boolean): void {
+  /** The room's id, saved with its game. */
+  get room(): string { return this.book.room; }
+
+  /** Registers the room on the broker under its code and starts pinging; `saved`: a saved game's room id (its seats' keys), or empty. */
+  open(code: string, saved: string): void {
     this.code = code;
-    this.book.open(reopened);
+    this.book.open(saved);
     this.connect();
     this.pinger ??= setInterval(() => this.ping(), PING_MS);
   }

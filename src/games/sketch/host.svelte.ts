@@ -64,12 +64,12 @@ class Session {
 
   open() {
     if (this.game) return;
-    const old = store.loadGame();
+    const { game: old, room } = store.loadRoom();
     this.art = old ? store.loadArt() : {};
     this.now = Date.now();
     this.game = old ? L.afterReload(old, this.now) : newGame(newPid(), newCode(), store.loadSettings());
-    store.saveGame(this.game);
-    this.link.open(this.game.code, !!old);
+    this.link.open(this.game.code, room);
+    store.saveGame(this.game, this.link.room);
     this.bots.open();
     this.timer = setInterval(() => this.tick(), 250);
   }
@@ -148,7 +148,7 @@ class Session {
     const ends = (x: Game | null) => x?.phase === 'over' || x?.phase === 'album';
     const finished = ends(next) && !ends(this.game);
     this.game = next;
-    store.saveGame(next);
+    store.saveGame(next, this.link.room);
     if (finished) this.history(next, true);
     // Draw & guess shows a turn's drawing until the reveal ends; then it is dropped.
     if (next.dg && next.phase !== 'guess' && next.phase !== 'reveal' && Object.keys(this.art).length) {
@@ -235,7 +235,7 @@ class Session {
     this.game = null;
     this.art = {};
     this.seq.clear();
-    store.saveGame(null);
+    store.saveGame(null, '');
     store.clearArt();
   }
 }
