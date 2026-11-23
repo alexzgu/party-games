@@ -130,10 +130,10 @@
     void shareWizardPack('forehead', $state.snapshot(deck), byPass);
   }
 
-  function claude() {
+  function paste() {
     // A built-in only becomes an edit once words are actually added (MakeDeck saves it).
     if (!builtin) persist();
-    go(deck.id ? '/forehead/make?into=' + encodeURIComponent(deck.id) : '/forehead/make');
+    go('/forehead/make?tab=paste' + (deck.id ? '&into=' + encodeURIComponent(deck.id) : ''));
   }
 </script>
 
@@ -220,7 +220,7 @@
 
   {#snippet actions()}
     {#if deck.id && !builtin}<Button size="lg" onclick={() => (adding = true)} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
-    <Button size="lg" variant="secondary" onclick={claude} disabled={!deck.name.trim() && !deck.words.length} tip="Add a list of words, or ask Fizzwick for some">📋 Paste a list</Button>
+    <Button size="lg" variant="secondary" onclick={paste} disabled={!deck.name.trim() && !deck.words.length} tip="Add a whole list of words at once">📋 Paste a list</Button>
   {/snippet}
 </Screen>
 {/if}

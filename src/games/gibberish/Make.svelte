@@ -142,7 +142,7 @@
     <Segmented label="How to make it" options={MODES} bind:value={mode} />
   {/if}
   {#if !reviewing && mode === 'paste'}
-    <PasteList label="Phrase | Answer | Category (optional)"
+    <PasteList submit="Review cards" label="Phrase | Answer | Category (optional)"
       placeholder={'Eye Scream | Ice Cream | Food\nSand A Claws | Santa Claus | Holiday\nHair Eye Pot Her | Harry Potter'}
       parse={(t) => parsePastedCards(t, destPack?.cards ?? [])} onadd={pasted} bind:text={pasteText}>
       {@render saveTo()}

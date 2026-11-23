@@ -38,8 +38,8 @@
     {/each}
   </ol>
   <div class="actions pop-in" style:animation-delay="{400 + rows.length * 110}ms">
-    <Button size="lg" onclick={onagain} tip="Back to the lobby with scores at zero">Play again, same players</Button>
-    <Button variant="ghost" onclick={onclose} tip="Sends every phone back to the start">Close the room</Button>
+    <Button size="lg" onclick={onagain} tip="Back to the lobby with scores at zero">Back to lobby</Button>
+    <Button variant="ghost" onclick={onclose} tip="Sends every phone back to the start, after asking">Close room</Button>
   </div>
 </div>
 

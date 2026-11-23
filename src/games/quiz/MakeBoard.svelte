@@ -147,7 +147,7 @@
       <label class="field"><span>Pack name</span>
         <input type="text" bind:value={name} placeholder="Pasted pack" maxlength="40" autocomplete="off" enterkeyhint="done" />
       </label>
-      <PasteList label="A “# Category” line, then one “clue | answer” line per level, easiest first"
+      <PasteList submit="Review clues" label="A “# Category” line, then one “clue | answer” line per level, easiest first"
         placeholder={'# Space\nThe planet nicknamed the Red Planet | Mars\nThe first person to walk on the Moon | Neil Armstrong\n# Food\nThe country pizza comes from | Italy'}
         {parse} onadd={(items, note) => make(items[0], note)} bind:text={pasteText} />
       <p class="faint small">Up to {MAX_CATEGORIES} categories of up to {MAX_LEVELS} clues. Shorter categories get empty tiles to fill in.</p>

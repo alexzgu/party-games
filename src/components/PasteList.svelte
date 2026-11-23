@@ -15,10 +15,11 @@
   import Button from './Button.svelte';
 
   // Paste a list (typed, or copied from a chatbot app) → the game's parser picks out the
-  // items → the caller reviews them. Says how many lines were skipped and why.
+  // items → the caller reviews or saves them. Says how many lines were skipped and why.
   let {
     label,
     placeholder,
+    submit,
     parse,
     onadd,
     text = $bindable(''),
@@ -28,6 +29,8 @@
     label: string;
     /** A few example lines in the exact format. */
     placeholder: string;
+    /** What its button says: "Review cards" when a review follows, else what it saves. */
+    submit: string;
     parse: (text: string) => { items: T[]; skipped: string[] };
     /** Called with the items found and the skipped-lines note ('' when none were skipped). */
     onadd: (items: T[], note: string) => void;
@@ -57,7 +60,7 @@
   </label>
   {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
   {@render children?.()}
-  <Button type="submit" size="lg" disabled={!text.trim()} tip="Reads your list, skipping lines it can't use">Add these</Button>
+  <Button type="submit" size="lg" disabled={!text.trim()} tip="Reads your list, skipping lines it can't use">{submit}</Button>
 </form>
 
 <style>

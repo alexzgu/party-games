@@ -66,8 +66,10 @@ Three routes, in the order the owner chose to rely on them:
    commits and pushes; the site rebuilds in 1–2 minutes. Steps: "Making a new pack" in
    AGENTS.md, or `/make-pack`.
 2. **Paste a list** on the phone: each game's "Make a pack" screen (Add pack → New under the
-   pack list) takes a pasted list (one item per line, in the game's format), shows it in
-   `Triage` for review, and saves it as a custom pack on that phone.
+   pack list) takes a pasted list (one item per line, in the game's format) and saves it as a
+   custom pack on that phone. Its button says what comes next: "Review words" (cards, prompts,
+   clues) where a review follows (`Triage`; Big Board: the editor), "Save as a new pack" where the
+   list is saved at once (Snark Tank, Doodle Brawl, Bad Hand, Sketchy).
 3. **Ask the wizard in the app**, first way in, the host's own testing route (no screen mentions
    invite links; players are told only about the magic words, route 4): players see live generation as
    "Fizzwick the Wizard" 🧙; no screen names Claude, Anthropic or an API key. The host (the owner,
@@ -427,7 +429,7 @@ Updates reach phones without interrupting play: a new version downloads in the b
 Heads Up-style. One player holds the phone on their forehead, screen facing out; the others
 shout clues; the holder tilts down for "got it", up for "pass".
 
-- **Setup**: the shared pack list (packs with their icon, word count); tap to select one or several (mixed); the pencil opens a pack to see, edit or restore its words (`#/forehead/deck?id=…`; the old pack screen `#/forehead/decks` now opens setup). Add pack → New ("Make a pack") offers Paste, By hand (opens an empty pack in the editor) and 🧙 Wizard.
+- **Setup**: the shared pack list (packs with their icon, word count); tap to select one or several (mixed); the pencil opens a pack to see, edit or restore its words (`#/forehead/deck?id=…`; its "Paste a list" opens Make a pack on the Paste tab; the old pack screen `#/forehead/decks` now opens setup). Add pack → New ("Make a pack") offers Paste, By hand (opens an empty pack in the editor) and 🧙 Wizard.
   A "Round" card (summary like "60 s rounds · tilt or tap") holds round length 30/60/90/120 s
   (default 60), Controls and, unless Controls is Tap, Calibrate tilt. Controls: Tilt, Tap or Both (default Both on phones
   and tablets, Tap on a laptop; the old saved "Tilt", which always took taps, carries over as
@@ -751,7 +753,7 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   standings. A phone busy writing or voting is not sent any of this. Pings every 2.5 s;
   a link silent for 9 s is dropped on both sides and the phone redials (1, 2, 4, then every 8 s,
   at once when the phone is unlocked). The room lives at module level, so the host can open
-  settings or a pack and come back without dropping anyone; only End game / Close the room ends it.
+  settings or a pack and come back without dropping anyone; only Close room ends it.
 - **Robustness**: a phone keeps an id and name in localStorage and rejoins as the same player
   with its score after a lock, reload or Wi-Fi change; half-typed answers survive a reload;
   answers and votes sent while offline are resent. A host reload reopens the same room (same
@@ -790,7 +792,7 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   vote is worth 400. Then the winner screen with confetti; History gets one entry on the host
   only, recorded once (`finished: false` when the room is closed early with something scored).
 - **Host controls**: pause/resume (Space; the timer stops on every phone too), skip (End
-  writing / End voting / Next; ignores a second tap within 0.8 s), end game, rules. Wake Lock
+  writing / End voting / Next; ignores a second tap within 0.8 s), close the room, rules. Wake Lock
   on the host and on phones while in a room.
 - Demo screens: `#/snark/host?demo=lobby|lobby-empty|write|vote|reveal|vote3|reveal3|scores|over|paused|duel-write|duel-vote|duel-reveal`,
   `#/snark/join?demo=join|lobby|late|write|wait|vote|voted|vote-own|vote3|voted3|reveal|reveal3|scores|over|duel-write|duel-vote|duel-reveal`.
@@ -1048,8 +1050,7 @@ on their own phones through the shared room link; a host screen shows the room. 
   wrote", "Alex drew", "Jo thought it was"), the entry before it alongside, one per Next (host
   button, Space or →; ← goes back). Phones follow the same entry, so a group can play from
   phones alone; only the host turns pages. No scores. After the last entry of the last chain:
-  Play again (same room and players, back to the lobby, where Start deals new chains) or Close
-  the room. History gets one entry on the host when the album opens: "Telephone · N chains",
+  Back to lobby (same room and players; Start deals new chains) or Close room. History gets one entry on the host when the album opens: "Telephone · N chains",
   with each chain's first and last line.
 
 ### Draw & guess
@@ -1085,8 +1086,8 @@ on their own phones through the shared room link; a host screen shows the room. 
   the turn's end) of what they earned this turn (non-guessers count as 0), rounded to 5. A drawer
   removed or gone from the room by the turn's end earns nothing for it. Phones and the host show
   "N of M got it" over the same guessers. A scoreboard shows between rounds (8 s, or Next); the
-  game ends after the last round with standings and confetti; ties share a place. Play again
-  returns to the lobby with scores reset. History gets one entry on the host.
+  game ends after the last round with standings and confetti; ties share a place. Back to lobby
+  keeps the players and resets the scores. History gets one entry on the host.
 
 ### Both modes
 
@@ -1099,7 +1100,7 @@ on their own phones through the shared room link; a host screen shows the room. 
   ran out meanwhile gets 12 s). For 10 s after the host reopens or changes broker (*house*), while
   phones reconnect, nobody counts as away and "every present player is done" or "every present
   guesser has it" ends nothing; timers still run. A player who chose Leave room and rejoins after
-  Play again is seated in the new lobby. Reconnects, name rules and Leave room as in the shared room link;
+  Back to lobby is seated in the new lobby. Reconnects, name rules and Leave room as in the shared room link;
   name limit 20 characters.
 - **Content** (`src/content/sketch/*.json`): `{"id", "name", "blurb", "added"?, "words": [...],
   "ideas": [...]}`; words (1–3 words, letters, spaces, hyphens and apostrophes, 24 characters)
@@ -1144,8 +1145,8 @@ prompt and the answers. Amounts marked *house* are ours.
   judging. The host can also skip judging to the vote ("Let the room vote").
 - **Winning**: first to the target (5/7/10 points, default 7, *house*: the original plays until
   the room stops) wins, decided when the point is scored; only players still in the game count (a
-  player who left reaches the target by rejoining and scoring). Standings with confetti, the winning answer of every round, Play again
-  or Close the room. History gets one entry on the host.
+  player who left reaches the target by rejoining and scoring). Standings with confetti, the winning answer of every round, Back to lobby
+  or Close room. History gets one entry on the host.
 - **Options** (Settings, off by default; house rules printed with the original):
   - *Trade a point*: a player with a point may, while others answer or during the reveal (never
     judging or voting, and not once someone has reached the target), give it up to swap any of

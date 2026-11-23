@@ -141,7 +141,7 @@
     <Segmented label="How to make it" options={MODES} bind:value={mode} />
   {/if}
   {#if !reviewing && mode === 'paste'}
-    <PasteList label="One prompt per line. Each reads “Name 3 …”."
+    <PasteList submit="Review prompts" label="One prompt per line. Each reads “Name 3 …”."
       placeholder={"things you'd find in a fridge\nwords that rhyme with night\nsongs by Taylor Swift"}
       parse={(t) => parsePasted(t, destPack?.prompts ?? [])} onadd={pasted} bind:text={pasteText}>
       {@render saveTo()}

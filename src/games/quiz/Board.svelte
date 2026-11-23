@@ -92,7 +92,7 @@
         <div class="done pop-in">
           <p class="big">Board cleared!</p>
           <Button size="lg" onclick={onwin}>🏆 See who won</Button>
-          <Button variant="ghost" size="sm" onclick={onundo} tip="Takes back the last thing scored">Undo the last tile</Button>
+          <Button variant="ghost" size="sm" onclick={onundo} tip="Takes back the last thing scored">Undo: {undoText}</Button>
         </div>
       </div>
     {/if}

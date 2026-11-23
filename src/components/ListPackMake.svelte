@@ -149,7 +149,7 @@
       {#if pasteSpec.hint}<p class="faint small">{pasteSpec.hint}</p>{/if}
     {/if}
     {#if unsaved}<div class="error" role="alert"><p>{unsaved}</p></div>{/if}
-    <PasteList label={route ? pasteLabel : `One ${pasteSpec.one} per line`} placeholder={route ? pastePlaceholder : (pasteExamples?.[pasteSpec.field] ?? pasteSpec.example)}
+    <PasteList submit="Save as a new pack" label={route ? pasteLabel : `One ${pasteSpec.one} per line`} placeholder={route ? pastePlaceholder : (pasteExamples?.[pasteSpec.field] ?? pasteSpec.example)}
       parse={(text) => parseLists(text, specs, route ?? (() => pasteField))} onadd={(list) => add(list)} />
   {:else if !reviewing && !hasKey()}
     <MagicWords intro={WANTS} />

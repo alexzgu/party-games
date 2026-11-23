@@ -49,7 +49,7 @@
   {:else if view === 'lab'}
     <Lab />
   {:else if view === 'make'}
-    <MakeDeck into={route.params.get('into')} {demo} />
+    <MakeDeck into={route.params.get('into')} pasting={route.params.get('tab') === 'paste'} {demo} />
   {:else}
     <Setup />
   {/if}

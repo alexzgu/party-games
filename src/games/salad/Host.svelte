@@ -32,6 +32,7 @@
   const view = $derived(game && playerView(game, '', now));
   const presenter = $derived(view?.players.find((p) => p.pid === view?.presenter));
   const selectedPacks = $derived(game ? packNames(game.packIds) : []);
+  const playing = $derived(!!game && game.phase !== 'lobby' && game.phase !== 'over');
   const timed = $derived(view && view.left !== null);
   const roundSize = $derived(game?.players.filter((p) => !p.kicked && game.order.includes(p.pid)).length ?? 0);
   const roundPlayers = $derived(view?.players.filter((p) => !p.kicked && game?.order.includes(p.pid)) ?? []);
@@ -112,7 +113,7 @@
         <Button size="sm" variant="ghost" onclick={() => (showPlayers = true)} tip="Remove a player from the room">Players</Button>
       {/if}
       <HowTo><Rules /></HowTo>
-      {#if game}<Button size="sm" variant="ghost" onclick={() => (ending = true)} tip="Closes the room and sends every phone back, after asking">{game.phase === 'lobby' ? 'Close room' : 'End game'}</Button>{/if}
+      {#if game}<Button size="sm" variant="ghost" onclick={() => (ending = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close room</Button>{/if}
     </div>
   </header>
 
@@ -179,7 +180,7 @@
             <Standings players={view.players} {final} />
             {#if final}
               <div class="controls">
-                <Button onclick={() => { if (!fixed) host.rematch(); }} tip="Back to the lobby with the same players, scores at zero">Play again</Button>
+                <Button onclick={() => { if (!fixed) host.rematch(); }} tip="Back to the lobby with the same players, scores at zero">Back to lobby</Button>
                 <Button variant="secondary" onclick={() => (ending = true)} tip="Sends every phone back to the start, after asking">Close room</Button>
               </div>
               <Confetti colors={['var(--accent)', 'var(--c-good)', 'var(--c-dial)']} />
@@ -204,11 +205,10 @@
 {/if}
 
 {#if ending}
-  {@const playing = !!game && game.phase !== 'lobby' && game.phase !== 'over'}
-  <Popup title={playing ? 'End the game?' : 'Close the room?'} onclose={() => (ending = false)}>
+  <Popup title="Close the room?" onclose={() => (ending = false)}>
     <div class="actions">
-      <p>This closes room {game?.code} and sends everyone’s phone back to the start.</p>
-      <Button variant="danger" onclick={end}>{playing ? 'End game' : 'Close room'}</Button>
+      <p>This closes room {game?.code} and sends everyone’s phone back to the start.{#if playing} The game ends.{/if}</p>
+      <Button variant="danger" onclick={end}>Close room</Button>
       <Button variant="secondary" onclick={() => (ending = false)}>{playing ? 'Keep playing' : 'Keep it open'}</Button>
     </div>
   </Popup>

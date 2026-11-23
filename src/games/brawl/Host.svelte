@@ -69,10 +69,10 @@
         <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.pause(); }} tip={v.paused ? 'Starts the clock again on every phone' : 'Stops the clock on every phone'}>{v.paused ? 'Resume' : 'Pause'}</Button>
         <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }} tip={v.phase === 'draw' || v.phase === 'challenge' ? 'Stops the drawing now; missing fighters stay blank' : v.phase === 'vote' ? 'Counts the votes so far now' : 'Moves on without waiting for the timer'}>{skipLabel}</Button>
       {:else if v?.phase === 'over'}
-        <Button size="sm" onclick={() => { if (!fixed) host.rematch(); }} tip="Back to the lobby with the same players, scores at zero">Play again</Button>
+        <Button size="sm" onclick={() => { if (!fixed) host.rematch(); }} tip="Back to the lobby with the same players, scores at zero">Back to lobby</Button>
       {/if}
       <HowTo><Rules /></HowTo>
-      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)} tip={playing ? 'Closes the room and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>{playing ? 'End game' : 'Close room'}</Button>{/if}
+      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close room</Button>{/if}
     </div>
   </header>
   {#if v}
@@ -116,9 +116,9 @@
 </div>
 
 {#if confirm}
-  <Popup title={playing ? 'End the game?' : 'Close the room?'} onclose={() => (confirm = false)}>
-    <p>This closes room {fixed ? 'BRWK' : game?.code} and sends everyone’s phone back to the start.</p>
-    <Button variant="danger" onclick={() => { if (!fixed) host.close(); back('/brawl'); }}>{playing ? 'End game' : 'Close room'}</Button>
+  <Popup title="Close the room?" onclose={() => (confirm = false)}>
+    <p>This closes room {fixed ? 'BRWK' : game?.code} and sends everyone’s phone back to the start.{#if playing} The game ends.{/if}</p>
+    <Button variant="danger" onclick={() => { if (!fixed) host.close(); back('/brawl'); }}>Close room</Button>
     <Button variant="secondary" onclick={() => (confirm = false)}>{playing ? 'Keep playing' : 'Keep it open'}</Button>
   </Popup>
 {/if}

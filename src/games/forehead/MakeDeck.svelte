@@ -21,7 +21,7 @@
   // "Make a deck": paste a list, type one by hand in the deck editor, or give Claude a theme and
   // watch words stream in → drop the duds → save as a new deck or add to one of mine. "More"
   // asks Claude for more, never repeating what is there.
-  let { into = null, demo = null }: { into?: string | null; demo?: string | null } = $props();
+  let { into = null, pasting = false, demo = null }: { into?: string | null; /** Opens on its paste tab. */ pasting?: boolean; demo?: string | null } = $props();
 
   const start = untrack(() => ({ into, demo: demo === 'triage', isDemo: demo != null }));
   // Decks words can be added to: my own, plus the built-in deck this was opened from (that saves an edit of it).
@@ -45,7 +45,7 @@
     { value: 'claude', label: '🧙 Wizard', tip: 'Fizzwick writes words on a theme you pick' },
   ];
   // svelte-ignore state_referenced_locally
-  let mode = $state<Mode>(keyReady || start.isDemo ? 'claude' : 'paste');
+  let mode = $state<Mode>(!pasting && (keyReady || start.isDemo) ? 'claude' : 'paste');
   let pasteText = $state('');
   let note = $state('');
   let deckName = $state('');
@@ -143,7 +143,7 @@
   {#if phase === 'form'}
     <Segmented label="How to make it" options={MODES} bind:value={mode} />
     {#if mode === 'paste'}
-      <PasteList label="One word or phrase per line" placeholder={'Moon Landing\nTaylor Swift\nPizza Rat, Karaoke Night'}
+      <PasteList submit="Review words" label="One word or phrase per line" placeholder={'Moon Landing\nTaylor Swift\nPizza Rat, Karaoke Night'}
         parse={(t) => parsePastedWords(t, targetDeck?.words ?? [])} onadd={pasted} bind:text={pasteText}>
         {@render saveTo()}
       </PasteList>

@@ -85,6 +85,7 @@
     back('/snark');
   }
 
+  const playing = $derived(!!game && game.phase !== 'lobby' && game.phase !== 'over');
   const timed = $derived(!!game && (game.deadline !== null || game.paused !== null));
   const skipLabel = $derived(game?.phase === 'write' ? 'End writing' : game?.phase === 'show' ? 'Start voting' : game?.phase === 'vote' ? 'End voting' : 'Next');
 </script>
@@ -122,7 +123,7 @@
       {/if}
       <HowTo><Rules /></HowTo>
       {#if game}
-        <Button size="sm" variant="ghost" onclick={() => (confirmEnd = true)} tip={game.phase === 'lobby' ? 'Sends every phone back to the start, after asking' : 'Closes the room and sends every phone back, after asking'}>{game.phase === 'lobby' ? 'Close room' : 'End game'}</Button>
+        <Button size="sm" variant="ghost" onclick={() => (confirmEnd = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close room</Button>
       {/if}
     </div>
   </header>
@@ -158,7 +159,7 @@
         {:else if game.phase === 'scores'}
           <HostScores {game} {left} onnext={skip} />
         {:else if game.phase === 'over'}
-          <HostOver {game} onagain={() => host.rematch()} onclose={end} />
+          <HostOver {game} onagain={() => host.rematch()} onclose={() => (confirmEnd = true)} />
         {/if}
       </TapToFinish>
     {/if}
@@ -176,12 +177,11 @@
 </div>
 
 {#if confirmEnd && game}
-  {@const lobby = game.phase === 'lobby'}
-  <Popup title={lobby ? 'Close the room?' : 'End the game?'} onclose={() => (confirmEnd = false)}>
+  <Popup title="Close the room?" onclose={() => (confirmEnd = false)}>
     <div class="confirm">
-      <p>This closes room {game.code} and sends everyone's phone back to the start.{#if game.phase !== 'over' && anyScored(game)} The scores so far go in History as ended early.{/if}</p>
-      <Button variant="danger" onclick={end}>{lobby ? 'Close room' : 'End game'}</Button>
-      <Button variant="secondary" onclick={() => (confirmEnd = false)}>{lobby ? 'Keep it open' : 'Keep playing'}</Button>
+      <p>This closes room {game.code} and sends everyone's phone back to the start.{#if playing} The game ends.{/if}{#if playing && anyScored(game)} The scores so far go in History as ended early.{/if}</p>
+      <Button variant="danger" onclick={end}>Close room</Button>
+      <Button variant="secondary" onclick={() => (confirmEnd = false)}>{playing ? 'Keep playing' : 'Keep it open'}</Button>
     </div>
   </Popup>
 {/if}
