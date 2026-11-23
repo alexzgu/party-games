@@ -901,10 +901,12 @@ about the game, replaces nobody and changes nothing.
   for a new seat ("Let Sam join from the phone showing 47?") or one without a key, which stays without one;
   for a seat with a key it is told "Reload this page to rejoin."
 - A connection is given one seat, once. Leaving, removal and replacement stop the host listening to
-  it at once. Removal drops the key and blocks the player id for the life of the room, across
+  it at once, and end every claim still pending on that seat; moving to a new code ends them all.
+  Removal drops the key and blocks the player id for the life of the room, across
   reload and Play again; a player who left keeps their key and may return.
 - The host keeps the room's id, the keys and who was removed in one record per game
-  (`<game>:seats`), outside the game, cleared when the room closes. A phone keeps its keys by room
+  (`<game>:seats`), outside the game, cleared when the room closes and before each write, so a write
+  that fails leaves none rather than an old one. A phone keeps its keys by room
   id (`<game>:keys`, the last 200; in memory when storage is blocked). Keys are in no URL, log,
   view, History entry or player row. Proofs need `crypto.subtle` (https, or localhost): a page on
   plain http sends an empty one.

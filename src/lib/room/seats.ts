@@ -112,7 +112,9 @@ export class SeatBook {
     remove(`${this.game}:seats`);
   }
 
+  /** The old record goes first: where a new one will not fit, seats ask the host rather than trust an old key. */
   private save(): void {
+    remove(`${this.game}:seats`);
     save(`${this.game}:seats`, { room: this.room, keys: [...this.keys], kicked: [...this.out] });
   }
 }
@@ -226,7 +228,7 @@ export class Desk<C> {
     const key = this.book.key(call.seat);
     const { here, there } = this.hooks.ends(conn);
     const want = await proofOf(key, { room: this.book.room, nonce: call.nonce, host: here, phone: there });
-    if (this.calls.get(conn) !== call) return; // gone meanwhile
+    if (this.calls.get(conn) !== call) return; // meanwhile it closed, its seat was left or taken, or the room moved
     call.proof = want !== '' && macs.includes(want) && this.book.key(call.seat) === key ? 'right' : 'wrong';
     this.advance(call);
   }
@@ -260,6 +262,11 @@ export class Desk<C> {
   /** The host removed this player: whoever is asking for the seat is out too. */
   kick(pid: string): void {
     for (const c of this.all()) if (c.seat === pid || c.pid === pid) this.refuse(c, REMOVED);
+  }
+
+  /** The seat was taken or left: whoever else is asking for it starts over. */
+  release(pid: string): void {
+    for (const c of this.all()) if (c.seat === pid) this.hooks.close(c.conn);
   }
 
   clear(): void {
@@ -332,10 +339,9 @@ export class Desk<C> {
     if (call) this.refuse(call, NO_ANSWER);
   }
 
-  /** Seated: anyone else asking for the seat starts over. */
   private admit(call: Call<C>, seat: Seat): void {
     this.drop(call.conn);
-    for (const c of this.all()) if (c.seat === seat.pid) this.hooks.close(c.conn);
+    this.release(seat.pid);
     this.hooks.admit(call.conn, seat);
   }
 

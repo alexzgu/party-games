@@ -218,6 +218,7 @@ export class HostLink {
         if (code) {
           this.code = code;
           this.moving = true;
+          this.desk.clear();
           setTimeout(() => {
             if (this.peer !== peer) return; // closed, or moved to another peer, meanwhile
             if (!peer.destroyed) peer.destroy();
@@ -311,6 +312,7 @@ export class HostLink {
     if (!pid) return;
     if (msg.t === 'leave') {
       this.cut(conn);
+      this.desk.release(pid);
       this.hooks.left(pid);
     } else this.hooks.message(pid, msg);
   }

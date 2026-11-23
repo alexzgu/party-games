@@ -11,7 +11,7 @@ vi.mock('./net', async (original) => ({
   makePeer: (id: string | null) => {
     const on: Handlers = {};
     const peer = {
-      open: true, destroyed: false, disconnected: false, destroy: () => {}, reconnect: () => {},
+      on_: on, open: true, destroyed: false, disconnected: false, destroy: () => {}, reconnect: () => {},
       on: (e: string, f: Handlers[string]) => {
         on[e] = f;
         if (id && e === 'connection') net.hosts.set(id, f);
@@ -294,6 +294,42 @@ it('a proof counts only on the connection it was made for: one passed along by a
   }
   expect(straight.conn.open).toBe(true);
   close(host);
+});
+
+it('a claim still being checked ends when its seat is left, or the room moves to another code', async () => {
+  const host = await load('hand');
+  const sam = phone(host.link, 'p1', 'Sam');
+  const twin = phone(host.link, 'p1', 'Sam', sam.key);
+  sam.say({ t: 'leave' });
+  expect(twin.conn.open).toBe(false);
+  await settle(twin);
+  expect(host.link.pids()).toEqual([]);
+
+  const old = phone(host.link, 'p5', 'Old', undefined, false);
+  const slow = phone(host.link, 'p6', 'Slow', undefined, true, { mute: true });
+  const asked = host.link.asks[0];
+  (host.link as unknown as { peer: { on_: Handlers } }).peer.on_.error({ type: 'unavailable-id' });
+  expect(host.link.asks).toEqual([]);
+  host.link.answer(asked, true);
+  slow.say({ t: 'key', key: newKey() });
+  expect([old.types(), slow.types()]).toEqual([['wait'], ['enrol']]);
+  expect(host.link.pids()).toEqual([]);
+  close(host);
+});
+
+it('a new room never keeps the record of one before it', async () => {
+  const host = await load('hand');
+  phone(host.link, 'p1', 'Sam');
+  const keep = localStorage.getItem('hr:hand:seats')!;
+  close(host);
+  localStorage.setItem('hr:hand:seats', keep); // left behind
+  const real = localStorage.setItem;
+  localStorage.setItem = (k, v) => { if (k.endsWith(':seats')) throw new Error('full'); real(k, v); };
+  await load('hand');
+  expect(localStorage.getItem('hr:hand:seats')).toBeNull();
+  const again = await load('hand');
+  expect((again.link as unknown as { book: { key(pid: string): unknown } }).book.key('p1')).toBeUndefined();
+  close(again);
 });
 
 describe('a question to the host', () => {
