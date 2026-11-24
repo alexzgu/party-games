@@ -1,17 +1,19 @@
 // New versions (e.g. a pack pushed mid-party) download in the background and switch in
-// only on the main menu, so an update never reloads the page in the middle of a game.
+// only on the main menu or the Games page, where phones sit between games, so an update never
+// reloads the page in the middle of a game.
 import { registerSW } from 'virtual:pwa-register';
 import { route } from './router.svelte';
 
 const CHECK_EVERY_MS = 60_000;
 let pending = false;
 
-function onMenu(): boolean {
-  return route.path === '/' || route.path === '';
+/** The main menu or the Games page. */
+export function onMenu(path: string): boolean {
+  return path === '/' || path === '' || path === '/games';
 }
 
 function reloadIfIdle(): void {
-  if (pending && onMenu()) location.reload();
+  if (pending && onMenu(route.path)) location.reload();
 }
 
 function waitForActivation(worker: ServiceWorker): Promise<void> {

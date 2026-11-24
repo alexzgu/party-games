@@ -49,7 +49,7 @@
   );
 </script>
 
-<Screen fill title={gameName('forehead')} accent="var(--c-forehead)" onback={() => back('/')}>
+<Screen fill title={gameName('forehead')} accent="var(--c-forehead)" onback={() => back('/games')} backLabel="Games">
   {#snippet trailing()}
     <HowTo>
       <ol>

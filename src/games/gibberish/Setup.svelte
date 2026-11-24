@@ -80,7 +80,7 @@
   }
 </script>
 
-<Screen fill title={gameName('gibberish')} onback={() => { keepRoster(); onhome(); }} backLabel="Home">
+<Screen fill title={gameName('gibberish')} onback={() => { keepRoster(); onhome(); }} backLabel="Games">
   {#snippet trailing()}<Rules {target} />{/snippet}
 <div class="setup">
   <PackList game="gibberish" entries={packs.map(packEntry)} bind:selected noun="cards" placeholder="Search packs and cards" makeHint="Paste a list or ask the wizard"

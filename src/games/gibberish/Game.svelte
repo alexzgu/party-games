@@ -56,7 +56,7 @@
       demoNoKey={demo === 'make-nokey'}
     />
   {:else}
-    <Setup saved={game} onstart={start} onroster={(r) => game && commit(reseat(game, r))} onresume={() => go('/gibberish/play', true)} onmake={() => go('/gibberish/make')} onedit={(id) => go(`/gibberish/pack?id=${encodeURIComponent(id)}`)} onhome={() => back('/')} />
+    <Setup saved={game} onstart={start} onroster={(r) => game && commit(reseat(game, r))} onresume={() => go('/gibberish/play', true)} onmake={() => go('/gibberish/make')} onedit={(id) => go(`/gibberish/pack?id=${encodeURIComponent(id)}`)} onhome={() => back('/games')} />
   {/if}
 </div>
 

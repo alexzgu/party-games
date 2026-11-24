@@ -33,7 +33,7 @@
   }
 </script>
 
-<Screen fill title={gameName('dial')} accent="var(--c-dial)" onback={() => back('/')} backLabel="Home">
+<Screen fill title={gameName('dial')} accent="var(--c-dial)" onback={() => back('/games')} backLabel="Games">
   {#snippet trailing()}
     <HowTo title="How to play {gameName('dial')}">
       <ol>

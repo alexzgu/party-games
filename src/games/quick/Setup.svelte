@@ -84,7 +84,7 @@
   }
 </script>
 
-<Screen fill title={gameName('quick')} onback={() => { keepRoster(); onhome(); }} backLabel="Home">
+<Screen fill title={gameName('quick')} onback={() => { keepRoster(); onhome(); }} backLabel="Games">
   {#snippet trailing()}<Rules {seconds} {target} {steal} {stealUsesTurn} />{/snippet}
 <div class="setup">
   <PackList game="quick" entries={packs.map(packEntry)} bind:selected noun="prompts" placeholder="Search packs and prompts" makeHint="Paste a list or ask the wizard"

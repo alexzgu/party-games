@@ -9,7 +9,9 @@
 </label>
 
 <style>
-  .toggle { display: flex; align-items: center; gap: var(--s-3); background: var(--surface); border-radius: var(--r-md);
+  /* Relative, so the hidden checkbox stays inside it: placed by a far-off ancestor, it would stretch
+     a popup and scroll it out of shape when focused. */
+  .toggle { position: relative; display: flex; align-items: center; gap: var(--s-3); background: var(--surface); border-radius: var(--r-md);
     padding: var(--s-3) var(--s-4); min-height: var(--tap); cursor: pointer; }
   .text { flex: 1; display: flex; flex-direction: column; }
   .label { font-weight: 600; }

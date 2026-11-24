@@ -3,6 +3,7 @@
   import { route } from './lib/router.svelte';
   import { GAMES } from './app.config';
   import Home from './pages/Home.svelte';
+  import Games from './pages/Games.svelte';
   import Settings from './pages/Settings.svelte';
   import History from './pages/History.svelte';
   import Crashed from './pages/Crashed.svelte';
@@ -45,7 +46,8 @@
   // The Community page, while the library is on (a wizard server); otherwise its address shows Home.
   const community = communityGames();
 
-  // The page glow and every default accent follow the game on screen (Community: the open tab's).
+  // The page glow and every default accent follow the game on screen (Community: the open tab's;
+  // the main menu and the Games page: the default).
   $effect(() => {
     const id = segment === 'community' ? tabOf(route.path, community) : segment;
     const game = GAMES.find((g) => g.id === id);
@@ -59,6 +61,8 @@
   <!-- the invite effect takes it from here -->
 {:else if segment === '' }
   <Home />
+{:else if segment === 'games'}
+  <Games />
 {:else if segment === 'settings'}
   <Settings />
 {:else if segment === 'history'}

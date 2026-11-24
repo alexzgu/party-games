@@ -21,7 +21,7 @@
   }
 </script>
 
-<Screen title={gameName('salad')} onback={() => back('/')} backLabel="Home">
+<Screen title={gameName('salad')} onback={() => back('/games')} backLabel="Games">
   {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
 
   {#if openRoom}
