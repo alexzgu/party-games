@@ -42,15 +42,15 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's tab; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
-- `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList` and every pack editor), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `Popup`, `MenuButton` (a button opening a small menu),
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, a pack editor's details or a Community list's search and filters start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's tab; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `gamesView` (the Games page's rules: default categories, the players filter, the orders, own category names, reading the stored choices defensively) and `gamesPage.svelte` (those choices on this phone), `update` (new versions switch in on the main menu or the Games page), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
+- `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList`, every pack editor and the Community list), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `GameCard` (one large row opening a page: a game, or the main menu's Games and Community packs), `CategoryEditor` (the Games page's own categories), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
   items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
   `ExportPack` (Export), `Community` and `CommunityItems` (browse, preview, import and star
   Community packs, over a pack list or on the Community page), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown).
-- `src/pages/` — the pages that are not a game: `Home`, `Settings`, `History`, `CommunityPage`
+- `src/pages/` — the pages that are not a game: `Home`, `Games`, `Settings`, `History`, `CommunityPage`
   (the Community packs with a tab per game), `Joined` (an invite link) and `Crashed`.
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
   to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
@@ -257,10 +257,27 @@ preview, past its list too) and ticks the new pack, as before.
 
 ## Shared behaviour
 
-- **Home** shows every game in `GAMES` (name, emoji, player count), History and Settings. No blurbs.
-  Under the games, while the Community library is on, a quieter row "🌍 Community packs" ("Browse
-  packs friends made") opens the Community page (a row, not a header button: the pinned header has
-  no room on a 320 px phone for a third button, and a bare icon would not say what it opens).
+- **Home** (`#/`): the pinned header (🎲 Jerk Box, History, Settings), then two large rows of the
+  same look: "🎉 Games" ("11 party games", the number in `GAMES`) opens the Games page, and, while
+  the Community library is on, "🌍 Community packs" ("Browse packs friends made") opens the
+  Community page with fresh lists. Without it, the Games row stands alone. Install help at the foot.
+- **Games page** (`#/games`, `src/pages/Games.svelte`; Back returns to Home): every game in `GAMES`
+  as a large row (emoji, name in its colour, player count; no blurbs). Above them: the order
+  (Default, the order of `GAMES`; A–Z; Recent, the games last opened from this page first and the
+  never-opened ones after in default order), then, pinned under the header, the players filter
+  ("Any players" or 1–10: a game shows when the number is within its `minPlayers`–`maxPlayers`, no
+  most meaning any larger number) and a sideways-scrolling row of category chips: "All", the
+  default categories (the `tags` in `GAME_TAGS` order: One phone, Own phones, Teams, Words, Drawing,
+  Trivia, Funny; one no game is in is left out), the phone's own categories (dashed), and "Edit".
+  A chip picks or unpicks its category; with several picked a game must be in every one; "All"
+  unpicks them all. Nothing fitting shows "No games fit." and "Clear", which resets the categories
+  and players. "Edit" opens a popup listing the phone's own categories (at most 20) with New and
+  Done; one opened has its name (1–20 characters, not any category's name ignoring case, refused in
+  plain words), a switch per game, Save, Cancel and Delete (asked first). The order, the picks, the
+  players, the own categories and when each game was last opened stay on this phone only
+  (`src/lib/gamesView.ts`), never in the address; anything broken in storage is dropped. A game's
+  first screen's Back returns here; its Home buttons (`backHome()`) still walk back to the main
+  menu.
 - **Community page** (`#/community/<game>`, `src/pages/CommunityPage.svelte`): the Community packs
   browser of the pack lists (see Community library) with one tab per game in `LIBRARY_GAMES`, in
   that order, across the top: each tab the game's emoji and name in its colour (outlined; filled
@@ -268,6 +285,14 @@ preview, past its list too) and ticks the new pack, as before.
   keeping the open tab in view; arrow keys, Home and End move between tabs. The page and its glow
   take the open tab's game colour. A tab changes the address in place, keeps the search and order,
   and starts that game's list from its top, so Back from the page always returns to the main menu.
+  The list screen (here and over a pack list) is built like the pack pages (`PinnedPanel`): pinned
+  under the header the game tabs (on this page), then the search, the order and the Owned and Skipped filters,
+  which fold away, then a "Packs" row with the fold's button ("Filters" with an arrow, spoken
+  "Hide search and filters" or "Show search and filters"); only the packs, their states and "Show
+  more" scroll. While folded with a search or a filter other than the default (Owned: All;
+  Skipped: Not skipped) the button reads "Filters on" in the accent. The fold has its own remembered choice,
+  apart from the setups' and the pack editors', with the same start (shown on a screen 700 px tall
+  or more). Leaving for a preview and coming Back finds the packs scrolled where they were.
   Opened from the main menu it starts on the first game with fresh lists. "Import" in a preview
   saves the pack in that game's packs (not ticked) and returns to the list exactly as it was left
   (same tab, search, order, loaded pages and scroll), with a note pinned at the bottom,
@@ -286,7 +311,7 @@ preview, past its list too) and ticks the new pack, as before.
   tapped link may not reach it). With either: "Fizzwick the Wizard lives on this phone" and
   "Remove wizard" (clears both). No key field and no model list. Descriptions are
   --text-dim, weight 600.
-  Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
+  Games page: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
 - **Username** (`src/lib/username.ts`): every phone has one. A phone without one is given a
   random friendly name the first time anything asks: an adjective and an animal from the app's
   own word lists ("Sneaky Otter"), at most 14 characters so it fits every room game's name box.
@@ -445,7 +470,8 @@ preview, past its list too) and ticks the new pack, as before.
   Live play (Heads Down. countdown and round, Inn Co Hear Ant card timer) is never skippable.
 
 Updates reach phones without interrupting play: a new version downloads in the background
-(checked every minute) and switches in only on the main menu (`src/lib/update.ts`).
+(checked every minute) and switches in only on the main menu or the Games page, where phones sit
+between games (`src/lib/update.ts`).
 
 ## Game 1 — Heads Down. (`forehead`)
 
@@ -869,7 +895,7 @@ over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone'
 host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
 logic. The host's peer id is `jerkbox-<game>-<CODE>`. Leaving the host screen (its back arrow,
 ending the game or closing the room) and leaving or cancelling on a phone return to the game's
-first screen the way they came (`back()`), and that screen's Back returns to the main menu.
+first screen the way they came (`back()`), and that screen's Back returns to the Games page.
 On every host screen the button that closes the room says "Close" in every phase and asks
 first ("Close the room?", with "The game ends." while one is being played); after a game "Lobby"
 keeps the room and its players for another. Start asks first while any player's phone is
