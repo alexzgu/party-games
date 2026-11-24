@@ -1,0 +1,123 @@
+import { describe, expect, it } from 'vitest';
+import { GAMES } from '../../app.config';
+import * as L from './logic';
+
+const questions = Array.from({ length: 25 }, (_, i) => `do thing ${i} or skip thing ${i}`);
+const settings = (patch: Partial<L.Settings> = {}): L.Settings => ({ ...L.DEFAULT_SETTINGS, ...patch });
+
+function lobby(n = 4, patch: Partial<L.Settings> = {}) {
+  let g = L.newGame('g', 'BCDF', settings(patch));
+  for (let i = 0; i < n; i++) g = (L.join(g, `p${i}`, `P${i}`, new Set()) as { game: L.Game }).game;
+  return g;
+}
+const room = (n = 4, patch: Partial<L.Settings> = {}) => L.start(lobby(n, patch), questions, 0);
+const all = (g: L.Game) => new Set(g.players.map((p) => p.pid));
+const vote = (g: L.Game, pid: string, side: L.Side) => L.vote(g, pid, g.at, g.round!.n, side);
+const score = (g: L.Game, pid: string) => g.players.find((p) => p.pid === pid)!.score;
+/** Votes in order: `sides[i]` for player i (undefined: no vote). */
+const votes = (g: L.Game, sides: (L.Side | undefined)[]) =>
+  sides.reduce((acc, side, i) => side === undefined ? acc : vote(acc, `p${i}`, side), g);
+
+describe('Would You Rather votes', () => {
+  it('counts a vote only for the question in play, from a player in the game, before the reveal', () => {
+    const g = room();
+    expect(L.vote(g, 'p0', g.at + 1, 1, 0)).toBe(g); // another phase
+    expect(L.vote(g, 'p0', g.at, 2, 0)).toBe(g); // another question
+    expect(vote(g, 'stranger', 0)).toBe(g);
+    expect(vote(L.kick(g, 'p1'), 'p1', 0).round!.votes).toEqual({});
+    const revealed = L.step(g, 1);
+    expect(L.vote(revealed, 'p0', g.at, 1, 0)).toBe(revealed);
+    expect(vote(g, 'p0', 1).round!.votes).toEqual({ p0: 1 });
+  });
+
+  it('keeps the last tap', () => {
+    const g = vote(vote(room(), 'p0', 0), 'p0', 1);
+    expect(g.round!.votes.p0).toBe(1);
+    expect(vote(g, 'p0', 1)).toBe(g);
+  });
+
+  it('reveals when every connected player in the game has voted, or at the deadline, never by itself with no limit', () => {
+    const g = room();
+    const online = new Set(['p0', 'p1', 'p2']); // p3's phone dropped: nobody waits for it
+    expect(L.tick(votes(g, [0, 1]), 1, online).phase).toBe('vote');
+    expect(L.tick(votes(g, [0, 1, 1]), 1, online).phase).toBe('reveal');
+    expect(L.tick(g, 19_999, online).phase).toBe('vote');
+    expect(L.tick(g, 20_000, online).phase).toBe('reveal');
+    const none = room(4, { seconds: 0 });
+    expect([none.deadline, L.tick(none, 1e9, online).phase]).toEqual([null, 'vote']);
+    expect(L.step(none, 1).phase).toBe('reveal');
+  });
+
+  it('lets a late joiner vote on the question in play', () => {
+    let g = room(3);
+    g = (L.join(g, 'late', 'Late', all(g)) as { game: L.Game }).game;
+    g = L.step(votes(vote(g, 'late', 1), [1, 0, 0]), 1);
+    expect(g.round!.tally!.counts).toEqual([2, 2]);
+  });
+});
+
+describe('Would You Rather points', () => {
+  it('gives a point to each player on the bigger side, and none to the other side or a non-voter', () => {
+    const g = L.step(votes(room(), [0, 0, 1]), 1);
+    expect(g.round!.tally).toEqual({ counts: [2, 1], voters: [['p0', 'p1'], ['p2']], winner: 0 });
+    expect(g.players.map((p) => p.score)).toEqual([1, 1, 0, 0]);
+  });
+
+  it('scores a unanimous vote, but not a tie or a question nobody voted on', () => {
+    expect(L.step(votes(room(), [1, 1, 1, 1]), 1).players.map((p) => p.score)).toEqual([1, 1, 1, 1]);
+    const tie = L.step(votes(room(), [0, 1, 0, 1]), 1);
+    expect([tie.round!.tally!.winner, tie.players.map((p) => p.score)]).toEqual([null, [0, 0, 0, 0]]);
+    const nobody = L.step(room(), 1);
+    expect([nobody.round!.tally!.counts, nobody.round!.tally!.winner]).toEqual([[0, 0], null]);
+  });
+
+  it("drops the vote of a player removed or gone by the reveal", () => {
+    let g = votes(room(), [0, 1, 1]);
+    g = L.step(L.leave(L.kick(g, 'p2'), 'p1'), 1);
+    expect(g.round!.tally).toEqual({ counts: [1, 0], voters: [['p0'], []], winner: 0 });
+    expect(score(g, 'p0')).toBe(1);
+  });
+});
+
+describe('Would You Rather game', () => {
+  it('seats as many players as the Games page says', () => {
+    expect(GAMES.find((g) => g.id === 'rather')!.players).toMatch(new RegExp(`^${L.MIN_PLAYERS}–${L.MAX_PLAYERS} players`));
+  });
+
+  it('asks the next question after the reveal and ends after the last', () => {
+    let g = room(3, { count: 10 });
+    expect([g.questions, g.round!.prompt]).toEqual([questions.slice(0, 10), questions[0]]);
+    g = L.tick(L.step(g, 1), 1 + L.REVEAL_MS, all(g));
+    expect([g.phase, g.round!.n, g.round!.prompt]).toEqual(['vote', 2, questions[1]]);
+    for (let n = 2; n <= 10; n++) g = L.step(L.step(g, n), n);
+    expect([g.phase, g.results.length]).toEqual(['over', 10]);
+  });
+
+  it('carries on through the unused questions in a game played again, reshuffling only when they run out', () => {
+    let g = room(3, { count: 10 });
+    for (let n = 1; n <= 10; n++) g = L.step(L.step(g, n), n);
+    g = L.rematch(g, 'g2', settings({ count: 10 }));
+    expect([g.phase, g.players.map((p) => p.score)]).toEqual(['lobby', [0, 0, 0]]);
+    const second = L.start(g, ['fresh or new'], 0);
+    expect(second.questions).toEqual(questions.slice(10, 20));
+    let h = second;
+    for (let n = 1; n <= 10; n++) h = L.step(L.step(h, n), n);
+    const third = L.start(L.rematch(h, 'g3', settings({ count: 10 })), [questions[0], questions[24], 'fresh or new'], 0);
+    expect(third.questions).toEqual([...questions.slice(20, 25), questions[0], 'fresh or new']);
+    // Other picks start a new order.
+    expect(L.start(L.rematch(h, 'g4', settings({ packs: ['mine'] })), ['mine or yours'], 0).questions).toEqual(['mine or yours']);
+  });
+
+  it('gives phones time to reconnect after a host reload before anyone counts as gone', () => {
+    const g = L.afterReload(vote(room(), 'p0', 0), 1000);
+    expect(L.tick(g, 2000, new Set(['p0'])).phase).toBe('vote');
+    expect(L.tick(g, 1000 + L.RECONNECT_MS, new Set(['p0'])).phase).toBe('reveal');
+  });
+
+  it('stops the clock while paused', () => {
+    const g = L.pause(room(), 5000);
+    expect(L.tick(g, 1e9, all(g)).phase).toBe('vote');
+    const resumed = L.resume(g, 100_000);
+    expect(resumed.deadline).toBe(115_000);
+  });
+});

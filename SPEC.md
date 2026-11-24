@@ -136,7 +136,7 @@ icon (`emoji`, any one character) for Heads Down., blurb, items) without `custom
 can share it; import also takes `.json`). "Export" sits in every pack editor (built-ins
 included); Add pack → "Import" (packs from a file) and "Export" (every pack made or edited on this
 phone; hidden when there are none) sit in the row under every game's pack list (the
-setup's; Snark Tank's, Doodle Brawl's, Sketchy's and Bad Hand's in their room settings). Export uses the
+setup's; Snark Tank's, Doodle Brawl's, Sketchy's, Bad Hand's and Would You Rather's in their room settings). Export uses the
 share sheet when the browser can share the file, else a download. Import reads a file of at most
 1 MB and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
 pack editor's or the paste route's; Big Board: 1–8 categories × 1–10 clues, cut and padded like a
@@ -348,7 +348,7 @@ preview, past its list too) and ticks the new pack, as before.
   focused field) stops clear of the pinned header and actions (`src/lib/scrollPadding.ts`). The
   page's glow is one layer fixed to the screen, and each pinned bar paints the same glow placed
   where it sits, so the bars match the page on iPhones too.
-- **Pack pages** (every setup with packs, and the room settings of Snark Tank, Doodle Brawl, Sketchy and Bad Hand; `Screen` with `fill`,
+- **Pack pages** (every setup with packs, and the room settings of Snark Tank, Doodle Brawl, Sketchy, Bad Hand and Would You Rather; `Screen` with `fill`,
   `PackList`): the page fits the screen and only the packs scroll. Above them, pinned under the
   header, stay any notice (a compact "Game in progress" card with the leading scores, Big Board's
   draft warning, the room games' "A game is running", Sketchy's mode), the players or teams, and the packs row
@@ -431,8 +431,9 @@ preview, past its list too) and ticks the new pack, as before.
   has in the same spot.
 - **Pack list** (`PackList`, `src/lib/packList.ts`): the one way every pack game (Heads Down.,
   Spectrum, Inn Co Hear Ant, Big Board, Don't Say It, Brain Freeze, and the room settings of Snark
-  Tank, Doodle Brawl, Sketchy and Bad Hand) picks, edits, makes and shares packs. Header: "Packs"
-  (Snark Tank: "Prompt packs"; Doodle Brawl: "Title packs"; Bad Hand: "Card packs") with what is
+  Tank, Doodle Brawl, Sketchy, Bad Hand and Would You Rather) picks, edits, makes and shares packs. Header: "Packs"
+  (Snark Tank: "Prompt packs"; Doodle Brawl: "Title packs"; Bad Hand: "Card packs"; Would You Rather:
+  "Question packs") with what is
   picked under it ("2 picked · 320 words"; Big Board: "25 clues"; "pick one or more" when none),
   then search, sort and a tiles/list switch (one choice for every game, kept on the phone; default
   tiles). Tiles: a grid of at least 150 px columns (two on a phone); each shows the mark top right,
@@ -453,8 +454,8 @@ preview, past its list too) and ticks the new pack, as before.
   outside, Escape or choosing closes it, with focus back on the button; it is a proper menu
   (the button says whether it is open; the arrow keys, Home and End move between the items; Tab
   closes it and moves on). Reduced motion: it appears without growing. An import plays the
-  imported packs on their own (Big Board: picks the first; Snark Tank, Doodle Brawl, Sketchy and
-  Bad Hand: adds them to the picked ones, as a made pack is). Brain Freeze's and Odd One Out's lists ignore taps in their first 400 ms (the tail of a double
+  imported packs on their own (Big Board: picks the first; Snark Tank, Doodle Brawl, Sketchy,
+  Bad Hand and Would You Rather: adds them to the picked ones, as a made pack is). Brain Freeze's and Odd One Out's lists ignore taps in their first 400 ms (the tail of a double
   tap on the screen before). Odd One Out's list shows Heads Down.'s packs with its own picks and
   its own search and sort: no pencil, no "Make a pack" and no New; a line under the packs says
   "These are Heads Down. packs. Make and edit them there." Its Community and Import add to Heads
@@ -923,7 +924,7 @@ games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amo
 
 ## Shared room link (`src/lib/room/`)
 
-Every own-phones game (Snark Tank, Word Salad, Doodle Brawl, Sketchy, Bad Hand) uses one link layer: room codes,
+Every own-phones game (Snark Tank, Word Salad, Doodle Brawl, Sketchy, Bad Hand, Would You Rather) uses one link layer: room codes,
 broker choice (`?peer=`, stored under the existing `snark:broker` key so the setting carries
 over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone's outbox and the
 host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
@@ -941,7 +942,7 @@ them) but may rejoin with the same code and keeps their score; a removed player 
 after Play again. A
 refusal or the end of the room is shown on the join screen even on a phone that came by QR code.
 The join screen's name box starts with the phone's username, cut to that game's name limit (Snark
-Tank 14, Word Salad 18, Doodle Brawl, Sketchy and Bad Hand 20 characters); after a refused join (a name already taken,
+Tank 14, Word Salad 18, Doodle Brawl, Sketchy, Bad Hand and Would You Rather 20 characters); after a refused join (a name already taken,
 say) it keeps what was typed, so it can be fixed. A name typed there is for that room only (kept
 for rejoining it) and never changes the username.
 The browser's or Android's back gesture walks the same path as Back and never lands on a closed host screen. Any message whose JSON is 15,000 UTF-8
@@ -953,7 +954,7 @@ A player id is 1–64 letters, digits, `_` or `-`, never a name every JavaScript
 makes a new one for each room it joins and keeps it for that room (after leaving, a refusal, a
 reload, or Play again).
 
-**Names** (`names.ts`, the same in all five own-phones games): two names that look the same are one
+**Names** (`names.ts`, the same in all six own-phones games): two names that look the same are one
 name: the same once compatibility forms (such as full-width letters) are folded, invisible
 characters dropped, spaces trimmed and runs of spaces made one, and case ignored ("Sam Lee",
 "sam  lee"). No two players who may still play (in the room, or gone mid-game and free to come back
@@ -1468,3 +1469,70 @@ sees the same secret word, the odd one out does not, and the room talks it out. 
   `finished: false` once the new game starts, and only when it had a finished round. Every step is saved; the screen stays awake during play. Back from the clues,
   vote, reveal and scores goes to setup with the game saved.
 - Demos at `#/odd?demo=handoff|secret|secret-long|secret-odd|secret-odd-nohint|clues|vote|reveal-caught|reveal-word|reveal-escaped|scores|win`.
+
+## Game 13 — Would You Rather (`rather`)
+
+The folk party game, our questions and look. Each question is two choices ("be able to fly or be
+invisible"); everyone picks a side, then the room argues about it. Two ways to play from the start
+screen (`#/rather`: Host, Join and One phone, with the Return / Rejoin banner as in Bad Hand).
+Amounts marked *house* are ours: the folk game keeps no score.
+
+- **Own phones**: 3–12 players join a host screen through the shared room link; name limit 20
+  characters.
+- **Questions**: the picked packs' questions shuffled, then every other pack's (`roomQuestions`,
+  the same choices in either order are one question); a game asks the next 10, 15 or 20 (Settings,
+  default 10). Lobby after a game carries on through the room's unused questions and reshuffles
+  only when they run out (*house*); a game started with other picks starts a new order.
+- **Vote** (default 20 s; 15/20/30/no limit, *house*): the host shows "Would you rather…", the two
+  choices as two large panels in two fixed colours (the first warm orange, the second blue; side by
+  side, stacked on a narrow screen; each text as large as its panel allows), "Question 3 of 10",
+  the timer, and every player's name, dimmed until they have voted (never which way). Each phone
+  shows the same two choices as two big buttons in the same colours. A tap sends the vote; the
+  chosen button stays marked and the phone says the other can still be tapped to change: the last
+  tap before the reveal counts (*house*). A vote names its phase and question number; the host
+  ignores one for another question, from a player not in the game, or after the reveal. Before the
+  reveal a phone is sent only its own vote and who has voted, never anyone else's side.
+- **Reveal** when every player in the game whose phone is connected has voted, or at the timer;
+  with no limit, also when the host taps Reveal. It stays 10 s (or Next; the last question's says
+  Results). Both panels show their count and percent, a split bar runs under them and each choice
+  lists its voters. Each player on the side with more votes scores 1 point (*house*). A tie scores
+  nobody ("Split down the middle. No points."); no votes at all: "Nobody voted.", no points.
+  Players who did not vote get nothing; the votes of players removed or gone by the reveal do not
+  count. Phones show which side won, whether they scored, and their total.
+- **End**: after the last question, standings with confetti (ties share a place), Lobby (same
+  players, scores at zero) or Close. History gets one entry on the host, one line per question
+  with each side's count ("be able to fly (3) or be invisible (2)").
+- **Players**: late joiners are seated at once and may vote on the question in play. A player who
+  drops keeps their seat and score and nobody waits for them; one who leaves or is removed is out
+  (their vote stops counting) and one who left may rejoin with their score. If fewer than two
+  players are left when a question would start, the game ends.
+- Lobby, host controls, reconnects, name rules and the open-room Return as in Bad Hand. Skip reads
+  Reveal or Next; pause works while voting and in the reveal. A Players button mid-game removes a
+  player (after a confirm). The host is saved under `rather:host`, a phone's seat under `rather:me`.
+- **Settings** (`#/rather/settings`, a pack page like Bad Hand's): question packs (Classic by
+  default; search/sort, editor, Make a pack or Add pack → New / Import, Export; a pack just made or
+  imported joins the picked ones; when the picks hold fewer questions than a game asks, a note says
+  the game adds some from the other packs), and a Rules row over Done opening questions per game
+  and seconds to vote; they apply to the next game.
+- **One phone** (`#/rather/aloud`): for reading aloud with a show of hands. "Would you rather…" and
+  the two choices large in the same two colours, Previous and Next, a count ("7 of 100") and a
+  Packs link to the settings. Only the picked packs' questions, shuffled with `roomQuestions`; the
+  place is kept while the app stays open and the picks stay the same. After the last question it
+  says so and offers Start over. No players, no scores, no History; the screen stays awake.
+- **Making packs**: paste questions, one per line, or ask the wizard (a theme or a suggestion,
+  10–60 questions, default 30); own packs have "🧙 Add more" (5–40, default 15). Every route keeps
+  a question only when it meets the content rules below (`src/games/rather/rules.ts`; pasted and
+  wizard lines are tidied first: a leading "Would you rather" and closing punctuation dropped, "OR"
+  made "or", and a first word of one capital then lowercase letters or apostrophes ("Lick",
+  "Don't") lowercased, since what follows "Would you rather" is a verb or adverb, never a name; a
+  first word like "DJ" is left and the line refused), and the wizard's are also new to every Would
+  You Rather pack on the phone; anything else is dropped unseen.
+- **Content** (`src/content/rather/*.json`): `{"id", "name", "blurb", "added"?, "prompts": [...]}`.
+  A question is two choices joined by exactly one " or ", each 1–12 words and at most 60
+  characters, the whole at most 130; it starts lowercase, never with "Would you rather", and has no
+  closing punctuation; the two choices differ. Questions are new across packs (the same choices in
+  either order are one question). Classic has 100 questions and After Dark 60.
+- Demos at `#/rather/host?demo=` with `lobby|lobby-empty|vote|reveal|tie|over|paused` and
+  `#/rather/join?demo=` with `join|wait|vote|voted|reveal|over` (the demos use the longest built-in
+  question).
+- **Bots** (see Shared room link): tap a side at random after 1–4 s, once a question.

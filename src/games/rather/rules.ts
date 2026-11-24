@@ -17,16 +17,6 @@ const LEAD = /^would\s+you\s+rather\b[\s,:]*/i;
 /** Closing punctuation tidying drops (as Brain Freeze's does). */
 const CLOSERS = '.,;:!?…';
 
-/**
- * First words a question usually starts with: tidying lowercases them, as Brain Freeze lowercases
- * its own openers, so a name at the start ("Taylor Swift …") keeps its capital.
- */
-const OPENERS = new Set(('be have live lose give never always only not eat drink fight date marry kiss hug spend get go know '
-  + 'become travel work sleep wear own find win see hear read watch speak talk sing dance fly swim run walk drive move keep '
-  + 'take make play forget remember stay wake quit skip share use buy sell switch trade text call sit smell sound look feel '
-  + 'cook clean wash shower let tell ask answer pay owe borrow lend sneeze burp cry laugh scream whisper shout star appear '
-  + 'meet host attend join leave start finish delete post send receive accidentally secretly publicly permanently instantly').split(' '));
-
 /** The two choices, trimmed: the text before and after the first " or " (a usable question has one). */
 export function sides(prompt: string): [string, string] {
   const i = prompt.search(/ or /i);
@@ -43,11 +33,17 @@ const choiceWords = (c: string): number => choiceKey(c).split(' ').filter(Boolea
  */
 export const ratherKey = (p: string): string => sides(p).map(choiceKey).sort().join(' | ');
 
-/** No leading "Would you rather" (with a comma or colon after it), no closing punctuation, "or" in lowercase, a usual first word lowercased. */
+/** A first word that is one capital then only lowercase letters or apostrophes ("Lick", "Don't"), not "DJ" or "iPhone". */
+const CAPITALISED = /^[A-Z][a-z'’]*(?= |$)/;
+
+/**
+ * No leading "Would you rather" (with a comma or colon after it), no closing punctuation, "or" in
+ * lowercase, and a capitalised first word lowercased: what follows "Would you rather" is a verb or
+ * an adverb, never a name. A first word like "DJ" is left as it is (and then starts oddly).
+ */
 export function tidyRather(p: string): string {
   const s = stripEnd(p.trim().replace(LEAD, ''), CLOSERS).trim().replace(OR, 'or');
-  const first = s.split(' ')[0];
-  return OPENERS.has(first.toLowerCase()) ? first.toLowerCase() + s.slice(first.length) : s;
+  return CAPITALISED.test(s) ? s[0].toLowerCase() + s.slice(1) : s;
 }
 
 /** Why a tidied question cannot be used, or '' when it can. */

@@ -13,7 +13,9 @@ describe('Would You Rather questions', () => {
   it('tidies a pasted question to what a pack stores', () => {
     expect(checked(spec, 'Would you rather: Be able to fly OR be invisible?')).toBe('be able to fly or be invisible');
     expect(checked(spec, 'would you rather, eat pizza or tacos!!')).toBe('eat pizza or tacos');
-    expect(checked(spec, 'Taylor Swift as your boss or Drake as your boss')).toBeNull(); // a name first keeps its capital, so it starts oddly
+    expect(checked(spec, 'Lick a subway pole or eat a gas station sushi roll')).toBe('lick a subway pole or eat a gas station sushi roll');
+    expect(checked(spec, "Don't shower for a month or don't brush your teeth for a week")).toBe("don't shower for a month or don't brush your teeth for a week");
+    expect(checked(spec, 'DJ every wedding or never dance again')).toBeNull(); // not one capital then lowercase: left alone, so it starts oddly
   });
 
   it('says why a question cannot be used', () => {

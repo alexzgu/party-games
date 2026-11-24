@@ -42,6 +42,9 @@
   /* Spectrum's two rival teams: warm sunrise vs cool moonlight, apart for red-green colour blindness too. */
   --c-team-a: #ff8547;
   --c-team-b: #5b8cff;
+  /* Would You Rather's two choices: the same two colours, one per side, in both schemes. */
+  --c-choice-a: var(--c-team-a);
+  --c-choice-b: var(--c-team-b);
 
   /* Big Board's 20 team colours, neighbours far apart; each is readable as text on --bg and --surface. */
   --team-1: #ff8547; --team-2: #5b8cff; --team-3: #3ddc84; --team-4: #b57bff; --team-5: #facc15;
