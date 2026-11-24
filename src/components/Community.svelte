@@ -27,7 +27,7 @@
   // (pages/CommunityPage.svelte). The search, order, filters and open pack live in the address
   // (communityView.ts; the preview is its own history entry) and loaded lists, unfiltered, in
   // communityCache.ts, so Back, a reload or an import finds the list as it was left.
-  let { game, onclose, onimport, stay = false, closeLabel = 'Back to the packs', tabs }: {
+  let { game, onclose, onimport, stay = false, closeLabel = 'Back to the packs', head }: {
     game: PackGameId;
     onclose: () => void;
     /** A pack was saved on this phone. */
@@ -35,8 +35,8 @@
     /** After an import, back to the list with a note (the Community page); else the host closes it. */
     stay?: boolean;
     closeLabel?: string;
-    /** Above the list, under the header (the Community page's game tabs). */
-    tabs?: Snippet;
+    /** Above the list, under the header, always shown (the Community page's game picker). */
+    head?: Snippet;
   } = $props();
 
   const SORTS = [{ value: 'stars' as Sort, label: 'Most stars' }, { value: 'new' as Sort, label: 'Newest' }];
@@ -46,7 +46,7 @@
   /** A search or a filter other than the default shortens the list: said while they are folded away. */
   const narrowed = $derived(!!view.q || filters.own !== 'all' || filters.skip !== 'unskipped');
 
-  // Another game's list (a Community page tab) starts from its top.
+  // Another game's list (chosen on the Community page) starts from its top.
   // svelte-ignore state_referenced_locally
   let seenGame = game;
   $effect(() => {
@@ -76,7 +76,7 @@
   let failure = $state<Failure | null>(null);
   let moreFailure = $state<Failure | null>(null);
   let loadingMore = $state(false);
-  /** What the Community page says after an import, until the next search, tab or preview. */
+  /** What the Community page says after an import, until the next search, game or preview. */
   let note = $state('');
   let ctrl: AbortController | null = null;
   let shownKey = '';
@@ -296,7 +296,7 @@
 {:else}
   <Screen fill keep="community-screen" title="Community" onback={onclose} backLabel={closeLabel} actions={note ? added : undefined}>
     <PinnedPanel kind="community" label="community-h" foldId="community-tools" foldName="filters" foldSpoken="search and filters"
-      foldNote={narrowed ? 'filters on' : ''} keep="community-list" notice={tabs}>
+      foldNote={narrowed ? 'filters on' : ''} keep="community-list" notice={head}>
       {#snippet top()}
         <input type="text" inputmode="search" placeholder="Search names and descriptions" bind:value={query} maxlength="100" autocomplete="off" enterkeyhint="search" aria-label="Search Community packs" />
         <Segmented label="Order" options={SORTS} bind:value={() => view.sort, (sort) => setView({ sort })} />

@@ -2,12 +2,15 @@
   import Screen from '../components/Screen.svelte';
   import Popup from '../components/Popup.svelte';
   import Button from '../components/Button.svelte';
+  import GamePicker from '../components/GamePicker.svelte';
   import { GAMES, gameName, type GameId } from '../app.config';
   import { history, removeEntry, clearHistory, type HistoryEntry } from '../lib/history';
 
   // Every finished round or game on this phone, newest first, filterable by game.
   let entries = $state(history());
   let filter = $state<GameId | 'all'>('all');
+  /** "All games" first, then every game. */
+  const PICK = [{ id: 'all', name: 'All games', emoji: '🎲' }, ...GAMES];
   let open = $state<HistoryEntry | null>(null);
   let confirmClear = $state(false);
 
@@ -31,12 +34,7 @@
 </script>
 
 <Screen title="History" accent="var(--text)">
-  <div class="filters" role="radiogroup" aria-label="Game">
-    <button role="radio" aria-checked={filter === 'all'} class:on={filter === 'all'} onclick={() => (filter = 'all')}>All</button>
-    {#each GAMES as g (g.id)}
-      <button role="radio" aria-checked={filter === g.id} class:on={filter === g.id} style:--accent={g.accent} onclick={() => (filter = g.id)}>{g.emoji} {g.name}</button>
-    {/each}
-  </div>
+  <div class="pick"><GamePicker options={PICK} value={filter} label="Game" onpick={(id) => (filter = id as GameId | 'all')} /></div>
 
   {#if shown.length === 0}
     <p class="muted empty">Nothing yet. Finished rounds and games show up here, with the scores.</p>
@@ -88,12 +86,7 @@
 {/if}
 
 <style>
-  .filters { display: flex; gap: var(--s-2); overflow-x: auto; padding-bottom: var(--s-2); margin-bottom: var(--s-3); scrollbar-width: none; }
-  .filters button {
-    flex: none; padding: 10px 14px; border-radius: var(--r-pill); background: var(--surface);
-    border: 1.5px solid var(--line); color: var(--text-dim); font-weight: 700; white-space: nowrap;
-  }
-  .filters button.on { border-color: var(--accent, var(--text)); color: var(--text); background: color-mix(in srgb, var(--accent, var(--text)) 16%, var(--surface)); }
+  .pick { margin-bottom: var(--s-3); }
   .empty { text-align: center; margin-top: var(--s-6); }
   .list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   .row {

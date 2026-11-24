@@ -56,10 +56,10 @@ export function withoutCommunity(path: string, params: URLSearchParams): string 
   return withQuery(path, next);
 }
 
-/** The games with a Community tab, in `LIBRARY_GAMES` order (none without a wizard server). */
+/** The games on the Community page, in `LIBRARY_GAMES` order (none without a wizard server). */
 export const communityGames = (): PackGameId[] => LIBRARY_GAMES.filter((g) => libraryOn(g));
 
-/** The Community page's tab: `#/community/<game>`, else the first game. */
+/** The Community page's game: `#/community/<game>`, else the first game. */
 export function tabOf(path: string, games: readonly PackGameId[]): PackGameId | null {
   const id = path.split('/').filter(Boolean)[1];
   return games.find((g) => g === id) ?? games[0] ?? null;
