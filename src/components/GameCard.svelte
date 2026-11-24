@@ -33,10 +33,16 @@
   }
   .card:active { transform: scale(0.98); }
   .emoji { font-size: 2.6rem; flex: none; filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--shade) 40%, transparent)); }
-  .txt { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .txt { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
   .name { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; color: var(--accent); letter-spacing: -0.02em; }
   /* A long name (Inn Co Hear Ant) a size down, so it stays on one line on a phone. */
-  .name.long { font-size: min(1.32rem, 6vw); white-space: nowrap; }
+  .name.long { font-size: min(1.32rem, 5.6vw); white-space: nowrap; }
   .sub { color: var(--text-dim); font-weight: 700; font-size: 0.92rem; margin-top: 2px; }
   .chev { color: var(--text-faint); flex: none; }
+  /* A narrow phone: less room around the words, so a long name and its line fit inside the card. */
+  @media (max-width: 359.98px) {
+    .card { gap: var(--s-2); padding-inline: var(--s-3); }
+    .emoji { font-size: 2.2rem; }
+    .sub { font-size: min(0.92rem, 4vw); }
+  }
 </style>

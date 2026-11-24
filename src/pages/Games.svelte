@@ -4,9 +4,9 @@
   import Button from '../components/Button.svelte';
   import GameCard from '../components/GameCard.svelte';
   import CategoryEditor from '../components/CategoryEditor.svelte';
-  import type { GameId } from '../app.config';
-  import { categories, clearFilters, PLAYERS_MAX, shownGames, togglePick, type GamesState, type Order } from '../lib/gamesView';
-  import { gamesPage, noteOpened, setGamesPage } from '../lib/gamesPage.svelte';
+  import { GAMES, type GameId } from '../app.config';
+  import { ALL, categories, clearFilters, PLAYERS_MAX, shownGames, togglePick, type GamesState, type Order } from '../lib/gamesView';
+  import { gamesPage, noteOpened, openedForOrder, setGamesPage } from '../lib/gamesPage.svelte';
   import { back, go } from '../lib/router.svelte';
   import { unlockAudio, sfx } from '../lib/sound';
   import { haptic } from '../lib/haptics';
@@ -22,7 +22,8 @@
   const PLAYERS = Array.from({ length: PLAYERS_MAX }, (_, i) => i + 1);
 
   const cats = $derived(categories(gamesPage.own));
-  const shown = $derived(shownGames(gamesPage));
+  // Recent goes by the times the page was opened with (lib/gamesPage.svelte.ts).
+  const shown = $derived(shownGames(gamesPage, GAMES, openedForOrder()));
   let editing = $state(false);
 
   const change = (next: GamesState) => setGamesPage(next);
@@ -53,7 +54,7 @@
       {#each PLAYERS as n (n)}<option value={n}>{n} player{n === 1 ? '' : 's'}</option>{/each}
     </select>
     <div class="chips" role="group" aria-label="Categories">
-      <button class="chip" aria-pressed={!gamesPage.picked.length} onclick={() => pick(null)}>All</button>
+      <button class="chip" aria-pressed={!gamesPage.picked.length} onclick={() => pick(null)}>{ALL}</button>
       {#each cats as c (c.id)}
         <button class="chip" class:own={c.own} aria-pressed={gamesPage.picked.includes(c.id)} onclick={() => pick(c.id)}>{c.name}</button>
       {/each}

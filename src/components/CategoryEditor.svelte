@@ -5,10 +5,14 @@
   import { GAMES, type GameId } from '../app.config';
   import { deleteCategory, MAX_OWN, NAME_MAX, nextId, putCategory, type OwnCategory } from '../lib/gamesView';
   import { gamesPage, setGamesPage } from '../lib/gamesPage.svelte';
+  import { holdUpdates } from '../lib/update';
 
   // The phone's own categories on the Games page: the list of them with New, and one opened to
   // name it, choose its games or delete it (asked first, as every delete is).
   let { onclose }: { onclose: () => void } = $props();
+
+  // A new app version waits while this is open, so typing is never lost to a reload.
+  $effect(() => holdUpdates());
 
   /** The category being made or changed; null on the list. */
   let draft = $state<OwnCategory | null>(null);
@@ -49,15 +53,6 @@
   const focus = (el: HTMLElement) => { el.focus({ preventScroll: true }); };
 </script>
 
-{#if asking && draft}
-  <Popup title="Delete this category?" onclose={() => (asking = false)}>
-    <div class="form">
-      <p>“{gamesPage.own.find((c) => c.id === draft?.id)?.name}” is deleted from this device. Its games stay.</p>
-      <Button variant="danger" onclick={remove}>Delete</Button>
-      <Button variant="secondary" onclick={() => (asking = false)}>Keep it</Button>
-    </div>
-  </Popup>
-{:else}
 <Popup title={draft ? (isNew ? 'New category' : 'Edit category') : 'Your categories'} onclose={draft ? () => (draft = null) : onclose}>
   {#if draft}
     <form class="form" onsubmit={saveDraft}>
@@ -103,6 +98,15 @@
   {/snippet}
 </Popup>
 
+<!-- Over the editor, so each returns focus to what opened it. -->
+{#if asking && draft}
+  <Popup title="Delete this category?" onclose={() => (asking = false)}>
+    <div class="form">
+      <p>“{gamesPage.own.find((c) => c.id === draft?.id)?.name}” is deleted from this device. Its games stay.</p>
+      <Button variant="danger" onclick={remove}>Delete</Button>
+      <Button variant="secondary" onclick={() => (asking = false)}>Keep it</Button>
+    </div>
+  </Popup>
 {/if}
 
 <style>

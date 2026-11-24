@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GAMES } from '../app.config';
-import { categories, clearFilters, deleteCategory, EMPTY, fitsPlayers, MAX_OWN, markOpened, nameProblem, nextId, putCategory, readState, shownGames, togglePick, type GamesState } from './gamesView';
+import { categories, clearFilters, deleteCategory, EMPTY, fitsPlayers, freeName, MAX_OWN, markOpened, nameProblem, nextId, putCategory, readState, shownGames, togglePick, type GamesState } from './gamesView';
 
 const ids = (s: GamesState) => shownGames(s).map((g) => g.id);
 const game = (id: string) => GAMES.find((g) => g.id === id)!;
@@ -38,6 +38,7 @@ describe('shownGames', () => {
     expect(ids({ ...EMPTY, order: 'az' }).slice(0, 3)).toEqual(['hand', 'quiz', 'quick']);
     const s = markOpened(markOpened({ ...EMPTY, order: 'recent' }, 'hand', 100), 'dial', 200);
     expect(ids(s).slice(0, 4)).toEqual(['dial', 'hand', 'forehead', 'gibberish']);
+    expect(shownGames(s, GAMES, { hand: 100 }).slice(0, 2).map((g) => g.id)).toEqual(['hand', 'forehead']); // the times the page opened with
   });
   it('clears picks and players together', () => {
     expect(clearFilters({ ...EMPTY, picked: ['tag:Teams'], players: 3, order: 'az' })).toEqual({ ...EMPTY, order: 'az' });
@@ -52,6 +53,7 @@ describe('own categories', () => {
     expect(nameProblem('x'.repeat(20), s.own)).toBe('');
     expect(nameProblem('chill', s.own)).toBeTruthy();
     expect(nameProblem('TEAMS', s.own)).toBeTruthy();
+    expect(nameProblem('all', s.own)).toBeTruthy(); // the chip showing every game
     expect(nameProblem('Chill ', s.own, s.own[0].id)).toBe(''); // renaming to itself
   });
   it('renames in place, keeps games in app order and stops at the most', () => {
@@ -83,5 +85,11 @@ describe('readState', () => {
       opened: { dial: 5, song: 9, quiz: -1, hand: 'x' },
     });
     expect(s).toEqual({ order: 'recent', players: 4, picked: ['tag:Teams', 'own1'], own: [{ id: 'own1', name: 'Chill', games: ['salad'] }], opened: { dial: 5 } });
+  });
+  it('keeps an own category whose name a default one took since, under a free name', () => {
+    const s = readState({ own: [{ id: 'own1', name: 'teams', games: ['hand'] }, { id: 'own2', name: 'Teams 2', games: [] }, { id: 'own3', name: 'All', games: [] }] });
+    expect(s.own.map((c) => c.name)).toEqual(['teams 3', 'Teams 2', 'All 2']);
+    expect(s.own[0].games).toEqual(['hand']);
+    expect(freeName('x'.repeat(20), [])).toBe(`${'x'.repeat(18)} 2`);
   });
 });

@@ -6,6 +6,7 @@
   import { forgetListings } from '../lib/communityCache';
   import { communityGames } from '../lib/communityView';
   import GameCard from '../components/GameCard.svelte';
+  import { freshOrder } from '../lib/gamesPage.svelte';
 
   const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
   const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -16,6 +17,12 @@
     sfx.tap();
     haptic.light();
     go('/' + id);
+  }
+
+  // The Games page opened anew: its Recent order takes in the games opened since.
+  function openGames() {
+    freshOrder();
+    open('games');
   }
 
   // The Community page, while the library is on; opened anew, so its lists load fresh.
@@ -43,7 +50,7 @@
   </header>
 
   <div class="rows">
-    <GameCard emoji="🎉" name="Games" sub="{GAMES.length} party games" accent="var(--c-games)" delay={60} onclick={() => open('games')} />
+    <GameCard emoji="🎉" name="Games" sub="{GAMES.length} party games" accent="var(--c-games)" delay={60} onclick={openGames} />
     {#if community}
       <GameCard emoji="🌍" name="Community packs" sub="Browse packs friends made" accent="var(--c-community)" delay={130} onclick={openCommunity} />
     {/if}

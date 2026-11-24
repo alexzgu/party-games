@@ -1,6 +1,6 @@
 // The Games page's choices (pages/Games.svelte): the order, the categories picked, the players
 // filter, the phone's own categories and when each game was last opened. Kept on the phone
-// (gamesView.svelte.ts), never in the address; read defensively, since storage may hold anything.
+// (gamesPage.svelte.ts), never in the address; read defensively, since storage may hold anything.
 import { GAME_TAGS, GAMES, type GameId, type GameInfo } from '../app.config';
 
 export type Order = 'default' | 'az' | 'recent';
@@ -26,6 +26,10 @@ export interface GamesState {
 export const MAX_OWN = 20;
 export const NAME_MAX = 20;
 export const PLAYERS_MAX = 10;
+/** The chip that shows every game; no category may take its name. */
+export const ALL = 'All';
+/** Names an own category cannot take: every default category's, and "All". */
+const RESERVED: readonly string[] = [...GAME_TAGS, ALL];
 
 export const EMPTY: GamesState = { order: 'default', picked: [], players: null, own: [], opened: {} };
 
@@ -43,11 +47,14 @@ export function categories(own: readonly OwnCategory[], games: readonly GameInfo
 export const fitsPlayers = (g: GameInfo, n: number | null): boolean =>
   n === null || (n >= g.minPlayers && (g.maxPlayers === undefined || n <= g.maxPlayers));
 
-/** The games to show: in every picked category, fitting the players, in the chosen order. */
-export function shownGames(s: GamesState, games: readonly GameInfo[] = GAMES): GameInfo[] {
+/**
+ * The games to show: in every picked category, fitting the players, in the chosen order. Recent
+ * goes by `opened`, by default the stored times (the page passes the ones it opened with).
+ */
+export function shownGames(s: GamesState, games: readonly GameInfo[] = GAMES, opened = s.opened): GameInfo[] {
   const picked = categories(s.own, games).filter((c) => s.picked.includes(c.id));
   const fit = games.filter((g) => fitsPlayers(g, s.players) && picked.every((c) => c.games.includes(g.id)));
-  return sortGames(fit, s.order, s.opened);
+  return sortGames(fit, s.order, opened);
 }
 
 /** Default: as listed; A–Z by name; Recent: last opened first, never-opened after in default order. */
@@ -66,10 +73,14 @@ export function nameProblem(name: string, own: readonly OwnCategory[], self?: st
   const n = tidyName(name);
   if (!n) return 'Give it a name.';
   if ([...n].length > NAME_MAX) return `At most ${NAME_MAX} characters.`;
-  const taken = [...GAME_TAGS, ...own.filter((c) => c.id !== self).map((c) => c.name)];
-  if (taken.some((t) => t.toLowerCase() === n.toLowerCase())) return 'There is already a category with that name.';
+  const taken = [...RESERVED, ...own.filter((c) => c.id !== self).map((c) => c.name)];
+  if (taken.some((t) => same(t, n))) return 'There is already a category with that name.';
   return '';
 }
+
+const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+/** Games in app order, each once, known ones only. */
+const inOrder = (ids: readonly unknown[]): GameId[] => GAMES.map((g) => g.id).filter((id) => ids.includes(id));
 
 /** An id no own category has yet. */
 export function nextId(own: readonly OwnCategory[]): string {
@@ -82,7 +93,7 @@ export function nextId(own: readonly OwnCategory[]): string {
 export function putCategory(s: GamesState, c: OwnCategory): GamesState | string {
   const problem = nameProblem(c.name, s.own, c.id);
   if (problem) return problem;
-  const tidy = { id: c.id, name: tidyName(c.name), games: GAMES.map((g) => g.id).filter((id) => c.games.includes(id)) };
+  const tidy = { id: c.id, name: tidyName(c.name), games: inOrder(c.games) };
   const at = s.own.findIndex((x) => x.id === c.id);
   if (at < 0 && s.own.length >= MAX_OWN) return `At most ${MAX_OWN} categories.`;
   return { ...s, own: at < 0 ? [...s.own, tidy] : s.own.map((x, i) => (i === at ? tidy : x)) };
@@ -110,14 +121,28 @@ export function readState(raw: unknown): GamesState {
   return { order: ORDERS.includes(r.order as Order) ? (r.order as Order) : 'default', picked, players, own, opened: readOpened(r.opened) };
 }
 
+/**
+ * The phone's own categories as stored: a broken one, or one repeating an earlier one's id or name,
+ * is dropped; one whose name a default category has since taken keeps its games under a free name.
+ */
 function readOwn(x: unknown): OwnCategory[] {
-  let s: GamesState = { ...EMPTY };
+  const own: OwnCategory[] = [];
   for (const c of Array.isArray(x) ? x : []) {
-    if (!c || typeof c !== 'object' || typeof c.id !== 'string' || !/^own\d{1,6}$/.test(c.id) || typeof c.name !== 'string' || s.own.some((o) => o.id === c.id)) continue;
-    const next = putCategory(s, { id: c.id, name: c.name, games: Array.isArray(c.games) ? c.games.filter(isGame) : [] });
-    if (typeof next !== 'string') s = next;
+    if (own.length >= MAX_OWN || !c || typeof c !== 'object' || typeof c.id !== 'string' || !/^own\d{1,6}$/.test(c.id)) continue;
+    const name = typeof c.name === 'string' ? tidyName(c.name) : '';
+    if (!name || [...name].length > NAME_MAX || own.some((o) => o.id === c.id || same(o.name, name))) continue;
+    own.push({ id: c.id, name, games: inOrder(Array.isArray(c.games) ? c.games : []) });
   }
-  return s.own;
+  return own.map((c) => (RESERVED.some((r) => same(r, c.name)) ? { ...c, name: freeName(c.name, [...RESERVED, ...own.map((o) => o.name)]) } : c));
+}
+
+/** `name` with the first number from 2 up that makes it unlike every name in `taken`, cut to fit. */
+export function freeName(name: string, taken: readonly string[]): string {
+  for (let n = 2; ; n++) {
+    const end = ` ${n}`;
+    const next = [...name].slice(0, NAME_MAX - end.length).join('').trimEnd() + end;
+    if (!taken.some((t) => same(t, next))) return next;
+  }
 }
 
 function readOpened(x: unknown): GamesState['opened'] {
