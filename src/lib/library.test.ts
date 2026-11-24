@@ -310,6 +310,13 @@ describe('browsing and importing', () => {
     expect(k.saved[0]).toMatchObject({ words: ['Pup tent'], ideas: ['A bear roasting marshmallows'] });
   });
 
+  it('imports a Would You Rather pack, leaving out a built-in question asked the other way round', () => {
+    const r = importLibraryPack('rather', shared({ game: 'rather', items: ['Never eat pizza again or have pizza for every meal for a month', 'lick a subway pole or swallow a fly'] }));
+    if ('error' in r) throw new Error(r.error);
+    expect(r.saved[0]).toMatchObject({ prompts: ['lick a subway pole or swallow a fly'] });
+    expect(r.problems).toEqual(['1 already in the built-in packs left out.']);
+  });
+
   it("keeps a Heads Down. pack's emoji and every word, built-in or not", () => {
     const r = importLibraryPack('forehead', shared({ game: 'forehead', items: ['Shrek', 'Pizza'], extra: { emoji: '📺' } }));
     if ('error' in r) throw new Error(r.error);

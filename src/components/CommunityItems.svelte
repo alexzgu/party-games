@@ -38,6 +38,7 @@
       {:else if game === 'dial'}<li class="row line">{t(o.left)} <span class="sep" aria-label="to">↔</span> {t(o.right)}</li>
       {:else if game === 'gibberish'}<li class="row"><span>{t(o.phrase)}</span><span class="answer">→ {t(o.answer)}{#if t(o.hint)} · {t(o.hint)}{/if}</span></li>
       {:else if game === 'quick'}<li class="row line"><span class="dim">Name 3</span> {t(x)}</li>
+      {:else if game === 'rather'}<li class="row line"><span class="dim">Would you rather</span> {t(x)}</li>
       {:else if game === 'taboo'}<li class="row"><span>{t(o.word)}</span><span class="answer">{list(o.banned).map(t).join(' · ')}</span></li>
       {:else if game === 'snark'}<li class="row"><span>{t(x)}</span>{#if t(stock[t(x)])}<span class="answer">Suggest: {t(stock[t(x)])}</span>{/if}</li>
       {:else}<li class="row line">{t(x)}</li>

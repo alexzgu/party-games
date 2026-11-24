@@ -220,12 +220,12 @@ chip beside the count (nothing for a pack without one; no "made by" wording), th
 "Owned" or "Skipped" chip when it is; the preview shows the
 username chip under its count. Tapping a pack shows everything in it (Snark
 Tank: with its stock answers and finals; Bad Hand: prompts, then answers; Sketchy: words, then
-ideas). Everything fetched is rebuilt from each game's own
+ideas; Brain Freeze and Would You Rather: each item after a dim "Name 3" or "Would you rather"). Everything fetched is rebuilt from each game's own
 fields first (`src/lib/libraryShape.ts`, the same rules the server stores by).
 "Import" saves it through the pack-file import above (same checks, fresh id and name, ticked on
 its own) and leaves out items a built-in pack already has in games whose items must be new
 across packs (Spectrum, Inn Co Hear Ant, Brain Freeze, Don't Say It, Snark Tank, Doodle Brawl,
-Sketchy, Bad Hand).
+Sketchy, Bad Hand, Would You Rather).
 Two filters under the order choose among the packs, each on its own (`cown`, `cskip` in the
 address): Owned (All, the default; Owned; Not owned) and Skipped (All; Skipped; Not skipped, the
 default). "Skip" in a preview leaves the pack out on this phone and returns to the list; "Unskip"
@@ -1517,7 +1517,7 @@ Amounts marked *house* are ours: the folk game keeps no score.
   Reveal or Next; pause works while voting and in the reveal. A Players button mid-game removes a
   player (after a confirm). The host is saved under `rather:host`, a phone's seat under `rather:me`.
 - **Settings** (`#/rather/settings`, a pack page like Bad Hand's): question packs (Classic by
-  default; search/sort, editor, Make a pack or Add pack → New / Import, Export; a
+  default; search/sort, editor, Make a pack or Add pack → New / 🌍 Community / Import, Export; a
   pack just made or imported joins the picked ones; when the picks hold fewer questions than a game
   asks, a note says so: "6 questions picked: a game will have 6"), and a Rules row over Done opening questions per game
   and seconds to vote; they apply to the next game.
@@ -1533,7 +1533,9 @@ Amounts marked *house* are ours: the folk game keeps no score.
   made "or", and a first word of one capital then lowercase letters or apostrophes ("Lick",
   "Don't") lowercased, since what follows "Would you rather" is a verb or adverb, never a name; a
   first word like "DJ" is left and the line refused), and the wizard's are also new to every Would
-  You Rather pack on the phone; anything else is dropped unseen.
+  You Rather pack on the phone; anything else is dropped unseen. Community: wizard packs and Add
+  more are shared; questions a built-in has (the same choices in either order) are left out on
+  import.
 - **Content** (`src/content/rather/*.json`): `{"id", "name", "blurb", "added"?, "prompts": [...]}`.
   A question is two choices joined by exactly one " or ", each 1–12 words and at most 60
   characters, the whole at most 130; it starts lowercase, never with "Would you rather", and has no

@@ -23,12 +23,13 @@ import { emptyTiles } from '../games/quiz/board';
 import { titleKey } from '../games/brawl/rules';
 import { promptKey as handPromptKey, sameKey as handKey } from '../games/hand/rules';
 import { sameKey as sketchKey } from '../games/sketch/rules';
+import { ratherKey } from '../games/rather/rules';
 
 /**
  * Games with a Community entry in their pack list and whose wizard packs are shared. Adding a
  * game here turns both on; its make page (and Add more) then calls `shareWizardPack`.
  */
-export const LIBRARY_GAMES: readonly PackGameId[] = ['forehead', 'dial', 'gibberish', 'quick', 'quiz', 'taboo', 'snark', 'brawl', 'hand', 'sketch'];
+export const LIBRARY_GAMES: readonly PackGameId[] = ['forehead', 'dial', 'gibberish', 'quick', 'quiz', 'taboo', 'snark', 'brawl', 'hand', 'sketch', 'rather'];
 
 export const libraryOn = (game: string): game is PackGameId => !!WIZARD_SERVER && (LIBRARY_GAMES as readonly string[]).includes(game);
 
@@ -331,6 +332,7 @@ const UNIQUE: Partial<Record<PackGameId, Record<string, Key>>> = {
   dial: { cards: spectrumKey }, gibberish: { cards: answerKey }, quick: { prompts: promptKey }, taboo: { cards: tabooKey },
   snark: { prompts: (q: string) => q.trim().toLowerCase() },
   brawl: { titles: titleKey }, hand: { prompts: handPromptKey, answers: handKey }, sketch: { words: sketchKey, ideas: sketchKey },
+  rather: { prompts: ratherKey },
 };
 
 /** `pack` without the items a built-in pack already has (for games whose items are unique across packs). */
