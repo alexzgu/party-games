@@ -25,7 +25,7 @@ describe('shownGames', () => {
   it('needs a game to be in every picked category', () => {
     const s = togglePick(togglePick(EMPTY, 'tag:Words'), 'tag:Teams');
     expect(ids(s)).toEqual(['taboo']);
-    expect(ids(togglePick(s, 'tag:Teams'))).toEqual(['forehead', 'gibberish', 'taboo', 'quick', 'salad']);
+    expect(ids(togglePick(s, 'tag:Teams'))).toEqual(['forehead', 'gibberish', 'taboo', 'quick', 'salad', 'odd']);
   });
   it('fits the players within each game’s range, any number above an open-ended one', () => {
     expect(fitsPlayers(game('quiz'), 1)).toBe(true);

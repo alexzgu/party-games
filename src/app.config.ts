@@ -4,10 +4,10 @@ export const APP = {
   shortName: 'Jerk Box',
 } as const;
 
-export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl' | 'sketch' | 'hand';
+export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl' | 'sketch' | 'hand' | 'odd';
 
-/** Games whose packs players can make, import and export on a phone. */
-export type PackGameId = Exclude<GameId, 'salad'>;
+/** Games whose packs players can make, import and export on a phone (Odd One Out plays Heads Down.'s). */
+export type PackGameId = Exclude<GameId, 'salad' | 'odd'>;
 
 /** The default categories on the Games page, in the order their chips show. */
 export const GAME_TAGS = ['One phone', 'Own phones', 'Teams', 'Words', 'Drawing', 'Trivia', 'Funny'] as const;
@@ -39,6 +39,7 @@ export const GAMES: GameInfo[] = [
   { id: 'brawl', name: 'Doodle Brawl', players: '3–8 players · own phones', minPlayers: 3, maxPlayers: 8, tags: ['Own phones', 'Drawing', 'Funny'], accent: 'var(--c-brawl)', emoji: '🥊' },
   { id: 'sketch', name: 'Sketchy', players: '3–10 players · own phones', minPlayers: 3, maxPlayers: 10, tags: ['Own phones', 'Drawing'], accent: 'var(--c-sketch)', emoji: '✏️' },
   { id: 'hand', name: 'Bad Hand', players: '3–10 players · own phones', minPlayers: 3, maxPlayers: 10, tags: ['Own phones', 'Funny'], accent: 'var(--c-hand)', emoji: '🃏' },
+  { id: 'odd', name: 'Odd One Out', players: '3–12 players', minPlayers: 3, maxPlayers: 12, tags: ['One phone', 'Words'], accent: 'var(--c-odd)', emoji: '🕵️' },
 ];
 
 /** Games taken out of the app, by id: an old pack file of one is turned away by name. */
