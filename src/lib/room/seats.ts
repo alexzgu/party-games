@@ -86,12 +86,16 @@ export class SeatBook {
   private out = new Set<string>();
   constructor(private game: string) {}
 
-  /** The room opens; `room`: the id saved with its game. No record of that very room: a new id, and no seat has a key. */
-  open(room: string): void {
+  /**
+   * The room opens; `room`: the id saved with its game. No record of that very room: a new id, and
+   * no seat has a key. `keys`: whether the saved keys are trusted (not where another tab may have
+   * written them); who was removed is kept either way.
+   */
+  open(room: string, keys = true): void {
     const s = load<{ room?: unknown; keys?: unknown; kicked?: unknown } | null>(`${this.game}:seats`, null);
     const saved = s && isKey(s.room) && s.room === room ? s : null;
     this.room = saved ? (saved.room as string) : newKey();
-    this.keys = new Map(pairs(saved?.keys, ([pid, key]) => isPid(pid) && isKey(key)));
+    this.keys = new Map(keys ? pairs(saved?.keys, ([pid, key]) => isPid(pid) && isKey(key)) : []);
     this.out = new Set(Array.isArray(saved?.kicked) ? saved.kicked.filter(isPid) : []);
     this.save();
   }
@@ -146,6 +150,14 @@ const CHANGED = 'The room changed while you waited. Join again.';
 
 /** How long a seat stays open for a new phone once the host opens it. */
 export const OPEN_MS = 60_000;
+/** While a phone is asked about, the host tells it so this often; it shows `WAITING` only until COVER_MS after the last time. */
+export const PULSE_MS = 1_000;
+export const COVER_MS = 2_500;
+/**
+ * After a recovery that had an asker ends, no seat opens to another for this long: by then the
+ * earlier asker's screen no longer shows `WAITING`, even if its refusal never reached it.
+ */
+export const REST_MS = 4_000;
 
 interface Row { pid: string; name: string }
 /** The seat a game gives a phone: its player, and whether it is new to the game. `then`: what to do once it is welcomed. */
@@ -163,8 +175,13 @@ export interface Claim { modern: boolean; proof: 'none' | 'right' | 'wrong'; app
 /** 'recover': only through recovery the host has opened for the seat. */
 export type Step = 'admit' | 'enrol' | 'prove' | 'recover';
 
-/** What happens next to a phone asking for a seat: a seat with a key wants its proof; a seat the game already had wants the host. */
-export function nextStep(c: Claim, s: { keyed: boolean; fresh: boolean }): Step {
+/**
+ * What happens next to a phone asking for a seat: a seat with a key wants its proof; a seat the
+ * game already had wants the host. `checks`: this host can check proofs (no: plain http, where
+ * nothing can be proved, so every phone is seated by the game's rules alone and no key is kept).
+ */
+export function nextStep(c: Claim, s: { keyed: boolean; fresh: boolean; checks: boolean }): Step {
+  if (!s.checks) return 'admit';
   if (c.approved) return c.modern ? 'enrol' : 'admit';
   if (s.keyed) return !c.modern || c.proof === 'wrong' ? 'recover' : c.proof === 'none' ? 'prove' : 'admit';
   if (!s.fresh) return 'recover';
@@ -175,7 +192,7 @@ export function nextStep(c: Claim, s: { keyed: boolean; fresh: boolean }): Step 
  * What the host screen shows of recovery: open for `name`'s seat (`asking`: one phone asks for
  * it now), or, with a `note`, closed without giving it to anyone.
  */
-export interface Recovery { pid: string; name: string; asking: boolean; note: string }
+export interface Recovery { pid: string; name: string; asking: boolean; note: string; /** Opens in a moment (REST_MS). */ soon: boolean }
 
 interface Call<C> extends Claim {
   conn: C;
@@ -189,7 +206,14 @@ interface Call<C> extends Claim {
   nonce: string;
 }
 
-interface Open<C> { pid: string; name: string; asker: Call<C> | null; timer: ReturnType<typeof setTimeout> }
+interface Open<C> {
+  pid: string; name: string; asker: Call<C> | null;
+  /** When it opens to an asker; its minute ends OPEN_MS after. */
+  from: number;
+  timer: ReturnType<typeof setTimeout>;
+  /** Tells the asker it is still being asked about. */
+  pulse?: ReturnType<typeof setInterval>;
+}
 
 export interface DeskHooks<C> {
   resolve(pid: string, name: string): Seat | { error: string };
@@ -209,6 +233,8 @@ export class Desk<C> {
   private closed: Recovery | null = null;
   /** The one connection the host said Yes to, until it is seated: a new recovery, a removal or a move ends it. */
   private approved: Call<C> | null = null;
+  /** Until when no seat opens to an asker (REST_MS after one that had an asker ended). */
+  private rest = 0;
   constructor(private book: SeatBook, private hooks: DeskHooks<C>) {}
 
   hello(conn: C, pid: string, name: string, modern: boolean): void {
@@ -235,15 +261,17 @@ export class Desk<C> {
     if (call?.stage === 'enrol' && isKey(key)) this.advance(call, key);
   }
 
-  /** Phones that have said hello and have no seat yet. */
-  get pending(): number { return this.calls.size; }
-
-  /** The host opens one seat for a new phone, for a minute; any seat open before closes, and a Yes not yet used is gone. */
+  /**
+   * The host opens one seat for a new phone, for a minute (from the end of a rest, if one runs);
+   * any seat open before closes, and a Yes not yet used is gone.
+   */
   recover(pid: string, name: string): void {
     this.close('', SAID_NO);
     this.unapprove(SAID_NO);
-    const timer = setTimeout(() => { if (this.open === open) this.close(`No phone took ${name}’s seat in time. Try again.`, NO_ANSWER); }, OPEN_MS);
-    const open: Open<C> = { pid, name, asker: null, timer };
+    const wait = Math.max(0, this.rest - Date.now());
+    const timer = setTimeout(() => { if (this.open === open) this.close(`No phone took ${name}’s seat in time. Try again.`, NO_ANSWER); }, wait + OPEN_MS);
+    const open: Open<C> = { pid, name, asker: null, from: Date.now() + wait, timer };
+    if (wait) setTimeout(() => { if (this.open === open) this.show(); }, wait);
     this.open = open;
     this.closed = null;
     this.show();
@@ -286,8 +314,7 @@ export class Desk<C> {
 
   /** The room moves or changes broker: every phone asks again. */
   clear(): void {
-    if (this.open) clearTimeout(this.open.timer);
-    this.open = null;
+    this.close('');
     this.closed = null;
     this.approved = null;
     this.calls.clear();
@@ -300,7 +327,8 @@ export class Desk<C> {
     if ('error' in seat) return this.refuse(call, seat.error);
     if (call.seat && call.seat !== seat.pid) return this.refuse(call, CHANGED);
     call.seat = seat.pid;
-    const step = nextStep(call, { keyed: this.book.key(seat.pid) !== undefined, fresh: seat.fresh });
+    const checks = !!globalThis.crypto?.subtle;
+    const step = nextStep(call, { keyed: checks && this.book.key(seat.pid) !== undefined, fresh: seat.fresh, checks });
     if (step === 'prove') return this.prove(call);
     if (step === 'recover') return this.ask(call);
     if (step === 'enrol' && !key) return this.enrol(call);
@@ -320,10 +348,10 @@ export class Desk<C> {
     this.hooks.send(call.conn, { t: 'enrol', room: this.book.room });
   }
 
-  /** Only the seat the host opened may be asked for, by one connection; a second one closes it for both. */
+  /** Only the seat the host opened, and only once it is open, may be asked for, by one connection; a second one closes it for both. */
   private ask(call: Call<C>): void {
     const open = this.open;
-    if (open?.pid !== call.seat) return this.refuse(call, ASK_HOST, true);
+    if (open?.pid !== call.seat || Date.now() < open.from) return this.refuse(call, ASK_HOST, true);
     if (open.asker && open.asker !== call) {
       this.close(`Two phones asked for ${open.name}’s seat, so neither got it. Try again.`, TWO);
       return this.refuse(call, TWO);
@@ -331,6 +359,7 @@ export class Desk<C> {
     open.asker = call;
     call.stage = 'ask';
     this.hooks.send(call.conn, { t: 'wait' });
+    open.pulse = setInterval(() => this.hooks.send(call.conn, { t: 'wait' }), PULSE_MS);
     this.show();
   }
 
@@ -339,8 +368,10 @@ export class Desk<C> {
     const open = this.open;
     if (!open) return;
     clearTimeout(open.timer);
+    clearInterval(open.pulse);
     this.open = null;
-    this.closed = note ? { pid: open.pid, name: open.name, asking: false, note } : null;
+    if (open.asker) this.rest = Date.now() + REST_MS;
+    this.closed = note ? { pid: open.pid, name: open.name, asking: false, note, soon: false } : null;
     if (open.asker && why) this.refuse(open.asker, why);
     this.show();
   }
@@ -357,6 +388,6 @@ export class Desk<C> {
 
   private show(): void {
     const o = this.open;
-    this.hooks.show(o ? { pid: o.pid, name: o.name, asking: !!o.asker, note: '' } : this.closed);
+    this.hooks.show(o ? { pid: o.pid, name: o.name, asking: !!o.asker, note: '', soon: Date.now() < o.from } : this.closed);
   }
 }

@@ -15,8 +15,6 @@ import { own, release } from './owner';
 export type HostStatus = 'connecting' | 'open' | 'trouble';
 
 const HELLO_TIMEOUT = 10000;
-/** Phones that have said hello and have no seat yet, at most: three times the biggest room (10 players). */
-const PENDING_MAX = 30;
 
 /** A message as JSON carries it (what a phone would send or get), or null. */
 const wire = (msg: unknown): unknown => { try { return JSON.parse(JSON.stringify(msg)); } catch { return null; } };
@@ -103,12 +101,12 @@ export class HostLink {
 
   /**
    * Registers the room on the broker under its code and starts pinging; `saved`: a saved game's room
-   * id (its seats' keys), or empty. A tab not sure it alone has the room (no Web Locks) trusts no
-   * saved seat record: a new room id and no keys, as when the record is lost.
+   * id (its seats' keys), or empty. A tab not sure it alone has the room (no Web Locks) keeps the
+   * room's id and who was removed, but trusts no saved key: another tab may have written them.
    */
   open(code: string, saved: string): void {
     this.code = code;
-    this.book.open(this.sure ? saved : '');
+    this.book.open(saved, this.sure);
     this.connect();
     this.pinger ??= setInterval(() => this.ping(), PING_MS);
   }
@@ -352,7 +350,6 @@ export class HostLink {
     const name = unmarked(raw);
     if (!name.trim() && raw.trim()) return this.refuse(conn, MARK_ONLY);
     if (pid.startsWith(BOT_PID)) return this.refuse(conn, BOT_SEAT); // a phone may not take a seat run here
-    if (this.desk.pending >= PENDING_MAX) return this.cut(conn); // closed without a word: a phone tries again later
     this.desk.hello(conn, pid, name, modern);
   }
 

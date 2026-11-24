@@ -32,6 +32,12 @@ class Session {
   private savedAt = 0;
   private timer?: ReturnType<typeof setInterval>;
   private lastSkip = -Infinity;
+  /**
+   * The room id the game is saved with: the one its drawings are stored under. It becomes the
+   * room's id only once the drawings were written under it, so a game never names a room its
+   * drawings are not filed under (an old record, or a full storage, keeps the one before).
+   */
+  private tag = '';
   readonly link = new HostLink('sketch', {
     hello: (pid, name, online) => {
       const joined = L.join(this.game!, pid, name, online);
@@ -50,7 +56,10 @@ class Session {
     },
     vacant: () => this.game?.phase === 'lobby' && this.game.players.every((p) => isBot(p.pid)),
     // A new room: its own game id too, so its drawings' ids are never another room's.
-    move: (code) => this.commit({ ...this.game!, code, id: newPid() }),
+    move: (code) => {
+      this.saveArt();
+      this.commit({ ...this.game!, code, id: newPid() });
+    },
   });
 
   /** Bots among the game's players; one that cannot be seated again leaves the game. */
@@ -68,8 +77,9 @@ class Session {
     this.now = Date.now();
     this.game = old ? L.afterReload(old, this.now) : newGame(newPid(), newCode(), store.loadSettings());
     this.link.open(this.game.code, room);
-    store.saveGame(this.game, this.link.room);
-    this.saveArt(); // under the room's id now, which a lost seat record has made new
+    this.tag = room;
+    this.saveArt(); // drawings first, under the room's id (new for an old save or a lost seat record)
+    store.saveGame(this.game, this.tag);
     this.bots.open();
     this.timer = setInterval(() => this.tick(), 250);
   }
@@ -126,7 +136,7 @@ class Session {
   }
 
   private saveArt() {
-    store.saveArt(this.art, this.link.room);
+    if (store.saveArt(this.art, this.link.room)) this.tag = this.link.room;
     this.unsaved = false;
     this.savedAt = Date.now();
   }
@@ -148,7 +158,7 @@ class Session {
     const ends = (x: Game | null) => x?.phase === 'over' || x?.phase === 'album';
     const finished = ends(next) && !ends(this.game);
     this.game = next;
-    store.saveGame(next, this.link.room);
+    store.saveGame(next, this.tag);
     if (finished) this.history(next, true);
     // Draw & guess shows a turn's drawing until the reveal ends; then it is dropped.
     if (next.dg && next.phase !== 'guess' && next.phase !== 'reveal' && Object.keys(this.art).length) {

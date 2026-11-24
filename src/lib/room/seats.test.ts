@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ASK_HOST, KeyRing, WAITING, ends, newKey, nextStep, proofOf, type Claim, type Step } from './seats';
+import { ASK_HOST, COVER_MS, KeyRing, OPEN_MS, REST_MS, WAITING, ends, newKey, nextStep, proofOf, type Claim, type Step } from './seats';
 import type { HostLink } from './host-link.svelte';
 import type { PhoneLink, BaseView } from './phone-link.svelte';
 
@@ -75,7 +75,8 @@ function phone(link: HostLink, pid: string, name: string, key?: string, modern =
   far.other = near;
   near.peerConnection = opts.near;
   far.peerConnection = opts.far;
-  const p: Phone = { got: [], conn: near, key, say: (m) => near.send(m), types: () => p.got.map((m) => m.t) };
+  // The host repeats `wait` while it asks (PULSE_MS): one run of them counts as one.
+  const p: Phone = { got: [], conn: near, key, say: (m) => near.send(m), types: () => p.got.map((m) => m.t).filter((t, i, all) => t !== 'wait' || all[i - 1] !== 'wait') };
   near.on('data', (raw) => {
     const m = raw as Phone['got'][number];
     if (m.t === 'ping') return near.send({ t: 'pong' });
@@ -111,7 +112,7 @@ afterEach(() => {
 
 it('decides each step from the proof, the key on record and the host', () => {
   const c = (x: Partial<Claim> = {}): Claim => ({ modern: true, proof: 'none', approved: false, ...x });
-  const cases: [Claim, { keyed: boolean; fresh: boolean }, Step][] = [
+  const cases: [Claim, { keyed: boolean; fresh: boolean; checks?: boolean }, Step][] = [
     [c(), { keyed: false, fresh: true }, 'enrol'],
     [c({ modern: false }), { keyed: false, fresh: true }, 'admit'],
     [c(), { keyed: false, fresh: false }, 'recover'],
@@ -123,8 +124,12 @@ it('decides each step from the proof, the key on record and the host', () => {
     [c({ modern: false }), { keyed: true, fresh: false }, 'recover'],
     [c({ approved: true, proof: 'wrong' }), { keyed: true, fresh: false }, 'enrol'],
     [c({ approved: true, modern: false }), { keyed: true, fresh: false }, 'admit'],
+    // A host that cannot check proofs (plain http): seated by the game's rules alone.
+    [c(), { keyed: true, fresh: false, checks: false }, 'admit'],
+    [c({ modern: false }), { keyed: false, fresh: false, checks: false }, 'admit'],
+    [c(), { keyed: false, fresh: true, checks: false }, 'admit'],
   ];
-  for (const [claim, held, step] of cases) expect(nextStep(claim, held), JSON.stringify([claim, held])).toBe(step);
+  for (const [claim, held, step] of cases) expect(nextStep(claim, { checks: true, ...held }), JSON.stringify([claim, held])).toBe(step);
 });
 
 it('a phone keeps a room\'s two newest keys, in memory when storage is blocked, and proves one without showing it', async () => {
@@ -220,7 +225,7 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     const sam = phone(host.link, 'p1', 'Sam');
     sam.conn.close();
     host.link.recoverSeat('p1', 'Sam');
-    expect(host.link.recovery).toEqual({ pid: 'p1', name: 'Sam', asking: false, note: '' });
+    expect(host.link.recovery).toEqual({ pid: 'p1', name: 'Sam', asking: false, note: '', soon: false });
     const no = phone(host.link, 'p8', 'sam');
     await settle(no);
     expect([no.types(), host.link.recovery?.asking]).toEqual([['prove', 'wait'], true]);
@@ -228,12 +233,13 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     expect([no.types(), why(no), host.link.recovery]).toEqual([['prove', 'wait', 'reject'], 'The host said no.', null]);
 
     host.link.recoverSeat('p1', 'Sam');
+    await vi.advanceTimersByTimeAsync(REST_MS); // the rest after a recovery that had an asker
     const fresh = phone(host.link, 'p9', 'sam');
     await settle(fresh);
     await vi.advanceTimersByTimeAsync(20_000); // the hello deadline waits for the host
     expect(fresh.types()).toEqual(['prove', 'wait']);
     host.link.answer(true);
-    expect(fresh.got.slice(2)).toMatchObject([{ t: 'enrol' }, { t: 'welcome', pid: 'p1' }, { t: 'view' }]);
+    expect(fresh.got.filter((m) => m.t !== 'wait').slice(1)).toMatchObject([{ t: 'enrol' }, { t: 'welcome', pid: 'p1' }, { t: 'view' }]);
     expect(host.link.recovery).toBeNull();
     // The new key is the seat's only key.
     const late = phone(host.link, 'p1', 'Sam', sam.key);
@@ -333,14 +339,17 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     vi.stubGlobal('navigator', {});
     const first = await tab(game);
     const second = await tab(game); // the same saved room in a second tab
-    expect(second.link.room).not.toBe(first.link.room);
+    expect(second.link.room).toBe(first.link.room); // the room's id as saved; its keys are what is not trusted
     const sam = phone(first.link, 'p1', 'Sam');
+    phone(first.link, 'p2', 'Eve');
+    first.kick('p2');
     await vi.advanceTimersByTimeAsync(1000);
     const guest = phone(second.link, 'p1', 'Guest'); // a fresh seat there, with the guest's key
     expect(guest.types()).toContain('welcome');
     expect(first.addBot()).toBeNull(); // the first tab saves its game last
     const host = await tab(game);
     expect(JSON.stringify(host.game)).toContain('Sam');
+    expect(why(phone(host.link, 'p2', 'Eve'))).toMatch(/removed/); // who was removed is still trusted
     for (const key of [guest.key, sam.key]) expect(sentAway(phone(host.link, 'p1', 'Sam', key))).toBe(true);
     host.link.recoverSeat('p1', 'Sam');
     expect(phone(host.link, 'p1', 'Sam', sam.key).types()).toEqual(['wait']);
@@ -366,6 +375,7 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     old.conn.close();
     expect(sentAway(phone(host.link, 'p5', 'Old', undefined, false))).toBe(true);
     host.link.recoverSeat('p5', 'Old');
+    await vi.advanceTimersByTimeAsync(REST_MS); // the rest after a recovery that had an asker
     const again = phone(host.link, 'p5', 'Old', undefined, false);
     host.link.answer(true);
     expect(again.types()).toEqual(['wait', 'welcome', 'view']);
@@ -419,12 +429,29 @@ it('a claim still being checked ends when the room moves to another code', async
   close(host);
 });
 
-it('keeps at most 30 phones waiting for a seat; more are closed at once and leave nothing', async () => {
+it('challenges a phone with its key however many others wait for a seat', async () => {
   const host = await load('hand');
-  for (let i = 0; i < 30; i++) phone(host.link, `p${i}`, `N${i}`, undefined, true, { mute: true });
-  expect(pending(host)).toBe(30);
-  const extra = phone(host.link, 'px', 'X');
-  expect([extra.conn.open, extra.types(), pending(host)]).toEqual([false, [], 30]);
+  const sam = phone(host.link, 'p1', 'Sam');
+  for (let i = 0; i < 40; i++) phone(host.link, `q${i}`, `N${i}`, undefined, true, { mute: true });
+  expect(pending(host)).toBe(40);
+  const back = phone(host.link, 'p1', 'Sam', sam.key);
+  await settle(back);
+  expect(back.types()).toEqual(['prove', 'welcome', 'view']);
+  close(host);
+});
+
+it('on plain http (no Web Locks, no crypto.subtle) seats every phone by the game\'s rules, asking nobody for a proof', async () => {
+  const real = globalThis.crypto;
+  vi.stubGlobal('crypto', { getRandomValues: <T extends ArrayBufferView>(a: T) => real.getRandomValues(a as never) as T });
+  vi.stubGlobal('navigator', {});
+  const host = await tab('hand');
+  const sam = phone(host.link, 'p1', 'Sam');
+  expect(sam.types()).toEqual(['welcome', 'view']);
+  sam.conn.close();
+  const back = phone(host.link, 'p1', 'Sam');
+  expect(back.types()).toEqual(['welcome', 'view']);
+  expect(phone(host.link, 'p2', 'Old', undefined, false).types()).toEqual(['welcome', 'view']);
+  expect(book(host).key('p1')).toBeUndefined();
   close(host);
 });
 
@@ -509,6 +536,7 @@ describe('a seat opened for a new phone', () => {
 
     // A Yes, then the connection drops before its key comes: no key changes, nobody is seated.
     host.link.recoverSeat('p1', 'Sam');
+    await vi.advanceTimersByTimeAsync(REST_MS); // the rest after a recovery that had an asker
     const slow = phone(host.link, 'p9', 'Sam', undefined, true, { mute: true });
     slow.say({ t: 'proof', macs: [] });
     await until(() => slow.types().includes('wait'));
@@ -531,6 +559,7 @@ describe('a seat opened for a new phone', () => {
     expect(first.types()).toEqual(['prove', 'wait', 'enrol']); // approved, its key not here yet
     host.link.recoverSeat('p1', 'Sam');
     expect(why(first)).toBe('The host said no.');
+    await vi.advanceTimersByTimeAsync(REST_MS); // the rest after a recovery that had an asker
     const second = await ask(host, 'p8');
     host.link.answer(true);
     expect(second.types()).toEqual(['prove', 'wait', 'enrol', 'welcome', 'view']);
@@ -542,6 +571,25 @@ describe('a seat opened for a new phone', () => {
       await settle(p);
       expect(p.types().includes('welcome')).toBe(welcomed);
     }
+    close(host);
+  });
+
+  it('opens again to an asker only after a rest, and its minute starts then', async () => {
+    const { host } = await room();
+    await ask(host);
+    host.link.answer(false);
+    host.link.recoverSeat('p1', 'Sam');
+    expect(host.link.recovery).toMatchObject({ asking: false, soon: true, note: '' });
+    expect(sentAway(await ask(host, 'p8'))).toBe(true);
+    expect(host.link.recovery).toMatchObject({ asking: false, soon: true });
+    await vi.advanceTimersByTimeAsync(REST_MS);
+    expect(host.link.recovery).toMatchObject({ soon: false });
+    const later = await ask(host, 'p7');
+    expect(later.types()).toEqual(['prove', 'wait']);
+    await vi.advanceTimersByTimeAsync(OPEN_MS - 500);
+    expect(host.link.recovery?.asking).toBe(true);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(why(later)).toBe('The host did not answer. Try again.');
     close(host);
   });
 
@@ -627,6 +675,51 @@ describe('the app\'s phone', () => {
     close(host);
   });
 
+  it('shows the waiting words only while the host keeps saying so', async () => {
+    expect(REST_MS - COVER_MS).toBeGreaterThanOrEqual(1000);
+    const host = await load('snark');
+    phone(host.link, 'p1', 'Sam').conn.close();
+    const { PhoneLink } = await import('./phone-link.svelte');
+    const p = new PhoneLink<{ t: string }, BaseView>('snark', { keep: () => false });
+    host.link.recoverSeat('p1', 'Sam');
+    p.join(host.game!.code, 'Sam');
+    await until(() => p.waiting);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(p.waiting).toBe(true); // the question is still open: the host keeps saying so
+    const far = (p as unknown as { conn: End }).conn.other!;
+    far.send = () => {}; // the link goes dead one way: nothing more arrives, not even its close
+    far.close = () => {};
+    await vi.advanceTimersByTimeAsync(COVER_MS);
+    expect([p.waiting, p.link]).toEqual([false, 'joining']);
+    close(host);
+  });
+
+  it('by the time another question can show, an earlier asker no longer shows the words, though its refusal never came', async () => {
+    const host = await load('snark');
+    phone(host.link, 'p1', 'Sam').conn.close();
+    const { PhoneLink } = await import('./phone-link.svelte');
+    const p = new PhoneLink<{ t: string }, BaseView>('snark', { keep: () => false });
+    host.link.recoverSeat('p1', 'Sam');
+    p.join(host.game!.code, 'Sam');
+    await until(() => p.waiting);
+    const far = (p as unknown as { conn: End }).conn.other!;
+    far.send = () => {};
+    far.close = () => {};
+    host.link.recoverSeat('p1', 'Sam'); // refuses the old asker; the phone never hears it
+    expect(p.waiting).toBe(true);
+    let guest = phone(host.link, 'p9', 'Sam');
+    await settle(guest);
+    expect(sentAway(guest)).toBe(true); // the seat rests
+    while (!host.link.recovery?.asking) {
+      await vi.advanceTimersByTimeAsync(250);
+      guest = phone(host.link, 'p9', 'Sam');
+      await settle(guest);
+      if (host.link.recovery?.asking) expect(p.waiting).toBe(false); // the moment a new question shows
+    }
+    expect(guest.types()).toEqual(['prove', 'wait']);
+    close(host);
+  });
+
   it('reads no view it cannot: a malformed one changes nothing and throws nothing', async () => {
     const { phone: snark } = await import('../../games/snark/player.svelte');
     const { phone: salad } = await import('../../games/salad/player.svelte');
@@ -691,6 +784,44 @@ describe('Sketchy drawings', () => {
     expect(JSON.parse(localStorage.getItem('hr:sketch:art')!)).toEqual({ room: host.link.room, art: JSON.parse(bare) });
     host = await load('sketch');
     expect(art(host)).toEqual(JSON.parse(bare));
+    close(host);
+  });
+
+  it('from before rooms are filed under the room before the game names it: a failed write leaves both as they were', async () => {
+    const bare = JSON.stringify({ 'old/1/0': [{ c: 0, w: 1, p: [0, 0] }] });
+    let host = await load('sketch');
+    const saved = JSON.parse(localStorage.getItem('hr:sketch:host')!) as object;
+    close(host);
+    localStorage.setItem('hr:sketch:host', JSON.stringify({ ...saved, room: undefined }));
+    localStorage.setItem('hr:sketch:art', bare);
+    const real = localStorage.setItem;
+    let refuse = 1;
+    localStorage.setItem = (k, v) => { if (k === 'hr:sketch:art' && refuse-- > 0) throw new Error('full'); real(k, v); };
+    host = await load('sketch');
+    const art = (h: Host) => (h as unknown as { art: object }).art;
+    expect(art(host)).toEqual(JSON.parse(bare)); // on screen all the same
+    expect((JSON.parse(localStorage.getItem('hr:sketch:host')!) as { room?: string }).room ?? '').toBe(''); // names no room
+    expect(localStorage.getItem('hr:sketch:art')).toBe(bare);
+    expect(host.addBot()).toBeNull(); // a later save of the game still names no room
+    expect((JSON.parse(localStorage.getItem('hr:sketch:host')!) as { room?: string }).room ?? '').toBe(''); // names no room
+    host = await load('sketch'); // tried again, and this time stored
+    expect(art(host)).toEqual(JSON.parse(bare));
+    const filed = JSON.parse(localStorage.getItem('hr:sketch:art')!) as { room: string };
+    expect([filed.room, (JSON.parse(localStorage.getItem('hr:sketch:host')!) as { room: string }).room]).toEqual([host.link.room, host.link.room]);
+    close(host);
+  });
+
+  it('survive two tabs without Web Locks: both keep the room\'s id, so the drawings stay filed under it', async () => {
+    vi.stubGlobal('navigator', {});
+    const first = await tab('sketch');
+    const d = { 'x/1/0': [{ c: 0, w: 1, p: [0, 0] }] };
+    const inner = first as unknown as { art: object; saveArt(): void };
+    inner.art = d;
+    inner.saveArt();
+    await tab('sketch'); // the same saved game, opened again
+    expect(first.addBot()).toBeNull(); // the first tab saves its game, not its drawings
+    const host = await tab('sketch');
+    expect((host as unknown as { art: object }).art).toEqual(d);
     close(host);
   });
 

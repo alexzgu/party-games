@@ -11,7 +11,7 @@
 </script>
 
 {#if r}
-  {#key `${r.pid}:${r.asking}:${r.note}`}
+  {#key `${r.pid}:${r.asking}:${r.note}:${r.soon}`}
     <div class="ask pop-in" role={r.asking ? 'alertdialog' : 'status'} aria-label="New phone for {r.name}">
       {#if r.note}
         <p>{r.note}</p>
@@ -23,6 +23,9 @@
           <Button size="sm" onclick={() => link.answer(true)} tip="Only if you can see those words on {r.name}’s phone">Yes</Button>
           <Button size="sm" variant="secondary" onclick={() => link.answer(false)}>No</Button>
         </div>
+      {:else if r.soon}
+        <p>{r.name}’s seat opens to a new phone in a moment; the minute starts then.</p>
+        <div class="answers"><Button size="sm" variant="secondary" onclick={() => link.stopRecovery()} tip="Shuts the seat again">Close</Button></div>
       {:else}
         <p>{r.name}’s seat is open to a new phone for a minute. Ask them to join now.</p>
         <div class="answers"><Button size="sm" variant="secondary" onclick={() => link.stopRecovery()} tip="Shuts the seat again">Close</Button></div>

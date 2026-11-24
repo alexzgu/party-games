@@ -1,4 +1,4 @@
-import { load, save, remove } from '../../lib/storage';
+import { load, save, remove, trySave } from '../../lib/storage';
 import { keepGame, loadSaved } from '../../lib/room/saved';
 import type { Drawing } from '../../lib/ink';
 import { DEFAULT_SETTINGS, DRAW_TIMES, GUESS_TIMES, ROUND_CHOICES, WRITE_TIMES, type Game, type Settings } from './core';
@@ -19,7 +19,8 @@ export function loadArt(room: string): Record<string, Drawing> {
   if (!tagged) return room ? {} : s as Record<string, Drawing>;
   return room && s.room === room ? s.art as Record<string, Drawing> : {};
 }
-export const saveArt = (a: Record<string, Drawing>, room: string) => save('sketch:art', { room, art: a });
+/** Whether it was stored. */
+export const saveArt = (a: Record<string, Drawing>, room: string): boolean => trySave('sketch:art', { room, art: a });
 export const clearArt = () => remove('sketch:art');
 
 const oneOf = <T>(choices: readonly T[], x: unknown, fallback: T): T => choices.includes(x as T) ? x as T : fallback;
