@@ -4,13 +4,13 @@ export const APP = {
   shortName: 'Jerk Box',
 } as const;
 
-export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl' | 'sketch' | 'hand' | 'odd' | 'rather';
+export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl' | 'sketch' | 'hand' | 'odd' | 'rather' | 'fish';
 
-/** Games whose packs players can make, import and export on a phone (Odd One Out plays Heads Down.'s). */
-export type PackGameId = Exclude<GameId, 'salad' | 'odd'>;
+/** Games whose packs players can make, import and export on a phone (Odd One Out plays Heads Down.'s; Go Fish needs none). */
+export type PackGameId = Exclude<GameId, 'salad' | 'odd' | 'fish'>;
 
 /** The default categories on the Games page, in the order their chips show. */
-export const GAME_TAGS = ['One phone', 'Own phones', 'Teams', 'Words', 'Drawing', 'Trivia', 'Funny'] as const;
+export const GAME_TAGS = ['One phone', 'Own phones', 'Teams', 'Words', 'Drawing', 'Trivia', 'Cards', 'Funny'] as const;
 export type GameTag = (typeof GAME_TAGS)[number];
 
 export interface GameInfo {
@@ -38,6 +38,7 @@ export const GAMES: GameInfo[] = [
   { id: 'hand', name: 'Bad Hand', players: '3–10 players · own phones', tags: ['Own phones', 'Funny'], accent: 'var(--c-hand)', emoji: '🃏' },
   { id: 'odd', name: 'Odd One Out', players: '3–12 players', tags: ['One phone', 'Words'], accent: 'var(--c-odd)', emoji: '🕵️' },
   { id: 'rather', name: 'Would You Rather', players: '3–12 players · own phones', tags: ['One phone', 'Own phones', 'Funny'], accent: 'var(--c-rather)', emoji: '🤔' },
+  { id: 'fish', name: 'Go Fish', players: '2–6 players · own phones', tags: ['Own phones', 'Cards'], accent: 'var(--c-fish)', emoji: '🎣' },
 ];
 
 /** Games taken out of the app, by id: an old pack file of one is turned away by name. */

@@ -12,7 +12,7 @@ const put = (s: GamesState, name: string, games: string[] = []) => {
 describe('categories', () => {
   it('lists the default ones with games, in their order, then the phone’s own', () => {
     const own = put(EMPTY, 'Chill').own;
-    expect(categories(own).map((c) => c.name)).toEqual(['One phone', 'Own phones', 'Teams', 'Words', 'Drawing', 'Trivia', 'Funny', 'Chill']);
+    expect(categories(own).map((c) => c.name)).toEqual(['One phone', 'Own phones', 'Teams', 'Words', 'Drawing', 'Trivia', 'Cards', 'Funny', 'Chill']);
     expect(categories([]).find((c) => c.name === 'Teams')!.games).toEqual(['dial', 'quiz', 'taboo']);
   });
   it('leaves out a default category no game is in', () => {

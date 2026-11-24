@@ -42,18 +42,20 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `gamePicker` (the drop-down's search, and when it focuses its field), `panel` (whether a pack page's players or teams, a pack editor's details or a Community list's search and filters start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's game; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `gamesView` (the Games page's rules: default categories, the orders, the categories box's label, own category names, reading the stored choices defensively) and `gamesPage.svelte` (those choices on this phone), `update` (new versions switch in on the main menu or the Games page, held back while the category editor is open), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `gamePicker` (the drop-down's search, and when it focuses its field), `panel` (whether a pack page's players or teams, a pack editor's details or a Community list's search and filters start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's game; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `gamesView` (the Games page's rules: default categories, the orders, the categories box's label, own category names, reading the stored choices defensively) and `gamesPage.svelte` (those choices on this phone), `update` (new versions switch in on the main menu or the Games page, held back while the category editor is open), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy), `cards/` (a 52-card deck and a hand's layout; see Playing cards).
 - `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList`, every pack editor and the Community list), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `GameCard` (one large row opening a page: a game, or the main menu's Games and Community packs), `CategoryEditor` (making or changing one of the Games page's own categories), `Dropdown` (the searchable drop-down box), `GamePicker` (its pick-one face choosing a game: the Community page, History), `CategoryMenu` (its pick-several face for the Games page's categories), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
   items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
   `ExportPack` (Export), `Community` and `CommunityItems` (browse, preview, import and star
-  Community packs, over a pack list or on the Community page), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown).
+  Community packs, over a pack list or on the Community page), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown), `cards/PlayingCard` and `cards/CardFan` (see Playing cards).
 - `src/pages/` — the pages that are not a game: `Home`, `Games`, `Settings`, `History`, `CommunityPage`
   (the Community packs, a game at a time), `Joined` (an invite link) and `Crashed`.
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
-  to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
+  to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`, … `--c-fish`). Playing cards
+  have their own (`--card-face`, `--card-red`, `--card-black`, `--card-edge`, `--card-back`, `--card-back-2`,
+  `--card-w-sm|md|lg`), the same in both schemes.
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
 - `src/content/` — built-in packs as JSON (formats in `src/lib/content.ts`).
 
@@ -258,7 +260,7 @@ preview, past its list too) and ticks the new pack, as before.
 ## Shared behaviour
 
 - **Home** (`#/`): the pinned header (🎲 Jerk Box, History, Settings), then two large rows of the
-  same look: "🎉 Games" ("12 party games", the number in `GAMES`) opens the Games page, and, while
+  same look: "🎉 Games" ("14 party games", the number in `GAMES`) opens the Games page, and, while
   the Community library is on, "🌍 Community packs" ("Browse packs friends made") opens the
   Community page with fresh lists. Without it, the Games row stands alone. Install help at the foot.
 - **Games page** (`#/games`, `src/pages/Games.svelte`; Back returns to Home): every game in `GAMES`
@@ -271,7 +273,7 @@ preview, past its list too) and ticks the new pack, as before.
   picked "+ N" ("Teams + 2"); while anything is picked it is tinted with the accent and holds a ✕
   ("Clear") that unpicks them all without opening it. Open: "Search categories", then every
   category with its number of games (a ✓ when picked): the default categories (the `tags` in
-  `GAME_TAGS` order: One phone, Own phones, Teams, Words, Drawing, Trivia, Funny; one no game is in
+  `GAME_TAGS` order: One phone, Own phones, Teams, Words, Drawing, Trivia, Cards, Funny; one no game is in
   is left out), then the phone's own, each tagged "yours" with a pencil ("Edit <name>"); under the
   list New and Done. Tapping a category picks or unpicks it and the menu stays open, the games
   behind changing at once; with several picked a game must be in every one ("No categories
@@ -924,7 +926,7 @@ games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amo
 
 ## Shared room link (`src/lib/room/`)
 
-Every own-phones game (Snark Tank, Word Salad, Doodle Brawl, Sketchy, Bad Hand, Would You Rather) uses one link layer: room codes,
+Every own-phones game (Snark Tank, Word Salad, Doodle Brawl, Sketchy, Bad Hand, Would You Rather, Go Fish) uses one link layer: room codes,
 broker choice (`?peer=`, stored under the existing `snark:broker` key so the setting carries
 over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone's outbox and the
 host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
@@ -944,7 +946,7 @@ them) but may rejoin with the same code and keeps their score; a removed player 
 after Play again. A
 refusal or the end of the room is shown on the join screen even on a phone that came by QR code.
 The join screen's name box starts with the phone's username, cut to that game's name limit (Snark
-Tank 14, Word Salad 18, Doodle Brawl, Sketchy, Bad Hand and Would You Rather 20 characters); after a refused join (a name already taken,
+Tank 14, Word Salad 18, Doodle Brawl, Sketchy, Bad Hand, Would You Rather and Go Fish 20 characters); after a refused join (a name already taken,
 say) it keeps what was typed, so it can be fixed. A name typed there is for that room only (kept
 for rejoining it) and never changes the username.
 The browser's or Android's back gesture walks the same path as Back and never lands on a closed host screen. Any message whose JSON is 15,000 UTF-8
@@ -956,7 +958,7 @@ A player id is 1–64 letters, digits, `_` or `-`, never a name every JavaScript
 makes a new one for each room it joins and keeps it for that room (after leaving, a refusal, a
 reload, or Play again).
 
-**Names** (`names.ts`, the same in all six own-phones games): two names that look the same are one
+**Names** (`names.ts`, the same in all seven own-phones games): two names that look the same are one
 name: the same once compatibility forms (such as full-width letters) are folded, invisible
 characters dropped, spaces trimmed and runs of spaces made one, and case ignored ("Sam Lee",
 "sam  lee"). No two players who may still play (in the room, or gone mid-game and free to come back
@@ -1099,6 +1101,27 @@ a smarter brain, say one that asks the wizard, can replace it): today's brains a
 *house*. Think times (*house*): 1–4 s to pick or vote; a few seconds up to a good part of the time
 left to write or draw; every wait ends before the timer does; never instant, never while paused. Drawing
 bots draw a random doodle (`lib/doodle.ts`) within the drawing limits.
+
+## Playing cards (`src/lib/cards/`, `src/components/cards/`)
+
+A kit for any game played with a standard 52-card deck (Go Fish first).
+
+- **Cards** (`deck.ts`, pure): a card is its id 0–51; its suit is `Math.floor(id / 13)` (spades,
+  hearts, diamonds, clubs) and its rank `id % 13 + 1` (1 ace … 11 jack, 12 queen, 13 king). A new
+  deck in order, a shuffled one (`lib/random.ts`, the random numbers a parameter so tests can seed
+  them), dealing one card at a time around the table from the top (the first card of a pile is its
+  top), a hand sorted by rank (ace low) then suit, and names: "7 of hearts", "ace of spades",
+  "sevens", "seven", "A", "10", "K".
+- **`PlayingCard`**: a card drawn in CSS and text, no images: rank and suit symbol (♠ ♥ ♦ ♣) in the
+  top-left corner and, upside down, the bottom-right, and the suit large in the middle (small
+  cards show the corner only); a white face with red hearts and diamonds and black spades and
+  clubs, the same in both schemes (red 5.9:1, black 18:1). Its back is a crosshatch in the card
+  tokens. Three sizes from the tokens (30, 52, 72 px wide, 5:7).
+- **`CardFan`**: a hand face up, side by side when it fits, else overlapping in even rows, each
+  card showing at least the left half of its width (its corner) and each row the top part of the
+  cards under it (`fan.ts`), so 30 cards fit a 360 px phone in three rows. With a tap handler each
+  card is a button named for its card; selected cards stand raised and outlined in the accent. With
+  a count instead (`backs`), a short overlapping row of up to six backs and the number, for a table.
 
 ## Game 8 — Word Salad (`salad`)
 
@@ -1583,3 +1606,69 @@ Amounts marked *house* are ours: the folk game keeps no score.
   built-in question; `vote-long` and `reveal-full` the longest a question may be, two 60-character
   choices, and `reveal-full` twelve players with 20-character names).
 - **Bots** (see Shared room link): tap a side at random after 1–4 s, once a question.
+
+## Game 14 — Go Fish (`fish`)
+
+Traditional Go Fish with the common published rules, our look. The host screen is the table;
+each phone is that player's hand (`#/fish`: Host and Join, with the Return / Rejoin banner as in
+Bad Hand). Choices marked *house* are ours where the published rules vary.
+
+- **Own phones**: 2–6 players join a host screen through the shared room link; name limit 20
+  characters. No packs: the deck is a standard 52-card one (see Playing cards).
+- **Deal**: a shuffled deck, one card at a time around the table, 7 cards each with 2 or 3
+  players and 5 each with 4 to 6; the rest is the pool, face down. A random player goes first.
+  Four of a rank in a hand are laid down at once as a book, at any moment, the deal included.
+- **Turn**: the player whose turn it is taps a card in their hand (that picks its rank, so they
+  always hold the rank they ask for; every card of it stands raised), taps another player who
+  holds a card, and taps Ask ("Ask Sam for sevens"). The host settles it; the asked player does
+  nothing and cannot lie. They hold that rank: all those cards move to the asker, who goes again.
+  They hold none: "Go fish!", and the asker draws the top card of the pool; if it is the rank asked
+  for it is shown to the room ("Maya fished a seven and goes again.") and the asker goes again,
+  otherwise the turn passes to the next player in seat order (*house*: the other common variant
+  gives the turn to the player asked). With the pool empty a go fish draws nothing and the turn
+  passes. A player whose hand is empty at the start of their turn draws one card and then asks;
+  with the pool empty they are skipped. If no other player holds a card, the asker draws one and
+  the turn passes. An ask names its turn (`at`); the host ignores one out of turn, for a rank the
+  asker does not hold, of themselves, of a player with no cards, who is out or watching, for
+  another turn, or while paused, and tells that phone it did not count.
+- **What everyone sees**: every ask and its outcome, as at a real table ("Maya asked Sam for
+  sevens. Sam gave 2.", "Maya asked Sam for sevens. Go fish!", "Maya drew a card.", "Maya laid
+  down the sevens."). An outcome stays up 3 s (`SHOW_MS`, or Next) before the next turn. Nobody
+  ever sees another player's cards or the pool's order: a phone is sent its own hand, every
+  player's card count and books, the pool's count, whose turn it is and the last 8 events; the
+  card it just drew, to its own phone only ("You drew the 4 of clubs.").
+- **Timer**: seconds per turn 20 / 30 / 45 / no limit (default 30, *house*), in Settings
+  (`#/fish/settings`, rules only). When it runs out the game makes a random legal ask for that
+  player (a rank they hold, from a player with cards; *house*), so a sleeping or dropped phone never
+  stalls the table; with no limit the host's "Ask for them" does the same.
+- **End**: when all 13 books are down, after the outcome that laid the last one. Most books wins;
+  ties share a place; the standings list each player's books as rank badges, with confetti; Lobby
+  (same players, a fresh deal) or Close. History gets one entry on the host: who won, books per
+  player, and one line per player naming their books ("Maya: sevens, kings").
+- **Players**: a phone that drops keeps its hand and nobody waits but the timer. A player who is
+  removed or leaves is out: their hand is shuffled back into the pool ("Sam is out. Their cards
+  went back into the pool."), their books stay down under their name on the table, and their turn
+  passes on. One who left may come back and plays on with their books and an empty hand (drawing
+  on their turn). Fewer than two players left ends the game. The standings count only players
+  still in the game (*house*). Late joiners are seated and watch ("You're watching: you'll be dealt
+  in at the next deal."); they are dealt in at the next deal.
+- **Host screen** (the table): whose turn it is, large ("Maya's turn"), or the outcome in play,
+  with who plays next; the timer; each player in a panel in seat order (name, status: Asking, Away,
+  Out, Next deal), a fan of backs with their card count and their books as rank badges; in the
+  middle the pool (backs and count), "4 of 13 books down" and the last four outcomes small. Skip
+  reads "Ask for them" or "Next"; pause stops the turn's and the outcome's clock. A Players button
+  mid-game removes a player (after a confirm). Fits six 20-character names at 1366×768.
+- **Phone**: the hand as cards sorted by rank (`CardFan`; 25 cards fit a 360×640 phone); on your
+  turn "Your turn!", a buzz and a sound, the hand to tap, the other players as buttons with their
+  card counts, and one Ask button pinned at the foot; otherwise who is asking, or the outcome;
+  your books. A phone's picked rank and player, and "Asking…" once sent, belong to its seat in
+  that room and that turn: they go when the turn moves on, the host refuses the ask, or the phone
+  leaves the seat. The host is saved under `fish:host`, a phone's seat under `fish:me`.
+- Lobby, host controls, reconnects, name rules and the open-room Return as in Bad Hand; Start
+  reads "Deal for 4 players".
+- Demos at `#/fish/host?demo=` with `lobby|turn|gave|fish|book|over|paused|full` and
+  `#/fish/join?demo=` with `join|wait|turn|picked|watching|over|full` (`full`: on the host a table
+  of six 20-character names, on the phone a hand of 25 cards).
+- **Bots** (see Shared room link): on their turn, after 1–4 s, ask for a rank they hold; from a
+  player they saw ask for or receive that rank who may still hold it (not given away or laid down
+  since), else from a random player with cards (*house*).

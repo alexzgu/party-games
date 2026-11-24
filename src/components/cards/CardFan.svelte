@@ -21,7 +21,7 @@
 
 {#if backs !== undefined}
   <span class="backs {size}" role="img" aria-label="{backs} {backs === 1 ? 'card' : 'cards'}">
-    <span class="stack">
+    <span class="pile">
       {#each Array.from({ length: Math.min(backs, STACK) }) as _, i (i)}<PlayingCard {size} />{/each}
     </span>
     <b>{backs}</b>
@@ -54,9 +54,9 @@
   button { display: block; padding: 0; border: 0; background: none; border-radius: var(--r-sm); }
   button:disabled { cursor: default; }
   .backs { display: inline-flex; align-items: center; gap: var(--s-2); }
-  .stack { display: flex; }
-  .stack > :global(.card + .card) { margin-left: calc(var(--card-w-md) * -0.72); }
-  .sm .stack > :global(.card + .card) { margin-left: calc(var(--card-w-sm) * -0.72); }
-  .lg .stack > :global(.card + .card) { margin-left: calc(var(--card-w-lg) * -0.72); }
+  .pile { display: flex; }
+  .pile > :global(.card + .card) { margin-left: calc(var(--card-w-md) * -0.72); }
+  .sm .pile > :global(.card + .card) { margin-left: calc(var(--card-w-sm) * -0.72); }
+  .lg .pile > :global(.card + .card) { margin-left: calc(var(--card-w-lg) * -0.72); }
   .backs b { font: 800 1.2rem / 1 var(--font-display); min-width: 1.5em; }
 </style>
