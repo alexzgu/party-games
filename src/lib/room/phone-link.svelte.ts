@@ -1,6 +1,7 @@
 // A phone's link to the host screen of an own-phones room. It keeps trying until it is told to
 // stop: a locked phone, a reload, a dropped Wi-Fi or a reloading host screen all end in a quiet
-// reconnect with the same player id, so the host recognises the phone and its score is kept.
+// reconnect with the same player id and proof of its seat's key (seats.ts), so the host
+// recognises the phone and its score is kept.
 // The game supplies what its views look like and which queued messages a view makes stale.
 import type Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
@@ -8,13 +9,14 @@ import { BROKER_TROUBLE, LINK_TIMEOUT, backoff, classify, makePeer } from './net
 import { currentBroker } from './broker';
 import { hostPeerId, newPid } from './code';
 import { Assembler, toWire } from './parts';
+import { KeyRing, WAITING, commitOf, ends, isKey, newKey, numberOf, proofOf } from './seats';
 import { load, remove, save } from '../storage';
 
 /** idle: not in a room. joining/live/lost: trying, connected, reconnecting. stopped: told to stop (see `stopped`). */
 export type Link = 'idle' | 'joining' | 'live' | 'lost' | 'stopped';
 
-/** A phone's player: its id, the name it joined with and the room it is in. */
-export interface Me { pid: string; name: string; code: string; /** The host has welcomed this phone into that room. */ joined?: boolean }
+/** A phone's player: its id (for the room `of`, kept after leaving it), the name it joined with and the room it is in. */
+export interface Me { pid: string; name: string; code: string; of?: string; /** The host has welcomed this phone into that room. */ joined?: boolean }
 
 /** Every view carries the time left on its timer (ms, or null) and whether the game is paused. */
 export interface BaseView { left: number | null; paused: boolean }
@@ -45,6 +47,8 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   /** Why the phone stopped trying (shown as is), or a problem while still trying. */
   stopped = $state('');
   trouble = $state('');
+  /** While the host is asked about this phone: the number its screen should show too. Worked out here, never sent. */
+  number = $state('');
   me = $state.raw<Me | null>(null);
   /** The room the phone is in or last tried; kept after a refusal or the end, so the reason stays with that room's code. */
   room = $state('');
@@ -61,8 +65,16 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   private outbox: Out[] = [];
   /** Reconnected: re-send the outbox once the host's fresh view has pruned it. */
   private replay = false;
+  private keys: KeyRing;
+  /** This connection has been given a key: one each, whatever the other end asks. */
+  private enrolled = false;
+  /** This connection's value for the number, until it is shown to the host; empty when it shows no number. */
+  private secret = '';
+  /** This connection has been told to wait: once each. */
+  private waited = false;
 
   constructor(private game: string, private hooks: PhoneHooks<Out, V>) {
+    this.keys = new KeyRing(game);
     this.me = loadMe(game);
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
@@ -73,9 +85,10 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
 
   /** Joins a room by code and name (a new attempt: an unknown code is reported, not retried). */
   join(code: string, name: string): void {
-    const pid = this.me?.pid ?? newPid();
+    // An id belongs to one room: nobody who met it in another can sit on it here.
+    const pid = this.me && (this.me.code || this.me.of) === code ? this.me.pid : newPid();
     this.halt(''); // a fresh peer, on the broker chosen now
-    this.setMe({ pid, name, code, joined: false });
+    this.setMe({ pid, name, code, of: code, joined: false });
     this.room = code;
     this.view = null;
     this.start();
@@ -96,7 +109,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.link = 'idle';
     this.view = null;
     this.room = '';
-    if (this.me) this.setMe({ ...this.me, code: '', joined: false });
+    if (this.me) this.setMe({ ...this.me, of: this.me.code || this.me.of, code: '', joined: false });
   }
 
   /** Sends a game message; kept and re-sent after a reconnect until a view shows it arrived. */
@@ -129,6 +142,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   /** Stops trying; the old link and peer close now, or after `grace` ms so a last message gets out. */
   private halt(why: string, grace = 0): void {
     this.stopped = why;
+    this.number = '';
     this.link = 'stopped';
     if (this.retry) clearTimeout(this.retry);
     if (this.watchdog) clearInterval(this.watchdog);
@@ -149,7 +163,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   }
 
   private forget(): void {
-    if (this.me) this.setMe({ ...this.me, code: '', joined: false });
+    if (this.me) this.setMe({ ...this.me, of: this.me.code || this.me.of, code: '', joined: false });
     else remove(`${this.game}:me`);
   }
 
@@ -210,12 +224,19 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     const conn = this.peer.connect(hostPeerId(this.game, this.me.code), { reliable: true, serialization: 'json' });
     this.conn = conn;
     this.parts = new Assembler();
+    this.enrolled = false;
+    this.waited = false;
+    this.secret = '';
+    this.number = '';
+    const secret = newKey();
+    const commit = commitOf(secret);
     const timeout = setTimeout(() => { if (this.conn === conn && !conn.open) this.lose(conn); }, DIAL_TIMEOUT);
     conn.on('open', () => {
       clearTimeout(timeout);
       if (this.conn !== conn || !this.me) return;
       this.heard = Date.now();
-      this.write({ t: 'hello', pid: this.me.pid, name: this.me.name });
+      this.trouble = '';
+      void this.hello(conn, secret, commit);
     });
     conn.on('data', (raw) => {
       if (this.conn !== conn) return;
@@ -229,6 +250,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   private lose(conn: DataConnection): void {
     if (this.conn !== conn) return;
     this.conn = null;
+    this.number = '';
     conn.close();
     this.later();
   }
@@ -253,14 +275,57 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     if (this.link === 'live' && this.conn && Date.now() - this.heard > LINK_TIMEOUT) this.lose(this.conn);
   }
 
-  private receive(msg: { t: string; pid?: string; v?: V; why?: string }): void {
+  /** Says hello, with the hash of this connection's value where a number can be worked out. */
+  private async hello(conn: DataConnection, secret: string, hash: Promise<string>): Promise<void> {
+    const { here, there } = ends(conn.peerConnection);
+    const commit = here && there ? await hash : '';
+    if (this.conn !== conn || !this.me) return;
+    if (commit) this.secret = secret;
+    this.write({ t: 'hello', pid: this.me.pid, name: this.me.name, keys: 1, ...(commit ? { commit } : {}) });
+  }
+
+  /** Shows the host that this phone has its seat's key, without sending it: one proof for each key it may be. */
+  private async prove(room: unknown, nonce: unknown): Promise<void> {
+    const conn = this.conn;
+    if (!isKey(room) || !isKey(nonce)) return;
+    const { here, there } = ends(conn?.peerConnection);
+    const macs = await Promise.all(this.keys.get(room).map((key) => proofOf(key, { room, nonce, host: there, phone: here })));
+    if (conn && this.conn === conn) this.write({ t: 'proof', macs });
+  }
+
+  /** A new seat: makes its key and sends it, this once. */
+  private enrol(room: unknown): void {
+    if (this.enrolled || !isKey(room)) return;
+    this.enrolled = true;
+    this.write({ t: 'key', key: this.keys.make(room) });
+  }
+
+  /** The host is being asked about this phone: shows so, and once the host's value is here shows it this phone's, and the number. */
+  private async waiting(hostValue: unknown): Promise<void> {
+    if (this.waited) return;
+    this.waited = true;
+    this.trouble = WAITING;
+    const { conn, secret: phoneValue } = this;
+    this.secret = '';
+    if (!conn || !phoneValue || !isKey(hostValue)) return;
+    this.write({ t: 'reveal', value: phoneValue });
+    const { here, there } = ends(conn.peerConnection);
+    const number = await numberOf({ hostValue, phoneValue, host: there, phone: here });
+    if (number && this.conn === conn && this.trouble === WAITING) this.number = number;
+  }
+
+  private receive(msg: { t: string; pid?: string; v?: V; why?: string; room?: unknown; nonce?: unknown; value?: unknown }): void {
     this.heard = Date.now();
     switch (msg.t) {
       case 'ping': this.write({ t: 'pong' }); break;
+      case 'prove': void this.prove(msg.room, msg.nonce); break;
+      case 'enrol': this.enrol(msg.room); break;
+      case 'wait': void this.waiting(msg.value); break;
       case 'welcome':
         if (this.me && typeof msg.pid === 'string') this.setMe({ ...this.me, pid: msg.pid, joined: true });
         this.link = 'live';
         this.trouble = '';
+        this.number = '';
         this.attempts = 0;
         this.missing = 0;
         this.replay = true; // the host sends a view right after: replay what still applies then

@@ -1,14 +1,15 @@
 // The host screen's side of an own-phones room: one PeerJS peer under the room's id, a link to
 // each phone, pings, and the hello/welcome/reject/ended handshake. The game decides who may join
-// and what each message means (`HostHooks`); this only moves messages. Big messages travel as
+// and what each message means (`HostHooks`), seats.ts whose seat it is; this only moves messages. Big messages travel as
 // parts (parts.ts) both ways. A seat run on this screen (a bot, `seat`) joins, is sent and acts
 // exactly as a phone would, through the same hooks; only the wire is skipped.
 import type Peer from 'peerjs';
 import type { DataConnection } from 'peerjs';
 import { BROKER_TROUBLE, LINK_TIMEOUT, PING_MS, backoff, classify, makePeer } from './net';
 import { currentBroker } from './broker';
-import { hostPeerId, newPid } from './code';
+import { hostPeerId, newCode, newPid } from './code';
 import { Assembler, toWire } from './parts';
+import { Desk, REMOVED, SeatBook, ends, type Ask, type Seat } from './seats';
 
 export type HostStatus = 'connecting' | 'open' | 'trouble';
 
@@ -17,6 +18,8 @@ const HELLO_TIMEOUT = 10000;
 /** A message as JSON carries it (what a phone would send or get), or null. */
 const wire = (msg: unknown): unknown => { try { return JSON.parse(JSON.stringify(msg)); } catch { return null; } };
 const str = (x: unknown, max: number): x is string => typeof x === 'string' && x.length <= max;
+/** A player id a phone may use: the games keep their records by it, so never a name every object has. */
+const goodPid = (pid: string) => /^[\w-]{1,64}$/.test(pid) && !(pid in {});
 
 /** Marks a seat run on this screen in every list of players; a phone's name may not start with it. */
 export const BOT_MARK = '🤖';
@@ -25,26 +28,31 @@ export const BOT_PID = 'bot-';
 /** A phone's name without the bot mark (and the emoji variation selector that may follow it). */
 export const unmarked = (name: string) => name.replace(/^(?:\s|🤖|\uFE0F)+/u, '');
 const MARK_ONLY = 'Pick a name without 🤖 (it marks bots).';
+const BAD_PID = 'This phone cannot join. Reload the page and try again.';
 const BOT_SEAT = 'That name is already in use. Pick another name.';
 
 /** A pretend phone run by this screen: it gets what a phone would get, as it would read it off the link. */
 export interface LocalSeat { deliver(msg: { t: string; [k: string]: unknown }): void }
 
 export interface HostHooks {
-  /** A phone said hello: its seat (and what to do once it is welcomed), or why it may not join. */
-  hello(pid: string, name: string, online: ReadonlySet<string>): { pid: string; then: () => void } | { error: string };
+  /** A phone says hello: the seat it would get, or why it may not join. Asked more than once; only `then` changes the game. */
+  hello(pid: string, name: string, online: ReadonlySet<string>): Seat | { error: string };
   /** Any other message from a welcomed phone, as received; the game checks its shape. */
   message(pid: string, raw: unknown): void;
   /** The player tapped "Leave room" on their phone: they stop getting turns. */
   left(pid: string): void;
-  /** The room's id is taken on the broker: a new code to try, or null to keep retrying this one. */
-  taken(): string | null;
+  /** The code is taken on the broker: whether the room is still an empty lobby that may take another; else this one is retried. */
+  vacant(): boolean;
+  /** The room has a new code (and is a new room: `room` has changed). */
+  move(code: string): void;
 }
 
 export class HostLink {
   status = $state<HostStatus>('connecting');
   trouble = $state('');
   online = $state.raw<ReadonlySet<string>>(new Set());
+  /** Questions for the host: may this phone have that seat? */
+  asks = $state.raw<Ask[]>([]);
 
   private code = '';
   private peer: Peer | null = null;
@@ -58,12 +66,34 @@ export class HostLink {
   private attempts = 0;
   /** The code is taken and the room is leaving it: nobody is let in until the new peer is up. */
   private moving = false;
+  private book: SeatBook;
+  private desk: Desk<DataConnection>;
 
-  constructor(private game: string, private hooks: HostHooks) {}
+  constructor(private game: string, private hooks: HostHooks) {
+    this.book = new SeatBook(game);
+    this.desk = new Desk(this.book, {
+      resolve: (pid, name) => this.resolve(pid, name),
+      holder: (pid) => {
+        const conn = this.links.get(pid);
+        return { online: this.online.has(pid), live: !!conn && !this.quiet(conn) };
+      },
+      quiet: (conn) => this.quiet(conn),
+      ends: (conn) => ends(conn.peerConnection),
+      send: (conn, msg) => this.write(conn, msg),
+      refuse: (conn, why) => this.refuse(conn, why),
+      close: (conn) => this.cut(conn),
+      admit: (conn, seat) => this.admit(conn, seat),
+      asks: (now) => { this.asks = now; },
+    });
+  }
 
-  /** Registers the room on the broker under its code and starts pinging. */
-  open(code: string): void {
+  /** The room's id, saved with its game. */
+  get room(): string { return this.book.room; }
+
+  /** Registers the room on the broker under its code and starts pinging; `saved`: a saved game's room id (its seats' keys), or empty. */
+  open(code: string, saved: string): void {
     this.code = code;
+    this.book.open(saved);
     this.connect();
     this.pinger ??= setInterval(() => this.ping(), PING_MS);
   }
@@ -102,7 +132,10 @@ export class HostLink {
     this.hooks.left(pid);
   }
 
-  /** Tells a phone why it is out and closes its link. */
+  /** The host's Yes or No to one of `asks`. */
+  answer(ask: Ask, yes: boolean): void { this.desk.answer(ask, yes); }
+
+  /** Removes a player for good: tells their phone why, stops listening to it and closes its link. */
   remove(pid: string, why: string): void {
     if (this.locals.has(pid)) {
       this.deliver(pid, { t: 'reject', why });
@@ -110,10 +143,10 @@ export class HostLink {
       this.refresh();
       return;
     }
+    this.book.kick(pid);
+    this.desk.kick(pid);
     const conn = this.links.get(pid);
-    if (!conn) return;
-    this.write(conn, { t: 'reject', why });
-    setTimeout(() => conn.close(), 1500);
+    if (conn) this.refuse(conn, why);
   }
 
   /** Re-registers the room on the broker now chosen in Connection settings. Phones rejoin through the new QR code. */
@@ -131,6 +164,7 @@ export class HostLink {
     this.peer = null;
     setTimeout(() => peer?.destroy(), 600);
     this.stopPeer();
+    this.book.close();
     if (this.pinger) clearInterval(this.pinger);
     this.pinger = null;
     this.status = 'connecting';
@@ -148,6 +182,7 @@ export class HostLink {
     this.pidOf.clear();
     this.heard.clear();
     this.parts.clear();
+    this.desk.clear();
     this.refresh();
   }
 
@@ -184,10 +219,12 @@ export class HostLink {
       // PeerJS reports a taken id before it destroys (or, once registered, disconnects) the peer.
       // A new code means a new peer: make sure this one is gone, so the retry registers that code.
       if (kind === 'taken') {
-        const code = this.hooks.taken();
-        if (code) {
-          this.code = code;
+        if (this.hooks.vacant()) {
           this.moving = true;
+          this.desk.clear();
+          this.book.fork(); // before the game is saved under its new code
+          this.code = newCode();
+          this.hooks.move(this.code);
           setTimeout(() => {
             if (this.peer !== peer) return; // closed, or moved to another peer, meanwhile
             if (!peer.destroyed) peer.destroy();
@@ -219,10 +256,28 @@ export class HostLink {
     conn.on('data', (raw) => this.receive(conn, raw));
     conn.on('close', () => this.drop(conn));
     conn.on('error', () => this.drop(conn));
-    setTimeout(() => { if (!this.pidOf.has(conn) && this.heard.has(conn)) { conn.close(); this.drop(conn); } }, HELLO_TIMEOUT);
+    this.deadline(conn);
+  }
+
+  /** A phone without a seat after a while is closed (it tries again), unless the host is being asked about it. */
+  private deadline(conn: DataConnection): void {
+    setTimeout(() => {
+      if (this.pidOf.has(conn) || !this.heard.has(conn)) return;
+      if (this.desk.asking(conn)) this.deadline(conn);
+      else this.cut(conn);
+    }, HELLO_TIMEOUT);
+  }
+
+  private quiet(conn: DataConnection): boolean { return Date.now() - (this.heard.get(conn) ?? 0) > 2 * PING_MS; }
+
+  /** Stops listening to a connection at once and closes it. */
+  private cut(conn: DataConnection): void {
+    this.drop(conn);
+    conn.close();
   }
 
   private drop(conn: DataConnection): void {
+    this.desk.drop(conn);
     const pid = this.pidOf.get(conn);
     this.pidOf.delete(conn);
     this.heard.delete(conn);
@@ -248,38 +303,58 @@ export class HostLink {
   }
 
   private receive(conn: DataConnection, raw: unknown): void {
-    const msg = this.parts.get(conn)?.take(raw) as { t?: unknown; pid?: unknown; name?: unknown } | null | undefined;
+    const msg = this.parts.get(conn)?.take(raw) as { t?: unknown; pid?: unknown; name?: unknown; keys?: unknown; macs?: unknown; key?: unknown; commit?: unknown; value?: unknown } | null | undefined;
     if (!msg || typeof msg !== 'object') return;
     this.heard.set(conn, Date.now());
     if (msg.t === 'pong') return;
-    if (msg.t === 'hello') {
-      if (str(msg.pid, 64) && str(msg.name, 200)) this.hello(conn, msg.pid, msg.name);
+    const pid = this.pidOf.get(conn);
+    if (msg.t === 'hello' || msg.t === 'proof' || msg.t === 'key' || msg.t === 'reveal') {
+      if (pid || this.moving) return; // seated already; or moving to a new code, where the phone asks again
+      if (msg.t === 'proof') void this.desk.proof(conn, msg.macs);
+      else if (msg.t === 'key') this.desk.key(conn, msg.key);
+      else if (msg.t === 'reveal') void this.desk.reveal(conn, msg.value);
+      else if (str(msg.pid, 64) && str(msg.name, 200)) this.hello(conn, msg.pid, msg.name, msg.keys === 1, msg.commit);
       return;
     }
-    const pid = this.pidOf.get(conn);
     if (!pid) return;
     if (msg.t === 'leave') {
-      this.drop(conn);
-      conn.close();
+      this.cut(conn);
+      this.desk.release(pid);
       this.hooks.left(pid);
     } else this.hooks.message(pid, msg);
   }
 
-  private hello(conn: DataConnection, pid: string, raw: string): void {
+  private hello(conn: DataConnection, pid: string, raw: string, modern: boolean, commit: unknown): void {
     const name = unmarked(raw);
-    const refuse = (why: string) => { this.write(conn, { t: 'reject', why }); setTimeout(() => conn.close(), 1500); };
-    if (!name.trim() && raw.trim()) return refuse(MARK_ONLY);
-    if (this.moving) return; // the room is moving to a new code: the phone asks again there
-    if (pid.startsWith(BOT_PID)) return refuse(BOT_SEAT); // a phone may not take a seat run here
-    const res = this.hooks.hello(pid, name, this.online);
-    if ('error' in res) return refuse(res.error);
-    if (this.locals.has(res.pid)) return refuse(BOT_SEAT);
-    const old = this.links.get(res.pid);
-    if (old && old !== conn) { this.pidOf.delete(old); this.heard.delete(old); this.parts.delete(old); old.close(); }
-    this.links.set(res.pid, conn);
-    this.pidOf.set(conn, res.pid);
+    if (!name.trim() && raw.trim()) return this.refuse(conn, MARK_ONLY);
+    if (pid.startsWith(BOT_PID)) return this.refuse(conn, BOT_SEAT); // a phone may not take a seat run here
+    this.desk.hello(conn, pid, name, modern, commit);
+  }
+
+  /** The seat the game gives a phone now, unless it is run here or its player was removed. */
+  private resolve(pid: string, name: string): Seat | { error: string } {
+    const res = goodPid(pid) ? this.hooks.hello(pid, name, this.online) : { error: BAD_PID };
+    if ('error' in res) return res;
+    if (!goodPid(res.pid)) return { error: BAD_PID }; // by name, a player saved before ids were checked
+    if (this.locals.has(res.pid) || res.pid.startsWith(BOT_PID)) return { error: BOT_SEAT };
+    return this.book.kicked(pid) || this.book.kicked(res.pid) ? { error: REMOVED } : res;
+  }
+
+  private refuse(conn: DataConnection, why: string): void {
+    this.write(conn, { t: 'reject', why });
+    this.drop(conn);
+    setTimeout(() => conn.close(), 1500);
+  }
+
+  /** The seat is this phone's: whatever held it before is cut off. */
+  private admit(conn: DataConnection, seat: Seat): void {
+    if (!conn.open) return this.drop(conn);
+    const old = this.links.get(seat.pid);
+    if (old && old !== conn) this.cut(old);
+    this.links.set(seat.pid, conn);
+    this.pidOf.set(conn, seat.pid);
     this.refresh();
-    this.write(conn, { t: 'welcome', pid: res.pid });
-    res.then();
+    this.write(conn, { t: 'welcome', pid: seat.pid });
+    seat.then();
   }
 }

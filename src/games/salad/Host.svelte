@@ -8,6 +8,7 @@
   import Connection from '../../components/room/Connection.svelte';
   import Confetti from '../../components/room/Confetti.svelte';
   import TapToFinish from '../../components/room/TapToFinish.svelte';
+  import SeatAsk from '../../components/room/SeatAsk.svelte';
   import Timer from '../../components/room/Timer.svelte';
   import { route, go, back } from '../../lib/router.svelte';
   import { brokerSetting } from '../../lib/room/broker';
@@ -230,6 +231,8 @@
     </div>
   </Popup>
 {/if}
+
+{#if !fixed}<SeatAsk link={host.link} />{/if}
 
 <style>
   .host {

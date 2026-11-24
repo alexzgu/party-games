@@ -1,9 +1,11 @@
 import { load, save, remove } from '../../lib/storage';
+import { keepGame, loadSaved } from '../../lib/room/saved';
 import type { Drawing } from '../../lib/ink';
 import { DEFAULT_SETTINGS, DRAW_TIMES, GUESS_TIMES, ROUND_CHOICES, WRITE_TIMES, type Game, type Settings } from './core';
 
-export const loadGame = () => load<Game | null>('sketch:host', null);
-export const saveGame = (g: Game | null) => g ? save('sketch:host', g) : remove('sketch:host');
+export const loadRoom = () => loadSaved('sketch:host', (x) => x as Game);
+export const loadGame = () => loadRoom().game;
+export const saveGame = (g: Game | null, room: string) => keepGame('sketch:host', g, room);
 export const loadArt = () => load<Record<string, Drawing>>('sketch:art', {});
 export const saveArt = (a: Record<string, Drawing>) => save('sketch:art', a);
 export const clearArt = () => remove('sketch:art');

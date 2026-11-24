@@ -11,6 +11,7 @@
   import Rules from './Rules.svelte';
   import Connection from '../../components/room/Connection.svelte';
   import TapToFinish from '../../components/room/TapToFinish.svelte';
+  import SeatAsk from '../../components/room/SeatAsk.svelte';
   import HostLobby from './HostLobby.svelte';
   import HostWrite from './HostWrite.svelte';
   import HostDuel from './HostDuel.svelte';
@@ -187,6 +188,8 @@
 {/if}
 
 {#if showConn}<Connection onclose={() => (showConn = false)} onchange={rebroker} />{/if}
+
+{#if !fixed}<SeatAsk link={host.link} />{/if}
 
 <style>
   .host {

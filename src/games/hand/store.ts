@@ -1,15 +1,18 @@
-import { load, remove, save } from '../../lib/storage';
+import { load, save } from '../../lib/storage';
+import { keepGame, loadSaved } from '../../lib/room/saved';
 import { isCode } from '../../lib/room/code';
 import { ANSWER_TIMES, DEFAULT_SETTINGS, TARGETS, type Game, type Settings } from './logic';
 
 const GAME = 'hand:host';
 const SETTINGS = 'hand:settings';
 
-export function loadGame(): Game | null {
-  const g = load<Game | null>(GAME, null);
+function validGame(x: unknown): Game | null {
+  const g = x as Game | null;
   return g && typeof g.code === 'string' && isCode(g.code) && Array.isArray(g.players) && g.hands && Array.isArray(g.deck) ? g : null;
 }
-export const saveGame = (g: Game | null) => g ? save(GAME, g) : remove(GAME);
+export const loadRoom = () => loadSaved(GAME, validGame);
+export const loadGame = (): Game | null => loadRoom().game;
+export const saveGame = (g: Game | null, room: string) => keepGame(GAME, g, room);
 
 const oneOf = <T>(list: readonly T[], x: unknown, fallback: T): T => list.includes(x as T) ? x as T : fallback;
 

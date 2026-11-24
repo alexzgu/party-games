@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import Avatar from '../../components/room/Avatar.svelte';
   import Button from '../../components/Button.svelte';
+  import SeatNumber from '../../components/room/SeatNumber.svelte';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Popup from '../../components/Popup.svelte';
@@ -55,6 +56,8 @@
   }
 </script>
 
+{#if !fixed}<SeatNumber number={phone.number} />{/if}
+
 {#if link === 'idle' || link === 'stopped'}
   {#key routeCode}
     <Join initialCode={routeCode || (fixed ? 'BCDF' : phone.me?.code ?? '')}
@@ -78,7 +81,7 @@
       <Timer {left} total={view.span} paused={view.paused} size={52} />
       <HowTo><Rules /></HowTo>
     </header>
-    {#if link === 'lost'}<p class="lost" role="status">Reconnecting…</p>{/if}
+    {#if link === 'lost'}<p class="lost" role="status">{phone.trouble || 'Reconnecting…'}</p>{/if}
 
     <main inert={view.paused}>
       {#if view.phase === 'lobby'}

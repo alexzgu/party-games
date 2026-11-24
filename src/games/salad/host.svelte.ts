@@ -2,11 +2,12 @@ import { saladPacks } from '../../lib/content';
 import { record } from '../../lib/history';
 import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode } from '../../lib/room/code';
+import { seatIn } from '../../lib/room/seats';
 import { Bots, isBot } from '../../lib/room/bots';
 import { saladBrain } from './bot';
 import * as L from './logic';
 import { readToHost } from './protocol';
-import { loadGame, loadSettings, saveGame, saveSettings, type Settings } from './store';
+import { loadRoom, loadSettings, saveGame, saveSettings, type Settings } from './store';
 import { playerView } from './view';
 
 function selected(ids: string[]) {
@@ -28,12 +29,12 @@ class HostSession {
   game = $state.raw<L.Game | null>(null);
   now = $state(Date.now());
   private ticker: ReturnType<typeof setInterval> | null = null;
-  private link = new HostLink('salad', {
+  readonly link = new HostLink('salad', {
     hello: (pid, name, online) => {
       if (!this.game) return { error: 'This room is closed.' };
       const result = L.join(this.game, pid, name, online);
       if (result.error !== undefined) return { error: result.error };
-      return { pid: result.pid, then: () => {
+      return { ...seatIn(this.game.players, result), then: () => {
         if (result.game === this.game) this.sendView(result.pid);
         else this.commit(result.game);
       } };
@@ -44,11 +45,8 @@ class HostSession {
       this.commit(L.leave(this.game, pid));
       this.tick();
     },
-    taken: () => {
-      if (!this.game || this.game.phase !== 'lobby' || L.present(this.game).some((p) => !isBot(p.pid))) return null;
-      this.commit({ ...this.game, code: newCode() });
-      return this.game.code;
-    },
+    vacant: () => this.game?.phase === 'lobby' && L.present(this.game).every((p) => isBot(p.pid)),
+    move: (code) => this.commit({ ...this.game!, code }),
   });
 
   /** Bots among the game's players; one that cannot be seated again leaves the game. */
@@ -62,12 +60,12 @@ class HostSession {
 
   open(): void {
     if (this.game) return;
-    const saved = loadGame();
+    const { game: saved, room } = loadRoom();
     const { packIds, awayMs } = loadSettings();
     const g = saved ? L.afterReload(saved, Date.now())
       : L.newGame(newCode(), packIds, poolFor(packIds), Math.floor(Math.random() * 4294967296), awayMs);
+    this.link.open(g.code, room);
     this.commit(g);
-    this.link.open(g.code);
     this.bots.open();
     this.ticker = setInterval(() => this.tick(), 250);
   }
@@ -83,7 +81,7 @@ class HostSession {
       next = { ...next, recorded: true };
     }
     this.game = next;
-    saveGame(next);
+    saveGame(next, this.link.room);
     for (const pid of this.link.pids()) this.sendView(pid);
   }
 
@@ -137,7 +135,7 @@ class HostSession {
     if (this.ticker) clearInterval(this.ticker);
     this.ticker = null;
     this.game = null;
-    saveGame(null);
+    saveGame(null, '');
   }
 }
 

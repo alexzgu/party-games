@@ -1,6 +1,7 @@
 // What Snark Tank keeps on a device: the host screen's game (so a reload reopens the same room)
 // and its settings; a phone's unsent drafts (its identity is kept by the shared room link).
-import { load, remove, save } from '../../lib/storage';
+import { load, save } from '../../lib/storage';
+import { keepGame, loadSaved } from '../../lib/room/saved';
 import { isCode } from '../../lib/room/code';
 import { ANSWER_CHOICES, DEFAULT_SETTINGS, VOTE_CHOICES, type Game, type Settings } from './logic';
 
@@ -20,8 +21,9 @@ export function validGame(x: unknown): Game | null {
   return ok ? g : null;
 }
 
-export const loadGame = (): Game | null => validGame(load<unknown>(GAME, null));
-export const saveGame = (g: Game | null) => (g ? save(GAME, g) : remove(GAME));
+export const loadRoom = () => loadSaved(GAME, validGame);
+export const loadGame = (): Game | null => loadRoom().game;
+export const saveGame = (g: Game | null, room: string) => keepGame(GAME, g, room);
 
 export function loadSettings(): Settings {
   const s = load<Partial<Settings>>(SETTINGS, {});

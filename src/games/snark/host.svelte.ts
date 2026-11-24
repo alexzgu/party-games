@@ -4,10 +4,11 @@
 // change is saved, so a reload reopens the same room and phones reconnect by themselves.
 import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode } from '../../lib/room/code';
+import { seatIn } from '../../lib/room/seats';
 import * as L from './logic';
 import { playerView } from './view';
 import { readToHost } from './protocol';
-import { loadGame, loadSettings, saveGame, saveSettings } from './store';
+import { loadRoom, loadSettings, saveGame, saveSettings } from './store';
 import { gameRecord } from './record';
 import { dedupe, snarkPacks, type SnarkPack } from '../../lib/content';
 import { makeBag } from '../../lib/bag';
@@ -53,11 +54,11 @@ class HostSession {
   game = $state.raw<L.Game | null>(null);
   now = $state(Date.now());
 
-  private link = new HostLink('snark', {
+  readonly link = new HostLink('snark', {
     hello: (pid, name, online) => {
       const res = L.join(this.game!, pid, name, online);
       if (res.error !== undefined) return { error: res.error };
-      return { pid: res.pid, then: () => { if (res.game === this.game) this.sendView(res.pid); else this.commit(res.game); } };
+      return { ...seatIn(this.game!.players, res), then: () => { if (res.game === this.game) this.sendView(res.pid); else this.commit(res.game); } };
     },
     message: (pid, raw) => this.receive(pid, raw),
     left: (pid) => {
@@ -66,12 +67,8 @@ class HostSession {
       this.tick();
     },
     // A brand-new room whose code is taken simply takes another code.
-    taken: () => {
-      const g = this.game;
-      if (!g || g.phase !== 'lobby' || L.present(g).some((p) => !isBot(p.pid))) return null;
-      this.commit({ ...g, code: newCode() });
-      return this.game!.code;
-    },
+    vacant: () => this.game?.phase === 'lobby' && L.present(this.game).every((p) => isBot(p.pid)),
+    move: (code) => this.commit({ ...this.game!, code }),
   });
   /** Bots among the game's players; one that cannot be seated again leaves the game. */
   private bots = new Bots(this.link, snarkBrain, () => this.game?.players.map((p) => ({ pid: p.pid, name: p.name, out: p.kicked })) ?? [],
@@ -86,11 +83,11 @@ class HostSession {
   /** Reopens the saved room, or opens a new one. Does nothing when already open. */
   open(): void {
     if (this.game) return;
-    const saved = loadGame();
+    const { game: saved, room } = loadRoom();
     const g = saved ? L.afterReload(saved, Date.now()) : L.newGame(newCode(), loadSettings());
     this.game = g;
-    saveGame(g);
-    this.link.open(g.code);
+    this.link.open(g.code, room);
+    saveGame(g, this.link.room);
     this.bots.open();
     this.ticker = setInterval(() => this.tick(), 250);
   }
@@ -121,7 +118,7 @@ class HostSession {
       next = { ...next, recorded: true };
     }
     this.game = next;
-    saveGame(next);
+    saveGame(next, this.link.room);
     for (const pid of this.link.pids()) this.sendView(pid);
   }
 
@@ -177,7 +174,7 @@ class HostSession {
     if (this.ticker) clearInterval(this.ticker);
     this.ticker = null;
     this.game = null;
-    saveGame(null);
+    saveGame(null, '');
   }
 }
 

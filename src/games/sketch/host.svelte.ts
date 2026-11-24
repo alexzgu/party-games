@@ -1,6 +1,7 @@
 // The host screen's session: the room link, the saved game and its drawings, and the clock.
 import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode, newPid } from '../../lib/room/code';
+import { seatIn } from '../../lib/room/seats';
 import { sketchPacks } from '../../lib/content';
 import { record } from '../../lib/history';
 import { Bots, isBot } from '../../lib/room/bots';
@@ -31,11 +32,11 @@ class Session {
   private savedAt = 0;
   private timer?: ReturnType<typeof setInterval>;
   private lastSkip = -Infinity;
-  private link = new HostLink('sketch', {
+  readonly link = new HostLink('sketch', {
     hello: (pid, name, online) => {
       const joined = L.join(this.game!, pid, name, online);
       if (joined.error !== undefined) return { error: joined.error };
-      return { pid: joined.pid, then: () => {
+      return { ...seatIn(this.game!.players, joined), then: () => {
         if (joined.game === this.game) this.send(joined.pid);
         else this.commit(joined.game);
       } };
@@ -46,12 +47,8 @@ class Session {
       this.commit(L.leave(this.game, pid));
       this.tick();
     },
-    taken: () => {
-      if (this.game?.phase !== 'lobby' || this.game.players.some((p) => !isBot(p.pid))) return null;
-      const code = newCode();
-      this.commit({ ...this.game, code });
-      return code;
-    },
+    vacant: () => this.game?.phase === 'lobby' && this.game.players.every((p) => isBot(p.pid)),
+    move: (code) => this.commit({ ...this.game!, code }),
   });
 
   /** Bots among the game's players; one that cannot be seated again leaves the game. */
@@ -63,12 +60,12 @@ class Session {
 
   open() {
     if (this.game) return;
-    const old = store.loadGame();
+    const { game: old, room } = store.loadRoom();
     this.art = old ? store.loadArt() : {};
     this.now = Date.now();
     this.game = old ? L.afterReload(old, this.now) : newGame(newPid(), newCode(), store.loadSettings());
-    store.saveGame(this.game);
-    this.link.open(this.game.code);
+    this.link.open(this.game.code, room);
+    store.saveGame(this.game, this.link.room);
     this.bots.open();
     this.timer = setInterval(() => this.tick(), 250);
   }
@@ -147,7 +144,7 @@ class Session {
     const ends = (x: Game | null) => x?.phase === 'over' || x?.phase === 'album';
     const finished = ends(next) && !ends(this.game);
     this.game = next;
-    store.saveGame(next);
+    store.saveGame(next, this.link.room);
     if (finished) this.history(next, true);
     // Draw & guess shows a turn's drawing until the reveal ends; then it is dropped.
     if (next.dg && next.phase !== 'guess' && next.phase !== 'reveal' && Object.keys(this.art).length) {
@@ -234,7 +231,7 @@ class Session {
     this.game = null;
     this.art = {};
     this.seq.clear();
-    store.saveGame(null);
+    store.saveGame(null, '');
     store.clearArt();
   }
 }

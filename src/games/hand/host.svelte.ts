@@ -1,5 +1,6 @@
 import { HostLink } from '../../lib/room/host-link.svelte';
 import { newCode, newPid } from '../../lib/room/code';
+import { seatIn } from '../../lib/room/seats';
 import { handPacks } from '../../lib/content';
 import { record } from '../../lib/history';
 import { Bots, isBot } from '../../lib/room/bots';
@@ -26,12 +27,12 @@ class Session {
   now = $state(Date.now());
   private timer?: ReturnType<typeof setInterval>;
   private lastSkip = -Infinity;
-  private link = new HostLink('hand', {
+  readonly link = new HostLink('hand', {
     hello: (pid, name, online) => {
       if (!this.game) return { error: 'This room is closed.' };
       const joined = L.join(this.game, pid, name, online);
       if (joined.error !== undefined) return { error: joined.error };
-      return { pid: joined.pid, then: () => {
+      return { ...seatIn(this.game.players, joined), then: () => {
         if (joined.game === this.game) this.send(joined.pid);
         else this.commit(joined.game);
       } };
@@ -42,11 +43,8 @@ class Session {
       this.commit(L.leave(this.game, pid));
       this.tick();
     },
-    taken: () => {
-      if (this.game?.phase !== 'lobby' || this.game.players.some((p) => !isBot(p.pid))) return null;
-      this.commit({ ...this.game, code: newCode() });
-      return this.game.code;
-    },
+    vacant: () => this.game?.phase === 'lobby' && this.game.players.every((p) => isBot(p.pid)),
+    move: (code) => this.commit({ ...this.game!, code }),
   });
 
   /** Bots among the game's players; one that cannot be seated again leaves the game. */
@@ -59,11 +57,11 @@ class Session {
 
   open() {
     if (this.game) return;
-    const old = store.loadGame();
+    const { game: old, room } = store.loadRoom();
     this.now = Date.now();
     this.game = old ? L.afterReload(old, this.now) : L.newGame(newPid(), newCode(), store.loadSettings());
-    store.saveGame(this.game);
-    this.link.open(this.game.code);
+    this.link.open(this.game.code, room);
+    store.saveGame(this.game, this.link.room);
     this.bots.open();
     this.timer = setInterval(() => this.tick(), 250);
   }
@@ -110,7 +108,7 @@ class Session {
     if (next === this.game) return;
     const finished = next.phase === 'over' && this.game?.phase !== 'over';
     this.game = next;
-    store.saveGame(next);
+    store.saveGame(next, this.link.room);
     if (finished) this.history(next, true);
     for (const pid of this.link.pids()) this.send(pid);
   }
@@ -173,7 +171,7 @@ class Session {
     this.bots.close();
     clearInterval(this.timer);
     this.game = null;
-    store.saveGame(null);
+    store.saveGame(null, '');
   }
 }
 
