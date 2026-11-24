@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { GAMES } from '../app.config';
-import { categories, clearFilters, deleteCategory, EMPTY, fitsPlayers, freeName, MAX_OWN, markOpened, nameProblem, nextId, putCategory, readState, shownGames, togglePick, type GamesState } from './gamesView';
+import { categories, clearFilters, deleteCategory, EMPTY, freeName, MAX_OWN, markOpened, nameProblem, nextId, pickedLabel, putCategory, readState, shownGames, togglePick, type GamesState } from './gamesView';
 
 const ids = (s: GamesState) => shownGames(s).map((g) => g.id);
-const game = (id: string) => GAMES.find((g) => g.id === id)!;
 const put = (s: GamesState, name: string, games: string[] = []) => {
   const next = putCategory(s, { id: nextId(s.own), name, games: games as never });
   if (typeof next === 'string') throw new Error(next);
@@ -27,21 +26,21 @@ describe('shownGames', () => {
     expect(ids(s)).toEqual(['taboo']);
     expect(ids(togglePick(s, 'tag:Teams'))).toEqual(['forehead', 'gibberish', 'taboo', 'quick', 'salad']);
   });
-  it('fits the players within each game’s range, any number above an open-ended one', () => {
-    expect(fitsPlayers(game('quiz'), 1)).toBe(true);
-    expect(fitsPlayers(game('dial'), 3)).toBe(false);
-    expect(fitsPlayers(game('dial'), 10)).toBe(true);
-    expect(fitsPlayers(game('snark'), 9)).toBe(false);
-    expect(ids({ ...EMPTY, players: 1 })).toEqual(['quiz']);
-  });
   it('sorts A–Z and by last opened, never-opened games after in default order', () => {
     expect(ids({ ...EMPTY, order: 'az' }).slice(0, 3)).toEqual(['hand', 'quiz', 'quick']);
     const s = markOpened(markOpened({ ...EMPTY, order: 'recent' }, 'hand', 100), 'dial', 200);
     expect(ids(s).slice(0, 4)).toEqual(['dial', 'hand', 'forehead', 'gibberish']);
     expect(shownGames(s, GAMES, { hand: 100 }).slice(0, 2).map((g) => g.id)).toEqual(['hand', 'forehead']); // the times the page opened with
   });
-  it('clears picks and players together', () => {
-    expect(clearFilters({ ...EMPTY, picked: ['tag:Teams'], players: 3, order: 'az' })).toEqual({ ...EMPTY, order: 'az' });
+  it('clears the picked categories only', () => {
+    expect(clearFilters({ ...EMPTY, picked: ['tag:Teams'], order: 'az' })).toEqual({ ...EMPTY, order: 'az' });
+  });
+  it('labels the closed box by what is picked, in chip order', () => {
+    const cats = categories([]);
+    expect(pickedLabel(cats, [])).toBe('All categories');
+    expect(pickedLabel(cats, ['tag:Teams'])).toBe('Teams');
+    expect(pickedLabel(cats, ['tag:Funny', 'tag:Teams', 'tag:Words'])).toBe('Teams + 2');
+    expect(pickedLabel(cats, ['tag:Gone'])).toBe('All categories');
   });
 });
 
@@ -75,16 +74,16 @@ describe('readState', () => {
   it('falls back to the defaults for missing or broken data', () => {
     expect(readState(null)).toEqual(EMPTY);
     expect(readState('oops')).toEqual(EMPTY);
-    expect(readState({ order: 'sideways', picked: 'x', players: 11, own: {}, opened: [] })).toEqual(EMPTY);
+    expect(readState({ order: 'sideways', picked: 'x', own: {}, opened: [] })).toEqual(EMPTY);
   });
   it('keeps what still makes sense and drops the rest', () => {
     const s = readState({
-      order: 'recent', players: 4,
+      order: 'recent', players: 4, // a field older versions kept: dropped
       picked: ['tag:Teams', 'tag:Nope', 'own1', 'own2', 'tag:Teams'],
       own: [{ id: 'own1', name: 'Chill', games: ['salad', 'song', 7] }, { id: 'own2', name: 'chill', games: [] }, { id: 'x', name: 'Y', games: [] }],
       opened: { dial: 5, song: 9, quiz: -1, hand: 'x' },
     });
-    expect(s).toEqual({ order: 'recent', players: 4, picked: ['tag:Teams', 'own1'], own: [{ id: 'own1', name: 'Chill', games: ['salad'] }], opened: { dial: 5 } });
+    expect(s).toEqual({ order: 'recent', picked: ['tag:Teams', 'own1'], own: [{ id: 'own1', name: 'Chill', games: ['salad'] }], opened: { dial: 5 } });
   });
   it('keeps an own category whose name a default one took since, under a free name', () => {
     const s = readState({ own: [{ id: 'own1', name: 'teams', games: ['hand'] }, { id: 'own2', name: 'Teams 2', games: [] }, { id: 'own3', name: 'All', games: [] }] });

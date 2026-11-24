@@ -1,10 +1,10 @@
-// The searchable drop-down box for choosing a game (components/GamePicker.svelte): which options
+// The app's drop-down (components/Dropdown.svelte: the game picker, the Games page's categories): which options
 // a search leaves, and whether opening it puts the cursor in the search field.
 
 export interface PickOption {
   id: string;
   name: string;
-  emoji: string;
+  emoji?: string;
   /** The game's colour; none for a neutral option ("All games"). */
   accent?: string;
 }
