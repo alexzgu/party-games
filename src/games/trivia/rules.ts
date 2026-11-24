@@ -31,8 +31,11 @@ export function parts(line: string): Parts {
 const plain = (s: string): string => s.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, '').replace(/\s+/g, ' ').trim();
 const wordCount = (s: string): number => plain(s).split(' ').filter(Boolean).length;
 
+/** A question's text ignoring case, spacing and punctuation. */
+export const questionKey = (question: string): string => plain(question);
+
 /** Two questions are the same when their question parts match ignoring case, spacing and punctuation. */
-export const triviaKey = (line: string): string => plain(parts(line).question);
+export const triviaKey = (line: string): string => questionKey(parts(line).question);
 
 /** Every part trimmed with its spaces squeezed, a trailing full stop dropped from each answer; nothing reordered. */
 export function tidyTrivia(line: string): string {

@@ -52,6 +52,11 @@
   /* Would You Rather's two choices: the same two colours, one per side, in both schemes. */
   --c-choice-a: var(--c-team-a);
   --c-choice-b: var(--c-team-b);
+  /* Smarty Pants's four answers, in the order shown: each also has its own shape (▲ ◆ ● ■). */
+  --c-answer-1: var(--team-1);
+  --c-answer-2: var(--team-2);
+  --c-answer-3: var(--team-5);
+  --c-answer-4: var(--team-4);
 
   /* Big Board's 20 team colours, neighbours far apart; each is readable as text on --bg and --surface. */
   --team-1: #ff8547; --team-2: #5b8cff; --team-3: #3ddc84; --team-4: #b57bff; --team-5: #facc15;
@@ -156,6 +161,9 @@
   --c-gold: #a16207;
   --c-team-a: #c2410c;
   --c-team-b: #1d4ed8;
+  /* Smarty Pants's third answer stays yellow, with dark text (the light scheme's team yellow is brown, too near the orange). */
+  --c-answer-3: #facc15;
+  --c-answer-3-ink: #1b1530;
   /* Big Board teams: deeper versions that pass WCAG AA as text on the light page. */
   --team-1: #c2410c; --team-2: #1d4ed8; --team-3: #15803d; --team-4: #7c3aed; --team-5: #854d0e;
   --team-6: #be185d; --team-7: #0f766e; --team-8: #b91c1c; --team-9: #0369a1; --team-10: #3f6212;

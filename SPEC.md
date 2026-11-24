@@ -138,7 +138,7 @@ icon (`emoji`, any one character) for Heads Down., blurb, items) without `custom
 can share it; import also takes `.json`). "Export" sits in every pack editor (built-ins
 included); Add pack → "Import" (packs from a file) and "Export" (every pack made or edited on this
 phone; hidden when there are none) sit in the row under every game's pack list (the
-setup's; Snark Tank's, Doodle Brawl's, Sketchy's, Bad Hand's and Would You Rather's in their room settings). Export uses the
+setup's; Snark Tank's, Doodle Brawl's, Sketchy's, Bad Hand's, Would You Rather's and Smarty Pants's in their room settings). Export uses the
 share sheet when the browser can share the file, else a download. Import reads a file of at most
 1 MB and up to 100 packs of up to 1,000 items; checks each item with that game's own rules (the
 pack editor's or the paste route's; Big Board: 1–8 categories × 1–10 clues, cut and padded like a
@@ -260,7 +260,7 @@ preview, past its list too) and ticks the new pack, as before.
 ## Shared behaviour
 
 - **Home** (`#/`): the pinned header (🎲 Jerk Box, History, Settings), then two large rows of the
-  same look: "🎉 Games" ("14 party games", the number in `GAMES`) opens the Games page, and, while
+  same look: "🎉 Games" ("15 party games", the number in `GAMES`) opens the Games page, and, while
   the Community library is on, "🌍 Community packs" ("Browse packs friends made") opens the
   Community page with fresh lists. Without it, the Games row stands alone. Install help at the foot.
 - **Games page** (`#/games`, `src/pages/Games.svelte`; Back returns to Home): every game in `GAMES`
@@ -350,7 +350,7 @@ preview, past its list too) and ticks the new pack, as before.
   focused field) stops clear of the pinned header and actions (`src/lib/scrollPadding.ts`). The
   page's glow is one layer fixed to the screen, and each pinned bar paints the same glow placed
   where it sits, so the bars match the page on iPhones too.
-- **Pack pages** (every setup with packs, and the room settings of Snark Tank, Doodle Brawl, Sketchy, Bad Hand and Would You Rather; `Screen` with `fill`,
+- **Pack pages** (every setup with packs, and the room settings of Snark Tank, Doodle Brawl, Sketchy, Bad Hand, Would You Rather and Smarty Pants; `Screen` with `fill`,
   `PackList`): the page fits the screen and only the packs scroll. Above them, pinned under the
   header, stay any notice (a compact "Game in progress" card with the leading scores, Big Board's
   draft warning, the room games' "A game is running", Sketchy's mode), the players or teams, and the packs row
@@ -433,9 +433,9 @@ preview, past its list too) and ticks the new pack, as before.
   has in the same spot.
 - **Pack list** (`PackList`, `src/lib/packList.ts`): the one way every pack game (Heads Down.,
   Spectrum, Inn Co Hear Ant, Big Board, Don't Say It, Brain Freeze, and the room settings of Snark
-  Tank, Doodle Brawl, Sketchy, Bad Hand and Would You Rather) picks, edits, makes and shares packs. Header: "Packs"
-  (Snark Tank: "Prompt packs"; Doodle Brawl: "Title packs"; Bad Hand: "Card packs"; Would You Rather:
-  "Question packs") with what is
+  Tank, Doodle Brawl, Sketchy, Bad Hand, Would You Rather and Smarty Pants) picks, edits, makes and shares packs. Header: "Packs"
+  (Snark Tank: "Prompt packs"; Doodle Brawl: "Title packs"; Bad Hand: "Card packs"; Would You Rather
+  and Smarty Pants: "Question packs") with what is
   picked under it ("2 picked · 320 words"; Big Board: "25 clues"; "pick one or more" when none),
   then search, sort and a tiles/list switch (one choice for every game, kept on the phone; default
   tiles). Tiles: a grid of at least 150 px columns (two on a phone); each shows the mark top right,
@@ -457,7 +457,7 @@ preview, past its list too) and ticks the new pack, as before.
   (the button says whether it is open; the arrow keys, Home and End move between the items; Tab
   closes it and moves on). Reduced motion: it appears without growing. An import plays the
   imported packs on their own (Big Board: picks the first; Snark Tank, Doodle Brawl, Sketchy,
-  Bad Hand and Would You Rather: adds them to the picked ones, as a made pack is). Brain Freeze's and Odd One Out's lists ignore taps in their first 400 ms (the tail of a double
+  Bad Hand, Would You Rather and Smarty Pants: adds them to the picked ones, as a made pack is). Brain Freeze's and Odd One Out's lists ignore taps in their first 400 ms (the tail of a double
   tap on the screen before). Odd One Out's list shows Heads Down.'s packs with its own picks and
   its own search and sort: no pencil, no "Make a pack" and no New; a line under the packs says
   "These are Heads Down. packs. Make and edit them there." Its Community and Import add to Heads
@@ -926,7 +926,7 @@ games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amo
 
 ## Shared room link (`src/lib/room/`)
 
-Every own-phones game (Snark Tank, Word Salad, Doodle Brawl, Sketchy, Bad Hand, Would You Rather, Go Fish) uses one link layer: room codes,
+Every own-phones game (Snark Tank, Word Salad, Doodle Brawl, Sketchy, Bad Hand, Would You Rather, Go Fish, Smarty Pants) uses one link layer: room codes,
 broker choice (`?peer=`, stored under the existing `snark:broker` key so the setting carries
 over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone's outbox and the
 host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
@@ -946,7 +946,7 @@ them) but may rejoin with the same code and keeps their score; a removed player 
 after Play again. A
 refusal or the end of the room is shown on the join screen even on a phone that came by QR code.
 The join screen's name box starts with the phone's username, cut to that game's name limit (Snark
-Tank 14, Word Salad 18, Doodle Brawl, Sketchy, Bad Hand, Would You Rather and Go Fish 20 characters); after a refused join (a name already taken,
+Tank 14, Word Salad 18, Doodle Brawl, Sketchy, Bad Hand, Would You Rather, Go Fish and Smarty Pants 20 characters); after a refused join (a name already taken,
 say) it keeps what was typed, so it can be fixed. A name typed there is for that room only (kept
 for rejoining it) and never changes the username.
 The browser's or Android's back gesture walks the same path as Back and never lands on a closed host screen. Any message whose JSON is 15,000 UTF-8
@@ -958,7 +958,7 @@ A player id is 1–64 letters, digits, `_` or `-`, never a name every JavaScript
 makes a new one for each room it joins and keeps it for that room (after leaving, a refusal, a
 reload, or Play again).
 
-**Names** (`names.ts`, the same in all seven own-phones games): two names that look the same are one
+**Names** (`names.ts`, the same in all eight own-phones games): two names that look the same are one
 name: the same once compatibility forms (such as full-width letters) are folded, invisible
 characters dropped, spaces trimmed and runs of spaces made one, and case ignored ("Sam Lee",
 "sam  lee"). No two players who may still play (in the room, or gone mid-game and free to come back
@@ -1678,3 +1678,90 @@ Bad Hand). Choices marked *house* are ours where the published rules vary.
 - **Bots** (see Shared room link): on their turn, after 1–4 s, ask for a rank they hold; from a
   player they saw ask for or receive that rank who may still hold it (not given away or laid down
   since), else from a random player with cards (*house*).
+
+## Game 15 — Smarty Pants (`trivia`)
+
+Multiple-choice trivia on everyone's own phone, the faster right answer scoring more. Two ways to
+play from the start screen (`#/trivia`: Host, Join and Solo, with the Return / Rejoin banner as in
+Bad Hand). Amounts marked *house* are ours.
+
+- **Own phones**: 2–12 players join a host screen through the shared room link; name limit 20
+  characters.
+- **Questions**: only the picked packs' questions (when none of the picks exists any more, Classic
+  alone, the default; host and Solo share this rule, `pickedPacks`), shuffled, none twice (the same
+  question text, ignoring case, spacing and punctuation, is one; `roomQuestions`). A game asks 10,
+  15 or 20 (Settings, default 10), or as many as the picks hold. The room remembers which questions
+  it has asked by their key, never their text, and forgets them when the picks run out, as Would You
+  Rather's does (`deal`). Within a game the category changes from one question to the next whenever
+  another category still has a question left (*house*). Each question's four answers are shuffled
+  once, at Start, and every screen shows them in that order.
+- **Each question** has three phases:
+  - **Category** (3 s, *house*): the host shows "Question 3 of 10" and the category large; phones
+    show it too. Show (the host's skip) goes straight to the question.
+  - **Answer** (default 20 s; 10/15/20/30, *house*): the host shows the question, its category,
+    the four answers as four tiles in four fixed colours (orange, blue, yellow, purple), each with
+    its own shape (▲ ◆ ● ■) so colour is never the only cue, the timer, and every player's name,
+    dimmed until they have answered (never what). Phones show the question and the four answers as
+    four big buttons in the same colours and shapes (stacked on a narrow screen). The first tap is
+    final: the tapped button is marked at once (a mark that belongs to that room and seat), the
+    others dim and take no more taps. A tap names its phase and question number; the host ignores
+    one for another question, a second tap, one from a player not in the game, or one after the
+    reveal. Before the reveal no view says which answer is right, and a phone is sent only its own
+    answer and who has answered.
+  - **Reveal** (8 s, *house*; or Next, Results when the next step ends the game) when every player
+    in the game whose phone is connected has answered, or at the timer. The right answer is marked
+    ("✓ Right"), the others dimmed, each tile with how many picked it; "Got it" lists who was right
+    with the points each gained (most first), and "Top 5" the leading scores (ties share a place).
+    Phones say "Right! +870", "Not quite." or "Time's up!", the answer, their tile marked, and their
+    place and total.
+- **Points**: a right answer scores 500 plus up to 500 for speed, `round(500 × time left ÷ time
+  allowed)` at the moment the host received the tap (*house*; faster scoring more is the usual quiz
+  rule). A wrong answer or none scores 0. A tap that arrives while paused scores the time left when
+  the clock stopped. Answers of players removed or gone by the reveal do not count.
+- **End**: after the last question, standings with confetti (ties share a place) and how many
+  questions were asked, Lobby (same players, scores at zero) or Close. History gets one entry on
+  the host, one line per question ("Science: What gas do plants take in from the air? Carbon dioxide
+  (3 of 5 right)").
+- **Players**: late joiners are seated at once and may answer the question in play. A player who
+  drops keeps their seat and score and nobody waits for them; one who leaves or is removed is out
+  (their answer stops counting) and one who left may rejoin with their score. If fewer than two
+  players are left when a question would start, the game ends.
+- Lobby, host controls, reconnects, name rules and the open-room Return as in Would You Rather. Skip
+  reads Show, Reveal or Next; pause works in every phase of a question. A Players button mid-game
+  removes a player (after a confirm). The host is saved under `trivia:host`, a phone's seat under
+  `trivia:me`.
+- **Settings** (`#/trivia/settings`, a pack page like Would You Rather's): question packs (Classic
+  by default; search/sort, editor, Make a pack or Add pack → New / Import, Export; a pack just made
+  or imported joins the picked ones; when the picks hold fewer questions than a game asks, a note
+  says so), and a Rules row over Done opening questions per game and seconds to answer; they apply
+  to the next game. Solo reads the same picks and seconds.
+- **Solo** (`#/trivia/solo`): one phone, no room: the category (3 s, or tap it), the question and
+  its four answers on the timer, a tap (first tap final), then right or wrong with the points and
+  the answer, and Next. Ten questions (*house*), then the score, how many were right, and the best
+  score kept on this phone ("A new best on this phone!"), with Play again and Packs. The same pure
+  rules as the room (`questions.ts`: dealing, shuffling the answers, points; `solo.ts`); the phone
+  remembers the questions Solo asked, as a room does, under `trivia:solo` with the best score.
+  The screen stays awake.
+- **Making packs**: paste questions, one per line, or ask the wizard (a theme or a suggestion,
+  10–60 questions, default 30); own packs have "🧙 Add more" (5–40, default 15). Every route keeps
+  a question only when it meets the content rules below (`src/games/trivia/rules.ts`; pasted and
+  wizard lines are tidied first: each part trimmed with its spaces squeezed, a bar with or without
+  spaces read as the separator, and a closing full stop dropped from each answer; nothing is
+  reordered), and the wizard's are also new to every Smarty Pants pack on the phone; anything else
+  is dropped unseen. The wizard is asked for facts that are certain and will not change, exactly
+  one right answer, wrong answers of the same kind and length as the right one, and a spread of
+  categories.
+- **Content** (`src/content/trivia/*.json`): `{"id", "name", "blurb", "added"?, "questions": [...]}`.
+  A question is one line of six parts split by " | ": category, question, the right answer, three
+  wrong answers; none empty and none holding a bar. Category 1–3 words, at most 24 characters;
+  question 3–30 words, at most 140 characters; both start with a capital letter or a digit. Each
+  answer 1–6 words, at most 40 characters; the four answers differ (ignoring case, spacing and
+  punctuation). Questions are new across packs. The longest line the rules allow is 339 characters;
+  pack files and the Community library take a whole line.
+- Demos at `#/trivia/host?demo=` with `lobby|category|answer|answer-long|reveal|reveal-full|over|paused`
+  and `#/trivia/join?demo=` with `join|wait|category|answer|answer-long|answered|reveal|reveal-full|over`
+  (`answer-long` and `reveal-full` the longest a question and its answers may be, and `reveal-full`
+  twelve players with 20-character names).
+- **Bots** (see Shared room link): answer once a question after 2–8 s, right about 55% of the time
+  (*house*). A bot's view never says which answer is right; the host screen running it tells it,
+  only to play at that rate.
