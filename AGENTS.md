@@ -9,6 +9,8 @@ Content only: `npm run test:content`; list a game's existing items: `npm run lis
 
 ## Making a new pack (the main live-content route)
 
+Odd One Out plays Heads Down. packs and has none of its own: a pack for it is a Heads Down. pack.
+
 The owner, or a friend at the party, asks a chat for a pack, e.g. "make a Spectrum pack about
 our college", "Heads Down. pack: 2000s cartoons, 60 words" or "a Big Board about Marvel"
 (a Big Board pack is a whole quiz board made from a topic; a request for a Heads Down. "deck"

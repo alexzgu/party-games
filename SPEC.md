@@ -258,7 +258,7 @@ preview, past its list too) and ticks the new pack, as before.
 ## Shared behaviour
 
 - **Home** (`#/`): the pinned header (🎲 Jerk Box, History, Settings), then two large rows of the
-  same look: "🎉 Games" ("11 party games", the number in `GAMES`) opens the Games page, and, while
+  same look: "🎉 Games" ("12 party games", the number in `GAMES`) opens the Games page, and, while
   the Community library is on, "🌍 Community packs" ("Browse packs friends made") opens the
   Community page with fresh lists. Without it, the Games row stands alone. Install help at the foot.
 - **Games page** (`#/games`, `src/pages/Games.svelte`; Back returns to Home): every game in `GAMES`
@@ -450,12 +450,17 @@ preview, past its list too) and ticks the new pack, as before.
   (the button says whether it is open; the arrow keys, Home and End move between the items; Tab
   closes it and moves on). Reduced motion: it appears without growing. An import plays the
   imported packs on their own (Big Board: picks the first; Snark Tank, Doodle Brawl, Sketchy and
-  Bad Hand: adds them to the picked ones, as a made pack is). Brain Freeze's list ignores taps in its first 400 ms (the tail of a double
-  tap on the screen before).
+  Bad Hand: adds them to the picked ones, as a made pack is). Brain Freeze's and Odd One Out's lists ignore taps in their first 400 ms (the tail of a double
+  tap on the screen before). Odd One Out's list shows Heads Down.'s packs with its own picks and
+  its own search and sort: no pencil, no "Make a pack" and no New; a line under the packs says
+  "These are Heads Down. packs. Make and edit them there." Its Community and Import add to Heads
+  Down.'s packs and tick them here, never in Heads Down.
 - **A saved game and its setup**: with a game in progress, setup shows that game's players
   (Big Board: teams). Adding, renaming or removing them changes the saved game on Resume (or on
   leaving setup): a kept player keeps their score, newcomers start at 0, a removed one leaves
-  with their points. Pack and rule changes apply to the next game, and setup says so.
+  with their points. Pack and rule changes apply to the next game, and setup says so. Odd One
+  Out is the exception: its setup shows the remembered list, Resume keeps the saved game's
+  players, and changes there apply to the next game (setup says so).
 - **Game picker** (`src/components/GamePicker.svelte`, `src/lib/gamePicker.ts`): one full-width
   box (52 px) with the chosen game's emoji, name and a down arrow, tinted with its colour ("All
   games" in the neutral colours). Tapping it opens a panel attached under it: "Search games" and the
@@ -1262,3 +1267,43 @@ prompt and the answers. Amounts marked *house* are ours.
 - **Bots** (see Shared room link): play random cards (a short stock line on a blank card); as
   judge show each answer large for about 3 s, then pick one at random; vote at random, never for
   their own answer; never trade.
+
+## Game 12 — Odd One Out (`odd`)
+
+Everyone-knows-the-word-but-one folk game. One phone goes round 3–12 players; everyone but one
+sees the same secret word, the odd one out does not, and the room talks it out. Amounts marked
+*house* are ours.
+
+- **Setup**: player names (3–12; remembered, a first visit borrows Brain Freeze's list), packs
+  (Heads Down.'s packs, built-in and own, read through `wordDecks()`; this game has no packs of
+  its own and its picks are its own, see Pack list; first visit: every built-in pack but After
+  Dark), and a Rules row: rounds 3–10 (default 5), Hint (default on: the odd one out is told the
+  word's pack), Odd one never starts (default on). A saved game offers Resume and New game (two taps).
+- **Deal**: a word from the picked packs, at random, without repeats on this phone until the packs
+  run out (per-pack bags under this game's own keys, so Heads Down.'s own rotation is untouched)
+  and never twice in one game; one player at random is the odd one out, and one player at random
+  starts the clues (never the odd one out with that option on). All from one random source, so
+  tests seed them (`logic.ts`, `deal.ts`).
+- **Pass**: for each player in list order a hand-off ("Pass the phone to Maya", Show) and then
+  their secret: the word large with "from Movies" under it, or "You are the odd one out" with "The
+  word is from Movies" under it (Hint on; nothing under it with Hint off). Both secret screens are
+  one card in the same colours with a line above and one under the big text, so the room cannot
+  tell them apart at a glance. Hide goes to the next hand-off. Back from a secret closes it onto
+  its own hand-off; Back from a hand-off goes to the previous player's hand-off (setup from the
+  first). Which secret is open is never saved: a reload mid-pass lands on the current player's hand-off.
+- **Clues**: who starts and the order (list order from the starter): "Take turns: say one word
+  about the secret word." No timer. Vote.
+- **Vote**: "Count to three and point. Who does the room pick?" The room settles a tie itself;
+  the phone records one name (tap, then Confirm).
+- **Reveal**: "Maya was the odd one out!" then "Maya, guess the word out loud." and Show word,
+  then the word with ✓ Got it / ✗ Missed; or "Ben was not the odd one out. It was Maya." with
+  the word at once and Next.
+- **Scores** (*house*): not caught, the odd one out scores 2; caught but named the word, 1;
+  caught and missed, everyone else 1. Between rounds: who it was, the word, the standings with the
+  round's points, Next round. After the last round: the win screen (confetti, the top score or a
+  tie, standings, Play again with the same players, packs and options, Setup, Home).
+- **History**: one entry per game (scores, the packs, one line per round: "Round 2 · Pizza: Maya
+  was the odd one out, caught, named the word"); New game over an unfinished game records it with
+  `finished: false`. Every step is saved; the screen stays awake during play. Back from the clues,
+  vote, reveal and scores goes to setup with the game saved.
+- Demos at `#/odd?demo=handoff|secret|secret-odd|secret-odd-nohint|clues|vote|reveal-caught|reveal-word|reveal-escaped|scores|win`.
