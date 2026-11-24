@@ -2,7 +2,6 @@
   import { untrack } from 'svelte';
   import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
-  import SeatNumber from '../../components/room/SeatNumber.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Popup from '../../components/Popup.svelte';
   import Button from '../../components/Button.svelte';
@@ -70,8 +69,6 @@
   }
   const trade = (cards: number[]) => send({ t: 'trade', n: v?.traded ?? 0, cards });
 </script>
-
-{#if !fixed}<SeatNumber number={phone.number} />{/if}
 
 {#snippet hand(withPrompt: boolean)}
   {#if v?.hand?.length}

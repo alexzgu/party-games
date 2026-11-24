@@ -48,7 +48,8 @@ class Session {
       this.tick();
     },
     vacant: () => this.game?.phase === 'lobby' && this.game.players.every((p) => isBot(p.pid)),
-    move: (code) => this.commit({ ...this.game!, code }),
+    // A new room: its own game id too, so its drawings' ids are never another room's.
+    move: (code) => this.commit({ ...this.game!, code, id: newPid() }),
   });
 
   /** Bots among the game's players; one that cannot be seated again leaves the game. */
@@ -58,14 +59,16 @@ class Session {
   get online() { return this.link.online; }
   get trouble() { return this.link.trouble; }
 
-  open() {
-    if (this.game) return;
+  /** Only in the tab that owns the game's saved room (owner.ts); another tab opens nothing. */
+  async open(): Promise<void> {
+    if (this.game || !(await this.link.own()) || this.game) return;
     const { game: old, room } = store.loadRoom();
-    this.art = old ? store.loadArt() : {};
+    this.art = old ? store.loadArt(room) : {};
     this.now = Date.now();
     this.game = old ? L.afterReload(old, this.now) : newGame(newPid(), newCode(), store.loadSettings());
     this.link.open(this.game.code, room);
     store.saveGame(this.game, this.link.room);
+    this.saveArt(); // under the room's id now, which a lost seat record has made new
     this.bots.open();
     this.timer = setInterval(() => this.tick(), 250);
   }
@@ -122,7 +125,7 @@ class Session {
   }
 
   private saveArt() {
-    store.saveArt(this.art);
+    store.saveArt(this.art, this.link.room);
     this.unsaved = false;
     this.savedAt = Date.now();
   }

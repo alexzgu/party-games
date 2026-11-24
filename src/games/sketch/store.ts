@@ -6,8 +6,12 @@ import { DEFAULT_SETTINGS, DRAW_TIMES, GUESS_TIMES, ROUND_CHOICES, WRITE_TIMES, 
 export const loadRoom = () => loadSaved('sketch:host', (x) => x as Game);
 export const loadGame = () => loadRoom().game;
 export const saveGame = (g: Game | null, room: string) => keepGame('sketch:host', g, room);
-export const loadArt = () => load<Record<string, Drawing>>('sketch:art', {});
-export const saveArt = (a: Record<string, Drawing>) => save('sketch:art', a);
+/** The drawings of the room `room` (its id, as saved with its game): another room's, or ones saved without a room, are none. */
+export function loadArt(room: string): Record<string, Drawing> {
+  const s = load<{ room?: unknown; art?: unknown } | null>('sketch:art', null);
+  return room && s?.room === room && s.art && typeof s.art === 'object' ? s.art as Record<string, Drawing> : {};
+}
+export const saveArt = (a: Record<string, Drawing>, room: string) => save('sketch:art', { room, art: a });
 export const clearArt = () => remove('sketch:art');
 
 const oneOf = <T>(choices: readonly T[], x: unknown, fallback: T): T => choices.includes(x as T) ? x as T : fallback;

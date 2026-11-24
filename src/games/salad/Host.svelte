@@ -9,6 +9,8 @@
   import Confetti from '../../components/room/Confetti.svelte';
   import TapToFinish from '../../components/room/TapToFinish.svelte';
   import SeatAsk from '../../components/room/SeatAsk.svelte';
+  import NewPhone from '../../components/room/NewPhone.svelte';
+  import { ELSEWHERE } from '../../lib/room/owner';
   import Timer from '../../components/room/Timer.svelte';
   import { route, go, back } from '../../lib/router.svelte';
   import { brokerSetting } from '../../lib/room/broker';
@@ -113,6 +115,7 @@
         {#if skipLabel}<Button size="sm" variant="secondary" onclick={skip} tip={view?.phase === 'pick' ? 'Stops waiting; undecided players get one of their secrets' : view?.phase === 'prepare' ? 'Stops waiting; unfinished opening clues are filled in' : 'Ends this turn now and shows the secret'}>{skipLabel}</Button>{/if}
         <Button size="sm" variant="ghost" onclick={() => (showPlayers = true)} tip="Remove a player from the room">Players</Button>
       {/if}
+      {#if !fixed && game}<NewPhone link={host.link} players={game.players} />{/if}
       <HowTo><Rules /></HowTo>
       {#if game}<Button size="sm" variant="ghost" onclick={() => (ending = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close</Button>{/if}
     </div>
@@ -120,7 +123,7 @@
 
   {#if !fixed && host.status !== 'open'}
     <div class="connection" role="status">
-      {host.trouble || `Opening room ${game?.code ?? ''}…`}
+      {host.trouble || (host.link.elsewhere ? ELSEWHERE : `Opening room ${game?.code ?? ''}…`)}
       {#if host.trouble}<Button size="sm" variant="secondary" onclick={() => (connection = true)} tip="See how phones connect, or use a backup server">Trouble connecting?</Button>{/if}
     </div>
   {/if}

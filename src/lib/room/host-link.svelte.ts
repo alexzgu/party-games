@@ -9,7 +9,8 @@ import { BROKER_TROUBLE, LINK_TIMEOUT, PING_MS, backoff, classify, makePeer } fr
 import { currentBroker } from './broker';
 import { hostPeerId, newCode, newPid } from './code';
 import { Assembler, toWire } from './parts';
-import { Desk, REMOVED, SeatBook, ends, type Ask, type Seat } from './seats';
+import { ASK_HOST, Desk, REMOVED, SeatBook, ends, type Recovery, type Seat } from './seats';
+import { own, release } from './owner';
 
 export type HostStatus = 'connecting' | 'open' | 'trouble';
 
@@ -51,8 +52,10 @@ export class HostLink {
   status = $state<HostStatus>('connecting');
   trouble = $state('');
   online = $state.raw<ReadonlySet<string>>(new Set());
-  /** Questions for the host: may this phone have that seat? */
-  asks = $state.raw<Ask[]>([]);
+  /** The seat the host opened for a new phone, and whether one asks for it now; or why it closed. */
+  recovery = $state.raw<Recovery | null>(null);
+  /** Another tab on this device has this game's room: this one hosts nothing. */
+  elsewhere = $state(false);
 
   private code = '';
   private peer: Peer | null = null;
@@ -73,22 +76,23 @@ export class HostLink {
     this.book = new SeatBook(game);
     this.desk = new Desk(this.book, {
       resolve: (pid, name) => this.resolve(pid, name),
-      holder: (pid) => {
-        const conn = this.links.get(pid);
-        return { online: this.online.has(pid), live: !!conn && !this.quiet(conn) };
-      },
-      quiet: (conn) => this.quiet(conn),
       ends: (conn) => ends(conn.peerConnection),
       send: (conn, msg) => this.write(conn, msg),
-      refuse: (conn, why) => this.refuse(conn, why),
-      close: (conn) => this.cut(conn),
+      refuse: (conn, why, ask) => this.refuse(conn, why, ask),
       admit: (conn, seat) => this.admit(conn, seat),
-      asks: (now) => { this.asks = now; },
+      show: (now) => { this.recovery = now; },
     });
   }
 
   /** The room's id, saved with its game. */
   get room(): string { return this.book.room; }
+
+  /** Whether this tab may open the game's saved room (owner.ts); asked before `open`. */
+  async own(): Promise<boolean> {
+    const mine = await own(this.game);
+    this.elsewhere = !mine;
+    return mine;
+  }
 
   /** Registers the room on the broker under its code and starts pinging; `saved`: a saved game's room id (its seats' keys), or empty. */
   open(code: string, saved: string): void {
@@ -132,8 +136,19 @@ export class HostLink {
     this.hooks.left(pid);
   }
 
-  /** The host's Yes or No to one of `asks`. */
-  answer(ask: Ask, yes: boolean): void { this.desk.answer(ask, yes); }
+  /** Whether the host removed this player from the room. */
+  removed(pid: string): boolean { return this.book.kicked(pid); }
+
+  /** Opens a player's seat to a new phone for a minute (the host has checked who it is). */
+  recoverSeat(pid: string, name: string): void {
+    if (!pid.startsWith(BOT_PID) && !this.locals.has(pid) && !this.removed(pid)) this.desk.recover(pid, name);
+  }
+
+  /** The host's Yes or No for the one phone asking for the open seat. */
+  answer(yes: boolean): void { this.desk.answer(yes); }
+
+  /** Closes recovery, or puts away the note on why it closed. */
+  stopRecovery(): void { this.desk.stop(); }
 
   /** Removes a player for good: tells their phone why, stops listening to it and closes its link. */
   remove(pid: string, why: string): void {
@@ -165,6 +180,7 @@ export class HostLink {
     setTimeout(() => peer?.destroy(), 600);
     this.stopPeer();
     this.book.close();
+    release(this.game);
     if (this.pinger) clearInterval(this.pinger);
     this.pinger = null;
     this.status = 'connecting';
@@ -268,8 +284,6 @@ export class HostLink {
     }, HELLO_TIMEOUT);
   }
 
-  private quiet(conn: DataConnection): boolean { return Date.now() - (this.heard.get(conn) ?? 0) > 2 * PING_MS; }
-
   /** Stops listening to a connection at once and closes it. */
   private cut(conn: DataConnection): void {
     this.drop(conn);
@@ -303,32 +317,30 @@ export class HostLink {
   }
 
   private receive(conn: DataConnection, raw: unknown): void {
-    const msg = this.parts.get(conn)?.take(raw) as { t?: unknown; pid?: unknown; name?: unknown; keys?: unknown; macs?: unknown; key?: unknown; commit?: unknown; value?: unknown } | null | undefined;
+    const msg = this.parts.get(conn)?.take(raw) as { t?: unknown; pid?: unknown; name?: unknown; keys?: unknown; macs?: unknown; key?: unknown } | null | undefined;
     if (!msg || typeof msg !== 'object') return;
     this.heard.set(conn, Date.now());
     if (msg.t === 'pong') return;
     const pid = this.pidOf.get(conn);
-    if (msg.t === 'hello' || msg.t === 'proof' || msg.t === 'key' || msg.t === 'reveal') {
+    if (msg.t === 'hello' || msg.t === 'proof' || msg.t === 'key') {
       if (pid || this.moving) return; // seated already; or moving to a new code, where the phone asks again
       if (msg.t === 'proof') void this.desk.proof(conn, msg.macs);
       else if (msg.t === 'key') this.desk.key(conn, msg.key);
-      else if (msg.t === 'reveal') void this.desk.reveal(conn, msg.value);
-      else if (str(msg.pid, 64) && str(msg.name, 200)) this.hello(conn, msg.pid, msg.name, msg.keys === 1, msg.commit);
+      else if (str(msg.pid, 64) && str(msg.name, 200)) this.hello(conn, msg.pid, msg.name, msg.keys === 1);
       return;
     }
     if (!pid) return;
     if (msg.t === 'leave') {
       this.cut(conn);
-      this.desk.release(pid);
       this.hooks.left(pid);
     } else this.hooks.message(pid, msg);
   }
 
-  private hello(conn: DataConnection, pid: string, raw: string, modern: boolean, commit: unknown): void {
+  private hello(conn: DataConnection, pid: string, raw: string, modern: boolean): void {
     const name = unmarked(raw);
     if (!name.trim() && raw.trim()) return this.refuse(conn, MARK_ONLY);
     if (pid.startsWith(BOT_PID)) return this.refuse(conn, BOT_SEAT); // a phone may not take a seat run here
-    this.desk.hello(conn, pid, name, modern, commit);
+    this.desk.hello(conn, pid, name, modern);
   }
 
   /** The seat the game gives a phone now, unless it is run here or its player was removed. */
@@ -340,8 +352,9 @@ export class HostLink {
     return this.book.kicked(pid) || this.book.kicked(res.pid) ? { error: REMOVED } : res;
   }
 
-  private refuse(conn: DataConnection, why: string): void {
-    this.write(conn, { t: 'reject', why });
+  /** `ask`: the phone shows its own words for "ask the host" (an old page shows `why`, the same words). */
+  private refuse(conn: DataConnection, why: string, ask = false): void {
+    this.write(conn, { t: 'reject', why: ask ? ASK_HOST : why, ...(ask ? { ask: 1 } : {}) });
     this.drop(conn);
     setTimeout(() => conn.close(), 1500);
   }

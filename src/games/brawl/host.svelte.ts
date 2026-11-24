@@ -53,8 +53,9 @@ class Session {
   get status() { return this.link.status; }
   get trouble() { return this.link.trouble; }
 
-  open() {
-    if (this.game) return;
+  /** Only in the tab that owns the game's saved room (owner.ts); another tab opens nothing. */
+  async open(): Promise<void> {
+    if (this.game || !(await this.link.own()) || this.game) return;
     const { game: old, room } = store.loadRoom();
     this.art = old ? store.loadArt() : {};
     this.now = Date.now();

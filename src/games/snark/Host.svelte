@@ -12,6 +12,8 @@
   import Connection from '../../components/room/Connection.svelte';
   import TapToFinish from '../../components/room/TapToFinish.svelte';
   import SeatAsk from '../../components/room/SeatAsk.svelte';
+  import NewPhone from '../../components/room/NewPhone.svelte';
+  import { ELSEWHERE } from '../../lib/room/owner';
   import HostLobby from './HostLobby.svelte';
   import HostWrite from './HostWrite.svelte';
   import HostDuel from './HostDuel.svelte';
@@ -122,6 +124,7 @@
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M5 5l9 7-9 7zM16 5h3v14h-3z" fill="currentColor"/></svg><span class="lbl">{skipLabel}</span>
         </button>{/if}
       {/if}
+      {#if !fixed && game}<NewPhone link={host.link} players={game.players} />{/if}
       <HowTo><Rules /></HowTo>
       {#if game}
         <Button size="sm" variant="ghost" onclick={() => (confirmEnd = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close</Button>
@@ -135,7 +138,7 @@
         <span>{host.trouble}</span>
         <Button size="sm" variant="secondary" onclick={() => (showConn = true)} tip="See how phones connect, or use a backup server">Trouble connecting?</Button>
       {:else}
-        <span>Opening room {game?.code}…</span>
+        <span>{host.link.elsewhere ? ELSEWHERE : `Opening room ${game?.code ?? ''}…`}</span>
       {/if}
     </div>
   {/if}

@@ -1,4 +1,4 @@
-import { PhoneLink } from '../../lib/room/phone-link.svelte';
+import { PhoneLink, isRecord } from '../../lib/room/phone-link.svelte';
 import type { ToHost } from './protocol';
 import type { PlayerView } from './view';
 
@@ -19,4 +19,11 @@ function keep(msg: ToHost, view: PlayerView): boolean {
   }
 }
 
-export const phone = new PhoneLink<ToHost, PlayerView>('salad', { keep });
+/** Enough of a view from the other end to read it here: the guesses it has, and a draft's words and choices. */
+function valid(v: Record<string, unknown>): boolean {
+  const d = v.draft;
+  return Array.isArray(v.acknowledged) && (d === null || d === undefined ||
+    (isRecord(d) && Array.isArray(d.values) && Array.isArray(d.choices) && d.choices.every(Array.isArray)));
+}
+
+export const phone = new PhoneLink<ToHost, PlayerView>('salad', { valid, keep });

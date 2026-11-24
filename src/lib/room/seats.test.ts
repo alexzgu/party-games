@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { KeyRing, askText, commitOf, ends, newKey, nextStep, numberOf, proofOf, type Claim, type Held, type Step } from './seats';
+import { ASK_HOST, KeyRing, ends, newKey, nextStep, proofOf, type Claim, type Step } from './seats';
 import type { HostLink } from './host-link.svelte';
 import type { PhoneLink, BaseView } from './phone-link.svelte';
 
 // A broker in memory: a host's peer under its id, and phones' peers that connect to it.
 type Handlers = Record<string, (x?: unknown) => void>;
-const net = vi.hoisted(() => ({ hosts: new Map<string, (conn: unknown) => void>(), secure: false }));
+const net = vi.hoisted(() => ({ hosts: new Map<string, (conn: unknown) => void>() }));
 vi.mock('./net', async (original) => ({
   ...(await original<typeof import('./net')>()),
   makePeer: (id: string | null) => {
@@ -21,10 +21,6 @@ vi.mock('./net', async (original) => ({
         const [near, far] = [end(), end()];
         near.other = far;
         far.other = near;
-        if (net.secure) {
-          near.peerConnection = { currentLocalDescription: sdp('SAM'), currentRemoteDescription: sdp('HOST') };
-          far.peerConnection = { currentLocalDescription: sdp('HOST'), currentRemoteDescription: sdp('SAM') };
-        }
         net.hosts.get(to)!(far);
         queueMicrotask(() => near.on_.open?.());
         return near;
@@ -33,6 +29,17 @@ vi.mock('./net', async (original) => ({
     return peer;
   },
 }));
+
+// Web Locks as a browser keeps them: one holder per name, until it lets go or its tab is gone.
+const locks = vi.hoisted(() => ({ held: new Set<string>() }));
+const fakeLocks = {
+  request: async (name: string, _opts: unknown, grant: (lock: object | null) => unknown) => {
+    if (locks.held.has(name)) return grant(null);
+    locks.held.add(name);
+    await grant({ name });
+    locks.held.delete(name);
+  },
+};
 
 interface End { open: boolean; peerConnection?: Sdp; on_: Handlers; other?: End; on(e: string, f: Handlers[string]): void; send(m: unknown): void; close(): void }
 interface Sdp { currentLocalDescription: { sdp: string }; currentRemoteDescription: { sdp: string } }
@@ -60,21 +67,20 @@ const until = (what: () => boolean, tries = 200): Promise<void> =>
 /** Until the phone's proof has been answered. */
 const settle = (p: Phone) => until(() => (p.got.length > 0 && p.types().at(-1) !== 'prove') || !p.conn.open);
 
-interface Phone { /** Its value for the number. */ value: string; got: { t: string; [k: string]: unknown }[]; conn: End; key?: string; asleep?: boolean; say(m: object): void; types(): string[] }
+interface Phone { got: { t: string; [k: string]: unknown }[]; conn: End; key?: string; say(m: object): void; types(): string[] }
 /** A phone's page: says hello and answers the handshake as the app does (`modern`), with the key it has. */
-function phone(link: HostLink, pid: string, name: string, key?: string, modern = true, opts: { near?: Sdp; far?: Sdp; mute?: boolean; reveal?: string | null } = {}): Phone {
+function phone(link: HostLink, pid: string, name: string, key?: string, modern = true, opts: { near?: Sdp; far?: Sdp; mute?: boolean } = {}): Phone {
   const [near, far] = [end(), end()];
   near.other = far;
   far.other = near;
   near.peerConnection = opts.near;
   far.peerConnection = opts.far;
-  const p: Phone = { value: newKey(), got: [], conn: near, key, say: (m) => near.send(m), types: () => p.got.map((m) => m.t) };
+  const p: Phone = { got: [], conn: near, key, say: (m) => near.send(m), types: () => p.got.map((m) => m.t) };
   near.on('data', (raw) => {
     const m = raw as Phone['got'][number];
-    if (m.t === 'ping') return p.asleep ? undefined : near.send({ t: 'pong' });
+    if (m.t === 'ping') return near.send({ t: 'pong' });
     p.got.push(m);
     if (opts.mute) return;
-    if (m.t === 'wait' && m.value && opts.reveal !== null) near.send({ t: 'reveal', value: opts.reveal ?? p.value });
     if (m.t === 'enrol') { p.key = newKey(); near.send({ t: 'key', key: p.key }); }
     if (m.t === 'prove') {
       const { here, there } = ends(near.peerConnection);
@@ -82,12 +88,12 @@ function phone(link: HostLink, pid: string, name: string, key?: string, modern =
     }
   });
   (link as unknown as { accept(c: unknown): void }).accept(far);
-  const hello = { t: 'hello', pid, name, ...(modern ? { keys: 1 } : {}) };
-  if (opts.near && modern) void commitOf(p.value).then((commit) => p.say({ ...hello, commit }));
-  else p.say(hello);
+  p.say({ t: 'hello', pid, name, ...(modern ? { keys: 1 } : {}) });
   return p;
 }
 const why = (p: Phone) => p.got.find((m) => m.t === 'reject')?.why;
+/** Turned away with "ask the host". */
+const sentAway = (p: Phone) => p.got.at(-1)?.t === 'reject' && p.got.at(-1)?.ask === 1 && why(p) === ASK_HOST;
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
@@ -95,33 +101,30 @@ beforeEach(() => {
   vi.stubGlobal('localStorage', {
     getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v), removeItem: (k: string) => store.delete(k),
   });
+  vi.stubGlobal('navigator', { locks: fakeLocks });
+  locks.held.clear();
 });
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
-  net.secure = false;
 });
 
 it('decides each step from the proof, the key on record and the host', () => {
   const c = (x: Partial<Claim> = {}): Claim => ({ modern: true, proof: 'none', approved: false, ...x });
-  const s = (x: Partial<Held> = {}): Held => ({ keyed: false, fresh: false, online: false, live: false, ...x });
-  const refused = { refuse: expect.any(String) };
-  const cases: [Claim, Held, unknown][] = [
-    [c(), s({ fresh: true }), 'enrol'],
-    [c(), s(), 'ask'],
-    [c({ approved: true }), s(), 'enrol'],
-    [c({ modern: false }), s({ fresh: true }), 'ask'],
-    [c({ modern: false, approved: true }), s(), 'admit'],
-    [c({ modern: false, approved: true }), s({ keyed: true }), refused],
-    [c(), s({ online: true, live: true }), 'retry'],
-    [c(), s({ online: true }), 'ask'],
-    [c(), s({ keyed: true, online: true, live: true }), 'prove'],
-    [c({ proof: 'right' }), s({ keyed: true, online: true, live: true }), 'admit'],
-    [c({ proof: 'wrong' }), s({ keyed: true }), 'ask'],
-    [c({ proof: 'wrong', approved: true }), s({ keyed: true }), 'enrol'],
-    [c({ proof: 'wrong', approved: true }), s({ keyed: true, online: true }), refused],
+  const cases: [Claim, { keyed: boolean; fresh: boolean }, Step][] = [
+    [c(), { keyed: false, fresh: true }, 'enrol'],
+    [c({ modern: false }), { keyed: false, fresh: true }, 'admit'],
+    [c(), { keyed: false, fresh: false }, 'recover'],
+    [c({ modern: false }), { keyed: false, fresh: false }, 'recover'],
+    [c(), { keyed: true, fresh: true }, 'prove'],
+    [c(), { keyed: true, fresh: false }, 'prove'],
+    [c({ proof: 'right' }), { keyed: true, fresh: false }, 'admit'],
+    [c({ proof: 'wrong' }), { keyed: true, fresh: false }, 'recover'],
+    [c({ modern: false }), { keyed: true, fresh: false }, 'recover'],
+    [c({ approved: true, proof: 'wrong' }), { keyed: true, fresh: false }, 'enrol'],
+    [c({ approved: true, modern: false }), { keyed: true, fresh: false }, 'admit'],
   ];
-  for (const [claim, held, step] of cases) expect(nextStep(claim, held), JSON.stringify([claim, held])).toEqual(step as Step);
+  for (const [claim, held, step] of cases) expect(nextStep(claim, held), JSON.stringify([claim, held])).toBe(step);
 });
 
 it('a phone keeps a room\'s two newest keys, in memory when storage is blocked, and proves one without showing it', async () => {
@@ -130,7 +133,7 @@ it('a phone keeps a room\'s two newest keys, in memory when storage is blocked, 
   const key = ring.make(a);
   expect(new KeyRing('snark').get(a)).toEqual([key]);
   expect(ring.get(b)).toEqual([]);
-  // An enrolment that came to nothing, or a fake host's: the key before still works.
+  // An enrolment that came to nothing: the key before still works.
   const newer = ring.make(a);
   expect(newer).not.toBe(key);
   for (let i = 0; i < 30; i++) ring.make(newKey());
@@ -152,33 +155,39 @@ const GAMES = {
   sketch: () => import('../../games/sketch/host.svelte'),
   hand: () => import('../../games/hand/host.svelte'),
 };
-interface Host { link: HostLink; game: { phase: string; code: string } | null; open(): void; kick(pid: string): void; rematch(): void; addBot(): string | null }
-/** The host screen, freshly loaded (again: a reload, with what it saved). */
-async function load(game: keyof typeof GAMES): Promise<Host> {
+interface Host { link: HostLink; game: { phase: string; code: string; id?: string } | null; open(): Promise<void>; kick(pid: string): void; rematch(): void; addBot(): string | null; start(): void }
+/** Another tab with this page, opened now (the tabs before it still open). */
+async function tab(game: keyof typeof GAMES): Promise<Host> {
   vi.resetModules();
   const { host } = await GAMES[game]() as unknown as { host: Host };
-  host.open();
+  await host.open();
   return host;
 }
+/** The host screen, freshly loaded (again: a reload, with what it saved; the tab before is gone). */
+async function load(game: keyof typeof GAMES): Promise<Host> {
+  locks.held.clear();
+  return tab(game);
+}
 const close = (h: Host) => { const x = h as unknown as { end?(): void; close?(): void }; (x.end ?? x.close)!.call(h); };
+/** What the host keeps about phones that have no seat yet. */
+const pending = (h: Host) => (h.link as unknown as { desk: { calls: Map<unknown, unknown> } }).desk.calls.size;
 
 describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) => {
-  it('open to the key, over a stale connection and a reload; shut to anyone else', async () => {
+  it('open to the key, over a stale connection, mid-round and after a reload; shut to anyone else, who leaves nothing behind', async () => {
     let host = await load(game);
     const sam = phone(host.link, 'p1', 'Sam');
     expect(sam.types()).toEqual(['enrol', 'welcome', 'view']);
     expect(localStorage.getItem(`hr:${game}:host`)).not.toContain(sam.key);
 
-    // No key, or another one: nothing private, and the seat stays Sam's.
+    // No key, another one, or an old page: told to ask the host, nothing kept, nothing asked, and the seat stays Sam's.
     for (const key of [undefined, newKey()]) {
       const thief = phone(host.link, 'p1', 'Sam', key);
       await settle(thief);
       expect(thief.types()).toEqual(['prove', 'reject']);
+      expect(sentAway(thief)).toBe(true);
     }
-    expect(sam.conn.open).toBe(true);
-    const old = phone(host.link, 'p1', 'Sam', undefined, false);
-    expect(why(old)).toBe('Reload this page to rejoin.');
-    expect(host.link.asks).toEqual([]);
+    expect(sentAway(phone(host.link, 'p1', 'Sam', undefined, false))).toBe(true);
+    expect([sam.conn.open, pending(host), host.link.recovery]).toEqual([true, 0, null]);
 
     // The key: in at once, though the old connection still looks alive; a second hello on it does nothing.
     const again = phone(host.link, 'p1', 'Sam', sam.key);
@@ -188,34 +197,51 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     again.say({ t: 'hello', pid: 'p2', name: 'Zed', keys: 1 });
     expect(again.types()).toHaveLength(3);
 
+    // Mid-round: the same, with no word to the host.
+    while (host.game!.phase === 'lobby' && host.addBot() === null) host.start();
+    expect(host.game!.phase).not.toBe('lobby');
+    again.conn.close();
+    const mid = phone(host.link, 'p1', 'Sam', sam.key);
+    await settle(mid);
+    expect(mid.types()).toEqual(['prove', 'welcome', 'view']);
+    expect(host.link.recovery).toBeNull();
+
     host = await load(game);
     const back = phone(host.link, 'p1', 'Sam', sam.key);
     await settle(back);
     expect(back.types()).toEqual(['prove', 'welcome', 'view']);
-    expect(host.link.asks).toEqual([]);
     close(host);
     expect(localStorage.getItem(`hr:${game}:seats`)).toBeNull();
   });
 
-  it('move to a new phone by name on the host\'s Yes, with a new key', async () => {
+  it('move to a new phone only through the seat the host opens, and its one Yes, with a new key', async () => {
     const host = await load(game);
     const sam = phone(host.link, 'p1', 'Sam');
     sam.conn.close();
+    host.link.recoverSeat('p1', 'Sam');
+    expect(host.link.recovery).toEqual({ pid: 'p1', name: 'Sam', asking: false, note: '' });
     const no = phone(host.link, 'p8', 'sam');
     await settle(no);
-    host.link.answer(host.link.asks[0], false);
-    expect(no.types()).toEqual(['prove', 'wait', 'reject']);
+    expect([no.types(), host.link.recovery?.asking]).toEqual([['prove', 'wait'], true]);
+    host.link.answer(false);
+    expect([no.types(), why(no), host.link.recovery]).toEqual([['prove', 'wait', 'reject'], 'The host said no.', null]);
 
+    host.link.recoverSeat('p1', 'Sam');
     const fresh = phone(host.link, 'p9', 'sam');
     await settle(fresh);
-    expect(host.link.asks).toMatchObject([{ name: 'Sam', fresh: false }]);
     await vi.advanceTimersByTimeAsync(20_000); // the hello deadline waits for the host
     expect(fresh.types()).toEqual(['prove', 'wait']);
-    host.link.answer(host.link.asks[0], true);
+    host.link.answer(true);
     expect(fresh.got.slice(2)).toMatchObject([{ t: 'enrol' }, { t: 'welcome', pid: 'p1' }, { t: 'view' }]);
+    expect(host.link.recovery).toBeNull();
+    // The new key is the seat's only key.
     const late = phone(host.link, 'p1', 'Sam', sam.key);
     await settle(late);
-    expect(late.types()).toEqual(['prove', 'reject']);
+    expect(sentAway(late)).toBe(true);
+    fresh.conn.close();
+    const moved = phone(host.link, 'p1', 'Sam', fresh.key);
+    await settle(moved);
+    expect(moved.types()).toEqual(['prove', 'welcome', 'view']);
     close(host);
   });
 
@@ -229,6 +255,8 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     expect(why(eve)).toMatch(/removed/);
     eve.say({ t: 'vote' });
     expect(heard).not.toHaveBeenCalled();
+    host.link.recoverSeat('p3', 'Eve');
+    expect(host.link.recovery).toBeNull();
     dan.say({ t: 'leave' });
     const dan2 = phone(host.link, 'p2', 'Dan', dan.key);
     await settle(dan2);
@@ -245,40 +273,53 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     close(host);
   });
 
-  it('never trust another room\'s record: a forgotten tab\'s game, or one saved without its room, asks', async () => {
-    const tab = await load(game); // room A, left open in a second tab
-    const sam = phone(tab.link, 'p1', 'Sam');
-    const dan = phone(tab.link, 'p2', 'Dan');
-    close(await load(game));
-    const other = await load(game); // room B, where a guest enrols Sam's id and Dan's is removed
-    const guest = phone(other.link, 'p1', 'Guest');
-    phone(other.link, 'p2', 'Nan');
-    other.kick('p2');
-    expect(tab.addBot()).toBeNull(); // the second tab writes its game
+  it('belong to the one tab that owns the saved room: a second tab opens nothing and writes nothing', async () => {
+    const first = await load(game);
+    phone(first.link, 'p1', 'Sam');
+    const saved = [localStorage.getItem(`hr:${game}:host`), localStorage.getItem(`hr:${game}:seats`)];
+    const second = await tab(game);
+    expect([second.game, second.link.elsewhere, (second.link as unknown as { peer: unknown }).peer]).toEqual([null, true, null]);
+    expect([localStorage.getItem(`hr:${game}:host`), localStorage.getItem(`hr:${game}:seats`)]).toEqual(saved);
+    // Once the first tab closes its room, the next tab may open one.
+    close(first);
+    const third = await tab(game);
+    expect([third.game, third.link.elsewhere]).toEqual([expect.anything(), false]);
+    close(third);
+  });
 
-    let host = await load(game);
+  it('never trust another room\'s record: a forgotten tab\'s game, or one saved without its room, needs the host', async () => {
+    vi.stubGlobal('navigator', {}); // a browser without Web Locks: every tab opens the saved room
+    const forgotten = await tab(game); // room A, left open in a second tab
+    const sam = phone(forgotten.link, 'p1', 'Sam');
+    phone(forgotten.link, 'p2', 'Dan');
+    close(await tab(game));
+    const other = await tab(game); // room B, where a guest enrols Sam's id
+    const guest = phone(other.link, 'p1', 'Guest');
+    expect(guest.types()).toContain('welcome');
+    expect(forgotten.addBot()).toBeNull(); // the forgotten tab writes its game
+
+    let host = await tab(game);
     expect(host.game).not.toHaveProperty('room');
     expect(JSON.stringify(host.game)).toContain('Sam');
-    for (const [pid, name, key] of [['p1', 'Sam', guest.key], ['p2', 'Dan', dan.key]]) {
-      const p = phone(host.link, pid!, name!, key);
-      expect(p.types()).toEqual(['wait']);
-      host.link.answer(host.link.asks[0], true);
-      expect(p.types()).toEqual(['wait', 'enrol', 'welcome', 'view']);
-      sam.key = pid === 'p1' ? p.key : sam.key;
-    }
+    for (const key of [guest.key, sam.key]) expect(sentAway(phone(host.link, 'p1', 'Sam', key))).toBe(true);
+    host.link.recoverSeat('p1', 'Sam');
+    const back = phone(host.link, 'p1', 'Sam', sam.key);
+    host.link.answer(true);
+    expect(back.types()).toEqual(['wait', 'enrol', 'welcome', 'view']);
 
     const saved = JSON.parse(localStorage.getItem(`hr:${game}:host`)!) as { room?: string };
     expect(saved.room).toBe(host.link.room);
     localStorage.setItem(`hr:${game}:host`, JSON.stringify({ ...saved, room: undefined }));
-    host = await load(game);
-    expect(phone(host.link, 'p1', 'Sam', sam.key).types()).toEqual(['wait']);
+    host = await tab(game);
+    expect(sentAway(phone(host.link, 'p1', 'Sam', back.key))).toBe(true);
     close(host);
   });
 
   it('are never shared by two lobbies: one that moves to another code is a room of its own', async () => {
-    const tab = await load(game); // room A, an empty lobby
-    const second = await load(game); // the same, in a second tab: A's code is taken there
-    const [room, code] = [tab.link.room, tab.game!.code];
+    vi.stubGlobal('navigator', {});
+    const first = await tab(game); // room A, an empty lobby
+    const second = await tab(game); // the same, in a second tab: A's code is taken there
+    const [room, code] = [first.link.room, first.game!.code];
     expect(second.link.room).toBe(room);
     (second.link as unknown as { peer: { on_: Handlers } }).peer.on_.error({ type: 'unavailable-id' });
     expect(second.game!.code).not.toBe(code);
@@ -287,15 +328,14 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     expect(JSON.parse(localStorage.getItem(`hr:${game}:seats`)!)).toEqual({ room: second.link.room, keys: [], kicked: [] });
 
     // Sam joins A; a guest enrols Sam's id in the other; then A saves its game and reloads.
-    phone(tab.link, 'p1', 'Sam');
+    phone(first.link, 'p1', 'Sam');
     await vi.advanceTimersByTimeAsync(1000); // the second tab's new peer
     const guest = phone(second.link, 'p1', 'Guest');
     expect(guest.types()).toContain('welcome');
-    expect(tab.addBot()).toBeNull();
-    const host = await load(game);
+    expect(first.addBot()).toBeNull();
+    const host = await tab(game);
     expect(host.game!.code).toBe(code);
-    const thief = phone(host.link, 'p1', 'Sam', guest.key);
-    expect(thief.types()).toEqual(['wait']);
+    expect(sentAway(phone(host.link, 'p1', 'Sam', guest.key))).toBe(true);
     close(host);
   });
 
@@ -306,24 +346,21 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     localStorage.removeItem(`hr:${game}:seats`);
     host = await load(game);
     expect(host.link.pids()).toEqual([expect.stringMatching(/^bot-/)]);
+    expect(sentAway(phone(host.link, 'p1', 'Sam', sam.key))).toBe(true);
+    host.link.recoverSeat('p1', 'Sam');
     const back = phone(host.link, 'p1', 'Sam', sam.key);
-    expect(back.types()).toEqual(['wait']);
-    host.link.answer(host.link.asks[0], true);
+    host.link.answer(true);
     expect(back.types()).toEqual(['wait', 'enrol', 'welcome', 'view']);
 
+    // An old page joins a new seat at once, with no key; back again, it needs the host like any phone without a proof.
     const old = phone(host.link, 'p5', 'Old', undefined, false);
-    expect(old.types()).toEqual(['wait']);
-    expect(askText(host.link.asks[0])).toBe('Let Old join from a phone that shows no number?');
-    host.link.answer(host.link.asks[0], true);
-    expect(old.types()).toEqual(['wait', 'welcome', 'view']);
-    const redial = phone(host.link, 'p5', 'Old', undefined, false);
-    expect(redial.types()).toEqual([]); // its other connection is still alive: later, without a word
-    expect([redial.conn.open, old.conn.open]).toEqual([false, true]);
+    expect(old.types()).toEqual(['welcome', 'view']);
     old.conn.close();
+    expect(sentAway(phone(host.link, 'p5', 'Old', undefined, false))).toBe(true);
+    host.link.recoverSeat('p5', 'Old');
     const again = phone(host.link, 'p5', 'Old', undefined, false);
-    expect(again.types()).toEqual(['wait']);
-    again.conn.close();
-    expect(host.link.asks).toEqual([]);
+    host.link.answer(true);
+    expect(again.types()).toEqual(['wait', 'welcome', 'view']);
     close(host);
   });
 });
@@ -358,23 +395,18 @@ it('a proof counts only on the connection it was made for: one passed along by a
   close(host);
 });
 
-it('a claim still being checked ends when its seat is left, or the room moves to another code', async () => {
+it('a claim still being checked ends when the room moves to another code', async () => {
   const host = await load('hand');
-  const sam = phone(host.link, 'p1', 'Sam');
-  const twin = phone(host.link, 'p1', 'Sam', sam.key);
-  sam.say({ t: 'leave' });
-  expect(twin.conn.open).toBe(false);
-  await settle(twin);
-  expect(host.link.pids()).toEqual([]);
-
-  const old = phone(host.link, 'p5', 'Old', undefined, false);
+  phone(host.link, 'p1', 'Sam').say({ t: 'leave' }); // the lobby is empty again, so it may move
+  host.link.recoverSeat('p1', 'Sam');
+  const asker = phone(host.link, 'p1', 'Sam', undefined, false);
   const slow = phone(host.link, 'p6', 'Slow', undefined, true, { mute: true });
-  const asked = host.link.asks[0];
+  expect(host.link.recovery?.asking).toBe(true);
   (host.link as unknown as { peer: { on_: Handlers } }).peer.on_.error({ type: 'unavailable-id' });
-  expect(host.link.asks).toEqual([]);
-  host.link.answer(asked, true);
+  expect([host.link.recovery, pending(host)]).toEqual([null, 0]);
+  host.link.answer(true);
   slow.say({ t: 'key', key: newKey() });
-  expect([old.types(), slow.types()]).toEqual([['wait'], ['enrol']]);
+  expect([asker.types(), slow.types()]).toEqual([['wait'], ['enrol']]);
   expect(host.link.pids()).toEqual([]);
   close(host);
 });
@@ -394,11 +426,12 @@ it('a new room never keeps the record of one before it', async () => {
   close(again);
 });
 
-describe('a question to the host', () => {
+describe('a seat opened for a new phone', () => {
   const room = async () => {
     const host = await load('hand');
     const sam = phone(host.link, 'p1', 'Sam');
     sam.conn.close();
+    host.link.recoverSeat('p1', 'Sam');
     return { host, sam };
   };
   const ask = async (host: Host, pid = 'p9') => {
@@ -407,122 +440,55 @@ describe('a question to the host', () => {
     return p;
   };
 
-  it('ends when the owner returns with the key, or after a minute', async () => {
+  it('goes to nobody when two phones ask for it, and closes', async () => {
     const { host, sam } = await room();
     const first = await ask(host);
-    expect((await ask(host, 'p7')).got.at(-1)).toMatchObject({ t: 'reject' }); // one per seat
+    const second = await ask(host, 'p7');
+    expect([why(first), why(second)]).toEqual([expect.stringMatching(/Another phone/), expect.stringMatching(/Another phone/)]);
+    expect(host.link.recovery).toMatchObject({ asking: false, note: expect.stringMatching(/^Two phones asked for Sam’s seat/) });
+    host.link.answer(true);
+    expect(sentAway(await ask(host))).toBe(true);
+    // The owner's key still works all along.
     const back = phone(host.link, 'p1', 'Sam', sam.key);
     await settle(back);
     expect(back.types()).toContain('welcome');
-    expect(first.conn.open).toBe(false);
-    expect(host.link.asks).toEqual([]);
-    back.conn.close();
-    const second = await ask(host);
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(why(second)).toBe('The host did not answer. Try again.');
+    host.link.stopRecovery();
+    expect(host.link.recovery).toBeNull();
     close(host);
   });
 
-  const far = (who: string): Sdp => ({ currentLocalDescription: sdp('HOST'), currentRemoteDescription: sdp(who) });
-  const near = (who: string): Sdp => ({ currentLocalDescription: sdp('SAM'), currentRemoteDescription: sdp(who) });
-  const numbered = (host: Host, opts: { near?: Sdp; far?: Sdp; reveal?: string | null } = {}) =>
-    phone(host.link, 'p9', 'Sam', undefined, true, { near: near('HOST'), far: far('SAM'), ...opts });
-  const waits = async (p: Phone) => { await until(() => p.types().includes('wait') || !p.conn.open); return p; };
-  /** The number the phone works out from what it was sent. */
-  const shown = (p: Phone) => {
-    const { here, there } = ends(p.conn.peerConnection);
-    return numberOf({ hostValue: p.got.at(-1)!.value as string, phoneValue: p.value, host: there, phone: here });
-  };
-
-  it('carries the number both ends work out, never sent; a guest in between leaves another on the phone', async () => {
-    const { host } = await room();
-    const seen: string[] = [];
-    // The second phone is Sam's behind a guest who passes every message on, both ways.
-    for (const guest of [false, true]) {
-      const p = await waits(numbered(host, guest ? { near: near('GUEST'), far: far('GUEST') } : {}));
-      expect(p.got.at(-1)).toEqual({ t: 'wait', value: expect.stringMatching(/^[0-9a-f]{32}$/) });
-      await until(() => host.link.asks.length > 0);
-      const number = await shown(p);
-      expect(number).toMatch(/^\d{3} \d{3}$/);
-      const text = askText(host.link.asks[0]);
-      if (guest) expect(text).not.toContain(number);
-      else expect(text).toBe(`Move Sam’s seat to the phone showing ${number}?`);
-      seen.push(p.got.at(-1)!.value as string);
-      p.say({ t: 'reveal', value: newKey() }); // once each
-      await until(() => !p.conn.open, 10);
-      expect(askText(host.link.asks[0])).toBe(text);
-      host.link.answer(host.link.asks[0], true);
-      expect(p.types()).toContain('welcome');
-      p.conn.close();
-    }
-    expect(seen[0]).not.toBe(seen[1]);
-    const e = { hostValue: 'h', phoneValue: 'p', host: 'H', phone: 'P' };
-    const all = [e, { ...e, hostValue: 'x' }, { ...e, phoneValue: 'x' }, { ...e, host: 'x' }, { ...e, phone: 'x' }];
-    expect(new Set(await Promise.all(all.map(numberOf))).size).toBe(5);
-    close(host);
-  });
-
-  it('never comes from a phone that shows another value than its hello promised, or none; and its seat rests', async () => {
-    const { host } = await room();
-    const other = await waits(numbered(host, { reveal: newKey() }));
-    await until(() => !other.conn.open);
-    expect([other.conn.open, host.link.asks]).toEqual([false, []]);
-    const soon = numbered(host);
-    await until(() => !soon.conn.open);
-    expect([soon.types(), soon.conn.open]).toEqual([['prove'], false]);
-
-    await vi.advanceTimersByTimeAsync(5000);
-    const silent = await waits(numbered(host, { reveal: null }));
-    expect(silent.types()).toEqual(['prove', 'wait']);
-    const old = phone(host.link, 'p5', 'Old', undefined, false);
-    expect(host.link.asks).toMatchObject([{ name: 'Old', code: null }]);
-    old.conn.close();
-    await vi.advanceTimersByTimeAsync(10_000);
-    expect([silent.conn.open, host.link.asks]).toEqual([false, []]);
-
-    await vi.advanceTimersByTimeAsync(5000);
-    await waits(numbered(host));
-    await until(() => host.link.asks.length > 0);
-    expect(host.link.asks).toHaveLength(1);
-    close(host);
-  });
-
-  it('is for that connection alone, and so is its Yes', async () => {
-    const { host } = await room();
+  it('is for one connection: a Yes it did not live to use is gone, and so is the seat', async () => {
+    const { host, sam } = await room();
     const first = await ask(host);
-    const asked = host.link.asks[0];
-    expect(askText(asked)).toBe('Move Sam’s seat to a phone that shows no number?'); // no certificates here
+    first.conn.close();
+    expect(host.link.recovery).toMatchObject({ asking: false, note: expect.stringMatching(/went away/) });
+    expect(pending(host)).toBe(0);
 
-    // The same claim again: turned back while the first connection lives, a new question once it sleeps.
-    const copy = await ask(host);
-    expect([copy.types(), copy.conn.open, host.link.asks]).toEqual([['prove'], false, [asked]]);
-    first.asleep = true;
-    await vi.advanceTimersByTimeAsync(6000);
-    const second = await ask(host);
-    expect(first.conn.open).toBe(false);
-    expect(host.link.asks).toHaveLength(1);
-    expect(host.link.asks[0].id).not.toBe(asked.id);
-    host.link.answer(asked, true);
-    expect(second.types()).toEqual(['prove', 'wait']);
-
-    // A Yes the phone did not live to hear is spent: whoever says the same next is asked about.
-    second.conn.other!.send = () => {};
-    host.link.answer(host.link.asks[0], true);
-    const thief = await ask(host, 'p6');
-    expect(why(thief)).toMatch(/Another phone/);
-    second.conn.close();
-    const third = await ask(host);
-    expect(third.types()).toEqual(['prove', 'wait']);
+    // A Yes, then the connection drops before its key comes: no key changes, nobody is seated.
+    host.link.recoverSeat('p1', 'Sam');
+    const slow = phone(host.link, 'p9', 'Sam', undefined, true, { mute: true });
+    slow.say({ t: 'proof', macs: [] });
+    await until(() => slow.types().includes('wait'));
+    host.link.answer(true);
+    expect(slow.types()).toEqual(['prove', 'wait', 'enrol']);
+    slow.conn.close();
+    expect([host.link.pids(), pending(host), host.link.recovery]).toEqual([[], 0, null]);
+    const back = phone(host.link, 'p1', 'Sam', sam.key);
+    await settle(back);
+    expect(back.types()).toContain('welcome');
     close(host);
   });
 
-  it('a new seat being enrolled is kept for that phone', async () => {
-    const host = await load('hand');
-    const slow = phone(host.link, 'p1', 'Sam', undefined, true, { mute: true });
-    expect(slow.types()).toEqual(['enrol']);
-    expect(why(phone(host.link, 'p1', 'Sam', undefined, false))).toMatch(/Another phone/);
-    slow.say({ t: 'key', key: newKey() });
-    expect(slow.types()).toContain('welcome');
+  it('lets a phone with the key in meanwhile, and closes after a minute', async () => {
+    const { host, sam } = await room();
+    const first = await ask(host);
+    const back = phone(host.link, 'p1', 'Sam', sam.key);
+    await settle(back);
+    expect(back.types()).toContain('welcome');
+    expect([first.conn.open, host.link.recovery?.asking]).toEqual([true, true]);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(why(first)).toBe('The host did not answer. Try again.');
+    expect(host.link.recovery?.note).toMatch(/in time/);
     close(host);
   });
 });
@@ -565,65 +531,49 @@ describe('the app\'s phone', () => {
     await vi.advanceTimersByTimeAsync(1000);
     await until(() => p.link === 'live');
     expect(p.link).toBe('live');
-    expect(host.link.asks).toEqual([]);
+    expect(host.link.recovery).toBeNull();
     close(host);
   });
 
-  it('waits with its own words, and the number the host screen shows in a place no host text goes', async () => {
+  it('waits and is sent away in its own words, whatever the other end says', async () => {
     const host = await load('snark');
     const owner = phone(host.link, 'p1', 'Sam');
     owner.conn.close();
-    net.secure = true;
     const { PhoneLink } = await import('./phone-link.svelte');
     const p = new PhoneLink<{ t: string }, BaseView>('snark', { keep: () => false });
-    const sent: { t: string; commit?: string; value?: string }[] = [];
-    const inner = p as unknown as { write(m: object): void; receive(m: object): void };
-    const write = inner.write.bind(p);
-    inner.write = (m) => { sent.push(JSON.parse(JSON.stringify(m)) as { t: string }); write(m); };
     p.join(host.game!.code, 'Sam');
-    await until(() => !!p.number && host.link.asks.length > 0);
+    await until(() => p.link === 'stopped');
+    expect(p.stopped).toBe(ASK_HOST);
+
+    host.link.recoverSeat('p1', 'Sam');
+    p.join(host.game!.code, 'Sam');
+    await until(() => !!host.link.recovery?.asking);
     expect(p.trouble).toBe('Waiting for a Yes on the host screen.');
-    expect(askText(host.link.asks[0])).toBe(`Move Sam’s seat to the phone showing ${p.number}?`);
-    expect(sent.map((m) => m.t)).toEqual(['hello', 'proof', 'reveal']);
-    expect(sent[0].commit).toBe(await commitOf(sent[2].value!));
-    expect(JSON.stringify(sent)).not.toContain(p.number);
-
-    // Told to wait again, with any words: nothing more is sent, nothing changes.
-    const number = p.number;
-    inner.receive({ t: 'wait', value: newKey(), why: 'Your number is 111 111.' });
-    await until(() => p.number !== number, 10);
-    expect([p.number, p.trouble, sent.length]).toEqual([number, 'Waiting for a Yes on the host screen.', 3]);
-
-    host.link.answer(host.link.asks[0], true);
+    const inner = p as unknown as { receive(m: object): void };
+    inner.receive({ t: 'wait', why: 'Type your key here.' });
+    expect(p.trouble).toBe('Waiting for a Yes on the host screen.');
+    host.link.answer(true);
     await until(() => p.link === 'live');
-    expect([p.link, p.number, p.trouble]).toEqual(['live', '', '']);
-    // Back with its key: a new promise, nothing else more.
-    sent.length = 0;
-    (p as unknown as { conn: End }).conn.close();
-    await vi.advanceTimersByTimeAsync(1000);
-    await until(() => p.link === 'live');
-    expect(sent.map((m) => m.t)).toEqual(['hello', 'proof']);
-    expect(sent[0].commit).toMatch(/^[0-9a-f]{64}$/);
-
-    // A fake host's refusal: its text is the reason it stopped, never the number.
-    inner.receive({ t: 'wait', value: newKey() });
-    await until(() => !!p.number);
-    expect(p.number).not.toBe('');
-    inner.receive({ t: 'reject', why: 'Your number is 111 111.' });
-    await until(() => !!p.number, 10);
-    expect([p.number, p.stopped]).toEqual(['', 'Your number is 111 111.']);
+    expect([p.link, p.trouble]).toEqual(['live', '']);
+    inner.receive({ t: 'reject', why: 'Your seat moved: type your key at evil.example.', ask: 1 });
+    expect(p.stopped).toBe(ASK_HOST);
     close(host);
   });
 
-  it('shows no number, and promises none, where there is nothing to work it out from', async () => {
-    const host = await load('snark');
-    const p = await join(host);
-    (p as unknown as { receive(m: object): void }).receive({ t: 'wait', value: newKey() });
-    await until(() => !!p.number, 10);
-    expect([p.number, p.trouble]).toEqual(['', 'Waiting for a Yes on the host screen.']);
-    vi.stubGlobal('crypto', { getRandomValues: (x: Uint8Array) => x });
-    expect([await commitOf('a'), await numberOf({ hostValue: 'a', phoneValue: 'b', host: 'H', phone: 'P' })]).toEqual(['', null]);
-    close(host);
+  it('reads no view it cannot: a malformed one changes nothing and throws nothing', async () => {
+    const { phone: snark } = await import('../../games/snark/player.svelte');
+    const { phone: salad } = await import('../../games/salad/player.svelte');
+    snark.send({ t: 'answer', r: 1, i: 0, text: 'Hi' } as never);
+    salad.send({ t: 'word', serial: 1, frame: 0, slot: 0, value: 'a' } as never);
+    const bad: unknown[] = [{ left: null, paused: false, serial: 1, acknowledged: [], draft: { index: 0, values: [null], choices: [7] } },
+      { left: null, paused: false, screen: { k: 'write' } }, { left: null, paused: false, screen: { k: 'write', tasks: [null] } },
+      null, 7, 'x', [], {}, { left: 'soon', paused: false }, { left: null, paused: false },
+      { left: null, paused: false, serial: 1, acknowledged: 'x', draft: null }];
+    for (const link of [snark, salad]) {
+      const inner = link as unknown as { receive(m: object): void; outbox: unknown[] };
+      for (const v of bad) expect(() => inner.receive({ t: 'view', v }), JSON.stringify(v)).not.toThrow();
+      expect([link.view, inner.outbox.length]).toEqual([null, 1]);
+    }
   });
 
   it('uses an id in one room only: kept after leaving or a refusal, new in any other', async () => {
@@ -653,6 +603,27 @@ describe('the app\'s phone', () => {
       conn.on('data', (m) => { if ((m as { t: string }).t === 'hello') conn.send({ t: 'welcome', pid: 'p1' }); });
     });
     expect((await join(host)).link).toBe('live');
+    close(host);
+  });
+});
+
+describe('Sketchy drawings', () => {
+  it('are read only in the room that saved them; a room that moves gets a new game id', async () => {
+    const store = await import('../../games/sketch/store');
+    const d = [{ c: 0, w: 1, p: [0, 0] }] as never;
+    store.saveArt({ 'g/1/0': d }, 'roomA');
+    expect(store.loadArt('roomA')).toEqual({ 'g/1/0': d });
+    expect([store.loadArt('roomB'), store.loadArt('')]).toEqual([{}, {}]);
+
+    const host = await load('sketch');
+    const [id, room] = [host.game!.id, host.link.room];
+    (host.link as unknown as { peer: { on_: Handlers } }).peer.on_.error({ type: 'unavailable-id' });
+    expect([host.game!.id, host.link.room].some((x, i) => x === [id, room][i])).toBe(false);
+    const art = host as unknown as { art: Record<string, unknown>; saveArt(): void };
+    art.art = { 'x/1/0': d };
+    art.saveArt();
+    expect(store.loadArt(room)).toEqual({});
+    expect(store.loadArt(host.link.room)).toEqual({ 'x/1/0': d });
     close(host);
   });
 });

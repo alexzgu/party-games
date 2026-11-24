@@ -58,8 +58,9 @@ class HostSession {
   get trouble() { return this.link.trouble; }
   get online() { return this.link.online; }
 
-  open(): void {
-    if (this.game) return;
+  /** Only in the tab that owns the game's saved room (owner.ts); another tab opens nothing. */
+  async open(): Promise<void> {
+    if (this.game || !(await this.link.own()) || this.game) return;
     const { game: saved, room } = loadRoom();
     const { packIds, awayMs } = loadSettings();
     const g = saved ? L.afterReload(saved, Date.now())

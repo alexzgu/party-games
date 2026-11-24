@@ -7,6 +7,8 @@
   import Qr from '../../components/room/Qr.svelte';
   import Connection from '../../components/room/Connection.svelte';
   import SeatAsk from '../../components/room/SeatAsk.svelte';
+  import NewPhone from '../../components/room/NewPhone.svelte';
+  import { ELSEWHERE } from '../../lib/room/owner';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import TapToFinish from '../../components/room/TapToFinish.svelte';
   import Timer from '../../components/room/Timer.svelte';
@@ -94,6 +96,7 @@
       {:else if v?.phase === 'over'}
         <Button size="sm" onclick={() => { if (!fixed) host.rematch(); }} tip="Back to the lobby with the same players, scores at zero">Lobby</Button>
       {/if}
+      {#if !fixed && game}<NewPhone link={host.link} players={game.players} />{/if}
       <HowTo><Rules /></HowTo>
       {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close</Button>{/if}
     </div>
@@ -139,7 +142,7 @@
         {/if}
       </main>
     {/if}
-  {:else}<p>Opening room…</p>{/if}
+  {:else}<p>{host.link.elsewhere ? ELSEWHERE : 'Opening room…'}</p>{/if}
 </div>
 
 {#if confirm}

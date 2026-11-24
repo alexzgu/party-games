@@ -6,6 +6,8 @@
   import Popup from '../../components/Popup.svelte';
   import Connection from '../../components/room/Connection.svelte';
   import SeatAsk from '../../components/room/SeatAsk.svelte';
+  import NewPhone from '../../components/room/NewPhone.svelte';
+  import { ELSEWHERE } from '../../lib/room/owner';
   import { back, route } from '../../lib/router.svelte';
   import { sfx } from '../../lib/sound';
   import { keepAwake } from '../../lib/wakelock';
@@ -71,12 +73,13 @@
         <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }} tip={v?.phase === 'answer' ? 'Stops waiting; missing answers sit this round out' : v?.phase === 'judge' ? 'Everyone who played votes instead of the judge' : v?.phase === 'vote' ? 'Counts the votes so far now' : 'Moves on without waiting for the timer'}>{skipLabel}</Button>
         <Button size="sm" variant="ghost" onclick={() => (showPlayers = true)} tip="Remove a player from the room">Players</Button>
       {/if}
+      {#if !fixed && game}<NewPhone link={host.link} players={game.players} />{/if}
       <HowTo><Rules /></HowTo>
       {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close</Button>{/if}
     </div>
   </header>
   {#if !fixed && host.status !== 'open'}
-    <p class="connection" role="status">{host.trouble || `Opening room ${code}…`}
+    <p class="connection" role="status">{host.trouble || (host.link.elsewhere ? ELSEWHERE : `Opening room ${code}…`)}
       {#if host.trouble}<Button size="sm" variant="secondary" onclick={() => (connection = true)} tip="See how phones connect, or use a backup server">Trouble connecting?</Button>{/if}</p>
   {/if}
   {#if v}
@@ -86,7 +89,7 @@
       <HostStage {v} online={fixed ? undefined : host.online}
         onnext={() => { if (!fixed) host.skip(); }} onagain={() => { if (!fixed) host.rematch(); }} onclose={() => (confirm = true)} />
     {/if}
-  {:else}<p>Opening room…</p>{/if}
+  {:else}<p>{host.link.elsewhere ? ELSEWHERE : 'Opening room…'}</p>{/if}
 </div>
 
 {#if confirm}

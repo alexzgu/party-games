@@ -1,23 +1,30 @@
 <script lang="ts">
   import Button from '../Button.svelte';
-  import { askText } from '../../lib/room/seats';
   import type { HostLink } from '../../lib/room/host-link.svelte';
 
-  // Host screen: a phone that cannot show it owns a seat waits for the host's Yes or No. Both
-  // screens work out the same number, so the host can tell whose phone it is. One question at a
-  // time, over the game and its pause; the game goes on meanwhile.
+  // Host screen: the seat opened with New phone. While it is open, a minute at most; then the one
+  // Yes or No when a phone asks for it; or, once it closed without anyone getting it, why. The game
+  // goes on meanwhile.
   let { link }: { link: HostLink } = $props();
-  const ask = $derived(link.asks[0]);
+  const r = $derived(link.recovery);
 </script>
 
-{#if ask}
-  {#key ask.id}
-    <div class="ask pop-in" role="alertdialog" aria-label="A phone is waiting">
-      <p>{askText(ask)}</p>
-      <div class="answers">
-        <Button size="sm" onclick={() => link.answer(ask, true)} tip={ask.code ? 'Only if you see that number on their phone' : 'Only if you know whose phone it is'}>Yes</Button>
-        <Button size="sm" variant="secondary" onclick={() => link.answer(ask, false)}>No</Button>
-      </div>
+{#if r}
+  {#key `${r.pid}:${r.asking}:${r.note}`}
+    <div class="ask pop-in" role={r.asking ? 'alertdialog' : 'status'} aria-label="New phone for {r.name}">
+      {#if r.note}
+        <p>{r.note}</p>
+        <div class="answers"><Button size="sm" variant="secondary" onclick={() => link.stopRecovery()}>OK</Button></div>
+      {:else if r.asking}
+        <p>A phone asks for {r.name}’s seat. Is it {r.name}’s?</p>
+        <div class="answers">
+          <Button size="sm" onclick={() => link.answer(true)} tip="Only if {r.name} just tapped Join in front of you">Yes</Button>
+          <Button size="sm" variant="secondary" onclick={() => link.answer(false)}>No</Button>
+        </div>
+      {:else}
+        <p>{r.name}’s seat is open to a new phone for a minute. Ask them to join now.</p>
+        <div class="answers"><Button size="sm" variant="secondary" onclick={() => link.stopRecovery()} tip="Shuts the seat again">Close</Button></div>
+      {/if}
     </div>
   {/key}
 {/if}

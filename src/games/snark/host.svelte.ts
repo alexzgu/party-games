@@ -80,9 +80,9 @@ class HostSession {
   get trouble() { return this.link.trouble; }
   get online() { return this.link.online; }
 
-  /** Reopens the saved room, or opens a new one. Does nothing when already open. */
-  open(): void {
-    if (this.game) return;
+  /** Reopens the saved room, or opens a new one; only in the tab that owns the game's saved room (owner.ts). Does nothing when already open. */
+  async open(): Promise<void> {
+    if (this.game || !(await this.link.own()) || this.game) return;
     const { game: saved, room } = loadRoom();
     const g = saved ? L.afterReload(saved, Date.now()) : L.newGame(newCode(), loadSettings());
     this.game = g;

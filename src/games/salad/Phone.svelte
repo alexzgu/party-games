@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import Avatar from '../../components/room/Avatar.svelte';
   import Button from '../../components/Button.svelte';
-  import SeatNumber from '../../components/room/SeatNumber.svelte';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
   import HowTo from '../../components/HowTo.svelte';
   import Popup from '../../components/Popup.svelte';
@@ -55,8 +54,6 @@
     if (!fixed && phone.me?.code) phone.join(phone.me.code, phone.me.name);
   }
 </script>
-
-{#if !fixed}<SeatNumber number={phone.number} />{/if}
 
 {#if link === 'idle' || link === 'stopped'}
   {#key routeCode}

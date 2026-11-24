@@ -1,5 +1,5 @@
 // A phone's link to the Snark Tank host screen (the shared room link, with Snark Tank's views).
-import { PhoneLink } from '../../lib/room/phone-link.svelte';
+import { PhoneLink, isRecord } from '../../lib/room/phone-link.svelte';
 import type { ToHost } from './protocol';
 import type { PlayerView } from './view';
 
@@ -14,7 +14,11 @@ function keep(m: ToHost, v: PlayerView): boolean {
     : s.k === 'vote3' && m.r === v.round && m.at === s.at && !s.sent;
 }
 
-const make = () => new PhoneLink<ToHost, PlayerView>('snark', { keep });
+/** Enough of a view from the other end to read it here: a screen, and on a write screen its prompts. */
+const valid = (v: Record<string, unknown>): boolean => isRecord(v.screen) && typeof v.screen.k === 'string' &&
+  (v.screen.k !== 'write' || (Array.isArray(v.screen.tasks) && v.screen.tasks.every(isRecord)));
+
+const make = () => new PhoneLink<ToHost, PlayerView>('snark', { valid, keep });
 
 // One per page. In development the instance is kept on window, so a hot module reload (another
 // file changing) reuses the live session instead of starting a second one beside it; the
