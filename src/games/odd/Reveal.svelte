@@ -5,7 +5,7 @@
   import FitText from '../../components/FitText.svelte';
   import { playerColor } from './ui';
   import { caught, type GameState } from './logic';
-  import { TAP_GUARD_MS, tapGuard } from '../../lib/tapGuard';
+  import Judge from './Judge.svelte';
 
   // Who the room picked and whether it was the odd one out. Caught: they guess the word out loud
   // before it shows, and the room says whether they got it. Not caught: the word shows at once.
@@ -20,8 +20,8 @@
   const got = $derived(caught(r));
   const picked = $derived(game.players[r.picked].name);
   const odd = $derived(game.players[r.odd].name);
-  // The judge buttons take the place of Show word: the tail of a double tap there is ignored.
-  const ready = tapGuard(TAP_GUARD_MS);
+  // Show word, Missed / Got it and Next each guard their own first moments on screen (Button and
+  // Judge), so the tail of a double tap on one never presses the next.
 </script>
 
 <Screen title={gameName('odd')} onback={onleave} backLabel="Back to setup">
@@ -47,10 +47,7 @@
     {#if !r.shown}
       <Button size="lg" onclick={onshow}>Show word</Button>
     {:else if got}
-      <div class="judge" role="group" aria-label="Did {odd} get it?">
-        <button class="call no" onclick={() => ready() && onsettle(false)}><span class="mk" aria-hidden="true">✗</span> Missed</button>
-        <button class="call yes" onclick={() => ready() && onsettle(true)}><span class="mk" aria-hidden="true">✓</span> Got it</button>
-      </div>
+      <Judge name={odd} onjudge={onsettle} />
     {:else}
       <Button size="lg" onclick={() => onsettle(null)}>Next</Button>
     {/if}
@@ -69,14 +66,4 @@
   .pack { color: var(--text-dim); font-weight: 600; }
   .ask { font-size: 1.2rem; font-weight: 700; }
   .big-ask { font-family: var(--font-display); font-size: 1.9rem; line-height: 1.15; overflow-wrap: anywhere; }
-  .judge { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
-  .call {
-    --c: var(--c-good); min-height: 72px; border-radius: var(--r-lg); display: flex; align-items: center; justify-content: center; gap: var(--s-2);
-    font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; color: var(--text);
-    border: 2.5px solid var(--c); background: color-mix(in srgb, var(--c) 20%, var(--surface));
-    transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) ease;
-  }
-  .call.no { --c: var(--c-bad); }
-  .call:active { transform: scale(0.96); background: color-mix(in srgb, var(--c) 40%, var(--surface)); }
-  .mk { color: var(--c); font-size: 1.6rem; line-height: 1; }
 </style>

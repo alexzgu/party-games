@@ -5,14 +5,19 @@
   import Rules from './Rules.svelte';
   import { playerColor } from './ui';
   import type { GameState } from './logic';
+  import { tapGuard } from '../../lib/tapGuard';
 
   // The phone goes to the next player, who taps Show to see their secret alone. Back goes to
   // the previous player's hand-off (setup from the first), never onto a secret.
   let { game, onshow, onback }: { game: GameState; onshow: () => void; onback: () => void } = $props();
   const name = $derived(game.players[game.seat].name);
+  // This screen stays up while Back walks from player to player: a back tap counts only once this
+  // player's hand-off has been on screen for the guard time, so a double tap steps back one player.
+  let ready = $state(tapGuard());
+  $effect.pre(() => { void game.seat; ready = tapGuard(); });
 </script>
 
-<Screen title={gameName('odd')} onback={onback} backLabel={game.seat > 0 ? 'Previous player' : 'Back to setup'}>
+<Screen title={gameName('odd')} onback={() => ready() && onback()} backLabel={game.seat > 0 ? 'Previous player' : 'Back to setup'}>
   {#snippet trailing()}<Rules hint={game.hint} oddNeverStarts={game.oddNeverStarts} />{/snippet}
   <div class="hand" style:--c={playerColor(game.seat)}>
     <p class="kicker">Round {game.log.length + 1} of {game.rounds} · player {game.seat + 1} of {game.players.length}</p>

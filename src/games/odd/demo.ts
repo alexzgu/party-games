@@ -1,5 +1,5 @@
 // Fixed states for screenshots and design review: #/odd?demo=<screen>. Never saved.
-// handoff · secret · secret-odd · secret-odd-nohint · clues · vote · reveal-caught · reveal-word ·
+// handoff · secret · secret-long · secret-odd · secret-odd-nohint · clues · vote · reveal-caught · reveal-word ·
 // reveal-escaped · scores · win
 import { hide, newGame, settle, showWord, toVote, vote, type GameState } from './logic';
 
@@ -15,6 +15,7 @@ export function demoGame(screen: string): GameState | null {
   switch (screen) {
     case 'handoff': return hide(g);
     case 'secret': return hide(g);
+    case 'secret-long': { const s = hide(g); return { ...s, round: { ...s.round, word: 'Walking the Dog', pack: 'Act It Out' } }; }
     case 'secret-odd': case 'secret-odd-nohint': return onPriya;
     case 'clues': return { ...g, phase: 'clues' };
     case 'vote': return voting;
