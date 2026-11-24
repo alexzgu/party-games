@@ -409,7 +409,7 @@ describe('messages from phones', () => {
   });
 });
 
-// --- Quiplash 3 options: "Give me one" stock answers and three-line duels in the final ---
+// --- Quiplash 3 options: "Suggest" stock answers and three-line duels in the final ---
 
 const STOCK = 'A stock answer';
 /** Every prompt comes with a stock answer; finals come with the house's three lines. */
@@ -431,7 +431,7 @@ function writeLines(g: L.Game): L.Game {
   return g;
 }
 
-describe('stock answers ("Give me one")', () => {
+describe('stock answers ("Suggest")', () => {
   function firstDuel(text: (item: L.Duel) => string) {
     let g = L.startRound(room(4), drawAll, 0);
     const item = g.items[0] as L.Duel;

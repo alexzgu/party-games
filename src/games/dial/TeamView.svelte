@@ -48,10 +48,10 @@
   {#snippet info()}
     <p>Listen to your reader's clue.</p>
     <p>Drag the needle anywhere on the dial. Reader, no more hints!</p>
-    <p>When your team agrees, tap <b>Lock it in</b>. The closer to the hidden target, the more points.</p>
+    <p>When your team agrees, tap <b>Lock in</b>. The closer to the hidden target, the more points.</p>
   {/snippet}
   {#snippet actions()}
-    <Button size="lg" onclick={() => onlock(value)} tip="Makes this your team's final guess">Lock it in</Button>
+    <Button size="lg" onclick={() => onlock(value)} tip="Makes this your team's final guess">Lock in</Button>
   {/snippet}
 </Frame>
 

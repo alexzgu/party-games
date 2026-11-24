@@ -185,7 +185,7 @@
               </div>
               <Confetti colors={['var(--accent)', 'var(--c-good)', 'var(--c-dial)']} />
             {:else}
-              <Button onclick={skip}>{view.round === 1 ? 'Start round 2' : 'Final standings'}</Button>
+              <Button onclick={skip}>{view.round === 1 ? 'Round 2' : 'Final standings'}</Button>
             {/if}
           </section>
         {/if}

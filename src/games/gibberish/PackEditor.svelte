@@ -173,7 +173,7 @@
 
   {#snippet actions()}
     {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = true)} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
-    {#if pack}<Button size="lg" onclick={() => (open = 'new')} tip="Type in a new card yourself">+ Add a card</Button>{/if}
+    {#if pack}<Button size="lg" onclick={() => (open = 'new')} tip="Type in a new card yourself">+ Card</Button>{/if}
   {/snippet}
 </Screen>
 {/if}
@@ -195,7 +195,7 @@
     <div class="confirm">
       <p>“{customGibberish.original(id)?.name}” goes back to the cards that came with the app. Your changes to it are lost.</p>
       <Button variant="danger" onclick={restore}>Restore original</Button>
-      <Button variant="secondary" onclick={() => (confirm = '')}>Keep my changes</Button>
+      <Button variant="secondary" onclick={() => (confirm = '')}>Keep changes</Button>
     </div>
   </Popup>
 {:else if pack && confirm === 'delete'}

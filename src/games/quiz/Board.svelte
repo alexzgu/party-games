@@ -91,7 +91,7 @@
       <div class="cleared fade-in">
         <div class="done pop-in">
           <p class="big">Board cleared!</p>
-          <Button size="lg" onclick={onwin}>🏆 See who won</Button>
+          <Button size="lg" onclick={onwin}>🏆 Winner</Button>
           <Button variant="ghost" size="sm" onclick={onundo} tip="Takes back the last thing scored">Undo: {undoText}</Button>
         </div>
       </div>

@@ -254,7 +254,7 @@
         {#if hasPass()}
           <Button variant="secondary" size="sm" onclick={toggleStar} disabled={starring} tip={open.starred ? 'Takes your star back' : 'Adds your star to this pack'}>{open.starred ? '★ Starred' : '☆ Star it'}</Button>
         {:else}
-          <button type="button" class="hint" onclick={() => (askWords = !askWords)} aria-expanded={askWords} data-tip="Starring needs the magic words the host told you">☆ Say the magic words to star packs</button>
+          <button type="button" class="hint" onclick={() => (askWords = !askWords)} aria-expanded={askWords} data-tip="Starring needs the magic words the host told you">☆ Magic words</button>
         {/if}
         <Button variant="secondary" size="sm" onclick={skip} tip={isSkipped(game, open.id) ? 'Lists this pack again on this phone' : 'Leaves this pack out of the list on this phone'}>{isSkipped(game, open.id) ? 'Unskip' : 'Skip'}</Button>
       </div>

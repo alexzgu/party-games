@@ -36,7 +36,7 @@
   </div>
   <div class="row">
     <Button variant="secondary" size="sm" disabled={round.redrawsLeft <= 0} onclick={onredraw} tip={round.redrawsLeft > 0 ? 'Swaps this scale for another one, once per round' : 'You already swapped this round'}>
-      ↻ {round.redrawsLeft > 0 ? 'Different card (1 free)' : 'No more new cards'}
+      ↻ {round.redrawsLeft > 0 ? 'New card' : 'No redraws'}
     </Button>
   </div>
   <input type="text" maxlength="60" placeholder="Type your clue (optional)" aria-label="Your clue, shown to your team (optional)"
@@ -46,10 +46,10 @@
     <p>Think of a clue that belongs at the <b class="gold">gold&nbsp;4</b> on this scale. Say it out loud.</p>
     <p>Don't like the scale? You get one different card free each round.</p>
     <p>Type your clue so it stays on screen (optional), e.g. "Pineapple on pizza".</p>
-    <p>Then tap <b>Hide target · show my team</b> and give them the phone.</p>
+    <p>Then tap <b>Hide target</b> and give them the phone.</p>
   {/snippet}
   {#snippet actions()}
-    <Button size="lg" onclick={() => { onclue(clue.trim()); onhide(); }} tip="Covers the target so your team can guess">Hide target · show my team</Button>
+    <Button size="lg" onclick={() => { onclue(clue.trim()); onhide(); }} tip="Covers the target so your team can guess">Hide target</Button>
   {/snippet}
 </Frame>
 

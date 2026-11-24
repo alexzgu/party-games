@@ -55,7 +55,7 @@
     <Button type="submit" size="lg" guardMs={0}>{card ? 'Save card' : 'Add card'}</Button>
     {#if ondelete}
       <Button variant={deleting ? 'danger' : 'ghost'} guardMs={0} onclick={() => (deleting ? ondelete() : (deleting = true))}>
-        {deleting ? 'Tap again to delete this card' : 'Delete card'}
+        {deleting ? 'Really delete?' : 'Delete card'}
       </Button>
     {/if}
   </form>

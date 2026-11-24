@@ -9,4 +9,4 @@
 </script>
 
 <ListPackEditor game="sketch" {id} specs={SKETCH_LISTS} store={customSketch} packs={sketchPacks} wizard={WIZARD} moreRange={MORE_RANGE}
-  steerHint="e.g. harder words, more about food" addLabel="+ Add a word or idea" {onback} />
+  steerHint="e.g. harder words, more about food" addLabel="+ Item" {onback} />

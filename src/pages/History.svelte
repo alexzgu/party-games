@@ -73,7 +73,7 @@
     {#if open.details?.length}
       <ul class="details">{#each open.details as d, i (i)}<li>{d}</li>{/each}</ul>
     {/if}
-    <Button variant={sureDelete ? 'danger' : 'ghost'} onclick={() => del(open!.id)}>{sureDelete ? 'Tap again to delete it' : 'Delete this entry'}</Button>
+    <Button variant={sureDelete ? 'danger' : 'ghost'} onclick={() => del(open!.id)}>{sureDelete ? 'Really delete?' : 'Delete'}</Button>
   </Popup>
 {/if}
 

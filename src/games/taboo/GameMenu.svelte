@@ -41,13 +41,13 @@
   {#if confirmEnd}
     <h3>End game?</h3>
     <p class="muted">{marked ? 'The scores so far go in History, marked as ended early.' : 'Nothing has been scored yet, so nothing goes in History.'}</p>
-    <Button size="lg" variant="danger" onclick={onend}>Yes, end the game</Button>
-    <Button variant="secondary" onclick={() => (ending ? onclose() : (confirmEnd = false))}>No, keep playing</Button>
+    <Button size="lg" variant="danger" onclick={onend}>End game</Button>
+    <Button variant="secondary" onclick={() => (ending ? onclose() : (confirmEnd = false))}>Keep playing</Button>
   {:else}
     <h3>{title}</h3>
     <p class="muted">{note ? note + ' ' : ''}The game is saved, so you can come back to it.</p>
     <Button size="lg" onclick={onclose}>{resume}</Button>
-    <Button variant="secondary" onclick={onhome} tip="The game is saved so you can come back to it">Pause and go home</Button>
+    <Button variant="secondary" onclick={onhome} tip="The game is saved so you can come back to it">Go home</Button>
     <Button variant="danger" onclick={() => (confirmEnd = true)} tip="Ends this game for good, after asking">End game</Button>
   {/if}
 </div>

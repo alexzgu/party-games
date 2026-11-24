@@ -21,7 +21,7 @@
   // One pack, every prompt listed with its stock answer: rename, add, edit, delete; every change
   // saves at once on the pack as it is saved by then (edits.ts), the finals under them likewise; one that could not be
   // saved stays open and says why. Editing a built-in saves this device's copy under the same id; "Restore original" drops it. The player's own packs get "🧙 Add more" and, when some prompts have no
-  // stock answer (pasted or older packs), "🧙 Fill in stock answers".
+  // stock answer (pasted or older packs), "🧙 Stock answers".
   let { id, onback }: { id: string; onback: () => void } = $props();
 
   // svelte-ignore state_referenced_locally
@@ -95,7 +95,7 @@
     return '';
   }
 
-  /** "🧙 Add more" or "🧙 Fill in stock answers", open in place of the editor. */
+  /** "🧙 Add more" or "🧙 Stock answers", open in place of the editor. */
   let adding = $state<'' | 'more' | 'fill'>('');
   const missing = $derived(pack ? missingStock(pack).length : 0);
   const otherTexts = () => snarkPacks().filter((p) => p.id !== id).flatMap(packTexts);
@@ -134,10 +134,10 @@
     </AddMore>
   {:else}
     {@const n = toFill(p).length}
-    <AddMore title="🧙 Fill in stock answers" name={p.name} noun="stock answers" range={null} steerHint="e.g. sillier, shorter"
+    <AddMore title="🧙 Stock answers" name={p.name} noun="stock answers" range={null} steerHint="e.g. sillier, shorter"
       cta="✨ Write {n} stock {n === 1 ? 'answer' : 'answers'}" ask={(o) => fillStock(p, o)} keyOf={itemKey}
       onadd={(kept: Stock[], byPass: boolean) => added((now) => addStock(now, kept), byPass)} onclose={() => (adding = '')}>
-      {#snippet size()}<p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer for “Give me one”.{missing > n ? ` Fizzwick does ${n} at a time.` : ''}</p>{/snippet}
+      {#snippet size()}<p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer for “Suggest”.{missing > n ? ` Fizzwick does ${n} at a time.` : ''}</p>{/snippet}
       {#snippet item(i: Stock)}<WizardItem {i} />{/snippet}
     </AddMore>
   {/if}
@@ -160,8 +160,8 @@
           <PackActions game="snark" {pack} onshared={() => { if (pack) pack.shared = true; }} />
           {#if !builtin && missing}
             <div class="fill">
-              <p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer, so “Give me one” can't help there.</p>
-              <Button variant="secondary" onclick={() => (adding = 'fill')} tip="Fizzwick writes a stock answer for prompts without one">🧙 Fill in stock answers</Button>
+              <p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer, so “Suggest” can't help there.</p>
+              <Button variant="secondary" onclick={() => (adding = 'fill')} tip="Fizzwick writes a stock answer for prompts without one">🧙 Stock answers</Button>
             </div>
           {/if}
           <label class="name">
@@ -185,7 +185,7 @@
       <ul class="prompts">
         {#each shown as { q, i } (i)}
           {@const stock = pack.safety?.[q]}
-          <li><button class="prompt" onclick={() => edit(q)}>{q}{#if stock}<span class="stock">Give me one: {stock}</span>{/if}</button></li>
+          <li><button class="prompt" onclick={() => edit(q)}>{q}{#if stock}<span class="stock">Suggest: {stock}</span>{/if}</button></li>
         {/each}
       </ul>
       <section class="list" aria-label="Finals">
@@ -215,7 +215,7 @@
         <textarea bind:value={draft} rows="3" maxlength="140" oninput={() => (problem = '')} placeholder="A terrible name for a boat"></textarea>
       </label>
       <label class="field">
-        <span>Stock answer for “Give me one” (optional)</span>
+        <span>Stock answer for “Suggest” (optional)</span>
         <input type="text" bind:value={stockDraft} maxlength="80" autocomplete="off" placeholder="The Unsinkable II" />
       </label>
       {#if problem}<p class="problem" role="alert">{problem}</p>{/if}
@@ -235,7 +235,7 @@
     <div class="form">
       <p>“{customSnark.original(id)?.name}” goes back to the prompts that came with the app. Your changes to it are lost.</p>
       <Button variant="danger" onclick={restore}>Restore original</Button>
-      <Button variant="secondary" onclick={() => (confirm = '')}>Keep my changes</Button>
+      <Button variant="secondary" onclick={() => (confirm = '')}>Keep changes</Button>
     </div>
   </Popup>
 {:else if pack && confirm === 'delete'}

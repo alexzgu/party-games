@@ -151,7 +151,7 @@ Jerk Box."); anything else says it isn't a pack file.
 **Community library** (`src/lib/library.ts`; server routes `/library/…` in `worker/`, see
 `worker/README.md`): packs Fizzwick makes on any phone with a magic-words pass are shared
 automatically, whole, the moment they are saved, and again after "🧙 Add more" (Snark Tank: also
-"Fill in stock answers"), so friends need not remember to. Only what the wizard wrote through a
+"Stock answers"), so friends need not remember to. Only what the wizard wrote through a
 pass is shared by itself (decided as each run starts): anything made with the host's own key or an
 invite link never is, even once the phone has a pass, nor is a built-in pack or its edit. Each own
 pack keeps that decision with it: it is marked for sharing when a wizard run through a pass made it
@@ -284,7 +284,7 @@ preview, past its list too) and ticks the new pack, as before.
   how long to wait. A whole invite link or a bare key typed there is stored as the phone's key
   (`keyFromTyped`, for the host's testing; an iPhone Home Screen app keeps its own storage, so a
   tapped link may not reach it). With either: "Fizzwick the Wizard lives on this phone" and
-  "Send Fizzwick away" (clears both). No key field and no model list. Descriptions are
+  "Send away" (clears both). No key field and no model list. Descriptions are
   --text-dim, weight 600.
   Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
 - **Username** (`src/lib/username.ts`): every phone has one. A phone without one is given a
@@ -354,7 +354,7 @@ preview, past its list too) and ticks the new pack, as before.
   editor had them there), which fold away, then the items row (title and count, search, sort, the
   open search bar or sort chips, and at its end "Details" with an arrow, spoken "Hide pack
   details" or "Show pack details"). The actions stay pinned at the bottom as before (Add more,
-  Restore original, Delete, Paste a list, Add a card, Done). The same hairlines mark the items'
+  Restore original, Delete, Paste, + Card, Done). The same hairlines mark the items'
   top and bottom edges while more is scrolled away that way, and the items keep the same least
   height before the whole screen scrolls. Folding works as on the pack pages (smooth, `inert`
   while folded, first 400 ms of taps ignored, read once when the page opens so a keyboard never
@@ -368,17 +368,16 @@ preview, past its list too) and ticks the new pack, as before.
   scroll into view in the list; a field being typed in stays in view if the screen shrinks.
   Leaving and coming Back finds the items scrolled where they were. Per game:
   - Spectrum, Don't Say It: details hold name, status, Export, Share and the add form (Don't Say
-    It: its Paste many and Add more too); Don't Say It keeps "Restore the original cards" or
-    "Delete this pack" after the last card, unpinned.
+    It: its Paste many and Add more too); Don't Say It keeps "Restore" or "Delete pack" after the last card, unpinned.
   - Inn Co Hear Ant, Brain Freeze, Snark Tank: details hold the status line with its small
-    Restore or Delete button, Export, Share, name (Snark Tank: Fill in stock answers too);
+    Restore or Delete button, Export, Share, name (Snark Tank: Stock answers too);
     Snark Tank's finals follow its prompts in the list.
   - Doodle Brawl, Bad Hand, Sketchy (`ListPackEditor`, one shared editor): details hold the
     status line with its small Restore or Delete button, Export, Share and name; the list shows
     each of the pack's lists in turn under its own count (Bad Hand: prompts, then answers;
     Sketchy: words, then ideas), one search and sort over all of them. Tapping an item edits it
     in a popup (its rules said under the box; a broken or repeated one is refused in plain
-    words); the add button ("+ Add a title", "+ Add a card", "+ Add a word or idea") opens the
+    words); the add button ("+ Title", "+ Card", "+ Item") opens the
     same popup, with a switch for which list on a two-list pack. Own packs have "🧙 Add more".
   - Heads Down.: details hold the built-in note (with Restore), name, icon, Export, Share and
     Delete; the word box ("Type a word, press Enter", Add, and the Undo line) stays pinned under
@@ -438,7 +437,7 @@ preview, past its list too) and ticks the new pack, as before.
   and order on the phone. Packs carry an `added` date; built-ins without one count as oldest.
   Ticking packs during a search still counts every picked pack.
 - **Ended early**: a Heads Down. round quit from the pause menu, or a Spectrum / Inn Co Hear Ant
-  game thrown away before a winner (End game; Start a new game over a saved one) is still
+  game thrown away before a winner (End game; New game over a saved one) is still
   recorded, with `finished: false` and an "Ended early" tag, if anything was scored. Leaving a
   saved, resumable game is not ending it.
 - **Tap to skip**: a tap finishes any animation players are waiting through (reveals, points,
@@ -483,7 +482,7 @@ shout clues; the holder tilts down for "got it", up for "pass".
   mirrors the tap zones to the holder's hands. Tilt down → correct (✓, chime, double buzz); tilt
   up → pass (buzz).
   Feedback (Settings): by default the screen edge on the side of the matching tap zone glows
-  green or amber; "Flash the screen" flashes the whole screen instead. Tap fallback always on: right half correct, left half pass. Last 10 s:
+  green or amber; "Screen" flashes the whole screen instead. Tap fallback always on: right half correct, left half pass. Last 10 s:
   tick each second and a red pulsing timer. Leaving the app pauses; returning shows a Resume
   overlay. A small ✕ ends the round after confirmation. Packs used up → round ends early.
   The word on screen when the round ends (time up or ✕) was never played: it is left out of the
@@ -553,7 +552,7 @@ team sets a dial to where they think the target is.
   target sits at least 15 from the previous one when its part allows. Distance ≤ 2.5 → 4 pts, ≤ 7.5 → 3,
   ≤ 12.5 → 2, else 0. Steal correct → 1 pt to the other team. Turns alternate. First to the
   target score wins (win screen with confetti, rematch).
-- The hand-off's ⋯ menu offers Keep playing, Pause and go home, and End game, like the menu
+- The hand-off's ⋯ menu offers Keep playing, Go home, and End game, like the menu
   on every other game screen.
 - **Landscape** (a phone on its side, height ≤ 500 px): game screens put the dial on the right at
   full height and everything else, the main button included, on the left; the hand-off and win
@@ -613,7 +612,7 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   crown. Tapping a team opens a fix popup (± each board value). Tiles ignore taps for 400 ms
   after the board appears (double-tap guard).
 - **Tile**: the clue full screen (FitText) with category and value → "Show answer" → the answer
-  big → tap the team that got it (+value) or "Nobody got it" → back to the board. "Back" puts the
+  big → tap the team that got it (+value) or "Nobody" → back to the board. "Back" puts the
   tile back unplayed. With the penalty on, ✗ marks a team wrong on either step (−value at once,
   can be taken back, that team cannot win the tile). Up to 4 teams: big buttons and a row of ✗;
   from 5: a compact grid, each team's ✗ beside its name (past 8 teams the page may scroll).
@@ -625,7 +624,7 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
 - **Scores** are never stored: they are the sum of the log (tiles closed, hand fixes) plus wrong
   marks on the open tile. Undo drops the last log entry; an undone tile reopens on its answer
   with its wrong marks so the right team can be tapped.
-- **End**: every tile played → "See who won" (or "Undo: <the last scoring>"), or End with something scored → win screen
+- **End**: every tile played → "Winner" (or "Undo: <the last scoring>"), or End with something scored → win screen
   (confetti, tap to skip; standings with shared places for ties; from 9 teams compact rows, two
   columns on wide screens). History gets one entry at that moment (`finished: false` when ended
   early; more than 4 teams: the title gives the top score and the team count); End with nothing
@@ -647,8 +646,7 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   shows the magic-words box under the error in place of "Try again"). Without a key it shows the
   magic-words box, and suggests asking the host for a built-in pack ("a Big Board about
   <topic>", which the owner's Claude Code chat makes). Every route opens the new
-  pack in the editor, kept in storage (`quiz:new-board`) until "Save pack" (or "Save as a
-  draft" with empty tiles), which picks it on setup.
+  pack in the editor, kept in storage (`quiz:new-board`) until "Save pack" (or "Save draft" with empty tiles), which picks it on setup.
 
 Community: a board Fizzwick wrote is shared when it is first saved from the editor, and again after Add more; "🌍 Community" is in Add pack under the pack list; the preview lists every category's clues and answers.
 
@@ -672,14 +670,14 @@ beside them watching for slips.
   the word as large as it fits (`FitText`), its five banned words under it, a clock and a bar.
   Got it +1 (chime), Skip 0 or −1, Buzz −1 (red flash, buzzer); each button ignores taps for
   400 ms after a new card. Last 10 s: a tick each second and a red pulsing clock. Leaving the app
-  or the pause button stops the clock behind an opaque menu (Resume, Pause and go home, End game);
+  or the pause button stops the clock behind an opaque menu (Resume, Go home, End game);
   a reload mid-turn resumes paused with the time left. Packs used up → the turn ends early,
-  and the next team's hand-off offers "Play those cards again" (the game's played cards are
+  and the next team's hand-off offers "Replay cards" (the game's played cards are
   dealt again) or End game.
 - **Summary**: the turn's total, every card with its mark; a tap cycles a card got → skipped →
   buzzed. The card on screen when time ran out is listed as "Time's up" (0) and can be changed
   to got or buzzed (said at the buzzer). Then the scoreboard: the turn's points land on the team
-  (tap to land them at once), then "Next: <team>", with "Fix <team>'s cards" to go back to the
+  (tap to land them at once), then "Next: <team>", with "Fix cards" to go back to the
   summary. In a tiebreak the scoreboard says "tiebreak" instead of the goal.
 - **Scores** are never stored: they are the sum of every card's mark, so fixes on the summary
   just work. The game is checked only when both teams have had the same number of turns: target
@@ -707,7 +705,7 @@ few seconds to name three things that fit it out loud; the room judges.
 - **Turn**: hand-off ("Pass the phone to Maya"; the last turn's result and a scoreboard strip in
   seating order above it) → "I'm Maya, show my prompt" reveals "Name 3 …" huge (`FitText`) and
   starts the clock at once: a big ring drains, a tick each second (sharper in the last two),
-  buzzer at zero. "Got all 3" stops the clock early with the point. At zero the same screen
+  buzzer at zero. "All 3" stops the clock early with the point. At zero the same screen
   shows "Time!" and the room taps ✓ Got 3 (+1) or ✗ Didn't. Steal on and missed: the next
   player gets the same prompt and a fresh clock and must name three *different* things for the
   point; a missed steal ends the turn with no point. The turn then passes to the next seat: the
@@ -720,11 +718,11 @@ few seconds to name three things that fit it out loud; the room judges.
   plays another full round ("Maya and Ben are tied on 8 — a tie when the round ends plays one more round"). Players added in setup
   mid-game sit after the last seat and play in the current round only if it has not passed there
   yet; removing everyone still to play in it ends the round.
-- **Undo**: the hand-off and the steal screen offer "Wrong call? Undo", which goes back to the
+- **Undo**: the hand-off and the steal screen offer "Undo", which goes back to the
   judging of the last try with its point taken back (one step; gone once the next prompt is up).
-- **End**: the hand-off at the end of the winning round shows "See who won" → win screen
+- **End**: the hand-off at the end of the winning round shows "Winner" → win screen
   (confetti, standings, rematch: the seat after the one who started goes first). History gets one entry then, one detail line per turn
-  ("Name 3 kinds of soup: Ben ✗, Cy stole it"); Start a new game over an unfinished one records
+  ("Name 3 kinds of soup: Ben ✗, Cy stole it"); New game over an unfinished one records
   it with `finished: false`. Reload mid-clock resumes paused with the time left; leaving the
   app pauses. Prompts are dealt without repeats within a game and across games (per-pack bags).
   Once every prompt of the chosen packs was played in a game, the hand-off says so and they come
@@ -784,7 +782,7 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   storage takes over the offline seat. Late joiners watch until the next round (they may vote).
   A player who drops keeps their seat; unanswered prompts become "(no answer)". A kicked phone
   cannot rejoin that room. A phone that cannot find its host for about two minutes stops trying.
-- **Flow**: Snark Tank → "Host on this screen" or "Join a game". Lobby: big code, QR code of
+- **Flow**: Snark Tank → "Host" or "Join". Lobby: big code, QR code of
   `<site>#/snark/join?code=ABCD`, players with colours (✕ removes, after a confirm), settings
   summary, Start (3+). Settings (`#/snark/settings`, a pack page): packs (search/sort, editor,
   Make a pack or Add pack → New: paste a list or ask the wizard; "A game is running: these apply
@@ -794,8 +792,7 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   suggestion such as Office life or Roommates) and 10–60 prompts (default 30); each prompt comes
   with a stock answer, and about one final per five prompts comes with three house lines, all
   reviewed before saving. The player's own packs have "🧙 Add more" (5–40 prompts, default 15,
-  finals likewise) and, while some prompts lack a stock answer (pasted or older packs), "🧙 Fill in
-  stock answers" (up to 40 at a time). The editor shows each prompt's stock answer (editable with
+  finals likewise) and, while some prompts lack a stock answer (pasted or older packs), "🧙 Stock answers" (up to 40 at a time). The editor shows each prompt's stock answer (editable with
   the prompt; it moves with a reworded prompt and goes with a deleted one) and, under the prompts,
   the finals: tap one to change its prompt (3–14 words, new in the pack) and the house's three lines
   (1–40 characters each) or delete it, "+ Final" for a new one.
@@ -826,7 +823,7 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   short stock line or a random two-word phrase; three short lines in a three-line duel; vote at
   random (3 votes spread at random in the final).
 
-Community: wizard packs, Add more and Fill in stock answers are shared with their stock answers and finals, and imported with them; "🌍 Community" is in Add pack under the pack list in the game settings; prompts a built-in pack has are left out on import.
+Community: wizard packs, Add more and Stock answers are shared with their stock answers and finals, and imported with them; "🌍 Community" is in Add pack under the pack list in the game settings; prompts a built-in pack has are left out on import.
 
 ### Snark Tank: Quiplash 3 options (`snark`, on by setting)
 
@@ -834,8 +831,8 @@ Settings gain **Final round**: "Everyone, 3 votes" (the default; also what setti
 games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amounts marked
 *house* are ours (the original's are not published).
 
-- **Give me one** (both options): in head-to-head rounds a prompt whose pack has a stock (safety)
-  answer for it sends that answer with the prompt; the phone shows "Give me one", which fills the
+- **Suggest** (both options): in head-to-head rounds a prompt whose pack has a stock (safety)
+  answer for it sends that answer with the prompt; the phone shows "Suggest", which fills the
   box. The host compares each sent answer (cleaned) with its own copy, never trusting the phone:
   an exact match earns half of every point (rounded down, sweep bonus included); an edited one is
   a normal answer. The reveal tags it "Safety" on the host and the phones.
@@ -919,7 +916,7 @@ new room) and how long a dropped presenter is waited for: 30 s, 1 min (default),
 
 - **Pick** (20 s): privately choose one of three secrets, including one Easy and a mix of
   categories (person, place, thing, story). One reshuffle per player each round. Picking takes
-  two taps: the first selects a tile (raised, the others dimmed) and grows a "Pick this one" bar
+  two taps: the first selects a tile (raised, the others dimmed) and grows a "Pick" bar
   on it; the bar confirms, and tapping another tile moves the selection. Each selection reaches
   the host (`select`), so at the deadline the selected secret is taken for anyone who has yet to
   confirm, and the first choice for anyone who selected nothing.
@@ -1049,14 +1046,14 @@ on their own phones through the shared room link; a host screen shows the room. 
   also new to every Sketchy pack on the phone; anything else is dropped unseen. A pack may hold
   only words or only ideas; the Community library takes one with at least one word. Community:
   wizard packs and Add more are shared with both lists; words and ideas a built-in has are left
-  out on import. "Give me an idea" picks from the packs on the player's own phone (the room's
+  out on import. "Suggest" picks from the packs on the player's own phone (the room's
   picks where that phone has them, else all its packs), so a host's own pack's ideas are not
   offered there.
 
 ### Telephone
 
 - **Steps**: as many steps as players at the start (the original's default). Step 1: everyone
-  writes a line (80 characters; "Give me an idea" fills the box with a random idea from the
+  writes a line (80 characters; "Suggest" fills the box with a random idea from the
   room's packs, picked on the phone so it is instant, *house*). Then steps alternate: draw the
   line you were handed, then describe the drawing you were handed (80 characters), and so on.
   Done is ready once something is written or drawn and sends at once; each step ends when every
@@ -1161,7 +1158,7 @@ prompt and the answers. Amounts marked *house* are ours.
   who has not played by then plays nothing that round.
 - **Judging**: the answers, shuffled and anonymous, appear on the host screen and the judge's
   phone as the prompt filled in. The judge taps one to show it large on the host and read it
-  aloud, then confirms the funniest with "Pick this one" (two taps, as Word Salad's pick). Its
+  aloud, then confirms the funniest with "Pick" (two taps, as Word Salad's pick). Its
   player scores 1 point; the reveal shows every answer's author (8 s, or Next). Then everyone
   draws back to ten and the next player judges.
 - **Missing judge** (*house*): if the judge is offline when judging starts or for 20 s during
@@ -1178,7 +1175,7 @@ prompt and the answers. Amounts marked *house* are ours.
   player who left reaches the target by rejoining and scoring). Standings with confetti, the winning answer of every round, Lobby
   or Close. History gets one entry on the host.
 - **Options** (Settings, off by default; house rules printed with the original):
-  - *Trade a point*: a player with a point may, while others answer or during the reveal (never
+  - *Trade point*: a player with a point may, while others answer or during the reveal (never
     judging or voting, and not once someone has reached the target), give it up to swap any of
     their cards for new ones; a player who has played still sees their hand to trade.
   - *House player*: each round, when answering ends, random cards from the deck (as many as the

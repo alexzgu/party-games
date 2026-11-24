@@ -18,11 +18,11 @@
   import WizardItem from './WizardItem.svelte';
 
   // "Make a pack": paste a list, one prompt per line (numbers, bullets and quotes dropped), or pick
-  // a theme and watch Fizzwick's prompts stream in, each with a stock answer for "Give me one",
+  // a theme and watch Fizzwick's prompts stream in, each with a stock answer for "Suggest",
   // plus finals for three-line duels; drop the duds, save as a new pack.
   let { onsaved, onback }: { onsaved: (id: string) => void; onback: () => void } = $props();
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Ask the wizard', tip: 'Fizzwick writes prompts on a theme you pick' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes prompts on a theme you pick' }];
   let mode = $state<'paste' | 'claude'>(hasKey() ? 'claude' : 'paste');
   let name = $state('');
   let theme = $state('');
@@ -110,8 +110,8 @@
       </div>
       <Stepper label="How many prompts" bind:value={count} min={MAKE_RANGE.min} max={MAKE_RANGE.max} step={MAKE_RANGE.step} />
       <WizardEffort />
-      <p class="faint small">Each prompt comes with a stock answer for “Give me one”, plus a few finals for three-line duels. You keep the good ones.</p>
-      <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make {count} prompts</Button>
+      <p class="faint small">Each prompt comes with a stock answer for “Suggest”, plus a few finals for three-line duels. You keep the good ones.</p>
+      <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make {count}</Button>
     </form>
   {:else}
     <label class="field">

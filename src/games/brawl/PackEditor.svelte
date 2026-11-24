@@ -9,4 +9,4 @@
 </script>
 
 <ListPackEditor game="brawl" {id} specs={BRAWL_LISTS} store={customBrawl} packs={brawlPacks} wizard={WIZARD} moreRange={MORE_RANGE}
-  steerHint="e.g. more about work, sillier" addLabel="+ Add a title" {onback} />
+  steerHint="e.g. more about work, sillier" addLabel="+ Title" {onback} />

@@ -33,7 +33,7 @@
   let controller: AbortController | null = null;
   onDestroy(() => controller?.abort());
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Ask the wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
   // svelte-ignore state_referenced_locally
   let mode = $state<'paste' | 'claude'>(hasKey() || initial.length ? 'claude' : 'paste');
   let pasteText = $state('');
@@ -152,11 +152,11 @@
 </script>
 
 {#snippet savedActions()}
-  <Button size="lg" onclick={() => savedPack && onuse(savedPack.id)} tip="Back to setup, with this pack picked">Use it now</Button>
+  <Button size="lg" onclick={() => savedPack && onuse(savedPack.id)} tip="Back to setup, with this pack picked">Use now</Button>
   {#if hasKey()}
-    <Button variant="secondary" onclick={moreLikeSaved} tip="Fizzwick writes more cards to add to this pack">More like these</Button>
+    <Button variant="secondary" onclick={moreLikeSaved} tip="Fizzwick writes more cards to add to this pack">More</Button>
   {:else}
-    <Button variant="secondary" onclick={pasteMore} tip="Add another list of cards to this pack">Paste more cards</Button>
+    <Button variant="secondary" onclick={pasteMore} tip="Add another list of cards to this pack">Paste more</Button>
   {/if}
 {/snippet}
 
@@ -177,7 +177,7 @@
         <input type="text" maxlength="80" placeholder="e.g. 90s cartoons, our office, wine" bind:value={theme} enterkeyhint="go" />
       </label>
       <WizardEffort />
-      <Button type="submit" size="lg" tip="Fizzwick writes them; you choose which to keep">Make 20 cards</Button>
+      <Button type="submit" size="lg" tip="Fizzwick writes them; you choose which to keep">Make 20</Button>
     </form>
     <div class="chips" aria-label="Quick themes">
       {#each THEME_CHIPS as c (c)}
@@ -211,14 +211,14 @@
         <span class="lbl">New pack name</span>
         <input type="text" maxlength="40" bind:value={packName} />
       </label>
-      <Button size="lg" onclick={saveNew}>Save as a new pack</Button>
+      <Button size="lg" onclick={saveNew}>New pack</Button>
       {#if mine.length}
         <p class="faint or">or add them to one of yours</p>
         {#each mine as p (p.id)}
-          <Button variant="secondary" onclick={() => addTo(p)}>Add to {p.name} ({p.cards.length})</Button>
+          <Button variant="secondary" onclick={() => addTo(p)}>+ {p.name}</Button>
         {/each}
       {/if}
-      <Button variant="ghost" onclick={() => (step = 'review')}>Back to the cards</Button>
+      <Button variant="ghost" onclick={() => (step = 'review')}>Back</Button>
     </div>
   {:else if step === 'saved' && savedPack}
     <div class="saved pop-in">

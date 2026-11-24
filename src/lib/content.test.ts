@@ -246,7 +246,7 @@ describe('Snark Tank packs', () => {
     expect(packs.slice(0, 2).map((p) => p.id)).toEqual(['classic', 'after-dark']);
     expect(problems).toEqual([]);
   });
-  // Optional extras: stock answers for "Give me one" and finals for three-line duels. Shapes
+  // Optional extras: stock answers for "Suggest" and finals for three-line duels. Shapes
   // only; a pack need not have one for every prompt.
   it('stock answers belong to their pack\'s prompts; finals are new prompts with three house lines', () => {
     const problems: string[] = [];

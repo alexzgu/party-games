@@ -133,7 +133,7 @@
     {#if !answering}
       <div class="actions"><Button size="lg" onclick={onanswer}>Show answer</Button></div>
     {:else if !alone}
-      <div class="actions"><Button variant="secondary" onclick={() => settled() && onaward(-1)}>Nobody got it</Button></div>
+      <div class="actions"><Button variant="secondary" onclick={() => settled() && onaward(-1)}>Nobody</Button></div>
     {/if}
   </div>
 </div>

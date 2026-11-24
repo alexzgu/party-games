@@ -123,12 +123,12 @@
         {#if v.phase === 'judge' && judging && !done}
           <h2>Pick the funniest</h2>
           <p class="muted">Tap one to show it big on the host screen and read it out. Then pick.</p>
-          <PhonePick prompt={v.prompt} answers={v.answers} selected={v.spotlight} confirm="Pick this one" disabled={v.paused}
+          <PhonePick prompt={v.prompt} answers={v.answers} selected={v.spotlight} confirm="Pick" disabled={v.paused}
             onselect={(i) => send({ t: 'spot', at, i })} onconfirm={(i) => send({ t: 'pick', at, i })} />
         {:else if v.phase === 'vote' && v.canVote && !v.hasVoted && !done}
           <h2>Vote for the funniest</h2>
           <p class="muted">The judge isn’t here, so everyone who played votes. Not for your own.</p>
-          <PhonePick prompt={v.prompt} answers={v.answers} mine={v.mine} confirm="Vote for this one" disabled={v.paused}
+          <PhonePick prompt={v.prompt} answers={v.answers} mine={v.mine} confirm="Vote" disabled={v.paused}
             onconfirm={(i) => send({ t: 'vote', at, i })} />
         {:else}
           <h2>{v.phase === 'vote' ? `Voting · ${v.progress?.length ?? 0} voted` : done ? 'Picked' : `${name(v.judge ?? '')} is judging`}</h2>

@@ -39,7 +39,7 @@
   const players = Math.max(MIN_PLAYERS, host.game ? active(host.game).length : 0);
   const cards = $derived(roomCards(packs, selected, players));
   /** Why the room cannot start with these packs, or ''. */
-  const missing = $derived(!selected.length ? 'Pick at least one pack' : cards.problem);
+  const missing = $derived(!selected.length ? 'Pick packs' : cards.problem);
   const summary = $derived([seconds ? `${seconds} s to answer` : 'No time limit', `${target} points to win`,
     ...(trade ? ['trading'] : []), ...(house ? ['house player'] : []), ...(blanks ? ['blank cards'] : [])].join(' · '));
 </script>
@@ -63,7 +63,7 @@
         <Segmented label="Points to win" bind:value={target} options={TARGETS.map((v) => ({ value: v as number, label: `${v}` }))} />
       </div>
       <h3>House rules</h3>
-      <Toggle bind:checked={trade} label="Trade a point" hint="Give up a point to swap any of your cards for new ones, outside judging." />
+      <Toggle bind:checked={trade} label="Trade point" hint="Give up a point to swap any of your cards for new ones, outside judging." />
       <Toggle bind:checked={house} label="House player" hint="Each round the house plays random cards from the deck, as many as the prompt takes. If the house reaches the target, everyone loses." />
       <Toggle bind:checked={blanks} label="Blank cards" hint="About one card in twenty is blank: write your own answer when you play it." />
     </RulesCard>

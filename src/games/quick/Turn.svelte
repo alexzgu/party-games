@@ -100,7 +100,7 @@
     {#if judging}
       <JudgeButtons name={who.name} {onjudge} />
     {:else}
-      <Button size="lg" onclick={() => onjudge(true)} tip="Stops the clock and scores the point">✓ Got all 3</Button>
+      <Button size="lg" onclick={() => onjudge(true)} tip="Stops the clock and scores the point">✓ All 3</Button>
     {/if}
   </div>
 </div>
@@ -110,8 +110,8 @@
     <p class="ptitle">Paused</p>
     <p class="muted">{who.name} had {Math.ceil(left / 1000)} {Math.ceil(left / 1000) === 1 ? 'second' : 'seconds'} left on “{game.prompt}”.</p>
     <div class="pactions">
-      <Button size="lg" onclick={resume}>Resume the clock</Button>
-      <Button variant="ghost" onclick={onleave}>Back to setup (game is saved)</Button>
+      <Button size="lg" onclick={resume}>Resume</Button>
+      <Button variant="ghost" onclick={onleave} tip="The game is saved so you can come back to it">Setup</Button>
     </div>
   </div>
 {/if}

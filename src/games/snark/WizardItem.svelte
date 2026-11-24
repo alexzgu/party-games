@@ -13,7 +13,7 @@
     <span class="sub">House: {i.house.join(' · ')}</span>
   {:else if 'safety' in i}
     <span class="q">{i.prompt}</span>
-    <span class="sub">Give me one: {i.safety}</span>
+    <span class="sub">Suggest: {i.safety}</span>
   {/if}
 </span>
 

@@ -77,7 +77,7 @@
   {/if}
 
   {#snippet actions()}
-    <Button size="lg" onclick={onagain}>Next player · Play again</Button>
+    <Button size="lg" onclick={onagain}>Next player</Button>
     <div class="row2">
       <Button variant="secondary" onclick={ondecks}>Change packs</Button>
       <Button variant="ghost" onclick={onhome}>Home</Button>

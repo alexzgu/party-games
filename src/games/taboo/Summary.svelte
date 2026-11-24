@@ -76,7 +76,7 @@
   </div>
 
   {#snippet actions()}
-    <Button size="lg" onclick={ondone}>{ends ? 'See who won' : 'Done · see the scores'}</Button>
+    <Button size="lg" onclick={ondone}>{ends ? 'Winner' : 'Scores'}</Button>
   {/snippet}
 </Screen>
 

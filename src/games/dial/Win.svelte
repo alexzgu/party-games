@@ -41,7 +41,7 @@
   <p class="faint pop-in" style:animation-delay="560ms">{game.roundNo} rounds · first to {game.goal}</p>
   <div class="actions pop-in" style:animation-delay="680ms">
     <Button size="lg" onclick={onrematch} tip="Same teams and packs, scores back to zero">Rematch</Button>
-    <Button variant="secondary" onclick={onsetup}>Change teams or packs</Button>
+    <Button variant="secondary" onclick={onsetup}>Setup</Button>
     <Button variant="ghost" onclick={onhome}>Home</Button>
   </div>
 </div>

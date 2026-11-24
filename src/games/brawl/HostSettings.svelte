@@ -47,7 +47,7 @@
         <span class="hint">For each of the two drawing passes in a round.</span>
       </div>
     </RulesCard>
-    <Button size="lg" onclick={onback} disabled={!selected.length}>{selected.length ? 'Done' : 'Pick at least one pack'}</Button>
+    <Button size="lg" onclick={onback} disabled={!selected.length}>{selected.length ? 'Done' : 'Pick packs'}</Button>
   {/snippet}
 </Screen>
 

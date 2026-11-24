@@ -32,7 +32,7 @@ export type Screen =
   | { k: 'late'; writers?: Tick[] }
   /**
    * Prompts still to answer; empty when this player is done, and then `writers` says who is still
-   * writing. `safety`: the prompt's stock answer for "Give me one". `lines`: a three-line duel.
+   * writing. `safety`: the prompt's stock answer for "Suggest". `lines`: a three-line duel.
    */
   | { k: 'write'; tasks: { i: number; prompt: string; safety?: string }[]; total: number; writers?: Tick[]; lines?: boolean }
   /** A three-line duel's lines appearing one at a time before its vote (every phone, nobody busy). */

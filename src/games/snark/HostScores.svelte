@@ -31,7 +31,7 @@
   </ol>
   <div class="next">
     <p class="muted">Next: {nextName}{left !== null ? ` · in ${secs(left)} s` : ''}</p>
-    <div class="go"><Button size="lg" onclick={onnext}>Start {roundName(next, game.settings.rounds).toLowerCase()}</Button></div>
+    <div class="go"><Button size="lg" onclick={onnext}>Start</Button></div>
   </div>
 </div>
 

@@ -37,7 +37,7 @@
     <Button type="submit" size="lg" guardMs={0}>{prompt ? 'Save prompt' : 'Add prompt'}</Button>
     {#if ondelete}
       <Button variant={deleting ? 'danger' : 'ghost'} guardMs={0} onclick={() => (deleting ? ondelete() : (deleting = true))}>
-        {deleting ? 'Tap again to delete this prompt' : 'Delete prompt'}
+        {deleting ? 'Really delete?' : 'Delete prompt'}
       </Button>
     {/if}
   </form>

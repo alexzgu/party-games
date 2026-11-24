@@ -210,7 +210,7 @@
       <Button variant="secondary" onclick={() => (confirm = 'restore')} tip="Undoes your changes and brings back the original pack">↺ Restore original</Button>
     {:else if pack && !builtin}
       <Button size="lg" onclick={() => (adding = true)} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>
-      <Button variant="danger" onclick={() => (confirm = 'delete')}>Delete this pack</Button>
+      <Button variant="danger" onclick={() => (confirm = 'delete')}>Delete pack</Button>
     {/if}
   {/snippet}
 </Screen>
@@ -221,7 +221,7 @@
     <p class="muted">Your changes to this pack on this phone will be lost. It goes back to the {customSpectra.original(id)?.cards.length} cards it came with.</p>
     <div class="confirm">
       <Button onclick={restore}>Restore original</Button>
-      <Button variant="ghost" onclick={() => (confirm = null)}>Keep my changes</Button>
+      <Button variant="ghost" onclick={() => (confirm = null)}>Keep changes</Button>
     </div>
   </Popup>
 {:else if confirm === 'delete'}

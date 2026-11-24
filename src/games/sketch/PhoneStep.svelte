@@ -58,7 +58,7 @@
 {#if task.kind === 'write'}
   <p>Write something for the next player to draw: a scene, a saying, anything.</p>
   {@render send('Your line')}
-  <Button variant="secondary" disabled={off} onclick={idea} tip="Fills in an idea from the packs, replacing your line">Give me an idea</Button>
+  <Button variant="secondary" disabled={off} onclick={idea} tip="Fills in an idea from the packs, replacing your line">Suggest</Button>
 {:else if task.kind === 'draw'}
   <p class="handed">Draw this: <b>{task.line}</b></p>
   <div class="pad" style:--draw-chrome="390px">

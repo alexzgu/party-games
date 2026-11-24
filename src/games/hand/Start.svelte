@@ -29,8 +29,8 @@
     {:else if rejoin}
       <RoomBanner title="You're in room {rejoin.code}" detail="as {rejoin.name}" action="Rejoin" label="Rejoin room {rejoin.code} as {rejoin.name}" onclick={() => go(`/hand/join?code=${rejoin.code}`)} tip="Takes you back into that room under your name" />
     {/if}
-    <Button size="lg" onclick={hostHere} tip={openRoom ? 'Goes back to the room open on this device' : 'Opens a room here and shows its code for phones to join'}>{openRoom ? `Host on this screen: room ${openRoom.code}` : 'Host on this screen'}</Button>
-    <Button size="lg" variant="secondary" onclick={() => go('/hand/join')} tip="Type in a room code to play on this device">Join a game</Button>
+    <Button size="lg" onclick={hostHere} tip={openRoom ? 'Goes back to the room open on this device' : 'Opens a room here and shows its code for phones to join'}>{openRoom ? `Room ${openRoom.code}` : 'Host'}</Button>
+    <Button size="lg" variant="secondary" onclick={() => go('/hand/join')} tip="Type in a room code to play on this device">Join</Button>
     <p class="muted">3 to 10 players, each on their own phone, and a screen everyone can see.</p>
     <ConnectionLink />
   </div>

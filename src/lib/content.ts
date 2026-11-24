@@ -195,7 +195,7 @@ export const quickPacks = (): QuickPack[] => merged(customQuick.saved(), builtin
 export interface SnarkFinal { prompt: string; house: [string, string, string] }
 export interface SnarkPack extends PackMeta {
   id: string; name: string; blurb: string; prompts: string[];
-  /** Prompt → a stock answer for "Give me one" (sent untouched, it earns half points). */
+  /** Prompt → a stock answer for "Suggest" (sent untouched, it earns half points). */
   safety?: Record<string, string>;
   /** Finals for three-line duels. */
   finals?: SnarkFinal[];

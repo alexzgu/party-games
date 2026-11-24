@@ -113,7 +113,7 @@
         <input type="text" placeholder={steerHint} bind:value={steer} maxlength="120" autocomplete="off" enterkeyhint="go" />
       </label>
       <WizardEffort />
-      <Button type="submit" size="lg" tip="Fizzwick writes them; you choose which to keep">{cta || `✨ Conjure ${count} more ${noun}`}</Button>
+      <Button type="submit" size="lg" tip="Fizzwick writes them; you choose which to keep">{cta || `✨ ${count} more`}</Button>
     </form>
   {:else}
     {#if error}

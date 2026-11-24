@@ -152,7 +152,7 @@
           {#if edited}
             <p><b>Edited</b> on this phone. Your changes replace the original everywhere.</p>
             <Button size="sm" variant={confirmRestore ? 'danger' : 'secondary'} onclick={restore} tip="Undoes your changes and brings back the original pack">
-              {confirmRestore ? 'Tap again to undo all changes' : 'Restore original'}
+              {confirmRestore ? 'Really undo?' : 'Restore original'}
             </Button>
           {:else}
             <p>Comes with the game. Any change you make saves as your own version; you can restore the original later.</p>
@@ -178,7 +178,7 @@
 
       {#if deck.id}<PackActions game="forehead" pack={deck} onshared={() => (deck.shared = true)} />{/if}
       {#if deck.id && !builtin}
-        <Button variant={confirmDelete ? 'danger' : 'ghost'} onclick={remove}>{confirmDelete ? 'Tap again to delete this pack' : 'Delete pack'}</Button>
+        <Button variant={confirmDelete ? 'danger' : 'ghost'} onclick={remove}>{confirmDelete ? 'Really delete?' : 'Delete pack'}</Button>
       {/if}
     {/snippet}
     <!-- Typing words in is this page's main job: the box stays pinned, never folded away. -->

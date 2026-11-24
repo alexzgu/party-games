@@ -70,7 +70,7 @@
   {#if !standalone}
     <div class="install">
       <button class="install-btn" onclick={() => (showInstall = !showInstall)} aria-expanded={showInstall} data-tip="Shows how to install the app on this device">
-        📲 Add to home screen for full-screen play
+        📲 Install app
       </button>
       {#if showInstall}
         <p class="how fade-in">

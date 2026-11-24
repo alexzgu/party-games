@@ -9,8 +9,8 @@
   let backup = $state(brokerSetting());
 </script>
 
-<button class="conn" class:backup onclick={() => (open = true)} data-tip={backup ? 'Change the server, or go back to the usual service' : 'See how phones connect, or use a backup server'}>
-  {backup ? `Using a backup server (${brokerLabel()}) · Change` : 'Trouble connecting?'}
+<button class="conn" class:backup onclick={() => (open = true)} data-tip={backup ? `Using ${brokerLabel()}. Change the server, or go back to the usual service` : 'See how phones connect, or use a backup server'}>
+  {backup ? 'Backup server' : 'Trouble connecting?'}
 </button>
 {#if open}
   <Connection onclose={() => { open = false; backup = brokerSetting(); }} onchange={() => { backup = brokerSetting(); onchange?.(); }} />

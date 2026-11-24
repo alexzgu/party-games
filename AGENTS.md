@@ -136,8 +136,7 @@ Two optional fields (write both for a new pack unless asked not to; the game wor
 "finals": [{"prompt": "Three things you should never say to your RA", "house": ["I live here now", "Smell that?", "Define fire hazard"]}]
 ```
 
-- `safety`: a stock answer per prompt, keyed by the prompt exactly as written; players tap "Give
-  me one" when stuck (half points if sent as is). Decent and mildly funny, never the best answer
+- `safety`: a stock answer per prompt, keyed by the prompt exactly as written; players tap "Suggest" when stuck (half points if sent as is). Decent and mildly funny, never the best answer
   in the room; 1–8 words, sentence case, no end punctuation (80 characters at most).
 - `finals`: prompts for the three-line duel final, each asking for three things ("Three …"),
   3–14 words, new across *all* Snark packs (the list shows existing finals) and never one of the

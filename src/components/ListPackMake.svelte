@@ -56,7 +56,7 @@
     onback: () => void;
   } = $props();
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Ask the wizard', tip: 'Fizzwick writes a pack on a theme you pick' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes a pack on a theme you pick' }];
   let mode = $state<'paste' | 'claude'>(hasKey() ? 'claude' : 'paste');
   let name = $state('');
   let theme = $state('');
@@ -165,7 +165,7 @@
       <Stepper label="How many {specs[0].many}" bind:value={count} min={range.min} max={range.max} step={range.step} />
       <WizardEffort />
       <p class="faint small">Fizzwick writes {lists}. You keep the good ones.</p>
-      <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes it; you choose what to keep">✨ Make the pack</Button>
+      <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes it; you choose what to keep">✨ Make pack</Button>
     </form>
   {:else}
     <label class="field">

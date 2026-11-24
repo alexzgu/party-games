@@ -272,7 +272,7 @@
 
   {#snippet actions()}
     {#if board && fresh}
-      <Button size="lg" onclick={saveNew} tip={gaps.length ? 'Keeps it with its gaps; playable once every tile is filled' : 'Saves it and picks it for your next game'}>{gaps.length ? 'Save as a draft' : 'Save pack'}</Button>
+      <Button size="lg" onclick={saveNew} tip={gaps.length ? 'Keeps it with its gaps; playable once every tile is filled' : 'Saves it and picks it for your next game'}>{gaps.length ? 'Save draft' : 'Save pack'}</Button>
     {:else}
       {#if shapes.length}<Button size="lg" variant="secondary" onclick={openMore} tip="Fizzwick writes a new category or harder clues; you choose">🧙 Add more</Button>{/if}
       <Button size="lg" onclick={onback}>Done</Button>
@@ -286,7 +286,7 @@
     <div class="confirm">
       <p>“{customQuiz.original(id ?? '')?.name}” goes back to the clues that came with the app. Your changes to it are lost.</p>
       <Button variant="danger" onclick={restore}>Restore original</Button>
-      <Button variant="secondary" onclick={() => (confirm = '')}>Keep my changes</Button>
+      <Button variant="secondary" onclick={() => (confirm = '')}>Keep changes</Button>
     </div>
   </Popup>
 {:else if board && confirm === 'delete'}
@@ -301,8 +301,8 @@
   <Popup title="Save this pack?" onclose={() => (confirm = '')}>
     <div class="confirm">
       <p>“{board.name}” is not saved yet.</p>
-      <Button onclick={saveNew} tip={gaps.length ? 'Keeps it with its gaps; playable once every tile is filled' : 'Saves it and picks it for your next game'}>{gaps.length ? 'Save as a draft' : 'Save pack'}</Button>
-      <Button variant="danger" onclick={discard} tip="Deletes this unsaved pack for good">Throw it away</Button>
+      <Button onclick={saveNew} tip={gaps.length ? 'Keeps it with its gaps; playable once every tile is filled' : 'Saves it and picks it for your next game'}>{gaps.length ? 'Save draft' : 'Save pack'}</Button>
+      <Button variant="danger" onclick={discard} tip="Deletes this unsaved pack for good">Discard</Button>
       <Button variant="ghost" onclick={() => (confirm = '')}>Keep editing</Button>
     </div>
   </Popup>

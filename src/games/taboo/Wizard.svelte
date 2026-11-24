@@ -73,7 +73,7 @@
     <Stepper label="How many cards" bind:value={count} min={MAKE_RANGE.min} max={MAKE_RANGE.max} step={MAKE_RANGE.step} />
     <WizardEffort />
     <p class="faint small">Each card comes with its five banned words. You keep the good ones.</p>
-    <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make {count} cards</Button>
+    <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make {count}</Button>
   </form>
 {:else}
   <label class="name">

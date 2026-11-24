@@ -66,7 +66,7 @@
   const gaps = $derived(board ? emptyTiles(board).length : 0);
   // A game saved when 20 teams were allowed must come down to the limit before it can go on.
   const extra = $derived(names.length - MAX_TEAMS);
-  const blocked = $derived(names.length < fewest ? 'Add a team' : extra > 0 ? `Remove ${extra} ${extra === 1 ? 'team' : 'teams'}` : !board ? 'Pick a pack' : gaps ? `Fill ${gaps} empty ${gaps === 1 ? 'tile' : 'tiles'} first` : '');
+  const blocked = $derived(names.length < fewest ? 'Add team' : extra > 0 ? extra === 1 ? 'Remove team' : 'Remove teams' : !board ? 'Pick pack' : gaps ? 'Fill tiles' : '');
 
   // With a game saved, starting over takes a second tap so nobody wipes the scores by accident.
   let confirming = $state(false);
@@ -113,7 +113,7 @@
       {#if board && gaps}
         <div class="gaps" role="status">
           <p><b>{board.name}</b> is a draft with {gaps === 1 ? 'one empty tile' : `${gaps} empty tiles`}: {describeEmpty(board, rowValues(rows, scale === 'x2'))}.</p>
-          <Button variant="secondary" size="sm" onclick={() => onedit(board.id, emptyTiles(board)[0]?.category)} tip="Opens the pack at the first category with a gap">{gaps === 1 ? 'Fill it in' : 'Fill them in'}</Button>
+          <Button variant="secondary" size="sm" onclick={() => onedit(board.id, emptyTiles(board)[0]?.category)} tip="Opens the pack at the first category with a gap">{gaps === 1 ? 'Fill in' : 'Fill in'}</Button>
         </div>
       {/if}
     {/snippet}
@@ -131,10 +131,10 @@
     {#if inProgress}
       <Button size="lg" onclick={() => { unlockAudio(); keepRoster(); onresume(); }} tip="Carries on with the game saved on this device">Resume game</Button>
       <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!blocked} tip={blocked ? undefined : 'Ends the saved game; asks for a second tap first'}>
-        {blocked || (confirming ? 'Tap again to end it and start over' : 'Start a new game')}
+        {blocked || (confirming ? 'Really restart?' : 'New game')}
       </Button>
     {:else}
-      <Button size="lg" onclick={start} disabled={!!blocked}>{blocked || (names.length === 1 ? 'Start solo game' : 'Start game')}</Button>
+      <Button size="lg" onclick={start} disabled={!!blocked}>{blocked || (names.length === 1 ? 'Start solo' : 'Start game')}</Button>
     {/if}
   {/snippet}
 </Screen>

@@ -75,7 +75,7 @@
   <p class="status pop-in" style:animation-delay="200ms">{status}</p>
   <div class="go">
     <Button size="lg" onclick={onnext}>Next: {game.names[next]}</Button>
-    <Button variant="ghost" onclick={onfix} tip="Back to that turn's cards to change how they were marked">Fix {game.names[last.team]}'s cards</Button>
+    <Button variant="ghost" onclick={onfix} tip="Back to that turn's cards to change how they were marked">Fix cards</Button>
   </div>
 </div>
 

@@ -149,7 +149,7 @@
     </div>
 
     <div class="row">
-      <Button variant="secondary" onclick={onnobody} tip="Shows the answer; nobody scores">Nobody got it</Button>
+      <Button variant="secondary" onclick={onnobody} tip="Shows the answer; nobody scores">Nobody</Button>
       <Button variant="ghost" onclick={onskip} tip="Swaps this card for a new one; nobody scores">↻ Skip card</Button>
     </div>
   </div>
@@ -161,8 +161,8 @@
     <p class="muted">{reader.name} was reading. Only {reader.name} should see the next screen.</p>
     <div class="pactions">
       <Button size="lg" onclick={resume}>Resume</Button>
-      <Button variant="secondary" onclick={() => { paused = false; onskip(); }} tip="Swaps this card for a new one; nobody scores">Skip this card</Button>
-      <Button variant="ghost" onclick={onleave}>Back to setup (game is saved)</Button>
+      <Button variant="secondary" onclick={() => { paused = false; onskip(); }} tip="Swaps this card for a new one; nobody scores">Skip</Button>
+      <Button variant="ghost" onclick={onleave} tip="The game is saved so you can come back to it">Setup</Button>
     </div>
   </div>
 {/if}

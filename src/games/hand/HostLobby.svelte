@@ -23,7 +23,7 @@
   const cards = $derived(content(s.packs, v.players.length));
   const rules = $derived([
     `First to ${s.target}`, s.seconds ? `${s.seconds} s to answer` : 'No time limit',
-    ...(s.trade ? ['Trade a point'] : []), ...(s.house ? ['House player'] : []), ...(s.blanks ? ['Blank cards'] : []),
+    ...(s.trade ? ['Trade point'] : []), ...(s.house ? ['House player'] : []), ...(s.blanks ? ['Blank cards'] : []),
   ].join(' · '));
   const need = $derived(Math.max(0, MIN_PLAYERS - v.players.length));
   const noCards = $derived(!!cards.problem);

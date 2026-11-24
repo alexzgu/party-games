@@ -18,7 +18,7 @@
     {/if}
   </div>
   {#snippet actions()}
-    <Button size="lg" onclick={ondone}>To the main menu</Button>
+    <Button size="lg" onclick={ondone}>Main menu</Button>
   {/snippet}
 </Screen>
 

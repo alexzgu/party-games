@@ -71,7 +71,7 @@
       <Stepper label="Points to win" bind:value={cfg.goal} min={5} max={30} />
       <Toggle label="Steal rule" hint="After each guess, the other team calls left or right of the needle for 1 point" bind:checked={cfg.steal} />
     </RulesCard>
-    <Button size="lg" disabled={cardCount === 0} onclick={start}>{cardCount === 0 ? 'Pick at least one pack' : 'Start game'}</Button>
+    <Button size="lg" disabled={cardCount === 0} onclick={start}>{cardCount === 0 ? 'Pick packs' : 'Start game'}</Button>
   {/snippet}
 </Screen>
 

@@ -50,7 +50,7 @@
     wizard: ListWizard;
     moreRange: { start: number; min: number; max: number; step: number };
     steerHint: string;
-    /** The add button's words ("+ Add a card"). */
+    /** The add button's words ("+ Card"). */
     addLabel: string;
     /** What the items of every list are called together ("cards"), for the header's total. */
     totalNoun?: string;
@@ -284,7 +284,7 @@
     <div class="form">
       <p>“{store.original(id)?.name}” goes back to the {specs.map((s) => s.many).join(' and ')} that came with the app. Your changes to it are lost.</p>
       <Button variant="danger" onclick={restore}>Restore original</Button>
-      <Button variant="secondary" onclick={() => (confirm = '')}>Keep my changes</Button>
+      <Button variant="secondary" onclick={() => (confirm = '')}>Keep changes</Button>
     </div>
   </Popup>
 {:else if pack && confirm === 'delete'}

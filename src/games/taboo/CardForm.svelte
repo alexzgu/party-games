@@ -51,7 +51,7 @@
   <div class="buttons">
     <Button type="submit" variant={card ? 'primary' : 'secondary'} size={card ? 'sm' : 'md'} disabled={!filled}>{submit}</Button>
     {#if oncancel}<Button variant="ghost" size="sm" onclick={oncancel}>Cancel</Button>{/if}
-    {#if ondelete}<span class="grow"></span><Button variant="danger" size="sm" onclick={() => (sure ? ondelete() : (sure = true))}>{sure ? 'Tap again to delete' : 'Delete'}</Button>{/if}
+    {#if ondelete}<span class="grow"></span><Button variant="danger" size="sm" onclick={() => (sure ? ondelete() : (sure = true))}>{sure ? 'Really delete?' : 'Delete'}</Button>{/if}
   </div>
 </form>
 

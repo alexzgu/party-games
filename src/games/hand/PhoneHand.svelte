@@ -85,15 +85,15 @@
 </ul>
 {#if prompt || canTrade || trading}<div class="bar">
   {#if trading}
-    <Button disabled={!swap.length || locked} onclick={trade} tip={swap.length ? 'Gives up a point and deals you new cards' : undefined}>{swap.length ? `Swap ${swap.length} for 1 point` : 'Pick cards to swap'}</Button>
+    <Button disabled={!swap.length || locked} onclick={trade} tip={swap.length ? 'Gives up a point and deals you new cards' : undefined}>{swap.length ? `Swap ${swap.length}` : 'Pick cards'}</Button>
     <Button variant="secondary" onclick={() => { trading = false; swap = []; }}>Cancel</Button>
   {:else}
     {#if prompt}
       <Button disabled={!ready || locked} onclick={play}>
-        {ready ? (picks === 2 ? 'Play these two' : 'Play') : chosen.length < picks ? (picks === 2 ? `Pick ${picks - chosen.length} more` : 'Pick a card') : 'Write your answer'}
+        {ready ? (picks === 2 ? 'Play both' : 'Play') : chosen.length < picks ? (picks === 2 ? `${picks - chosen.length} more` : 'Pick card') : 'Write answer'}
       </Button>
     {/if}
-    {#if canTrade}<Button variant="secondary" disabled={locked} onclick={() => { trading = true; chosen = []; }} tip="Give up a point to swap cards for new ones">{swapping ? 'Swapping…' : 'Trade a point'}</Button>{/if}
+    {#if canTrade}<Button variant="secondary" disabled={locked} onclick={() => { trading = true; chosen = []; }} tip="Give up a point to swap cards for new ones">{swapping ? 'Swapping…' : 'Trade point'}</Button>{/if}
   {/if}
 </div>{/if}
 

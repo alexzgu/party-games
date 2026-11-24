@@ -137,7 +137,7 @@
   }
 
   /** A new pack: typed card by card, or asked of the wizard. */
-  const MODES = [{ value: 'write' as const, label: 'Write my own', tip: 'Type or paste your own cards' }, { value: 'claude' as const, label: '🧙 Ask the wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
+  const MODES = [{ value: 'write' as const, label: 'Write', tip: 'Type or paste your own cards' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
   let mode = $state<'write' | 'claude'>(hasKey() ? 'claude' : 'write');
   /** The wizard's cards are on screen for review: the mode switch is hidden. */
   let reviewing = $state(false);
@@ -201,12 +201,12 @@
           <div class="add">
             <div class="add-head">
               <h3>{pasting ? 'Paste many' : 'Add a card'}</h3>
-              <button class="link" onclick={() => { pasting = !pasting; pasteNote = ''; pasteBad = []; }} data-tip={pasting ? 'Type in one card at a time' : 'Add a whole list of cards at once'}>{pasting ? 'One at a time' : 'Paste many'}</button>
+              <button class="link" onclick={() => { pasting = !pasting; pasteNote = ''; pasteBad = []; }} data-tip={pasting ? 'Type in one card at a time' : 'Add a whole list of cards at once'}>{pasting ? 'Type one' : 'Paste many'}</button>
             </div>
             {#if pasting}
               <p class="faint hint">One card per line: the word, a colon, then its five banned words split by commas. For example <i>Pizza: Cheese, Slice, Pepperoni, Italian, Delivery</i></p>
               <textarea rows="5" bind:value={pasteText} aria-label="Cards to paste, one per line" placeholder="Pizza: Cheese, Slice, Pepperoni, Italian, Delivery"></textarea>
-              <Button variant="secondary" disabled={!pasteText.trim()} onclick={addPasted}>Add these cards</Button>
+              <Button variant="secondary" disabled={!pasteText.trim()} onclick={addPasted}>Add cards</Button>
             {:else}
               <CardForm submit="+ Add card" onsave={add} focusId="add-word" />
             {/if}
@@ -246,9 +246,9 @@
 
       <!-- At the end of the cards, not pinned: neither is the page's main action. -->
       {#if builtin && edited}
-        <div class="end"><Button variant="secondary" onclick={() => (confirm = 'restore')} tip="Undoes your changes and brings back the original pack">↺ Restore the original cards</Button></div>
+        <div class="end"><Button variant="secondary" onclick={() => (confirm = 'restore')} tip="Undoes your changes and brings back the original pack">↺ Restore</Button></div>
       {:else if pack.id && !builtin}
-        <div class="end"><Button variant="danger" onclick={() => (confirm = 'delete')}>Delete this pack</Button></div>
+        <div class="end"><Button variant="danger" onclick={() => (confirm = 'delete')}>Delete pack</Button></div>
       {/if}
     </PinnedPanel>
   {/if}
@@ -260,7 +260,7 @@
     <p class="muted">Your changes to this pack on this phone will be lost. It goes back to the {customTaboo.original(id ?? '')?.cards.length} cards it came with.</p>
     <div class="confirm">
       <Button onclick={restore}>Restore original</Button>
-      <Button variant="ghost" onclick={() => (confirm = null)}>Keep my changes</Button>
+      <Button variant="ghost" onclick={() => (confirm = null)}>Keep changes</Button>
     </div>
   </Popup>
 {:else if confirm === 'delete'}

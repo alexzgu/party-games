@@ -49,8 +49,8 @@
   const SECONDS = SECONDS_CHOICES.map((s) => ({ value: s as number, label: `${s}s` }));
   const prompts = $derived(packs.filter((p) => selected.includes(p.id)).reduce((n, p) => n + p.prompts.length, 0));
   const missing = $derived(
-    names.length < MIN_PLAYERS ? `Add ${MIN_PLAYERS - names.length} more player${MIN_PLAYERS - names.length > 1 ? 's' : ''}`
-    : prompts === 0 ? 'Pick at least one pack' : '',
+    names.length < MIN_PLAYERS ? 'Add players'
+    : prompts === 0 ? 'Pick packs' : '',
   );
   const inProgress = $derived(saved && saved.phase !== 'win' ? saved : null);
 
@@ -117,7 +117,7 @@
     {#if inProgress}
       <Button size="lg" disabled={names.length < MIN_PLAYERS} onclick={() => { unlockAudio(); keepRoster(); onresume(); }} tip={names.length < MIN_PLAYERS ? undefined : 'Carries on with the game saved on this device'}>{names.length < MIN_PLAYERS ? missing : 'Resume game'}</Button>
       <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!missing} tip={missing ? undefined : 'Ends the saved game; asks for a second tap first'}>
-        {missing || (confirming ? 'Tap again to end it and start over' : 'Start a new game')}
+        {missing || (confirming ? 'Really restart?' : 'New game')}
       </Button>
     {:else}
       <Button size="lg" onclick={start} disabled={!!missing}>{missing || 'Start game'}</Button>

@@ -9,4 +9,4 @@
 </script>
 
 <ListPackEditor game="hand" {id} specs={HAND_LISTS} store={customHand} packs={handPacks} wizard={WIZARD} moreRange={MORE_RANGE}
-  steerHint="e.g. more about work, meaner answers" addLabel="+ Add a card" totalNoun="cards" {onback} />
+  steerHint="e.g. more about work, meaner answers" addLabel="+ Card" totalNoun="cards" {onback} />

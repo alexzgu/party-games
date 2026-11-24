@@ -69,7 +69,7 @@
       {/if}
       <Toggle label="Skips cost a point" hint={cfg.skipCost ? 'Each skip is −1' : 'Skipping is free'} bind:checked={cfg.skipCost} />
     </RulesCard>
-    <Button size="lg" disabled={cardCount === 0} onclick={start}>{cardCount === 0 ? 'Pick at least one pack' : 'Start game'}</Button>
+    <Button size="lg" disabled={cardCount === 0} onclick={start}>{cardCount === 0 ? 'Pick packs' : 'Start game'}</Button>
   {/snippet}
 </Screen>
 

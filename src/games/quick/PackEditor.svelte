@@ -184,7 +184,7 @@
     <div class="confirm">
       <p>“{customQuick.original(id)?.name}” goes back to the prompts that came with the app. Your changes to it are lost.</p>
       <Button variant="danger" onclick={restore}>Restore original</Button>
-      <Button variant="secondary" onclick={() => (confirm = '')}>Keep my changes</Button>
+      <Button variant="secondary" onclick={() => (confirm = '')}>Keep changes</Button>
     </div>
   </Popup>
 {:else if pack && confirm === 'delete'}

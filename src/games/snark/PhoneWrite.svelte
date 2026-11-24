@@ -7,7 +7,7 @@
   import { loadDraft, saveDraft } from './store';
 
   // One prompt at a time: type, Done, next. A sent answer leaves the screen at once (the host
-  // confirms by dropping it from the list); half-typed answers survive a reload. "Give me one"
+  // confirms by dropping it from the list); half-typed answers survive a reload. "Suggest"
   // fills the box with the prompt's stock answer (the host halves its points if sent as is).
   // `code`: the room and which of its games this is. `lines`: the final's three-line duel. Once done: who is still writing.
   let { code, round, tasks, total, final, lines = false, writers, onsend, onlines }: {
@@ -81,7 +81,7 @@
       {#if task.safety && text !== task.safety}
         <div class="stuck">
           <span class="faint">Stuck? Take a stock answer: half points unless you change it.</span>
-          <button type="button" class="give" onclick={() => stock(task.safety!)} data-tip="Fills in a ready answer, replacing yours; half points unless changed">Give me one</button>
+          <button type="button" class="give" onclick={() => stock(task.safety!)} data-tip="Fills in a ready answer, replacing yours; half points unless changed">Suggest</button>
         </div>
       {/if}
       <Button size="lg" type="submit" disabled={!cleanAnswer(text)}>Done</Button>

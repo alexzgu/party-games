@@ -18,7 +18,7 @@ const ANSWERS = [
   'Wet Sock', 'Grandma\'s Purse', 'A second, smaller burrito', 'Your ex\'s phone number',
   'No voice notes over 4 minutes', 'Every typo must be defended', 'Car is just tired', 'It means $1,800',
 ];
-/** A stock answer for each prompt, for "Give me one". */
+/** A stock answer for each prompt, for "Suggest". */
 const STOCKS = ['Plaque to the Future', 'You could water me more', 'Damp Basement', 'A single raisin', 'No replying "k"', 'It wants attention'];
 const FINALS = [
   { prompt: 'Three things you should never say on a first date', house: ['I already named our kids', 'My mom is outside', 'Are you finishing that?'] },

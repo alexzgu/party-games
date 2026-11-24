@@ -60,10 +60,10 @@
   <div class="go">
     {#if outOfCards}
       <p class="err" role="alert">Every card in the chosen packs has been played this game.</p>
-      <Button size="lg" onclick={onreuse} tip="Deals the played cards again and starts the clock">Play those cards again</Button>
+      <Button size="lg" onclick={onreuse} tip="Deals the played cards again and starts the clock">Replay cards</Button>
       <Button variant="secondary" onclick={() => (menu = 'end')} tip="Ends this game for good, after asking">End game</Button>
     {:else}
-      <Button size="lg" onclick={onstart}>Start the clock</Button>
+      <Button size="lg" onclick={onstart}>Start clock</Button>
     {/if}
   </div>
 </div>

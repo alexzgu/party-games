@@ -81,7 +81,7 @@
       </div>
       {#if prefs.input !== 'tap'}
         <Button variant="secondary" onclick={() => go('/forehead/calibrate')} tip="Teaches this phone how you tilt, for reliable scoring">
-          {calibration.th ? 'Calibrate tilt again (new player?)' : 'Calibrate tilt (half a minute)'}
+          {calibration.th ? 'Recalibrate tilt' : 'Calibrate tilt'}
         </Button>
       {/if}
     </RulesCard>

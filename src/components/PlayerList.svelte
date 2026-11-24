@@ -121,7 +121,7 @@
     </ScrollWindow>
   {/if}
   <button class="add" onclick={add} disabled={names.length >= max} data-tip={names.length >= max ? undefined : `Adds another ${noun}; click the name to change it`}>
-    {names.length >= max ? (full ?? `${max} ${nouns} is the most`) : `Add ${noun}`}
+    {names.length >= max ? (full ?? `Max ${max}`) : `Add ${noun}`}
   </button>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
 </section>

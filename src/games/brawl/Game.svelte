@@ -43,8 +43,8 @@
       {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
       <div class="start">
         {#if openRoom}<p class="open" role="status"><b>Room {openRoom.code} is open</b> on this screen{openRoom.phase === 'lobby' ? ', in the lobby' : ', game in progress'}.</p>{/if}
-        <Button size="lg" onclick={() => go('/brawl/host')} label={openRoom ? `Return to room ${openRoom.code}` : undefined} tip={openRoom ? 'Goes back to the room open on this screen' : 'Opens a room here and shows its code for phones to join'}>{openRoom ? 'Return' : 'Host on this screen'}</Button>
-        <Button size="lg" variant="secondary" onclick={() => go('/brawl/join')} tip="Type in a room code to play on this device">Join a game</Button>
+        <Button size="lg" onclick={() => go('/brawl/host')} label={openRoom ? `Return to room ${openRoom.code}` : undefined} tip={openRoom ? 'Goes back to the room open on this screen' : 'Opens a room here and shows its code for phones to join'}>{openRoom ? 'Return' : 'Host'}</Button>
+        <Button size="lg" variant="secondary" onclick={() => go('/brawl/join')} tip="Type in a room code to play on this device">Join</Button>
         <p class="muted">3 to 8 players, each on their own phone.</p>
         <ConnectionLink />
       </div>

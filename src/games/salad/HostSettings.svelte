@@ -61,7 +61,7 @@
   </section>
   <p class="muted">{count} secrets selected</p>
   {#snippet actions()}
-    <Button size="lg" disabled={!selected.length} onclick={done}>{selected.length ? 'Done' : 'Pick at least one pack'}</Button>
+    <Button size="lg" disabled={!selected.length} onclick={done}>{selected.length ? 'Done' : 'Pick packs'}</Button>
   {/snippet}
 </Screen>
 

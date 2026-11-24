@@ -35,7 +35,7 @@
 
   {#snippet actions()}
     <Button size="lg" onclick={onrematch} tip="Same players and packs, scores back to zero">Rematch</Button>
-    <Button variant="secondary" onclick={onnew}>Change players or packs</Button>
+    <Button variant="secondary" onclick={onnew}>Setup</Button>
     <Button variant="ghost" size="sm" onclick={onhome}>Home</Button>
   {/snippet}
 </Screen>

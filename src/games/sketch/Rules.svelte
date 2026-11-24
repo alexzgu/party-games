@@ -5,7 +5,7 @@
 <p>Everyone joins the host's room on their <b>own phone</b>. The host picks the mode in Settings.</p>
 <h4>Telephone</h4>
 <ol>
-  <li>Everyone <b>writes a line</b>: a scene, a saying, anything ("Give me an idea" helps).</li>
+  <li>Everyone <b>writes a line</b>: a scene, a saying, anything ("Suggest" helps).</li>
   <li>Your line goes to someone else, who <b>draws</b> it. Their drawing goes to someone else, who <b>describes</b> it. And so on, one step per player.</li>
   <li>You only ever see the one thing handed to you. A blank turn is filled in by the game.</li>
   <li>At the end the host shows each chain in the <b>album</b>, one entry at a time. No scores, just laughs.</li>

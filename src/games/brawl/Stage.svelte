@@ -48,7 +48,7 @@
         {#if v.side === i}<span class="yours">Yours</span>{/if}
         {@render fighter(f)}
         {#if v.vote && onvote}
-          <Button disabled={v.paused} onclick={() => onvote?.(i as Side)}>Vote for {f?.name}</Button>
+          <Button disabled={v.paused} onclick={() => onvote?.(i as Side)} label={`Vote for ${f?.name}`}>Vote</Button>
         {:else if v.result}
           {#if v.result.winner === i}<b class="winner">Winner</b>{/if}
           <p>{name(v.result.artists[i])} · {votes(v.result.votes[i])} · +{v.result.points[i].toLocaleString()} pts</p>
@@ -66,7 +66,7 @@
   {#if v.phase === 'tag'}
     {#if v.options && ontag}
       <p class="note">Keep your fighter{v.side !== undefined && v.cards?.[v.side] ? ` (${v.cards[v.side]?.name})` : ''}: if it wins, +500 bonus. Or tag in another of your fighters the room has seen.</p>
-      <Button disabled={v.paused} onclick={() => ontag?.('')} tip="Your fighter stays in; 500 extra points if it wins">Keep my fighter</Button>
+      <Button disabled={v.paused} onclick={() => ontag?.('')} tip="Your fighter stays in; 500 extra points if it wins">Keep fighter</Button>
       {#if v.options.length}<h3>Or tag in a fighter</h3>{/if}
       <div class="gallery">
         {#each v.options as f (f.id)}

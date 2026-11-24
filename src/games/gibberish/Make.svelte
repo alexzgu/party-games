@@ -41,7 +41,7 @@
 
   const destPack = $derived(myPacks.find((p) => p.id === dest));
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste a list', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Ask the wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
   // svelte-ignore state_referenced_locally
   let mode = $state<'paste' | 'claude'>(keyed ? 'claude' : 'paste');
   let pasteText = $state('');

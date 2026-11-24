@@ -108,7 +108,7 @@
   {#if leftover && !live}
     <div class="leftover" role="status">
       <p>You were making “{leftover.name}”.</p>
-      <Button variant="secondary" size="sm" onclick={onresume} tip="Opens the unsaved pack you were making">Carry on with it</Button>
+      <Button variant="secondary" size="sm" onclick={onresume} tip="Opens the unsaved pack you were making">Continue</Button>
     </div>
   {/if}
 
@@ -126,7 +126,7 @@
           {#if !keyed}<MagicWords intro={WANTS} />{/if}
           <div class="row">
             {#if keyed}<Button variant="secondary" size="sm" onclick={ask}>Try again</Button>{/if}
-            {#if filled}<Button variant="ghost" size="sm" onclick={() => live && make(live, '', true)} tip="Opens the clues Fizzwick wrote so far in the editor">Open what came</Button>{/if}
+            {#if filled}<Button variant="ghost" size="sm" onclick={() => live && make(live, '', true)} tip="Opens the clues Fizzwick wrote so far in the editor">Open</Button>{/if}
           </div>
         </div>
       {/if}
@@ -141,7 +141,7 @@
         </label>
         {@render size()}
         <p class="faint small">Then type every clue and answer in the editor.</p>
-        <Button size="lg" onclick={() => { make(blankBoard(name, cats, len)); sfx.tap(); }} tip="Opens an empty pack to type the clues into">Make a blank pack</Button>
+        <Button size="lg" onclick={() => { make(blankBoard(name, cats, len)); sfx.tap(); }} tip="Opens an empty pack to type the clues into">Blank pack</Button>
       </div>
     {:else if mode === 'paste'}
       <label class="field"><span>Pack name</span>
@@ -168,13 +168,13 @@
         {@render size()}
         <WizardEffort />
         <p class="faint small">Fizzwick writes {cats * len} clues, easiest row first. You fix anything in the editor before saving.</p>
-        <Button size="lg" onclick={ask} disabled={!topic.trim()} tip="Fizzwick writes it; you can change anything before saving">✨ Make the pack</Button>
+        <Button size="lg" onclick={ask} disabled={!topic.trim()} tip="Fizzwick writes it; you can change anything before saving">✨ Make pack</Button>
       </div>
     {/if}
   {/if}
 
   {#snippet actions()}
-    {#if live && streaming}<Button variant="secondary" onclick={stop} tip={filled ? 'Opens the clues so far in the editor' : 'Stops Fizzwick; nothing has come yet'}>Stop{filled ? ' and open what came' : ''}</Button>{/if}
+    {#if live && streaming}<Button variant="secondary" onclick={stop} tip={filled ? 'Opens the clues so far in the editor' : 'Stops Fizzwick; nothing has come yet'}>Stop{filled ? ' & open' : ''}</Button>{/if}
   {/snippet}
 </Screen>
 

@@ -1,4 +1,4 @@
-// "🧙 Ask the wizard" for Snark Tank: every prompt comes with a stock answer for "Give me one",
+// "🧙 Ask the wizard" for Snark Tank: every prompt comes with a stock answer for "Suggest",
 // and about one in five lines is a final for three-line duels with the house's three lines.
 // Each streamed line is kept only when it meets AGENTS.md's Snark rules and lengths and is new
 // to every Snark pack on the phone; anything else is dropped before anyone sees it.
@@ -19,7 +19,7 @@ export const FILL_BATCH = 40;
 /** Finals to ask for with `prompts` prompts: about one per five, at least one. */
 export const finalsFor = (prompts: number): number => Math.max(1, Math.round(prompts / 5));
 
-const STOCK_RULES = 'Stock answers (a player who is stuck taps "Give me one" and gets it): 1 to 8 words, sentence case, no punctuation at the end. Decent and mildly funny, never the best answer in the room.';
+const STOCK_RULES = 'Stock answers (a player who is stuck taps "Suggest" and gets it): 1 to 8 words, sentence case, no punctuation at the end. Decent and mildly funny, never the best answer in the room.';
 
 export const SYSTEM = `You write prompts for Snark Tank, a party game in the style of Quiplash. Everyone writes a funny answer to a prompt on their own phone, then the room votes for the funniest.
 

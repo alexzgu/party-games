@@ -69,7 +69,7 @@
       </div>
       <p class="faint">Each game deals prompts this device has not shown lately.</p>
     </RulesCard>
-    <Button size="lg" onclick={onback} disabled={selected.length === 0}>{selected.length ? 'Done' : 'Pick at least one pack'}</Button>
+    <Button size="lg" onclick={onback} disabled={selected.length === 0}>{selected.length ? 'Done' : 'Pick packs'}</Button>
   {/snippet}
 </Screen>
 

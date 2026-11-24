@@ -5,7 +5,7 @@
   import type { PlayerView } from './view';
 
   // Picking a secret takes two taps: the first selects a tile (raised, the others dimmed) and
-  // grows a "Pick this one" bar on it; the bar sends the pick. Tapping another tile moves the
+  // grows a "Pick" bar on it; the bar sends the pick. Tapping another tile moves the
   // selection. Each selection is sent to the host too, so the deadline takes it, not the first offer.
   let { offers, selected, reshuffled, serial, send }: {
     offers: PlayerView['offers'];
@@ -33,8 +33,8 @@
         <b>{offer.answer}</b><span>{offer.category}{offer.level === 'easy' ? ' · Easy · Half points' : ''}</span>
       </button>
       {#if on}
-        <button class="confirm" aria-label="Pick this one: {offer.answer}" onclick={() => send({ serial, t: 'pick', index, reshuffled })}>
-          Pick this one
+        <button class="confirm" aria-label="Pick: {offer.answer}" onclick={() => send({ serial, t: 'pick', index, reshuffled })}>
+          Pick
         </button>
       {/if}
     </div>
