@@ -191,6 +191,28 @@ Both choices tempting or both awful, so the room splits about in half; specific 
 beats vague; original wording, never copied from a commercial game. "After Dark": cheeky,
 never explicit. Run `npm run test:content`.
 
+### Smarty Pants packs (`trivia/`)
+
+Multiple-choice trivia: everyone answers on their own phone, faster scores more. Default size 60
+questions over at least 4 categories. List what exists first (`npm run list -- trivia`, which also
+counts the categories in use): a question must be new across *all* Smarty Pants packs (the same
+question text, ignoring case, spacing and punctuation, counts as the same question). Each question
+is one line of six parts split by " | ": category, question, the right answer, three wrong answers
+(the app shuffles the four):
+
+```json
+{"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "added": "2026-11-24T18:30", "questions": ["Science | What gas do plants take in from the air? | Carbon dioxide | Oxygen | Nitrogen | Helium"]}
+```
+
+Quality bar (`src/games/trivia/rules.ts`): exactly six parts, none empty, and no part contains a
+bar. Category 1–3 words, 24 characters at most, capital first (reuse a category already in use where
+it fits). Question 3–30 words, 140 characters at most, capital first. Each answer 1–6 words and 40
+characters at most, no closing full stop; the four answers all different. Exactly one right answer;
+the wrong ones of the same kind and about the same length as the right one, so it never stands out.
+Things most of the room could know or guess, easy to hard. Check every fact; leave out anything you
+are not sure of or that may change (records, "current" holders, populations, prices, rankings).
+Original wording, never copied from a quiz show or a commercial game. Run `npm run test:content`.
+
 ### Sketchy packs (`sketch/`)
 
 Two lists for the drawing game. List what exists first (`npm run list -- sketch`): words and

@@ -16,7 +16,7 @@ describe('categories', () => {
     expect(categories([]).find((c) => c.name === 'Teams')!.games).toEqual(['dial', 'quiz', 'taboo']);
   });
   it('leaves out a default category no game is in', () => {
-    expect(categories([], GAMES.filter((g) => g.id !== 'quiz')).map((c) => c.name)).not.toContain('Trivia');
+    expect(categories([], GAMES.filter((g) => g.id !== 'quiz' && g.id !== 'trivia')).map((c) => c.name)).not.toContain('Trivia');
   });
 });
 

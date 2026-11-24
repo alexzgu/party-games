@@ -71,7 +71,7 @@ Three routes, in the order the owner chose to rely on them:
    pack list) takes a pasted list (one item per line, in the game's format) and saves it as a
    custom pack on that phone. Its button says what comes next: "Review words" (cards, prompts,
    clues) where a review follows (`Triage`; Big Board: the editor), "Save these" where the
-   list is saved at once (Snark Tank, Doodle Brawl, Bad Hand, Sketchy, Would You Rather).
+   list is saved at once (Snark Tank, Doodle Brawl, Bad Hand, Sketchy, Would You Rather, Smarty Pants).
 3. **Ask the wizard in the app**, first way in, the host's own testing route (no screen mentions
    invite links; players are told only about the magic words, route 4): players see live generation as
    "Fizzwick the Wizard" 🧙; no screen names Claude, Anthropic or an API key. The host (the owner,
@@ -178,7 +178,7 @@ are said; a phone on the host's own key is told sharing needs the magic words. A
 would not take is a disabled button with the reason under it: no name, a Big Board with empty
 tiles ("Fill the 3 empty tiles first."), Snark Tank finals an import would leave out (every one
 named, with why: `readFinals` in `snark/finals.ts`, the rule an import reads them by), nothing in it, more than 400 items in one list
-(Bad Hand and Sketchy have two) or over 64 KB (the server's own limits, `libraryShape.ts`). For Doodle Brawl, Bad Hand, Sketchy and Would You Rather the
+(Bad Hand and Sketchy have two) or over 64 KB (the server's own limits, `libraryShape.ts`). For Doodle Brawl, Bad Hand, Sketchy, Would You Rather and Smarty Pants the
 editor refuses to add a 401st item to a list, and a long paste, Fizzwick's items or a pack file that
 would make a list longer is saved as two or more packs ("Mine", "Mine (2)"), its lists shared out
 evenly and every mark kept. A pack saved longer than that earlier shows "Split" in its editor,
@@ -407,7 +407,7 @@ preview, past its list too) and ticks the new pack, as before.
   - Inn Co Hear Ant, Brain Freeze, Snark Tank: details hold the status line with its small
     Restore or Delete button, Export, Share, name (Snark Tank: Stock answers too);
     Snark Tank's finals follow its prompts in the list.
-  - Doodle Brawl, Bad Hand, Sketchy, Would You Rather (`ListPackEditor`, one shared editor): details hold the
+  - Doodle Brawl, Bad Hand, Sketchy, Would You Rather, Smarty Pants (`ListPackEditor`, one shared editor): details hold the
     status line with its small Restore or Delete button, Export, Share and name; the list shows
     each of the pack's lists in turn under its own count (Bad Hand: prompts, then answers;
     Sketchy: words, then ideas), one search and sort over all of them. Tapping an item edits it

@@ -238,3 +238,13 @@ const ratherFiles = import.meta.glob<RatherPack>('../content/rather/*.json', { e
 const builtinRather = ordered(Object.values(ratherFiles), ['classic', 'after-dark']);
 export const customRather = customStore<RatherPack>('custom:rather', builtinRather, 'rather');
 export const ratherPacks = (): RatherPack[] => merged(customRather.saved(), builtinRather);
+
+/**
+ * Smarty Pants packs: multiple-choice questions, each one line of six parts split by " | ":
+ * category | question | the right answer | three wrong answers (games/trivia/rules.ts).
+ */
+export interface TriviaPack extends PackMeta { id: string; name: string; blurb: string; questions: string[] }
+const triviaFiles = import.meta.glob<TriviaPack>('../content/trivia/*.json', { eager: true, import: 'default' });
+const builtinTrivia = ordered(Object.values(triviaFiles), ['classic']);
+export const customTrivia = customStore<TriviaPack>('custom:trivia', builtinTrivia, 'trivia');
+export const triviaPacks = (): TriviaPack[] => merged(customTrivia.saved(), builtinTrivia);

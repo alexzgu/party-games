@@ -1,12 +1,12 @@
 // Lists what a game's built-in packs already contain, so a new pack can avoid repeats:
-//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl|sketch|hand|rather
+//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl|sketch|hand|rather|trivia
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const game = process.argv[2];
 const dir = join(import.meta.dirname, '..', 'src', 'content', game ?? '');
-if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'salad', 'brawl', 'sketch', 'hand', 'rather'].includes(game)) {
-  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl|sketch|hand|rather');
+if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'salad', 'brawl', 'sketch', 'hand', 'rather', 'trivia'].includes(game)) {
+  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl|sketch|hand|rather|trivia');
   process.exit(1);
 }
 // A game whose first pack is not written yet has no folder: nothing exists, so nothing is listed.
@@ -25,9 +25,11 @@ for (const p of packs) {
     }
     continue;
   }
-  const items = p.words ?? p.cards ?? p.prompts ?? p.secrets ?? p.titles;
+  const items = p.words ?? p.cards ?? p.prompts ?? p.secrets ?? p.titles ?? p.questions;
   console.log(`\n## ${p.id} — ${p.name} (${items.length})`);
   for (const it of items) {
+    // A Smarty Pants line ("category | question | right | wrong | wrong | wrong") counts its category.
+    if (typeof it === 'string' && p.questions) hints.set(it.split(' | ')[0], (hints.get(it.split(' | ')[0]) ?? 0) + 1);
     if (typeof it === 'string') console.log(it);
     else if ('left' in it) console.log(`${it.left} | ${it.right}`);
     else if ('banned' in it) console.log(`${it.word}: ${it.banned.join(', ')}`);
@@ -40,4 +42,4 @@ for (const p of packs) {
   // Snark Tank finals (three-line duels) must be new across packs too.
   if (p.finals?.length) console.log(`\n### finals (${p.finals.length})\n` + p.finals.map((f) => f.prompt).join('\n'));
 }
-if (hints.size) console.log('\n## hints in use\n' + [...hints].sort((a, b) => b[1] - a[1]).map(([h, n]) => `${h} (${n})`).join(', '));
+if (hints.size) console.log(`\n## ${game === 'trivia' ? 'categories' : 'hints'} in use\n` + [...hints].sort((a, b) => b[1] - a[1]).map(([h, n]) => `${h} (${n})`).join(', '));

@@ -5,13 +5,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { dedupe, gibberishPacks, quizBoards, slugify, spectrumPacks, wordDecks } from './content';
 import { tabooPacks } from './content';
 import { quickPacks } from './content';
-import { brawlPacks, handPacks, ratherPacks, saladPacks, sketchPacks, snarkPacks } from './content';
+import { brawlPacks, handPacks, ratherPacks, saladPacks, sketchPacks, snarkPacks, triviaPacks } from './content';
 import { BLANK, blanks } from '../games/hand/cards';
 import { checked, listOf, type ListPack, type ListSpec } from './listPack';
 import { BRAWL_LISTS, titleKey, titleWords } from '../games/brawl/rules';
 import { HAND_LISTS } from '../games/hand/rules';
 import { SKETCH_LISTS } from '../games/sketch/rules';
 import { RATHER_LISTS, ratherKey, ratherProblem } from '../games/rather/rules';
+import { TRIVIA_LISTS, triviaKey, triviaProblem } from '../games/trivia/rules';
 import { cardId, cardProblems } from '../games/taboo/cards';
 import { isIcon } from './icon';
 import { normalise } from '../games/salad/match';
@@ -417,7 +418,28 @@ describe('Would You Rather packs', () => {
   });
 });
 
-describe('Doodle Brawl, Bad Hand, Sketchy and Would You Rather built-ins on the phone', () => {
+describe('Smarty Pants packs', () => {
+  it('has six-part multiple-choice questions, never repeated across packs', () => {
+    const seen = new Map<string, string>();
+    const problems: string[] = [];
+    const packs = triviaPacks();
+    packBasics(packs, problems);
+    for (const pack of packs) {
+      if (!Array.isArray(pack.questions) || !pack.questions.length) { problems.push(`${pack.id}: no questions`); continue; }
+      for (const q of pack.questions) {
+        const why = typeof q === 'string' ? triviaProblem(q) : 'not text';
+        if (why) problems.push(`${pack.id}: "${q}" ${why}`);
+        if (typeof q !== 'string') continue;
+        const prev = seen.get(triviaKey(q));
+        if (prev) problems.push(`${pack.id}: "${q}" already exists in ${prev}`);
+        seen.set(triviaKey(q), pack.id);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+});
+
+describe('Doodle Brawl, Bad Hand, Sketchy, Would You Rather and Smarty Pants built-ins on the phone', () => {
   it("pass the phone's own checks, so an exported built-in imports whole", () => {
     const problems: string[] = [];
     const check = (game: string, packs: ListPack[], specs: readonly ListSpec[]) => {
@@ -429,6 +451,7 @@ describe('Doodle Brawl, Bad Hand, Sketchy and Would You Rather built-ins on the 
     check('hand', handPacks(), HAND_LISTS);
     check('sketch', sketchPacks(), SKETCH_LISTS);
     check('rather', ratherPacks(), RATHER_LISTS);
+    check('trivia', triviaPacks(), TRIVIA_LISTS);
     expect(problems).toEqual([]);
   });
 });
