@@ -42,8 +42,8 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `gamePicker` (the game picker's search, and when it focuses its field), `panel` (whether a pack page's players or teams, a pack editor's details or a Community list's search and filters start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's game; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `gamesView` (the Games page's rules: default categories, the players filter, the orders, own category names, reading the stored choices defensively) and `gamesPage.svelte` (those choices on this phone), `update` (new versions switch in on the main menu or the Games page, held back while the category editor is open), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
-- `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList`, every pack editor and the Community list), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `GameCard` (one large row opening a page: a game, or the main menu's Games and Community packs), `CategoryEditor` (the Games page's own categories), `GamePicker` (the searchable box choosing a game: the Community page, History), `Popup`, `MenuButton` (a button opening a small menu),
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `gamePicker` (the drop-down's search, and when it focuses its field), `panel` (whether a pack page's players or teams, a pack editor's details or a Community list's search and filters start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's game; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `gamesView` (the Games page's rules: default categories, the orders, the categories box's label, own category names, reading the stored choices defensively) and `gamesPage.svelte` (those choices on this phone), `update` (new versions switch in on the main menu or the Games page, held back while the category editor is open), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
+- `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList`, every pack editor and the Community list), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `GameCard` (one large row opening a page: a game, or the main menu's Games and Community packs), `CategoryEditor` (making or changing one of the Games page's own categories), `Dropdown` (the searchable drop-down box), `GamePicker` (its pick-one face choosing a game: the Community page, History), `CategoryMenu` (its pick-several face for the Games page's categories), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
@@ -266,19 +266,23 @@ preview, past its list too) and ticks the new pack, as before.
   (Default, the order of `GAMES`; A–Z; Recent, the games last opened from this page first and the
   never-opened ones after in default order, as they stood when the page was opened from the main
   menu, so opening a game never moves the list and Back from it finds the list as it was left),
-  then, pinned under the header, the players filter
-  ("Any players" or 1–10: a game shows when the number is within its `minPlayers`–`maxPlayers`, no
-  most meaning any larger number) and a sideways-scrolling row of category chips: "All", the
-  default categories (the `tags` in `GAME_TAGS` order: One phone, Own phones, Teams, Words, Drawing,
-  Trivia, Funny; one no game is in is left out), the phone's own categories (dashed), and "Edit".
-  A chip picks or unpicks its category; with several picked a game must be in every one; "All"
-  unpicks them all. Nothing fitting shows "No games fit." and "Clear", which resets the categories
-  and players. "Edit" opens a popup listing the phone's own categories (at most 20) with New and
-  Done; one opened has its name (1–20 characters, not any category's name nor "All", ignoring case,
-  refused in plain words), a switch per game, Save, Cancel and Delete (asked in a popup over it;
-  each popup gives focus back to what opened it). A new app version waits while this popup is
-  open and switches in once it closes. The order, the picks, the
-  players, the own categories and when each game was last opened stay on this phone only
+  then, pinned under the header, the categories box: the drop-down (see Drop-down below) in its
+  pick-several face. Closed it reads "All categories" (none picked), the one picked, or the first
+  picked "+ N" ("Teams + 2"); while anything is picked it is tinted with the accent and holds a ✕
+  ("Clear") that unpicks them all without opening it. Open: "Search categories", then every
+  category with its number of games (a ✓ when picked): the default categories (the `tags` in
+  `GAME_TAGS` order: One phone, Own phones, Teams, Words, Drawing, Trivia, Funny; one no game is in
+  is left out), then the phone's own, each tagged "yours" with a pencil ("Edit <name>"); under the
+  list New and Done. Tapping a category picks or unpicks it and the menu stays open, the games
+  behind changing at once; with several picked a game must be in every one ("No categories
+  match." when a search leaves none). Nothing fitting shows "No games fit." and "Clear", which
+  unpicks the categories. New, or a pencil, opens the category editor over the open menu: a name
+  (1–20 characters, not any category's name nor "All", ignoring case, refused in plain words), a
+  switch per game, Save and Cancel, and for one being edited Delete (asked in a popup over it); a
+  phone holds at most 20. Closing it leaves the menu open with the change in it and focus back on
+  what opened it, or on the search field when that is gone. A new app version waits while the
+  editor is open and switches in once it closes. The order, the picks, the own categories and when
+  each game was last opened stay on this phone only
   (`src/lib/gamesView.ts`), never in the address; anything broken in storage is dropped, and an own category whose name
   a default category has since taken keeps its games under a free name ("Cards 2"). A game's
   first screen's Back returns here; its Home buttons (`backHome()`) still walk back to the main
@@ -461,14 +465,23 @@ preview, past its list too) and ticks the new pack, as before.
   with their points. Pack and rule changes apply to the next game, and setup says so. Odd One
   Out is the exception: its setup shows the remembered list, Resume keeps the saved game's
   players, and changes there apply to the next game (setup says so).
-- **Game picker** (`src/components/GamePicker.svelte`, `src/lib/gamePicker.ts`): one full-width
-  box (52 px) with the chosen game's emoji, name and a down arrow, tinted with its colour ("All
-  games" in the neutral colours). Tapping it opens a panel attached under it: "Search games" and the
-  options, each with emoji and name (a ✓ on the chosen one), in a list that scrolls on its own; the
-  panel takes at most 60% of the screen's height and what is left under the box. Typing narrows
-  the options to names holding the search anywhere, ignoring case and accents ("No games match."
-  when none do). Choosing closes it with focus back on the box; a tap outside, Escape or Tab closes
-  it unchanged, and the page behind stays still meanwhile. On a touch phone the search field waits
+- **Drop-down** (`src/components/Dropdown.svelte`, `src/lib/gamePicker.ts`): one full-width box
+  (52 px) with a down arrow; tapping it opens a panel attached under it: a search field and the
+  options (a ✓ on each chosen one; long names wrap) in a list that scrolls on its own; the panel
+  takes at most 60% of the screen's height and what is left under the box. Typing narrows the
+  options to names holding the search anywhere, ignoring case and accents. A tap outside or Escape
+  closes it, focus back on the box, and the page behind stays still meanwhile. Two faces:
+  - **Game picker** (`src/components/GamePicker.svelte`, the Community page and History): pick
+    one. The box shows the chosen game's emoji and name, tinted with its colour ("All games" in
+    the neutral colours); the options have emoji and name, "Search games", "No games match.".
+    Choosing closes it; Tab closes it too.
+  - **Categories** (`src/components/CategoryMenu.svelte`, the Games page, above): pick several
+    (`aria-multiselectable`). Picking keeps it open; Done under the list closes it; the pencils and
+    the foot's buttons are reached with Tab.
+  In both, on a touch phone the search field waits
+  for a tap (so the keyboard does not cover the list); from the keyboard or with a mouse it takes
+  focus at once. The box and the field are comboboxes over one listbox: the arrow keys (wrapping),
+  Home and End move, Enter chooses (and, in the categories, Space from the box). On a touch phone the search field waits
   for a tap (so the keyboard does not cover the list); from the keyboard or with a mouse it takes
   focus at once. The box and the field are comboboxes over one listbox: the arrow keys (wrapping),
   Home and End move, Enter chooses.

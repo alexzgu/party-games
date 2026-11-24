@@ -1,5 +1,5 @@
-// The Games page's choices (pages/Games.svelte): the order, the categories picked, the players
-// filter, the phone's own categories and when each game was last opened. Kept on the phone
+// The Games page's choices (pages/Games.svelte): the order, the categories picked, the phone's
+// own categories and when each game was last opened. Kept on the phone
 // (gamesPage.svelte.ts), never in the address; read defensively, since storage may hold anything.
 import { GAME_TAGS, GAMES, type GameId, type GameInfo } from '../app.config';
 
@@ -16,8 +16,6 @@ export interface GamesState {
   order: Order;
   /** The categories picked; a game shows only when it is in every one. */
   picked: string[];
-  /** How many are playing, or null for any number. */
-  players: number | null;
   own: OwnCategory[];
   /** When each game was last opened from the Games page (ms since 1970). */
   opened: Partial<Record<GameId, number>>;
@@ -25,13 +23,12 @@ export interface GamesState {
 
 export const MAX_OWN = 20;
 export const NAME_MAX = 20;
-export const PLAYERS_MAX = 10;
-/** The chip that shows every game; no category may take its name. */
-export const ALL = 'All';
+/** No category may be called "All": it would read like the box with nothing picked ("All categories"). */
+const ALL = 'All';
 /** Names an own category cannot take: every default category's, and "All". */
 const RESERVED: readonly string[] = [...GAME_TAGS, ALL];
 
-export const EMPTY: GamesState = { order: 'default', picked: [], players: null, own: [], opened: {} };
+export const EMPTY: GamesState = { order: 'default', picked: [], own: [], opened: {} };
 
 const IDS = new Set<string>(GAMES.map((g) => g.id));
 const isGame = (x: unknown): x is GameId => typeof x === 'string' && IDS.has(x);
@@ -43,17 +40,13 @@ export function categories(own: readonly OwnCategory[], games: readonly GameInfo
   return [...defaults.filter((c) => c.games.length), ...own.map((c) => ({ ...c, own: true }))];
 }
 
-/** `n` players fit the game: at least its least and, when it has a most, at most that. */
-export const fitsPlayers = (g: GameInfo, n: number | null): boolean =>
-  n === null || (n >= g.minPlayers && (g.maxPlayers === undefined || n <= g.maxPlayers));
-
 /**
- * The games to show: in every picked category, fitting the players, in the chosen order. Recent
+ * The games to show: in every picked category, in the chosen order. Recent
  * goes by `opened`, by default the stored times (the page passes the ones it opened with).
  */
 export function shownGames(s: GamesState, games: readonly GameInfo[] = GAMES, opened = s.opened): GameInfo[] {
   const picked = categories(s.own, games).filter((c) => s.picked.includes(c.id));
-  const fit = games.filter((g) => fitsPlayers(g, s.players) && picked.every((c) => c.games.includes(g.id)));
+  const fit = games.filter((g) => picked.every((c) => c.games.includes(g.id)));
   return sortGames(fit, s.order, opened);
 }
 
@@ -106,8 +99,15 @@ export const deleteCategory = (s: GamesState, id: string): GamesState =>
 export const togglePick = (s: GamesState, id: string): GamesState =>
   ({ ...s, picked: s.picked.includes(id) ? s.picked.filter((p) => p !== id) : [...s.picked, id] });
 
-/** No category and any number of players. */
-export const clearFilters = (s: GamesState): GamesState => ({ ...s, picked: [], players: null });
+/** No category picked. */
+export const clearFilters = (s: GamesState): GamesState => ({ ...s, picked: [] });
+
+/** The closed categories box: "All categories", the one picked, or the first picked "+ N" more (in chip order). */
+export function pickedLabel(cats: readonly Category[], picked: readonly string[]): string {
+  const on = cats.filter((c) => picked.includes(c.id));
+  if (!on.length) return 'All categories';
+  return on.length === 1 ? on[0].name : `${on[0].name} + ${on.length - 1}`;
+}
 
 export const markOpened = (s: GamesState, id: GameId, at: number): GamesState => ({ ...s, opened: { ...s.opened, [id]: at } });
 
@@ -117,8 +117,7 @@ export function readState(raw: unknown): GamesState {
   const own = readOwn(r.own);
   const ids = new Set(categories(own).map((c) => c.id));
   const picked = Array.isArray(r.picked) ? [...new Set(r.picked.filter((p): p is string => typeof p === 'string' && ids.has(p)))] : [];
-  const players = Number.isInteger(r.players) && (r.players as number) >= 1 && (r.players as number) <= PLAYERS_MAX ? (r.players as number) : null;
-  return { order: ORDERS.includes(r.order as Order) ? (r.order as Order) : 'default', picked, players, own, opened: readOpened(r.opened) };
+  return { order: ORDERS.includes(r.order as Order) ? (r.order as Order) : 'default', picked, own, opened: readOpened(r.opened) };
 }
 
 /**

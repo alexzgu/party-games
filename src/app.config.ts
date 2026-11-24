@@ -17,9 +17,6 @@ export interface GameInfo {
   id: GameId;
   name: string;
   players: string;
-  /** The fewest players it needs and, when it has one, the most (the Games page's players filter). */
-  minPlayers: number;
-  maxPlayers?: number;
   /** The default categories it is in. */
   tags: GameTag[];
   /** CSS colour token name for the game's accent, see tokens.css */
@@ -28,18 +25,18 @@ export interface GameInfo {
 }
 
 export const GAMES: GameInfo[] = [
-  { id: 'forehead', name: 'Heads Down.', players: '2+ players', minPlayers: 2, tags: ['One phone', 'Words'], accent: 'var(--c-forehead)', emoji: '🤯' },
-  { id: 'dial', name: 'Spectrum', players: '4+ players · 2 teams', minPlayers: 4, tags: ['One phone', 'Teams'], accent: 'var(--c-dial)', emoji: '📡' },
-  { id: 'gibberish', name: 'Inn Co Hear Ant', players: '3+ players', minPlayers: 3, tags: ['One phone', 'Words'], accent: 'var(--c-gibberish)', emoji: '🗣️' },
-  { id: 'quiz', name: 'Big Board', players: 'Solo or up to 10 teams', minPlayers: 1, tags: ['One phone', 'Teams', 'Trivia'], accent: 'var(--c-quiz)', emoji: '🧠' },
-  { id: 'taboo', name: "Don't Say It", players: '4+ players · 2 teams', minPlayers: 4, tags: ['One phone', 'Teams', 'Words'], accent: 'var(--c-taboo)', emoji: '🤐' },
-  { id: 'quick', name: 'Brain Freeze', players: '2+ players', minPlayers: 2, tags: ['One phone', 'Words'], accent: 'var(--c-quick)', emoji: '🥶' },
-  { id: 'snark', name: 'Snark Tank', players: '3–8 players · own phones', minPlayers: 3, maxPlayers: 8, tags: ['Own phones', 'Funny'], accent: 'var(--c-snark)', emoji: '🦈' },
-  { id: 'salad', name: 'Word Salad', players: '2–8 players · own phones', minPlayers: 2, maxPlayers: 8, tags: ['Own phones', 'Words'], accent: 'var(--c-salad)', emoji: '🥗' },
-  { id: 'brawl', name: 'Doodle Brawl', players: '3–8 players · own phones', minPlayers: 3, maxPlayers: 8, tags: ['Own phones', 'Drawing', 'Funny'], accent: 'var(--c-brawl)', emoji: '🥊' },
-  { id: 'sketch', name: 'Sketchy', players: '3–10 players · own phones', minPlayers: 3, maxPlayers: 10, tags: ['Own phones', 'Drawing'], accent: 'var(--c-sketch)', emoji: '✏️' },
-  { id: 'hand', name: 'Bad Hand', players: '3–10 players · own phones', minPlayers: 3, maxPlayers: 10, tags: ['Own phones', 'Funny'], accent: 'var(--c-hand)', emoji: '🃏' },
-  { id: 'odd', name: 'Odd One Out', players: '3–12 players', minPlayers: 3, maxPlayers: 12, tags: ['One phone', 'Words'], accent: 'var(--c-odd)', emoji: '🕵️' },
+  { id: 'forehead', name: 'Heads Down.', players: '2+ players', tags: ['One phone', 'Words'], accent: 'var(--c-forehead)', emoji: '🤯' },
+  { id: 'dial', name: 'Spectrum', players: '4+ players · 2 teams', tags: ['One phone', 'Teams'], accent: 'var(--c-dial)', emoji: '📡' },
+  { id: 'gibberish', name: 'Inn Co Hear Ant', players: '3+ players', tags: ['One phone', 'Words'], accent: 'var(--c-gibberish)', emoji: '🗣️' },
+  { id: 'quiz', name: 'Big Board', players: 'Solo or up to 10 teams', tags: ['One phone', 'Teams', 'Trivia'], accent: 'var(--c-quiz)', emoji: '🧠' },
+  { id: 'taboo', name: "Don't Say It", players: '4+ players · 2 teams', tags: ['One phone', 'Teams', 'Words'], accent: 'var(--c-taboo)', emoji: '🤐' },
+  { id: 'quick', name: 'Brain Freeze', players: '2+ players', tags: ['One phone', 'Words'], accent: 'var(--c-quick)', emoji: '🥶' },
+  { id: 'snark', name: 'Snark Tank', players: '3–8 players · own phones', tags: ['Own phones', 'Funny'], accent: 'var(--c-snark)', emoji: '🦈' },
+  { id: 'salad', name: 'Word Salad', players: '2–8 players · own phones', tags: ['Own phones', 'Words'], accent: 'var(--c-salad)', emoji: '🥗' },
+  { id: 'brawl', name: 'Doodle Brawl', players: '3–8 players · own phones', tags: ['Own phones', 'Drawing', 'Funny'], accent: 'var(--c-brawl)', emoji: '🥊' },
+  { id: 'sketch', name: 'Sketchy', players: '3–10 players · own phones', tags: ['Own phones', 'Drawing'], accent: 'var(--c-sketch)', emoji: '✏️' },
+  { id: 'hand', name: 'Bad Hand', players: '3–10 players · own phones', tags: ['Own phones', 'Funny'], accent: 'var(--c-hand)', emoji: '🃏' },
+  { id: 'odd', name: 'Odd One Out', players: '3–12 players', tags: ['One phone', 'Words'], accent: 'var(--c-odd)', emoji: '🕵️' },
 ];
 
 /** Games taken out of the app, by id: an old pack file of one is turned away by name. */
