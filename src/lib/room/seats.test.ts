@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ASK_HOST, COVER_MS, KeyRing, OPEN_MS, REST_MS, WAITING, ends, newKey, nextStep, proofOf, type Claim, type Step } from './seats';
+import { ASK_HOST, COVER_MS, KeyRing, OLD_PAGE, OPEN_MS, REST_MS, WAITING, ends, newKey, nextStep, proofOf, type Claim, type Step } from './seats';
 import type { HostLink } from './host-link.svelte';
 import type { PhoneLink, BaseView } from './phone-link.svelte';
 
@@ -116,14 +116,14 @@ it('decides each step from the proof, the key on record and the host', () => {
     [c(), { keyed: false, fresh: true }, 'enrol'],
     [c({ modern: false }), { keyed: false, fresh: true }, 'admit'],
     [c(), { keyed: false, fresh: false }, 'recover'],
-    [c({ modern: false }), { keyed: false, fresh: false }, 'recover'],
+    [c({ modern: false }), { keyed: false, fresh: false }, 'old'],
     [c(), { keyed: true, fresh: true }, 'prove'],
     [c(), { keyed: true, fresh: false }, 'prove'],
     [c({ proof: 'right' }), { keyed: true, fresh: false }, 'admit'],
     [c({ proof: 'wrong' }), { keyed: true, fresh: false }, 'recover'],
-    [c({ modern: false }), { keyed: true, fresh: false }, 'recover'],
+    [c({ modern: false }), { keyed: true, fresh: false }, 'old'],
+    [c({ modern: false }), { keyed: true, fresh: true }, 'old'],
     [c({ approved: true, proof: 'wrong' }), { keyed: true, fresh: false }, 'enrol'],
-    [c({ approved: true, modern: false }), { keyed: true, fresh: false }, 'admit'],
     // A host that cannot check proofs (plain http): seated by the game's rules alone.
     [c(), { keyed: true, fresh: false, checks: false }, 'admit'],
     [c({ modern: false }), { keyed: false, fresh: false, checks: false }, 'admit'],
@@ -161,17 +161,18 @@ const GAMES = {
   hand: () => import('../../games/hand/host.svelte'),
 };
 interface Host { link: HostLink; game: { phase: string; code: string; id?: string } | null; open(): Promise<void>; kick(pid: string): void; rematch(): void; addBot(): string | null; start(): void }
-/** Another tab with this page, opened now (the tabs before it still open). */
-async function tab(game: keyof typeof GAMES): Promise<Host> {
+/** Another tab with this page, opened now (the tabs before it still open); `rested`: and open for a few seconds, past the rest a new host starts with. */
+async function tab(game: keyof typeof GAMES, rested = true): Promise<Host> {
   vi.resetModules();
   const { host } = await GAMES[game]() as unknown as { host: Host };
   await host.open();
+  if (rested) await vi.advanceTimersByTimeAsync(REST_MS);
   return host;
 }
 /** The host screen, freshly loaded (again: a reload, with what it saved; the tab before is gone). */
-async function load(game: keyof typeof GAMES): Promise<Host> {
+async function load(game: keyof typeof GAMES, rested = true): Promise<Host> {
   locks.held.clear();
-  return tab(game);
+  return tab(game, rested);
 }
 const close = (h: Host) => { const x = h as unknown as { end?(): void; close?(): void }; (x.end ?? x.close)!.call(h); };
 /** What the host keeps about phones that have no seat yet. */
@@ -185,20 +186,22 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     expect(sam.types()).toEqual(['enrol', 'welcome', 'view']);
     expect(localStorage.getItem(`hr:${game}:host`)).not.toContain(sam.key);
 
-    // No key, another one, or an old page: told to ask the host, nothing kept, nothing asked, and the seat stays Sam's.
+    // No key, or another one: told to ask the host; an old page: to refresh it. Nothing kept, nothing asked, and the seat stays Sam's.
     for (const key of [undefined, newKey()]) {
       const thief = phone(host.link, 'p1', 'Sam', key);
       await settle(thief);
       expect(thief.types()).toEqual(['prove', 'reject']);
       expect(sentAway(thief)).toBe(true);
     }
-    expect(sentAway(phone(host.link, 'p1', 'Sam', undefined, false))).toBe(true);
+    expect(why(phone(host.link, 'p1', 'Sam', undefined, false))).toBe(OLD_PAGE);
     expect([sam.conn.open, pending(host), host.link.recovery]).toEqual([true, 0, null]);
 
     // The key: in at once, though the old connection still looks alive; a second hello on it does nothing.
     const again = phone(host.link, 'p1', 'Sam', sam.key);
     await settle(again);
     expect(again.types()).toEqual(['prove', 'welcome', 'view']);
+    expect(sam.types().at(-1)).toBe('replaced'); // told so, then closed once that is out
+    await vi.advanceTimersByTimeAsync(1500);
     expect(sam.conn.open).toBe(false);
     again.say({ t: 'hello', pid: 'p2', name: 'Zed', keys: 1 });
     expect(again.types()).toHaveLength(3);
@@ -356,6 +359,25 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     close(host);
   });
 
+  it('open to a new phone by name while the old one is still here; on Yes the old one is told and cut off', async () => {
+    const host = await load(game);
+    const sam = phone(host.link, 'p1', 'Sam');
+    phone(host.link, 'p3', 'Eve');
+    host.kick('p3');
+    host.link.recoverSeat('p1', 'Sam');
+    expect(why(phone(host.link, 'p3', 'Sam'))).toMatch(/removed/); // not by another name either
+    const fresh = phone(host.link, 'p9', ' sam ');
+    await settle(fresh);
+    expect([fresh.types(), host.link.recovery?.asking]).toEqual([['prove', 'wait'], true]);
+    host.link.answer(true);
+    expect(fresh.types()).toEqual(['prove', 'wait', 'enrol', 'welcome', 'view']);
+    expect(fresh.got.find((m) => m.t === 'welcome')?.pid).toBe('p1');
+    expect([sam.types().at(-1), book(host).key('p1')]).toEqual(['replaced', fresh.key]);
+    // Nobody else gets in by that name meanwhile: with no seat open, the game's own rules apply.
+    expect(phone(host.link, 'p8', 'Sam').types()).toEqual(['reject']);
+    close(host);
+  });
+
   it('with the record missing, and old pages, need the host; bots come back by themselves', async () => {
     let host = await load(game);
     const sam = phone(host.link, 'p1', 'Sam');
@@ -369,16 +391,22 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     host.link.answer(true);
     expect(back.types()).toEqual(['wait', 'enrol', 'welcome', 'view']);
 
-    // An old page joins a new seat at once, with no key; back again, it needs the host like any phone without a proof.
+    // An old page joins a new seat at once, with no key; back again, it is told to refresh, and the
+    // host is never asked about a phone that could not show what the question quotes.
     const old = phone(host.link, 'p5', 'Old', undefined, false);
     expect(old.types()).toEqual(['welcome', 'view']);
     old.conn.close();
-    expect(sentAway(phone(host.link, 'p5', 'Old', undefined, false))).toBe(true);
+    expect(why(phone(host.link, 'p5', 'Old', undefined, false))).toBe(OLD_PAGE);
     host.link.recoverSeat('p5', 'Old');
     await vi.advanceTimersByTimeAsync(REST_MS); // the rest after a recovery that had an asker
-    const again = phone(host.link, 'p5', 'Old', undefined, false);
+    for (const pid of ['p5', 'p6']) expect(why(phone(host.link, pid, 'Old', undefined, false))).toBe(OLD_PAGE);
+    expect(host.link.recovery).toMatchObject({ pid: 'p5', asking: false });
+    // Refreshed: a current page, a new id and no key, like any new phone.
+    const refreshed = phone(host.link, 'p6', 'Old');
+    await settle(refreshed);
     host.link.answer(true);
-    expect(again.types()).toEqual(['wait', 'welcome', 'view']);
+    expect(refreshed.types()).toEqual(['wait', 'enrol', 'welcome', 'view']);
+    expect(refreshed.got.find((m) => m.t === 'welcome')?.pid).toBe('p5');
     close(host);
   });
 });
@@ -417,14 +445,15 @@ it('a claim still being checked ends when the room moves to another code', async
   const host = await load('snark');
   phone(host.link, 'p1', 'Sam').say({ t: 'leave' }); // the lobby is empty again, so it may move; Sam keeps his row and key
   host.link.recoverSeat('p1', 'Sam');
-  const asker = phone(host.link, 'p1', 'Sam', undefined, false);
+  const asker = phone(host.link, 'p1', 'Sam');
+  await settle(asker);
   const slow = phone(host.link, 'p6', 'Slow', undefined, true, { mute: true });
   expect(host.link.recovery?.asking).toBe(true);
   (host.link as unknown as { peer: { on_: Handlers } }).peer.on_.error({ type: 'unavailable-id' });
   expect([host.link.recovery, pending(host)]).toEqual([null, 0]);
   host.link.answer(true);
   slow.say({ t: 'key', key: newKey() });
-  expect([asker.types(), slow.types()]).toEqual([['wait'], ['enrol']]);
+  expect([asker.types(), slow.types()]).toEqual([['prove', 'wait'], ['enrol']]);
   expect(host.link.pids()).toEqual([]);
   close(host);
 });
@@ -720,6 +749,108 @@ describe('the app\'s phone', () => {
     close(host);
   });
 
+  it('in two tabs: the one replaced stops, keeps the room, and takes it back only when asked', async () => {
+    const host = await load('snark');
+    const first = await join(host);
+    const { PhoneLink, ELSEWHERE, loadMe } = await import('./phone-link.svelte');
+    const second = new PhoneLink<{ t: string }, BaseView>('snark', { keep: () => false }); // the tab, duplicated
+    second.rejoin();
+    await until(() => second.link === 'live' && first.link === 'stopped');
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect([first.link, first.elsewhere, first.stopped, second.link]).toEqual(['stopped', true, ELSEWHERE, 'live']);
+    expect(loadMe('snark')).toMatchObject({ code: host.game!.code, joined: true }); // what both tabs rejoin with
+    first.here();
+    await until(() => first.link === 'live' && second.link === 'stopped');
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect([first.link, second.link, second.elsewhere]).toEqual(['live', 'stopped', true]);
+    close(host);
+  });
+
+  it('that redialled pays no heed to its old connection being told it was replaced', async () => {
+    const host = await load('snark');
+    const p = await join(host);
+    const old = (p as unknown as { conn: End }).conn;
+    const heard: string[] = [];
+    const data = old.on_.data!;
+    old.on_.data = (m) => { heard.push((m as { t: string }).t); data(m); };
+    old.close = () => {}; // half dead: the page lets go of it, yet the host's words on it still arrive
+    (p as unknown as { lose(c: unknown): void }).lose(old);
+    expect(p.link).toBe('lost');
+    await vi.advanceTimersByTimeAsync(1000);
+    await until(() => p.link === 'live');
+    expect([heard.at(-1), p.link, p.elsewhere, p.stopped]).toEqual(['replaced', 'live', false, '']);
+    close(host);
+  });
+
+  it('hides the waiting words even when a timer fires early', async () => {
+    const { PhoneLink } = await import('./phone-link.svelte');
+    const p = new PhoneLink<{ t: string }, BaseView>('snark', { keep: () => false });
+    const fake = globalThis.setTimeout;
+    globalThis.setTimeout = ((f: () => void, ms = 0) => fake(f, Math.max(0, ms - 1))) as typeof setTimeout;
+    try {
+      (p as unknown as { receive(m: object): void }).receive({ t: 'wait' });
+      await vi.advanceTimersByTimeAsync(COVER_MS - 2);
+      expect(p.waiting).toBe(true);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(p.waiting).toBe(false);
+    } finally {
+      globalThis.setTimeout = fake;
+    }
+  });
+
+  it('a host that reloads rests before any seat opens to an asker: the phone it was asking about has stopped showing the words', async () => {
+    let host = await load('snark');
+    phone(host.link, 'p1', 'Sam').conn.close();
+    const { PhoneLink } = await import('./phone-link.svelte');
+    const p = new PhoneLink<{ t: string }, BaseView>('snark', { keep: () => false });
+    host.link.recoverSeat('p1', 'Sam');
+    p.join(host.game!.code, 'Sam');
+    await until(() => p.waiting);
+    const far = (p as unknown as { conn: End }).conn.other!;
+    far.send = () => {}; // the host page goes: nothing more arrives, not even its close
+    far.close = () => {};
+    host = await load('snark', false);
+    host.link.recoverSeat('p1', 'Sam');
+    expect(p.waiting).toBe(true);
+    let guest = phone(host.link, 'p9', 'Sam');
+    await settle(guest);
+    expect(sentAway(guest)).toBe(true); // the new host rests
+    while (!host.link.recovery?.asking) {
+      await vi.advanceTimersByTimeAsync(250);
+      guest = phone(host.link, 'p9', 'Sam');
+      await settle(guest);
+      if (host.link.recovery?.asking) expect(p.waiting).toBe(false); // the moment a question shows
+    }
+    expect(guest.types()).toEqual(['prove', 'wait']);
+    close(host);
+  });
+
+  it('the rest holds when the host\'s words arrive a second late', async () => {
+    const host = await load('snark');
+    phone(host.link, 'p1', 'Sam').conn.close();
+    const { PhoneLink } = await import('./phone-link.svelte');
+    const p = new PhoneLink<{ t: string }, BaseView>('snark', { keep: () => false });
+    host.link.recoverSeat('p1', 'Sam');
+    p.join(host.game!.code, 'Sam');
+    await until(() => p.waiting);
+    const far = (p as unknown as { conn: End }).conn.other!;
+    const send = far.send;
+    far.send = (m) => { if ((m as { t: string }).t !== 'reject') setTimeout(() => send(m), 1000); }; // late, and the refusal lost
+    far.close = () => {};
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(p.waiting).toBe(true); // still asked about, a second late
+    host.link.recoverSeat('p1', 'Sam');
+    let guest = phone(host.link, 'p9', 'Sam');
+    while (!host.link.recovery?.asking) {
+      await vi.advanceTimersByTimeAsync(250);
+      guest = phone(host.link, 'p9', 'Sam');
+      await settle(guest);
+      if (host.link.recovery?.asking) expect(p.waiting).toBe(false);
+    }
+    expect(guest.types()).toEqual(['prove', 'wait']);
+    close(host);
+  });
+
   it('reads no view it cannot: a malformed one changes nothing and throws nothing', async () => {
     const { phone: snark } = await import('../../games/snark/player.svelte');
     const { phone: salad } = await import('../../games/salad/player.svelte');
@@ -781,7 +912,8 @@ describe('Sketchy drawings', () => {
     localStorage.setItem('hr:sketch:art', bare);
     host = await load('sketch'); // saved before rooms: its drawings, kept under its new room id
     expect(art(host)).toEqual(JSON.parse(bare));
-    expect(JSON.parse(localStorage.getItem('hr:sketch:art')!)).toEqual({ room: host.link.room, art: JSON.parse(bare) });
+    expect(JSON.parse(localStorage.getItem('hr:sketch:drawings')!)).toEqual({ room: host.link.room, art: JSON.parse(bare) });
+    expect(localStorage.getItem('hr:sketch:art')).toBeNull(); // the game names its room now: the old record goes
     host = await load('sketch');
     expect(art(host)).toEqual(JSON.parse(bare));
     close(host);
@@ -796,7 +928,7 @@ describe('Sketchy drawings', () => {
     localStorage.setItem('hr:sketch:art', bare);
     const real = localStorage.setItem;
     let refuse = 1;
-    localStorage.setItem = (k, v) => { if (k === 'hr:sketch:art' && refuse-- > 0) throw new Error('full'); real(k, v); };
+    localStorage.setItem = (k, v) => { if (k === 'hr:sketch:drawings' && refuse-- > 0) throw new Error('full'); real(k, v); };
     host = await load('sketch');
     const art = (h: Host) => (h as unknown as { art: object }).art;
     expect(art(host)).toEqual(JSON.parse(bare)); // on screen all the same
@@ -806,8 +938,31 @@ describe('Sketchy drawings', () => {
     expect((JSON.parse(localStorage.getItem('hr:sketch:host')!) as { room?: string }).room ?? '').toBe(''); // names no room
     host = await load('sketch'); // tried again, and this time stored
     expect(art(host)).toEqual(JSON.parse(bare));
-    const filed = JSON.parse(localStorage.getItem('hr:sketch:art')!) as { room: string };
+    const filed = JSON.parse(localStorage.getItem('hr:sketch:drawings')!) as { room: string };
     expect([filed.room, (JSON.parse(localStorage.getItem('hr:sketch:host')!) as { room: string }).room]).toEqual([host.link.room, host.link.room]);
+    expect(localStorage.getItem('hr:sketch:art')).toBeNull();
+    close(host);
+  });
+
+  it('from before rooms stay readable until the game naming their room is stored', async () => {
+    const bare = JSON.stringify({ 'old/1/0': [{ c: 0, w: 1, p: [0, 0] }] });
+    let host = await load('sketch');
+    const saved = JSON.parse(localStorage.getItem('hr:sketch:host')!) as object;
+    close(host);
+    const old = JSON.stringify({ ...saved, room: undefined });
+    localStorage.setItem('hr:sketch:host', old);
+    localStorage.setItem('hr:sketch:art', bare);
+    const real = localStorage.setItem;
+    let refuse = 1;
+    localStorage.setItem = (k, v) => { if (k === 'hr:sketch:host' && refuse-- > 0) throw new Error('full'); real(k, v); };
+    host = await load('sketch'); // the drawings are filed under the room; the game's write fails
+    expect(localStorage.getItem('hr:sketch:host')).toBe(old);
+    host = await load('sketch');
+    const art = (h: Host) => (h as unknown as { art: object }).art;
+    expect(art(host)).toEqual(JSON.parse(bare));
+    expect(localStorage.getItem('hr:sketch:art')).toBeNull(); // stored this time: the old record goes
+    host = await load('sketch');
+    expect(art(host)).toEqual(JSON.parse(bare));
     close(host);
   });
 

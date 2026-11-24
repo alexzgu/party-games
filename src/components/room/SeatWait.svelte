@@ -1,11 +1,13 @@
 <script lang="ts">
   import Button from '../Button.svelte';
   import { WAITING } from '../../lib/room/seats';
+  import { ELSEWHERE } from '../../lib/room/phone-link.svelte';
 
   // Phone: while the host is asked whether this phone may have a seat, the whole screen shows this
   // phone's own fixed words, large, and nothing from the other end; the host's question quotes them,
-  // so the host can see that the phone in front of them is the one asking.
-  let { link }: { link: { waiting: boolean; leave(): void } } = $props();
+  // so the host can see that the phone in front of them is the one asking. Once another tab (or
+  // phone) has taken this seat, the screen says so, with the way back.
+  let { link }: { link: { waiting: boolean; elsewhere: boolean; leave(): void; here(): void } } = $props();
 </script>
 
 {#if link.waiting}
@@ -13,6 +15,11 @@
     <p class="words">{WAITING}</p>
     <p>Show this screen to the host.</p>
     <Button variant="secondary" onclick={() => link.leave()}>Cancel</Button>
+  </div>
+{:else if link.elsewhere}
+  <div class="wait fade-in" role="alertdialog" aria-label={ELSEWHERE}>
+    <p class="words">{ELSEWHERE}</p>
+    <Button onclick={() => link.here()}>Play here</Button>
   </div>
 {/if}
 

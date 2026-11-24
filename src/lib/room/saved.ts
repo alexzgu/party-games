@@ -1,7 +1,7 @@
 // A host screen's saved game, with its room's id written into the same record: the seats' keys
 // (seats.ts) are trusted only when their own record names that room, so a game saved late by a
 // forgotten tab never meets another room's keys. The games themselves never see the id.
-import { load, remove, save } from '../storage';
+import { load, remove, trySave } from '../storage';
 
 /** `room`: the id of the room the game was saved in; empty without one, or without a game. */
 export interface Saved<G> { game: G | null; room: string }
@@ -15,4 +15,5 @@ export function loadSaved<G>(key: string, valid: (x: unknown) => G | null): Save
   return { game, room: game && typeof room === 'string' ? room : '' };
 }
 
-export const keepGame = (key: string, g: object | null, room: string): void => (g ? save(key, { ...g, room }) : remove(key));
+/** Whether it was stored (or, without a game, removed). */
+export const keepGame = (key: string, g: object | null, room: string): boolean => (g ? trySave(key, { ...g, room }) : (remove(key), true));

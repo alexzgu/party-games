@@ -913,10 +913,19 @@ about the game, replaces nobody and changes nothing.
   WebRTC descriptions, never from a message), so a proof passed along by a guest in between is
   wrong; a key is never sent again. The right proof puts the phone back in its seat at once, mid-round
   too, and replaces the seat's old connection even if it still looks online, so sleep, reload, Wi-Fi
-  and broker changes need no tap; nothing another phone does can hold it up. A proof is judged on
+  and broker changes need no tap; nothing another phone does can hold it up. The connection replaced
+  is told `{t: 'replaced'}` before it closes. A page that hears it on the connection it uses now (a
+  second tab of the same phone, or the phone whose seat went to a new one) stops trying, keeps its
+  room and player, and fills its screen with "This game is open in another tab." and "Play here",
+  which rejoins from that page and so replaces the other in turn. A page that has already redialled
+  hears nothing on its old connection, so it never stops itself. A proof is judged on
   the seat as it is when its check ends (if the player left a lobby meanwhile, the seat is new again).
-- Any other phone asking for a seat the game already has (a wrong or empty proof, an old page, a seat
-  with no key) gets it only through recovery. Without recovery open for that seat it is refused at
+- A page from before keys asking for a seat the game already has is refused with "This page is out
+  of date. Refresh the page, then join again.", which it shows as it shows any refusal; it cannot show
+  the words the host would be asked about, so the host is never asked about it. Refreshed, it is a
+  current page with no key and comes back through New phone like any phone.
+- Any other phone asking for a seat the game already has (a wrong or empty proof, a seat with no
+  key) gets it only through recovery. Without recovery open for that seat it is refused at
   once (`{t: 'reject', ask: 1}`) and the host keeps nothing of it: no question appears on the host
   screen and nothing piles up. The phone shows, in its own words whatever the host sends: "This phone
   can't take that seat by itself. Ask the host to tap New phone and pick your name, then join again."
@@ -924,7 +933,10 @@ about the game, replaces nobody and changes nothing.
   (once a player is in), which lists the room's players (no bots, nobody removed); the host checks
   who is in front of them and picks that player. Their seat is then open to one new phone for a
   minute (one seat at a time: opening another closes the first), shown in a panel on the host screen
-  ("Sam's seat is open to a new phone for a minute. Ask them to join now.", with Close). The first
+  ("Sam's seat is open to a new phone for a minute. Ask them to join now.", with Close). While it is
+  open, a hello with that player's name (compared as the games compare names: trimmed, any case) is
+  a claim on that seat, even while the player's old phone is still connected, which a Yes then
+  replaces like any replaced connection. The first
   phone that asks for that seat without a valid proof is told `wait`; only that phone is ever told
   so, and the host says it again every second (`PULSE_MS`) while its question is open. The phone
   then fills its whole screen with its own fixed words, large, "Waiting for a Yes on the host
@@ -934,8 +946,7 @@ about the game, replaces nobody and changes nothing.
   hides them at once on a refusal, a welcome, a drop or a redial. The panel asks "A phone asks for Sam's seat. Does Sam's phone say “Waiting for a Yes
   on the host screen”?" and "Only that phone is asking. If you can't see those words on it, tap No."
   (Yes / No; the quoted words and the phone's are one constant, `WAITING`). Yes is for that one
-  connection: the phone enrols a new key, which becomes the seat's only key (an old page's Yes leaves
-  the seat with no key), and it is welcomed. At most one Yes waits to be used in a room: if that
+  connection: the phone enrols a new key, which becomes the seat's only key, and it is welcomed. At most one Yes waits to be used in a room: if that
   connection drops before then, or the host opens New phone again, removes the player or the room
   moves, the Yes is gone, the phone is refused, and a key it sends later changes nothing. Recovery closes without giving the seat to anyone, with a note on the host screen
   (OK puts it away), when a second connection asks for the seat while it is open (both are refused:
@@ -943,7 +954,8 @@ about the game, replaces nobody and changes nothing.
   disconnects, or when the minute runs out; and with no note on No, Close, or a new code. After a
   recovery that had an asker ends, for any reason (Yes included), no seat opens to an asker for 4 s
   (`REST_MS`, over a second longer than `COVER_MS`), so the earlier asker's screen no longer shows
-  the words when a new question can appear, even if its refusal never reached it. New phone can be
+  the words when a new question can appear, even if its refusal never reached it; a host screen
+  that has just loaded rests too, as it cannot know whom it was asking about. New phone can be
   tapped meanwhile; the panel says "Sam's seat opens to a new phone in a moment; the minute starts
   then.", and claims during the rest are refused like any with no recovery open. A phone
   proving the key meanwhile is let in as usual and recovery stays open. The 10 s limit on joining
@@ -1123,9 +1135,10 @@ on their own phones through the shared room link; a host screen shows the room. 
   "Undo clear"; Sketchy adds an Eraser in the tools row (a thick paper-coloured pen: ink 8,
   width 15, which Doodle Brawl's reader still refuses; Sketchy's host refuses ink 8 at any other
   width). Drawings live in the host's art store
-  (key `sketch:art`, saved with the room's id and read only by that room; a record from before
-  drawings carried a room id goes to a game saved without one, and never to a game that has a room
-  id). The game is saved with a room id only once its drawings were stored under that id: when
+  (key `sketch:drawings`, saved with the room's id and read only by that room). The record from
+  before drawings carried a room id (key `sketch:art`) goes to a game saved without one, never to a
+  game that has a room id, and stays until a save of the game naming its room id has been stored,
+  so a game write that fails after the drawings were filed leaves both as they were. The game is saved with a room id only once its drawings were stored under that id: when
   the room's id is new (an old save, a lost seat record, a move to another code) the drawings are
   written first, and if that write fails (storage full) the game keeps being saved with the id
   it had, so the next open tries again; the host sees nothing different meanwhile, and after a

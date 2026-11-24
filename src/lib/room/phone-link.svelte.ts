@@ -31,6 +31,8 @@ export interface PhoneHooks<Out, V> {
 }
 
 const DIAL_TIMEOUT = 10000;
+/** Shown when another tab, or another phone, took this seat; the room is kept for `here`. */
+export const ELSEWHERE = 'This game is open in another tab.';
 /** Consecutive "no such room" answers (about two minutes of retries) before a phone stops looking. */
 const GIVE_UP_AFTER = 15;
 /** How long a leaving phone keeps its link open, so its goodbye reaches the host. */
@@ -58,6 +60,9 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   waiting = $state(false);
   /** When the host last said so. */
   private waitAt = 0;
+  private cover: ReturnType<typeof setTimeout> | null = null;
+  /** Another tab (or phone) took this seat: this one stopped, and `here` takes it back. */
+  elsewhere = $state(false);
   me = $state.raw<Me | null>(null);
   /** The room the phone is in or last tried; kept after a refusal or the end, so the reason stays with that room's code. */
   room = $state('');
@@ -108,6 +113,11 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     }
   }
 
+  /** Takes the seat back from the tab that has it (which then stops in turn). */
+  here(): void {
+    if (this.elsewhere && this.me?.code) this.start();
+  }
+
   /** Tells the host this player left (so they stop getting turns), stops trying and forgets the room (keeps the id and name for next time). */
   leave(): void {
     if (this.conn?.open) this.write({ t: 'leave' });
@@ -135,6 +145,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   }
 
   private start(): void {
+    this.elsewhere = false;
     this.stopped = '';
     this.trouble = '';
     this.attempts = 0;
@@ -281,12 +292,19 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   private wait(): void {
     this.waitAt = Date.now();
     this.waiting = true;
-    setTimeout(() => this.stale(), COVER_MS);
+    this.stale();
   }
 
-  /** Judged by the clock, so a page that slept hides it as soon as it runs again. */
+  /**
+   * Judged by the clock, so a page that slept hides it as soon as it runs again; until then it looks
+   * again when the time is up, and again until it is (a timer may fire early).
+   */
   private stale(): void {
-    if (this.waiting && Date.now() - this.waitAt >= COVER_MS) this.waiting = false;
+    if (this.cover) clearTimeout(this.cover);
+    this.cover = null;
+    const left = this.waitAt + COVER_MS - Date.now();
+    if (left <= 0) this.waiting = false;
+    else if (this.waiting) this.cover = setTimeout(() => this.stale(), Math.max(left, 50));
   }
 
   /** Shows the host that this phone has its seat's key, without sending it: one proof for each key it may be. */
@@ -333,6 +351,10 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
         }
         break;
       }
+      case 'replaced': // said on the connection this page uses now; an old one it redialled from is not heard
+        this.halt(ELSEWHERE);
+        this.elsewhere = true;
+        break;
       case 'reject':
         this.halt(msg.ask === 1 ? ASK_HOST : typeof msg.why === 'string' ? msg.why : '');
         this.forget();

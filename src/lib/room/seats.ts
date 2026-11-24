@@ -103,7 +103,7 @@ export class SeatBook {
   key(pid: string): string | undefined { return this.keys.get(pid); }
   kicked(pid: string): boolean { return this.out.has(pid); }
 
-  /** The seat's only key from now on; none: the seat has no key (its phone is an old page). */
+  /** The seat's only key from now on; none: the seat has no key. */
   bind(pid: string, key: string | undefined): void {
     if (key) this.keys.set(pid, key);
     else this.keys.delete(pid);
@@ -147,6 +147,8 @@ const SAID_NO = 'The host said no.';
 const NO_ANSWER = 'The host did not answer. Try again.';
 const TWO = 'Another phone asked for that seat too. Ask the host to try again.';
 const CHANGED = 'The room changed while you waited. Join again.';
+/** What a page from before seat keys shows (as it shows any refusal) when it asks for a seat the game already has. */
+export const OLD_PAGE = 'This page is out of date. Refresh the page, then join again.';
 
 /** How long a seat stays open for a new phone once the host opens it. */
 export const OPEN_MS = 60_000;
@@ -160,6 +162,11 @@ export const COVER_MS = 2_500;
 export const REST_MS = 4_000;
 
 interface Row { pid: string; name: string }
+/** Names as every game compares them. */
+const sameName = (a: string, b: string): boolean => {
+  const n = (x: string) => x.trim().replace(/\s+/g, ' ').toLowerCase();
+  return n(a) === n(b);
+};
 /** The seat a game gives a phone: its player, and whether it is new to the game. `then`: what to do once it is welcomed. */
 export interface Seat extends Row { fresh: boolean; then: () => void }
 
@@ -172,20 +179,21 @@ export const seatIn = (players: readonly Row[], joined: { pid: string; game: { p
 
 /** `modern`: its page can do keys. `approved`: the host said Yes to this connection. */
 export interface Claim { modern: boolean; proof: 'none' | 'right' | 'wrong'; approved: boolean }
-/** 'recover': only through recovery the host has opened for the seat. */
-export type Step = 'admit' | 'enrol' | 'prove' | 'recover';
+/** 'recover': only through recovery the host has opened for the seat. 'old': refused; its page cannot show what the host would be asked. */
+export type Step = 'admit' | 'enrol' | 'prove' | 'recover' | 'old';
 
 /**
  * What happens next to a phone asking for a seat: a seat with a key wants its proof; a seat the
- * game already had wants the host. `checks`: this host can check proofs (no: plain http, where
- * nothing can be proved, so every phone is seated by the game's rules alone and no key is kept).
+ * game already had wants the host, and from a page before keys a refresh first. `checks`: this
+ * host can check proofs (no: plain http, where nothing can be proved, so every phone is seated by
+ * the game's rules alone and no key is kept).
  */
 export function nextStep(c: Claim, s: { keyed: boolean; fresh: boolean; checks: boolean }): Step {
   if (!s.checks) return 'admit';
-  if (c.approved) return c.modern ? 'enrol' : 'admit';
-  if (s.keyed) return !c.modern || c.proof === 'wrong' ? 'recover' : c.proof === 'none' ? 'prove' : 'admit';
-  if (!s.fresh) return 'recover';
-  return c.modern ? 'enrol' : 'admit';
+  if (!c.modern) return s.keyed || !s.fresh ? 'old' : 'admit';
+  if (c.approved) return 'enrol';
+  if (s.keyed) return c.proof === 'wrong' ? 'recover' : c.proof === 'none' ? 'prove' : 'admit';
+  return s.fresh ? 'enrol' : 'recover';
 }
 
 /**
@@ -233,12 +241,21 @@ export class Desk<C> {
   private closed: Recovery | null = null;
   /** The one connection the host said Yes to, until it is seated: a new recovery, a removal or a move ends it. */
   private approved: Call<C> | null = null;
-  /** Until when no seat opens to an asker (REST_MS after one that had an asker ended). */
-  private rest = 0;
+  /**
+   * Until when no seat opens to an asker: REST_MS after one that had an asker ended, and after this
+   * desk starts (a reloaded host cannot know whom it was asking about).
+   */
+  private rest = Date.now() + REST_MS;
   constructor(private book: SeatBook, private hooks: DeskHooks<C>) {}
 
+  /** While a seat is open for a new phone, a hello with its player's name is a claim on that seat, though its phone may still be here. */
   hello(conn: C, pid: string, name: string, modern: boolean): void {
     if (this.calls.has(conn)) return;
+    const o = this.open;
+    if (o && pid !== o.pid && sameName(name, o.name)) {
+      if (this.book.kicked(pid)) return this.hooks.refuse(conn, REMOVED);
+      [pid, name] = [o.pid, o.name];
+    }
     const call: Call<C> = { conn, pid, name, modern, proof: 'none', approved: false, seat: '', stage: '', nonce: '' };
     this.calls.set(conn, call);
     this.advance(call);
@@ -329,10 +346,11 @@ export class Desk<C> {
     call.seat = seat.pid;
     const checks = !!globalThis.crypto?.subtle;
     const step = nextStep(call, { keyed: checks && this.book.key(seat.pid) !== undefined, fresh: seat.fresh, checks });
+    if (step === 'old') return this.refuse(call, OLD_PAGE);
     if (step === 'prove') return this.prove(call);
     if (step === 'recover') return this.ask(call);
     if (step === 'enrol' && !key) return this.enrol(call);
-    if (key || call.approved) this.book.bind(seat.pid, key);
+    if (key) this.book.bind(seat.pid, key);
     this.drop(call.conn);
     this.hooks.admit(call.conn, seat);
   }

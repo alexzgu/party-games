@@ -362,18 +362,23 @@ export class HostLink {
     return this.book.kicked(pid) || this.book.kicked(res.pid) ? { error: REMOVED } : res;
   }
 
-  /** `ask`: the phone shows its own words for "ask the host" (an old page shows `why`, the same words). */
+  /** `ask`: the phone shows its own words for "ask the host". */
   private refuse(conn: DataConnection, why: string, ask = false): void {
-    this.write(conn, { t: 'reject', why: ask ? ASK_HOST : why, ...(ask ? { ask: 1 } : {}) });
+    this.part(conn, { t: 'reject', why: ask ? ASK_HOST : why, ...(ask ? { ask: 1 } : {}) });
+  }
+
+  /** A last word: then nothing more is heard from the connection, and it closes once the word is out. */
+  private part(conn: DataConnection, msg: object): void {
+    this.write(conn, msg);
     this.drop(conn);
     setTimeout(() => conn.close(), 1500);
   }
 
-  /** The seat is this phone's: whatever held it before is cut off. */
+  /** The seat is this phone's: whatever held it before is told so (another tab, or another phone, has it) and cut off. */
   private admit(conn: DataConnection, seat: Seat): void {
     if (!conn.open) return this.drop(conn);
     const old = this.links.get(seat.pid);
-    if (old && old !== conn) this.cut(old);
+    if (old && old !== conn) this.part(old, { t: 'replaced' });
     this.links.set(seat.pid, conn);
     this.pidOf.set(conn, seat.pid);
     this.refresh();

@@ -5,23 +5,29 @@ import { DEFAULT_SETTINGS, DRAW_TIMES, GUESS_TIMES, ROUND_CHOICES, WRITE_TIMES, 
 
 export const loadRoom = () => loadSaved('sketch:host', (x) => x as Game);
 export const loadGame = () => loadRoom().game;
-export const saveGame = (g: Game | null, room: string) => keepGame('sketch:host', g, room);
+/**
+ * The game, with its room's id. Drawings from before rooms (`OLD_ART`, ids only) stay readable until
+ * a game naming a room is stored: until then a reload reads the game as it was, and its drawings.
+ */
+export function saveGame(g: Game | null, room: string): void {
+  if (keepGame('sketch:host', g, room) && room) remove(OLD_ART);
+}
+const ART = 'sketch:drawings';
+const OLD_ART = 'sketch:art';
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
 /**
- * The drawings of the room `room` (its id, as saved with its game): another room's are none. A
- * record from before drawings carried their room (drawing ids only) belongs to the one game saved
- * then, which has no room id either (`room` empty); a game with a room id never takes one.
+ * The drawings of the room `room` (its id, as saved with its game): another room's are none. The
+ * record from before drawings carried their room belongs to the one game saved then, which has no
+ * room id either (`room` empty); a game with a room id never takes it.
  */
 export function loadArt(room: string): Record<string, Drawing> {
-  const s = load<unknown>('sketch:art', null);
-  if (!isObject(s)) return {};
-  const tagged = typeof s.room === 'string' && isObject(s.art);
-  if (!tagged) return room ? {} : s as Record<string, Drawing>;
-  return room && s.room === room ? s.art as Record<string, Drawing> : {};
+  if (!room) return isObject(load<unknown>(OLD_ART, null)) ? load<Record<string, Drawing>>(OLD_ART, {}) : {};
+  const s = load<unknown>(ART, null);
+  return isObject(s) && s.room === room && isObject(s.art) ? s.art as Record<string, Drawing> : {};
 }
 /** Whether it was stored. */
-export const saveArt = (a: Record<string, Drawing>, room: string): boolean => trySave('sketch:art', { room, art: a });
-export const clearArt = () => remove('sketch:art');
+export const saveArt = (a: Record<string, Drawing>, room: string): boolean => trySave(ART, { room, art: a });
+export const clearArt = () => { remove(ART); remove(OLD_ART); };
 
 const oneOf = <T>(choices: readonly T[], x: unknown, fallback: T): T => choices.includes(x as T) ? x as T : fallback;
 
