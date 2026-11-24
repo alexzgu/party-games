@@ -2,6 +2,7 @@
   // A player's phone: the join form, then whatever the host screen says this player needs now
   // (answer, vote), and in between what the host screen shows, so nobody needs to see it.
   // The link reconnects by itself; a banner says when it is doing so.
+  import SeatWait from '../../components/room/SeatWait.svelte';
   import { onMount } from 'svelte';
   import { route, back } from '../../lib/router.svelte';
   import { keepAwake } from '../../lib/wakelock';
@@ -59,6 +60,8 @@
 
   const send = (m: ToHost) => { if (!fixed) phone.send({ ...m, match: view?.match } as ToHost); };
 </script>
+
+{#if !fixed}<SeatWait link={phone} />{/if}
 
 {#if link === 'idle' || link === 'stopped'}
   <Join code={routeCode || (phone.me?.code ?? '')} name={phone.me?.name ?? ''} {stopped} />

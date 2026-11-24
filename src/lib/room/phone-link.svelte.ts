@@ -9,7 +9,7 @@ import { BROKER_TROUBLE, LINK_TIMEOUT, backoff, classify, makePeer } from './net
 import { currentBroker } from './broker';
 import { hostPeerId, newPid } from './code';
 import { Assembler, toWire } from './parts';
-import { ASK_HOST, KeyRing, WAITING, ends, isKey, proofOf } from './seats';
+import { ASK_HOST, KeyRing, ends, isKey, proofOf } from './seats';
 import { load, remove, save } from '../storage';
 
 /** idle: not in a room. joining/live/lost: trying, connected, reconnecting. stopped: told to stop (see `stopped`). */
@@ -54,6 +54,8 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   /** Why the phone stopped trying (shown as is), or a problem while still trying. */
   stopped = $state('');
   trouble = $state('');
+  /** The host is asked about this phone now: it shows `WAITING`, large, and nothing else (SeatWait). */
+  waiting = $state(false);
   me = $state.raw<Me | null>(null);
   /** The room the phone is in or last tried; kept after a refusal or the end, so the reason stays with that room's code. */
   room = $state('');
@@ -143,6 +145,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   /** Stops trying; the old link and peer close now, or after `grace` ms so a last message gets out. */
   private halt(why: string, grace = 0): void {
     this.stopped = why;
+    this.waiting = false;
     this.link = 'stopped';
     if (this.retry) clearTimeout(this.retry);
     if (this.watchdog) clearInterval(this.watchdog);
@@ -225,6 +228,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.conn = conn;
     this.parts = new Assembler();
     this.enrolled = false;
+    this.waiting = false;
     const timeout = setTimeout(() => { if (this.conn === conn && !conn.open) this.lose(conn); }, DIAL_TIMEOUT);
     conn.on('open', () => {
       clearTimeout(timeout);
@@ -245,6 +249,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   private lose(conn: DataConnection): void {
     if (this.conn !== conn) return;
     this.conn = null;
+    this.waiting = false;
     conn.close();
     this.later();
   }
@@ -291,10 +296,11 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
       case 'ping': this.write({ t: 'pong' }); break;
       case 'prove': void this.prove(msg.room, msg.nonce); break;
       case 'enrol': this.enrol(msg.room); break;
-      case 'wait': this.trouble = WAITING; break;
+      case 'wait': this.waiting = true; break;
       case 'welcome':
         if (this.me && typeof msg.pid === 'string') this.setMe({ ...this.me, pid: msg.pid, joined: true });
         this.link = 'live';
+        this.waiting = false;
         this.trouble = '';
         this.attempts = 0;
         this.missing = 0;

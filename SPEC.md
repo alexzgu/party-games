@@ -905,14 +905,16 @@ about the game, replaces nobody and changes nothing.
   and sends `{t: 'key', key}`, and the host records it before the welcome. A phone never answers
   `enrol` with a key it already had, and answers one per connection. It keeps the two newest keys of
   a room, so an enrolment cut short leaves the one before usable. A page that cannot do keys (its
-  `hello` has no `keys`) joins a new seat at once, and that seat has no key.
+  `hello` has no `keys`) joins a new seat at once, and that seat has no key. Two phones enrolling
+  one new seat: the first key in takes it, and the other is then asked for a proof like any phone.
 - A seat with a key: the host sends `{t: 'prove', room, nonce}` (a new random value each time) and
   the phone answers `{t: 'proof', macs}`, for each key it keeps an HMAC-SHA256 under it of both and of the two
   certificate fingerprints of the connection (host's, phone's; each side reads them from its own
   WebRTC descriptions, never from a message), so a proof passed along by a guest in between is
   wrong; a key is never sent again. The right proof puts the phone back in its seat at once, mid-round
   too, and replaces the seat's old connection even if it still looks online, so sleep, reload, Wi-Fi
-  and broker changes need no tap; nothing another phone does can hold it up.
+  and broker changes need no tap; nothing another phone does can hold it up. A proof is judged on
+  the seat as it is when its check ends (if the player left a lobby meanwhile, the seat is new again).
 - Any other phone asking for a seat the game already has (a wrong or empty proof, an old page, a seat
   with no key) gets it only through recovery. Without recovery open for that seat it is refused at
   once (`{t: 'reject', ask: 1}`) and the host keeps nothing of it: no question appears on the host
@@ -923,11 +925,16 @@ about the game, replaces nobody and changes nothing.
   who is in front of them and picks that player. Their seat is then open to one new phone for a
   minute (one seat at a time: opening another closes the first), shown in a panel on the host screen
   ("Sam's seat is open to a new phone for a minute. Ask them to join now.", with Close). The first
-  phone that asks for that seat without a valid proof is told `wait` (it shows "Waiting for a Yes on
-  the host screen.") and the panel asks "A phone asks for Sam's seat. Is it Sam's?" (Yes / No). Yes is
-  for that one connection: the phone enrols a new key, which becomes the seat's only key (an old
-  page's Yes leaves the seat with no key), and it is welcomed. If that connection drops before then,
-  the Yes is gone. Recovery closes without giving the seat to anyone, with a note on the host screen
+  phone that asks for that seat without a valid proof is told `wait`; only that phone is ever told
+  so. It then fills its whole screen with its own fixed words, large, "Waiting for a Yes on the host
+  screen", with "Show this screen to the host." and Cancel, and nothing from the other end
+  (`SeatWait`). The panel asks "A phone asks for Sam's seat. Does Sam's phone say “Waiting for a Yes
+  on the host screen”?" and "Only that phone is asking. If you can't see those words on it, tap No."
+  (Yes / No; the quoted words and the phone's are one constant, `WAITING`). Yes is for that one
+  connection: the phone enrols a new key, which becomes the seat's only key (an old page's Yes leaves
+  the seat with no key), and it is welcomed. At most one Yes waits to be used in a room: if that
+  connection drops before then, or the host opens New phone again, removes the player or the room
+  moves, the Yes is gone, the phone is refused, and a key it sends later changes nothing. Recovery closes without giving the seat to anyone, with a note on the host screen
   (OK puts it away), when a second connection asks for the seat while it is open (both are refused:
   "Another phone asked for that seat too. Ask the host to try again."), when the asking phone
   disconnects, or when the minute runs out; and with no note on No, Close, or a new code. A phone
@@ -937,7 +944,10 @@ about the game, replaces nobody and changes nothing.
   it at once. Only an empty lobby moves (its code is taken on the broker), and it becomes a room
   of its own, with a new id and an empty record before its game is saved under the new code; every
   phone still joining then asks again. Removal drops the key and blocks the player id for the life
-  of the room, across reload and Play again; a player who left keeps their key and may return.
+  of the room, across reload and Play again; a player who left keeps their key and may return,
+  unless the game dropped their row (a lobby does), which drops the key too, so the record cannot grow
+  without end. At most 30 phones (three times the biggest room) may have said hello without a seat
+  yet; another is closed at once without a word, and tries again later like any dropped phone.
 - The host keeps the room's id, the keys and who was removed in one record per game
   (`<game>:seats`), outside the game, cleared when the room closes and before each write, so a write
   that fails leaves none rather than an old one. The saved game carries its room's id too (added as
@@ -953,8 +963,10 @@ about the game, replaces nobody and changes nothing.
   Another tab of that game on the device then opens no room and reads or writes nothing of it; its
   host screen says "This game is open in another tab on this device. Play there, or close the room
   there and come back." (opening it again after that tab closes the room works). A browser without
-  Web Locks lets every tab open the saved room, as before; the room id check above still keeps one
-  room's keys from another's.
+  working Web Locks (an old one, or plain http) may host, but no tab there can be sure it is the only
+  one, so it trusts no saved seat record: opening a saved room gives it a new id and no keys, as a
+  lost record does, and every phone comes back through New phone. The game's first screen reads the
+  saved game only to show its code and whether a game is under way.
 - **Views** from the other end are read only if they have what the phone reads: every view is an
   object with `left` (a number or null) and `paused` (true or false), and each game checks what its
   phone reads beyond that (Snark Tank: the screen, and a write screen's prompts; Word Salad: its
@@ -1098,7 +1110,9 @@ on their own phones through the shared room link; a host screen shows the room. 
   "Undo clear"; Sketchy adds an Eraser in the tools row (a thick paper-coloured pen: ink 8,
   width 15, which Doodle Brawl's reader still refuses; Sketchy's host refuses ink 8 at any other
   width). Drawings live in the host's art store
-  (key `sketch:art`, saved with the room's id and read only by that room), never in the game state;
+  (key `sketch:art`, saved with the room's id and read only by that room; a record from before
+  drawings carried a room id goes to a game saved without one, once, and is saved again under the
+  room's new id, and never to a game that has a room id), never in the game state;
   a drawing's id starts with the game's id, which a lobby that moves to another code gets anew, so
   no room ever shows another's drawing; views carry drawing ids; a phone asks for one it
   lacks (and for the next album entry's ahead of time); one the host no longer has comes back

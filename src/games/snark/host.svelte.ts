@@ -61,6 +61,7 @@ class HostSession {
       return { ...seatIn(this.game!.players, res), then: () => { if (res.game === this.game) this.sendView(res.pid); else this.commit(res.game); } };
     },
     message: (pid, raw) => this.receive(pid, raw),
+    has: (pid) => !!this.game?.players.some((p) => p.pid === pid),
     left: (pid) => {
       if (!this.game) return;
       this.commit(L.leave(this.game, pid));

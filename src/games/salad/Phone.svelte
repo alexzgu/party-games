@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SeatWait from '../../components/room/SeatWait.svelte';
   import { onMount } from 'svelte';
   import Avatar from '../../components/room/Avatar.svelte';
   import Button from '../../components/Button.svelte';
@@ -54,6 +55,8 @@
     if (!fixed && phone.me?.code) phone.join(phone.me.code, phone.me.name);
   }
 </script>
+
+{#if !fixed}<SeatWait link={phone} />{/if}
 
 {#if link === 'idle' || link === 'stopped'}
   {#key routeCode}

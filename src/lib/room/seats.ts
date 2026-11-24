@@ -33,8 +33,8 @@ export async function proofOf(key: string | undefined, c: Challenge): Promise<st
   } catch { return ''; }
 }
 
-/** What a phone shows, in its own words, while the host is asked about it. */
-export const WAITING = 'Waiting for a Yes on the host screen.';
+/** What a phone shows, in its own words and nothing else, while the host is asked about it; the host's question quotes it. */
+export const WAITING = 'Waiting for a Yes on the host screen';
 /** What a phone shows, in its own words, when it cannot take its seat by itself. */
 export const ASK_HOST = 'This phone can’t take that seat by itself. Ask the host to tap New phone and pick your name, then join again.';
 
@@ -207,6 +207,8 @@ export class Desk<C> {
   private calls = new Map<C, Call<C>>();
   private open: Open<C> | null = null;
   private closed: Recovery | null = null;
+  /** The one connection the host said Yes to, until it is seated: a new recovery, a removal or a move ends it. */
+  private approved: Call<C> | null = null;
   constructor(private book: SeatBook, private hooks: DeskHooks<C>) {}
 
   hello(conn: C, pid: string, name: string, modern: boolean): void {
@@ -233,9 +235,13 @@ export class Desk<C> {
     if (call?.stage === 'enrol' && isKey(key)) this.advance(call, key);
   }
 
-  /** The host opens one seat for a new phone, for a minute; any seat open before closes. */
+  /** Phones that have said hello and have no seat yet. */
+  get pending(): number { return this.calls.size; }
+
+  /** The host opens one seat for a new phone, for a minute; any seat open before closes, and a Yes not yet used is gone. */
   recover(pid: string, name: string): void {
     this.close('', SAID_NO);
+    this.unapprove(SAID_NO);
     const timer = setTimeout(() => { if (this.open === open) this.close(`No phone took ${name}’s seat in time. Try again.`, NO_ANSWER); }, OPEN_MS);
     const open: Open<C> = { pid, name, asker: null, timer };
     this.open = open;
@@ -250,6 +256,7 @@ export class Desk<C> {
     this.close('', yes ? undefined : SAID_NO);
     if (!yes) return;
     asker.approved = true;
+    this.approved = asker;
     this.advance(asker);
   }
 
@@ -267,12 +274,13 @@ export class Desk<C> {
   drop(conn: C): void {
     const call = this.calls.get(conn);
     this.calls.delete(conn);
+    if (call && this.approved === call) this.approved = null;
     if (call && this.open?.asker === call) this.close(`The phone asking for ${this.open.name}’s seat went away. Try again.`);
   }
 
   /** The host removed this player: whoever is asking for the seat is out too. */
   kick(pid: string): void {
-    if (this.open?.pid === pid) this.close('', REMOVED);
+    if (this.open?.pid === pid) this.close('', REMOVED); // and below, a Yes for that seat not yet used
     for (const c of this.calls.values()) if (c.seat === pid || c.pid === pid) this.refuse(c, REMOVED);
   }
 
@@ -281,6 +289,7 @@ export class Desk<C> {
     if (this.open) clearTimeout(this.open.timer);
     this.open = null;
     this.closed = null;
+    this.approved = null;
     this.calls.clear();
     this.show();
   }
@@ -296,7 +305,7 @@ export class Desk<C> {
     if (step === 'recover') return this.ask(call);
     if (step === 'enrol' && !key) return this.enrol(call);
     if (key || call.approved) this.book.bind(seat.pid, key);
-    this.calls.delete(call.conn);
+    this.drop(call.conn);
     this.hooks.admit(call.conn, seat);
   }
 
@@ -334,6 +343,11 @@ export class Desk<C> {
     this.closed = note ? { pid: open.pid, name: open.name, asking: false, note } : null;
     if (open.asker && why) this.refuse(open.asker, why);
     this.show();
+  }
+
+  /** The Yes not yet used ends: its connection may no longer enrol. */
+  private unapprove(why: string): void {
+    if (this.approved) this.refuse(this.approved, why);
   }
 
   private refuse(call: Call<C>, why: string, ask = false): void {

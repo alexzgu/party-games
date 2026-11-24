@@ -15,6 +15,8 @@ import { own, release } from './owner';
 export type HostStatus = 'connecting' | 'open' | 'trouble';
 
 const HELLO_TIMEOUT = 10000;
+/** Phones that have said hello and have no seat yet, at most: three times the biggest room (10 players). */
+const PENDING_MAX = 30;
 
 /** A message as JSON carries it (what a phone would send or get), or null. */
 const wire = (msg: unknown): unknown => { try { return JSON.parse(JSON.stringify(msg)); } catch { return null; } };
@@ -42,6 +44,8 @@ export interface HostHooks {
   message(pid: string, raw: unknown): void;
   /** The player tapped "Leave room" on their phone: they stop getting turns. */
   left(pid: string): void;
+  /** Whether the game still has a row for this player (a lobby drops one who leaves). */
+  has(pid: string): boolean;
   /** The code is taken on the broker: whether the room is still an empty lobby that may take another; else this one is retried. */
   vacant(): boolean;
   /** The room has a new code (and is a new room: `room` has changed). */
@@ -69,6 +73,8 @@ export class HostLink {
   private attempts = 0;
   /** The code is taken and the room is leaving it: nobody is let in until the new peer is up. */
   private moving = false;
+  /** This tab alone has the saved room (owner.ts). */
+  private sure = false;
   private book: SeatBook;
   private desk: Desk<DataConnection>;
 
@@ -89,15 +95,20 @@ export class HostLink {
 
   /** Whether this tab may open the game's saved room (owner.ts); asked before `open`. */
   async own(): Promise<boolean> {
-    const mine = await own(this.game);
-    this.elsewhere = !mine;
-    return mine;
+    const owner = await own(this.game);
+    this.elsewhere = owner === 'taken';
+    this.sure = owner === 'mine';
+    return owner !== 'taken';
   }
 
-  /** Registers the room on the broker under its code and starts pinging; `saved`: a saved game's room id (its seats' keys), or empty. */
+  /**
+   * Registers the room on the broker under its code and starts pinging; `saved`: a saved game's room
+   * id (its seats' keys), or empty. A tab not sure it alone has the room (no Web Locks) trusts no
+   * saved seat record: a new room id and no keys, as when the record is lost.
+   */
   open(code: string, saved: string): void {
     this.code = code;
-    this.book.open(saved);
+    this.book.open(this.sure ? saved : '');
     this.connect();
     this.pinger ??= setInterval(() => this.ping(), PING_MS);
   }
@@ -333,6 +344,7 @@ export class HostLink {
     if (msg.t === 'leave') {
       this.cut(conn);
       this.hooks.left(pid);
+      if (!this.hooks.has(pid)) this.book.bind(pid, undefined); // no row, no key: the record cannot grow without end
     } else this.hooks.message(pid, msg);
   }
 
@@ -340,6 +352,7 @@ export class HostLink {
     const name = unmarked(raw);
     if (!name.trim() && raw.trim()) return this.refuse(conn, MARK_ONLY);
     if (pid.startsWith(BOT_PID)) return this.refuse(conn, BOT_SEAT); // a phone may not take a seat run here
+    if (this.desk.pending >= PENDING_MAX) return this.cut(conn); // closed without a word: a phone tries again later
     this.desk.hello(conn, pid, name, modern);
   }
 

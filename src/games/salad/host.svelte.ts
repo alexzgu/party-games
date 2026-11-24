@@ -40,6 +40,7 @@ class HostSession {
       } };
     },
     message: (pid, raw) => this.receive(pid, raw),
+    has: (pid) => !!this.game?.players.some((p) => p.pid === pid),
     left: (pid) => {
       if (!this.game) return;
       this.commit(L.leave(this.game, pid));

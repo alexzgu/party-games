@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SeatWait from '../../components/room/SeatWait.svelte';
   import { untrack } from 'svelte';
   import { gameName } from '../../app.config';
   import Screen from '../../components/Screen.svelte';
@@ -81,6 +82,8 @@
     {/key}
   {/if}
 {/snippet}
+
+{#if !fixed}<SeatWait link={phone} />{/if}
 
 {#if !v || (!fixed && phone.stopped)}
   {#key code}<Join code={code || phone.me?.code || ''} fixed={!!fixed} />{/key}

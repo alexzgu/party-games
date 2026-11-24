@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from '../Button.svelte';
   import type { HostLink } from '../../lib/room/host-link.svelte';
+  import { WAITING } from '../../lib/room/seats';
 
   // Host screen: the seat opened with New phone. While it is open, a minute at most; then the one
   // Yes or No when a phone asks for it; or, once it closed without anyone getting it, why. The game
@@ -16,9 +17,10 @@
         <p>{r.note}</p>
         <div class="answers"><Button size="sm" variant="secondary" onclick={() => link.stopRecovery()}>OK</Button></div>
       {:else if r.asking}
-        <p>A phone asks for {r.name}’s seat. Is it {r.name}’s?</p>
+        <p>A phone asks for {r.name}’s seat. Does {r.name}’s phone say “{WAITING}”?</p>
+        <p class="small">Only that phone is asking. If you can’t see those words on it, tap No.</p>
         <div class="answers">
-          <Button size="sm" onclick={() => link.answer(true)} tip="Only if {r.name} just tapped Join in front of you">Yes</Button>
+          <Button size="sm" onclick={() => link.answer(true)} tip="Only if you can see those words on {r.name}’s phone">Yes</Button>
           <Button size="sm" variant="secondary" onclick={() => link.answer(false)}>No</Button>
         </div>
       {:else}
@@ -37,5 +39,6 @@
     background: var(--bg-raised); border: 2px solid var(--accent); border-radius: var(--r-lg); box-shadow: var(--shadow);
   }
   p { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+  .small { font-weight: 400; }
   .answers { display: flex; gap: var(--s-3); }
 </style>
