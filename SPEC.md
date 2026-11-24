@@ -1296,27 +1296,34 @@ sees the same secret word, the odd one out does not, and the room talks it out. 
   run out (per-pack bags under this game's own keys, so Heads Down.'s own rotation is untouched)
   and never twice in one game; one player at random is the odd one out, and one player at random
   starts the clues (never the odd one out with that option on). All from one random source, so
-  tests seed them (`logic.ts`, `deal.ts`).
+  tests seed them (`logic.ts`, `deal.ts`). When the game's packs have no words left (deleted
+  mid-game), the next round deals from the setup's current picks, which become the game's packs;
+  only when those are empty too does the screen say "These packs are gone. Start a new game."
 - **Pass**: for each player in list order a hand-off ("Pass the phone to Maya", Show) and then
-  their secret: the word large with "from Movies" under it, or "You are the odd one out" with "The
-  word is from Movies" under it (Hint on; nothing under it with Hint off). Both secret screens are
-  one card in the same colours with a line above and one under the big text, so the room cannot
-  tell them apart at a glance. Hide goes to the next hand-off. Back from a secret closes it onto
-  its own hand-off; Back from a hand-off goes to the previous player's hand-off (setup from the
-  first). Which secret is open is never saved: a reload mid-pass lands on the current player's hand-off.
+  their secret: the word large with "from Movies" under it, or "Odd one out" with "Word from
+  Movies" under it (Hint on) or "Blend in" (Hint off). Both secret screens are one card in the
+  same colours with a line above, the big text set the same way (capped in size, a few words at
+  most) and a line under it, so a neighbour's glance cannot tell them apart. Hide goes to the next
+  hand-off. Back from a secret closes it onto its own hand-off; Back from a hand-off goes to the
+  previous player's hand-off (setup from the first). Each takes a back tap only once it has been on
+  screen for the double-tap guard time, so a double tap steps back once. Which secret is open is
+  never saved: a reload mid-pass lands on the current player's hand-off, and the phone's own back
+  gesture from a secret leaves the game for the Games page with the game saved and no secret
+  showing, as in Brain Freeze.
 - **Clues**: who starts and the order (list order from the starter): "Take turns: say one word
   about the secret word." No timer. Vote.
 - **Vote**: "Count to three and point. Who does the room pick?" The room settles a tie itself;
   the phone records one name (tap, then Confirm).
 - **Reveal**: "Maya was the odd one out!" then "Maya, guess the word out loud." and Show word,
-  then the word with ✓ Got it / ✗ Missed; or "Ben was not the odd one out. It was Maya." with
-  the word at once and Next.
+  then the word with ✗ Missed / ✓ Got it, which ignore taps in their own first 400 ms (so the
+  tail of a double tap on Show word judges nothing); or "Ben was not the odd one out. It was
+  Maya." with the word at once and Next.
 - **Scores** (*house*): not caught, the odd one out scores 2; caught but named the word, 1;
   caught and missed, everyone else 1. Between rounds: who it was, the word, the standings with the
   round's points, Next round. After the last round: the win screen (confetti, the top score or a
   tie, standings, Play again with the same players, packs and options, Setup, Home).
 - **History**: one entry per game (scores, the packs, one line per round: "Round 2 · Pizza: Maya
   was the odd one out, caught, named the word"); New game over an unfinished game records it with
-  `finished: false`. Every step is saved; the screen stays awake during play. Back from the clues,
+  `finished: false` once the new game starts, and only when it had a finished round. Every step is saved; the screen stays awake during play. Back from the clues,
   vote, reveal and scores goes to setup with the game saved.
-- Demos at `#/odd?demo=handoff|secret|secret-odd|secret-odd-nohint|clues|vote|reveal-caught|reveal-word|reveal-escaped|scores|win`.
+- Demos at `#/odd?demo=handoff|secret|secret-long|secret-odd|secret-odd-nohint|clues|vote|reveal-caught|reveal-word|reveal-escaped|scores|win`.

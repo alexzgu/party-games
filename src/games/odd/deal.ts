@@ -37,3 +37,21 @@ export const pickedDecks = (ids: readonly string[]): WordDeck[] => wordDecks().f
 
 /** Names of the picked packs, in pack order, for a History entry. */
 export const packNames = (ids: readonly string[]): string[] => pickedDecks(ids).map((d) => d.name);
+
+const hasWords = (decks: readonly WordDeck[]) => decks.some((d) => d.words.length > 0);
+
+/** The picks on a first visit: every built-in pack but the adults-only one. */
+export const defaultPicks = (decks: readonly WordDeck[]): string[] => decks.filter((d) => !d.custom && d.id !== 'after-dark').map((d) => d.id);
+
+/**
+ * The next round's word for a game in progress, with the packs it now plays: the game's own
+ * while they have words, else `fallback` (the setup's current picks, so a game whose packs were
+ * deleted carries on by itself). Null when neither has a word.
+ */
+export function nextWord(game: { packIds: readonly string[]; used: readonly string[] }, fallback: readonly string[], all: readonly WordDeck[] = wordDecks(), rand: () => number = Math.random): { secret: Secret; packIds: string[] } | null {
+  const own = all.filter((d) => game.packIds.includes(d.id));
+  const ids = hasWords(own) ? game.packIds : fallback;
+  const decks = all.filter((d) => ids.includes(d.id));
+  const secret = hasWords(decks) ? makeDealer(decks, rand)(game.used) : undefined;
+  return secret ? { secret, packIds: [...ids] } : null;
+}

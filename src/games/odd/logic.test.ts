@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { seeded } from '../../lib/room/bots';
 import type { WordDeck } from '../../lib/content';
-import { makeDealer } from './deal';
+import { makeDealer, nextWord } from './deal';
 import {
-  caught, clueOrder, dealRound, endedRecord, gameRecord, hide, newGame, nextRound, passBack, rematch, roundPoints, secretFor, settle, showWord, toVote, vote,
+  caught, clueOrder, dealRound, endedRecord, gameRecord, hide, newGame, nextRound, passBack, rematch, roundPoints, secretFor, settle, showWord, startOver, toVote, vote,
   type GameOptions, type GameState,
 } from './logic';
 import { validGame } from './valid';
@@ -14,7 +14,7 @@ const start = (opts: Partial<GameOptions> = {}, seed = 1) => newGame(NAMES, { ..
 /** The game with the odd one out set to `odd`, at the vote. */
 const atVote = (odd: number) => { const g = start(); return toVote({ ...g, phase: 'clues', round: { ...g.round, odd } }); };
 const reload = (s: GameState) => validGame(JSON.parse(JSON.stringify(s)));
-const deck = (id: string, words: string[]): WordDeck => ({ id, name: id, emoji: '', blurb: '', words });
+const deck = (id: string, words: string[], name = `${id} pack`): WordDeck => ({ id, name, emoji: '', blurb: '', words });
 
 describe('deal', () => {
   it('never lets the odd one start when the option is on', () => {
@@ -38,8 +38,15 @@ describe('deal', () => {
     expect(next(used)?.word).toBeTruthy();
   });
   it('names the pack a word came from', () => {
-    const s = makeDealer([deck('Films', ['Jaws'])], seeded(2))();
-    expect(s).toEqual({ word: 'Jaws', pack: 'Films' });
+    const s = makeDealer([deck('films', ['Jaws'], 'Big Films')], seeded(2))();
+    expect(s).toEqual({ word: 'Jaws', pack: 'Big Films' });
+  });
+  it('carries on from the setup’s picks once the game’s packs are gone, and says so only when those are empty too', () => {
+    const all = [deck('mine', ['Jaws']), deck('other', ['Up'])];
+    expect(nextWord({ packIds: ['gone'], used: [] }, ['other'], all, seeded(3))).toEqual({ secret: { word: 'Up', pack: 'other pack' }, packIds: ['other'] });
+    expect(nextWord({ packIds: ['mine'], used: [] }, ['other'], all, seeded(3))?.packIds).toEqual(['mine']);
+    expect(nextWord({ packIds: ['gone'], used: [] }, ['gone too'], all, seeded(3))).toBeNull();
+    expect(nextWord({ packIds: ['empty'], used: [] }, ['other'], [...all, deck('empty', [])], seeded(3))?.packIds).toEqual(['other']);
   });
 });
 
@@ -136,6 +143,14 @@ describe('History', () => {
     expect(endedRecord(s, [])).toMatchObject({ title: 'Ben led 2–0–0–0', finished: false });
     expect(endedRecord(start(), [])).toBeNull();
   });
+  it('a new game over an unfinished one records it only when the new game starts', () => {
+    const old = settle(vote(atVote(1), 2), null);
+    expect(startOver(old, NAMES, OPTS, undefined, ['Movies'])).toBeNull();
+    const next = startOver(old, NAMES, OPTS, { word: 'Up', pack: 'Movies' }, ['Movies'])!;
+    expect(next.ended).toMatchObject({ finished: false, packs: ['Movies'] });
+    expect(next.game.round.word).toBe('Up');
+    expect(startOver(null, NAMES, OPTS, { word: 'Up', pack: 'Movies' }, [])!.ended).toBeNull();
+  });
 });
 
 describe('a saved game', () => {
@@ -147,5 +162,19 @@ describe('a saved game', () => {
     expect(validGame({ ...start(), seat: 9 })).toBeNull();
     expect(validGame({ ...start(), players: [] })).toBeNull();
     expect(validGame(null)).toBeNull();
+  });
+  it('a pick, a seat or a finished round that does not fit the phase is dropped', () => {
+    const g = start();
+    const revealed = vote(atVote(1), 2);
+    const scored = settle(revealed, null);
+    expect(validGame({ ...revealed, round: { ...revealed.round, picked: -1 } })).toBeNull();
+    expect(validGame({ ...revealed, round: { ...revealed.round, picked: 4 } })).toBeNull();
+    expect(validGame({ ...g, round: { ...g.round, picked: 1 } })).toBeNull();
+    expect(validGame({ ...scored, log: [] })).toBeNull();
+    expect(validGame({ ...scored, phase: 'win', rounds: 3, log: [] })).toBeNull();
+    expect(validGame({ ...g, seat: -1 })).toBeNull();
+    expect(validGame({ ...g, round: { ...g.round, odd: 4 } })).toBeNull();
+    expect(validGame({ ...g, round: { ...g.round, starter: -1 } })).toBeNull();
+    expect(validGame(scored)).toEqual(scored);
   });
 });

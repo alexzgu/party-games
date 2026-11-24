@@ -189,6 +189,15 @@ export function endedRecord(s: GameState, packs: string[]): Omit<HistoryEntry, '
   return { ...entry(s, packs, leadTitle(s, 'led')), finished: false };
 }
 
+/**
+ * New game over a saved one: null when no word could be dealt (the saved game stays, unrecorded),
+ * else the new game and the saved game's History entry when one is owed (`packs`: its pack names).
+ */
+export function startOver(saved: GameState | null, names: string[], opts: GameOptions, secret: Secret | undefined, packs: string[], rand: () => number = Math.random): { game: GameState; ended: Omit<HistoryEntry, 'id' | 'at'> | null } | null {
+  if (!secret) return null;
+  return { game: newGame(names, opts, secret, rand), ended: saved ? endedRecord(saved, packs) : null };
+}
+
 /** Cleans a typed name and reports why it cannot be added, if it cannot. */
 export function checkName(raw: string, existing: string[]): { name: string; error: string } {
   const name = raw.trim().replace(/\s+/g, ' ').slice(0, 18);

@@ -6,7 +6,7 @@
   import Setup from './Setup.svelte';
   import Play from './Play.svelte';
   import { loadGame, saveGame } from './store';
-  import { endedRecord, newGame, type GameOptions, type GameState } from './logic';
+  import { startOver, type GameOptions, type GameState } from './logic';
   import { makeDealer, packNames, pickedDecks } from './deal';
   import { record } from '../../lib/history';
   import { demoGame } from './demo';
@@ -21,12 +21,12 @@
   }
 
   function start(names: string[], opts: GameOptions) {
-    // Starting over throws away a game nobody finished: keep it in History as ended early.
-    const ended = !demo && game ? endedRecord(game, packNames(game.packIds)) : null;
-    if (ended) record(ended);
-    const secret = makeDealer(pickedDecks(opts.packIds))();
-    if (!secret) return;
-    commit(newGame(names, opts, secret));
+    // Starting over throws away a game nobody finished: it goes in History as ended early, only
+    // once the new game really starts (a deal that fails leaves the old game, unrecorded).
+    const next = startOver(demo ? null : game, names, opts, makeDealer(pickedDecks(opts.packIds))(), game ? packNames(game.packIds) : []);
+    if (!next) return;
+    if (next.ended) record(next.ended);
+    commit(next.game);
     go('/odd/play', true);
   }
 

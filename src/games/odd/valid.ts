@@ -15,6 +15,9 @@ function validRound(x: unknown, n: number): Round | null {
   return r;
 }
 
+/** The room's pick fits the phase: nobody before the vote, a seat from the reveal on. */
+const pickFits = (phase: Phase, picked: number) => (phase === 'pass' || phase === 'clues' || phase === 'vote' ? picked === -1 : picked >= 0);
+
 /** A saved game from localStorage, or null if missing or not the shape this version writes. */
 export function validGame(x: unknown): GameState | null {
   const s = x as GameState | null;
@@ -25,8 +28,9 @@ export function validGame(x: unknown): GameState | null {
   if (typeof s.hint !== 'boolean' || typeof s.oddNeverStarts !== 'boolean' || !strings(s.packIds) || !strings(s.used)) return null;
   const round = validRound(s.round, n);
   const log = Array.isArray(s.log) ? s.log.map((r) => validRound(r, n)) : [null];
-  if (!round || log.some((r) => !r) || log.length > s.rounds) return null;
+  if (!round || log.some((r) => !r || r.picked < 0) || log.length > s.rounds) return null;
   if ((s.phase === 'win') !== (log.length === s.rounds)) return null;
+  if (!pickFits(s.phase, round.picked) || ((s.phase === 'scores' || s.phase === 'win') && log.length === 0)) return null;
   return { ...s, round, log: log as Round[] };
 }
 

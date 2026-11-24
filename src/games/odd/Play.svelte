@@ -7,7 +7,8 @@
   import Reveal from './Reveal.svelte';
   import Scores from './Scores.svelte';
   import Win from './Win.svelte';
-  import { makeDealer, packNames, pickedDecks } from './deal';
+  import { nextWord, packNames } from './deal';
+  import { setupPicks } from './store';
   import { sfx, unlockAudio } from '../../lib/sound';
   import { haptic } from '../../lib/haptics';
   import { keepAwake } from '../../lib/wakelock';
@@ -26,8 +27,6 @@
     demo?: string;
   } = $props();
 
-  // svelte-ignore state_referenced_locally
-  const deal = makeDealer(pickedDecks(game.packIds));
   // svelte-ignore state_referenced_locally
   let showing = $state(demo.startsWith('secret'));
   let error = $state('');
@@ -75,14 +74,17 @@
     commit(next);
   }
 
-  /** A new word from the picked packs into `step`, or a note when the packs have none left. */
-  function withWord(step: (s: rules.Secret) => GameState) {
-    const secret = deal(game.used);
-    if (!secret) { error = 'The picked packs have no words now. Go back and pick a pack.'; return; }
+  /**
+   * A new word into `step`: from the game's packs, or, once those are gone, from the setup's
+   * current picks, which become the game's packs. Only when both are empty is there nothing to deal.
+   */
+  function withWord(step: (s: GameState, secret: rules.Secret) => GameState) {
+    const next = nextWord(game, setupPicks());
+    if (!next) { error = 'These packs are gone. Start a new game.'; return; }
     error = '';
     unlockAudio();
     sfx.go();
-    commit(step(secret));
+    commit(step({ ...game, packIds: next.packIds }, next.secret));
   }
 </script>
 
@@ -99,7 +101,7 @@
 {:else if game.phase === 'reveal'}
   <Reveal {game} onshow={() => { sfx.reveal(); commit(rules.showWord(game)); }} onsettle={settle} {onleave} />
 {:else if game.phase === 'scores'}
-  <Scores {game} {error} onnext={() => withWord((s) => rules.nextRound(game, s))} {onleave} />
+  <Scores {game} {error} onnext={() => withWord(rules.nextRound)} {onleave} />
 {:else}
-  <Win {game} {error} onagain={() => withWord((s) => rules.rematch(game, s))} onsetup={onleave} {onhome} />
+  <Win {game} {error} onagain={() => withWord(rules.rematch)} onsetup={onleave} {onhome} />
 {/if}
