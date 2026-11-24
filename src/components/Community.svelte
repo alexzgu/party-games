@@ -7,6 +7,7 @@
   import CommunityFilters from './CommunityFilters.svelte';
   import CommunityItems from './CommunityItems.svelte';
   import CommunityRow from './CommunityRow.svelte';
+  import PinnedPanel from './PinnedPanel.svelte';
   import type { PackGameId } from '../app.config';
   import { hasKey } from '../lib/claude';
   import { failureWords, getPack, hasPass, importLibraryPack, listPacks, namesIfImported, namesNote, ownedIds, starPack, type Failure, type LibraryFull, type LibraryPack, type Sort } from '../lib/library';
@@ -42,6 +43,20 @@
   const view = $derived(readView(route.params));
   const filters = $derived(readFilters(route.params));
   const setView = (patch: Partial<CommunityView & Filters>) => swap(viewUrl(route.path, route.params, patch));
+  /** A search or a filter other than the default shortens the list: said while they are folded away. */
+  const narrowed = $derived(!!view.q || filters.own !== 'all' || filters.skip !== 'unskipped');
+
+  // Another game's list (a Community page tab) starts from its top.
+  // svelte-ignore state_referenced_locally
+  let seenGame = game;
+  $effect(() => {
+    const g = game;
+    untrack(() => {
+      if (g === seenGame) return;
+      seenGame = g;
+      wrap?.querySelector('[data-keep-scroll="community-list"]')?.scrollTo(0, 0);
+    });
+  });
 
   // What is typed; it reaches the address (and the list) once the typing stops.
   // svelte-ignore state_referenced_locally
@@ -279,12 +294,27 @@
     {/snippet}
   </Screen>
 {:else}
-  <Screen title="Community" onback={onclose} backLabel={closeLabel} actions={note ? added : undefined}>
-    {@render tabs?.()}
-    <p class="faint intro">Packs Fizzwick made on friends' phones. Open one to see everything in it.</p>
-    <input type="text" inputmode="search" placeholder="Search names and descriptions" bind:value={query} maxlength="100" autocomplete="off" enterkeyhint="search" aria-label="Search Community packs" />
-    <Segmented label="Order" options={SORTS} bind:value={() => view.sort, (sort) => setView({ sort })} />
-    <CommunityFilters {filters} onchange={filter} />
+  <Screen fill keep="community-screen" title="Community" onback={onclose} backLabel={closeLabel} actions={note ? added : undefined}>
+    <PinnedPanel kind="community" label="community-h" foldId="community-tools" foldName="filters" foldSpoken="search and filters"
+      foldNote={narrowed ? 'filters on' : ''} keep="community-list" notice={tabs}>
+      {#snippet top()}
+        <input type="text" inputmode="search" placeholder="Search names and descriptions" bind:value={query} maxlength="100" autocomplete="off" enterkeyhint="search" aria-label="Search Community packs" />
+        <Segmented label="Order" options={SORTS} bind:value={() => view.sort, (sort) => setView({ sort })} />
+        <CommunityFilters {filters} onchange={filter} />
+      {/snippet}
+      {#snippet row(toggle)}
+        <div class="row">
+          <h3 id="community-h">Packs</h3>
+          {@render toggle()}
+        </div>
+      {/snippet}
+      <div class="body">{@render list()}</div>
+    </PinnedPanel>
+  </Screen>
+{/if}
+</div>
+
+{#snippet list()}
     {#if failure}
       <div class="state">
         <p>{failureWords(failure)}</p>
@@ -308,13 +338,13 @@
         <Button variant="secondary" onclick={() => load(false, shown.length + ENOUGH)} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Show more'}</Button>
       {/if}
     {/if}
-  </Screen>
-{/if}
-</div>
+{/snippet}
 
 <style>
   .community { display: contents; }
-  .intro { margin: 0; font-size: 0.95rem; line-height: 1.3; }
+  .row { display: flex; align-items: center; gap: var(--s-2); min-height: var(--tap-min); padding-bottom: var(--s-2); }
+  .row h3 { flex: 1; margin: 0; font-size: 1.05rem; }
+  .body { display: flex; flex-direction: column; gap: var(--s-3); }
   .state { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); margin: 0; padding: var(--s-2) 0; }
   .state p { margin: 0; }
   .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }

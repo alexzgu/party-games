@@ -20,8 +20,7 @@
     if (id === game) return;
     sfx.tap();
     haptic.light();
-    swap(viewUrl(`/community/${id}`, route.params, { pack: null }));
-    scrollTo(0, 0); // another game's list starts from its top
+    swap(viewUrl(`/community/${id}`, route.params, { pack: null })); // Community starts its list from the top
   }
 
   // The open tab stays in view in its row: on arriving, after a preview and on each switch.
@@ -45,7 +44,7 @@
 
 <Community {game} stay onclose={() => back('/')} closeLabel="Back to the main menu" onimport={() => {}}>
   {#snippet tabs()}
-    <div class="tabs pinned-bg" role="tablist" aria-label="Games" tabindex="-1" bind:this={row} onkeydown={keys}>
+    <div class="tabs" role="tablist" aria-label="Games" tabindex="-1" bind:this={row} onkeydown={keys}>
       {#each gameTabs as t (t.id)}
         <button type="button" class="tab" class:on={t.id === game} style:--tab={t.accent} role="tab" data-game={t.id}
           aria-selected={t.id === game} tabindex={t.id === game ? 0 : -1} onclick={() => pick(t.id as PackGameId)}>
@@ -57,12 +56,12 @@
 </Community>
 
 <style>
-  /* Pinned under the header, edge to edge; the row scrolls sideways when the games overflow it. */
+  /* Pinned under the header (Community's pinned panel), edge to edge; the row scrolls sideways
+     when the games overflow it. */
   .tabs {
-    position: sticky; top: var(--screen-head); z-index: var(--z-pinned);
     display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
-    margin: calc(-1 * var(--s-4)) calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));
-    padding: var(--s-2) var(--gutter-r) var(--s-2) var(--gutter-l);
+    margin: calc(-1 * var(--s-2)) calc(-1 * var(--gutter-r)) var(--s-2) calc(-1 * var(--gutter-l));
+    padding: var(--s-1) var(--gutter-r) var(--s-1) var(--gutter-l);
   }
   .tabs::-webkit-scrollbar { display: none; }
   .tabs:focus { outline: none; }
