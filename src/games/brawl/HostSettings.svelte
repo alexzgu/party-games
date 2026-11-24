@@ -6,7 +6,9 @@
   import PackList from '../../components/PackList.svelte';
   import RulesCard from '../../components/RulesCard.svelte';
   import { brawlPacks } from '../../lib/content';
-  import { DRAW_TIMES } from './logic';
+  import { active, DRAW_TIMES } from './logic';
+  import { roomTitles } from './pack';
+  import { nameList } from '../../lib/lend';
   import { loadSettings } from './store';
   import { host } from './host.svelte';
   import { packEntry } from './find';
@@ -28,7 +30,12 @@
     untrack(() => { if (next.packs.length) host.settings(next); });
   });
 
-  const titles = $derived(packs.filter((p) => selected.includes(p.id)).reduce((n, p) => n + p.titles.length, 0));
+  // What the room would deal with these picks for the players in the lobby (at least three): the
+  // same titles Start uses, and the packs Start would ask to borrow from when they are too few.
+  const players = Math.max(3, host.game ? active(host.game).length : 0);
+  const titles = $derived(roomTitles(packs, selected, players));
+  /** Why the room cannot start with these packs, or ''. */
+  const missing = $derived(!selected.length ? 'Pick packs' : titles.problem);
 </script>
 
 <Screen fill title="Room settings" {onback}>
@@ -36,7 +43,7 @@
     makeHint="Paste titles or ask the wizard" keepOnImport {onedit} {onmake} onimported={() => (packs = brawlPacks())}>
     {#snippet notice()}
       {#if locked}<p class="note">A game is running: these apply to the next one.</p>{/if}
-      {#if selected.length && titles < 24}<p class="note">{titles} {titles === 1 ? 'title' : 'titles'} picked: a full room of eight needs 24, so the game adds some from the other packs.</p>{/if}
+      {#if !missing && titles.ask}<p class="note">{titles.ask.short} The game will ask before adding titles from {nameList(titles.ask.lenders)}.</p>{/if}
     {/snippet}
   </PackList>
   {#snippet actions()}
@@ -47,7 +54,7 @@
         <span class="hint">For each of the two drawing passes in a round.</span>
       </div>
     </RulesCard>
-    <Button size="lg" onclick={onback} disabled={!selected.length}>{selected.length ? 'Done' : 'Pick packs'}</Button>
+    <Button size="lg" onclick={onback} disabled={!!missing}>{missing || 'Done'}</Button>
   {/snippet}
 </Screen>
 

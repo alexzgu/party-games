@@ -12,7 +12,7 @@
   import { sfx } from '../../lib/sound';
   import { keepAwake } from '../../lib/wakelock';
   import { host } from './host.svelte';
-  import { demo } from './demo';
+  import { demo, demoAsk } from './demo';
   import { view } from './view';
   import { active } from './logic';
   import HostLobby from './HostLobby.svelte';
@@ -84,7 +84,8 @@
   {/if}
   {#if v}
     {#if v.phase === 'lobby'}
-      <HostLobby {v} {code} demo={!!fixed} {brokerChanged} online={fixed ? undefined : host.online} onkick={fixed ? undefined : askKick} onrebroker={rebroker} />
+      <HostLobby {v} {code} demo={!!fixed} {brokerChanged} online={fixed ? undefined : host.online} onkick={fixed ? undefined : askKick} onrebroker={rebroker}
+        demoAsk={fixed === 'topup' ? demoAsk : undefined} />
     {:else}
       <HostStage {v} online={fixed ? undefined : host.online}
         onnext={() => { if (!fixed) host.skip(); }} onagain={() => { if (!fixed) host.rematch(); }} onclose={() => (confirm = true)} />

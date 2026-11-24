@@ -3,6 +3,7 @@ import { newCode, newPid } from '../../lib/room/code';
 import { seatIn } from '../../lib/room/seats';
 import { handPacks } from '../../lib/content';
 import { record } from '../../lib/history';
+import { consent } from '../../lib/lend';
 import { Bots, isBot } from '../../lib/room/bots';
 import { handBrain } from './bot';
 import { filled } from './cards';
@@ -10,21 +11,16 @@ import * as L from './logic';
 import { view } from './view';
 import { readToHost, type ToHost } from './protocol';
 import * as store from './store';
-import { roomCards, type RoomCards } from './pack';
+import { deal, roomCards, type RoomCards } from './pack';
 
-/** The chosen packs that exist; every pack when none of them does. */
-export function chosenPacks(ids: string[]) {
-  const all = handPacks();
-  const some = all.filter((p) => ids.includes(p.id));
-  return some.length ? some : all;
-}
-
-/** The room's cards for `players` players: the picks', topped up from other packs when they would stall (pack.ts). */
+/** The room's cards for `players` players: the picks', and the packs that would lend when they would stall (pack.ts). */
 export const content = (ids: string[], players: number): RoomCards => roomCards(handPacks(), ids, players);
 
 class Session {
   game = $state.raw<L.Game | null>(null);
   now = $state(Date.now());
+  /** The question about lending packs the host said yes to in this room (its key), or ''. */
+  agreed = $state('');
   private timer?: ReturnType<typeof setInterval>;
   private lastSkip = -Infinity;
   readonly link = new HostLink('hand', {
@@ -61,6 +57,7 @@ class Session {
     if (this.game || !(await this.link.own()) || this.game) return;
     const { game: old, room } = store.loadRoom();
     this.now = Date.now();
+    this.agreed = '';
     this.game = old ? L.afterReload(old, this.now) : L.newGame(newPid(), newCode(), store.loadSettings());
     this.link.open(this.game.code, room);
     store.saveGame(this.game, this.link.room);
@@ -102,7 +99,7 @@ class Session {
     const top = scores.filter((s) => s.score === scores[0]?.score).map((s) => s.name);
     const title = g.house >= g.settings.target ? 'The house won: everyone lost' : top.join(' & ') + (finished ? ' won' : ' led');
     const name = (pid: string) => pid === L.HOUSE ? 'The house' : g.players.find((p) => p.pid === pid)?.name ?? 'Player';
-    record({ game: 'hand', title, finished, scores, packs: chosenPacks(g.settings.packs).map((p) => p.name),
+    record({ game: 'hand', title, finished, scores, packs: content(g.settings.packs, 0).packs.map((p) => p.name),
       details: g.results.map((w) => `${name(w.by)}: ${filled(w.prompt, w.texts)}`) });
   }
 
@@ -120,11 +117,19 @@ class Session {
     if (this.game) this.commit(L.tick(this.game, this.now, this.online));
   }
 
-  start() {
+  /**
+   * Starts the game, unless other packs would lend and the host has not said yes to that question
+   * (`yes` is its key, from the popup): then false, and nothing starts.
+   */
+  start(yes = ''): boolean {
     const g = this.game;
     const c = g && content(g.settings.packs, L.active(g).length);
-    if (!g || !c || !L.canStart(g) || c.problem) return;
-    this.commit(L.start(g, { prompts: c.prompts, answers: c.answers }, Date.now()));
+    if (!g || !c || !L.canStart(g) || c.problem) return true;
+    const agreed = consent(c.ask, this.agreed, yes);
+    if (agreed === null) return false;
+    this.agreed = agreed;
+    this.commit(L.start(g, deal(c, !!c.ask), Date.now()));
+    return true;
   }
 
   settings(settings: L.Settings) {
@@ -173,6 +178,7 @@ class Session {
     this.bots.close();
     clearInterval(this.timer);
     this.game = null;
+    this.agreed = '';
     store.saveGame(null, '');
   }
 }

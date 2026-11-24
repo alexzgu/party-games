@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readLine } from '../../lib/listWizard';
 import { WIZARD } from './generate';
-import { dealTitles } from './pack';
+import { dealTitles, roomTitles } from './pack';
 
 describe('Doodle Brawl wizard lines and title pool', () => {
   it('reads a title with or without its label, and drops lines that break the rules', () => {
@@ -11,12 +11,12 @@ describe('Doodle Brawl wizard lines and title pool', () => {
     expect(readLine(WIZARD, `Title: ${'very '.repeat(8)}tired`)).toBeNull(); // over 8 words
   });
 
-  it("deals the picked packs' titles first, then the others', never one twice", () => {
+  it("deals the picked packs' titles first, then (after a yes) the lenders', never one twice", () => {
     const keep = <T,>(xs: T[]) => xs;
     const packs = [
       { id: 'mine', name: 'Mine', blurb: '', titles: ['Best at naps', 'Worst at naps'] },
       { id: 'classic', name: 'Classic', blurb: '', titles: ['Best at naps!', 'King of snacks'] },
     ];
-    expect(dealTitles(packs, ['mine'], keep)).toEqual(['Best at naps', 'Worst at naps', 'King of snacks']);
+    expect(dealTitles(roomTitles(packs, ['mine'], 3), true, keep)).toEqual(['Best at naps', 'Worst at naps', 'King of snacks']);
   });
 });

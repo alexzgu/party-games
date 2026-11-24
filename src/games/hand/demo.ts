@@ -1,4 +1,5 @@
 // Fixed screens for `#/hand/host?demo=<key>` and `#/hand/join?demo=<key>`: every phase without a room.
+import { ask } from '../../lib/lend';
 import type { Phase, Win } from './logic';
 import type { Answer, Card, View } from './view';
 
@@ -18,7 +19,7 @@ const results: Win[] = [
 ];
 const phases: Phase[] = ['lobby', 'answer', 'judge', 'vote', 'reveal', 'over'];
 const aliases: Record<string, Phase> = {
-  play: 'answer', spotlight: 'judge', paused: 'answer', wait: 'answer', played: 'answer', judging: 'judge', trade: 'answer', blank: 'answer',
+  topup: 'lobby', play: 'answer', spotlight: 'judge', paused: 'answer', wait: 'answer', played: 'answer', judging: 'judge', trade: 'answer', blank: 'answer',
 };
 
 export function demo(key: string, phone: boolean): View {
@@ -60,3 +61,7 @@ export function demoStart(key: string | null): { cards: number[]; typed: string;
   if (key === 'blank') return { cards: [99], typed: 'Collecting spoons from hotels', trading: false };
   return { cards: [], typed: '', trading: key === 'trade' };
 }
+
+/** The host's question before Start (`topup`) when the picks are too small. */
+export const demoAsk = ask([{ id: 'ours', name: 'Our Group Chat' }], [{ id: 'classic', name: 'Classic' }],
+  'Your packs have 40 answer cards. 5 players need 90.', 'cards')!;

@@ -3,13 +3,14 @@ import { newCode, newPid } from '../../lib/room/code';
 import { seatIn } from '../../lib/room/seats';
 import { brawlPacks } from '../../lib/content';
 import { record } from '../../lib/history';
+import { consent } from '../../lib/lend';
 import { Bots, isBot } from '../../lib/room/bots';
 import { brawlBrain } from './bot';
 import * as L from './logic';
 import { artIds, view } from './view';
 import { readToHost } from './protocol';
 import * as store from './store';
-import { dealTitles } from './pack';
+import { dealTitles, roomTitles, type RoomTitles } from './pack';
 import type { Drawing } from '../../lib/ink';
 
 function shuffle<T>(items: T[]): T[] {
@@ -20,10 +21,15 @@ function shuffle<T>(items: T[]): T[] {
   return items;
 }
 
+/** The room's titles for `players` players: the picks', and the packs that would lend when they are too few (pack.ts). */
+export const content = (ids: string[], players: number): RoomTitles => roomTitles(brawlPacks(), ids, players);
+
 class Session {
   game = $state.raw<L.Game | null>(null);
   art = $state.raw<Record<string, Drawing>>({});
   now = $state(Date.now());
+  /** The question about lending packs the host said yes to in this room (its key), or ''. */
+  agreed = $state('');
   private timer?: ReturnType<typeof setInterval>;
   private lastSkip = -Infinity;
   readonly link = new HostLink('brawl', {
@@ -60,6 +66,7 @@ class Session {
     const { game: old, room } = store.loadRoom();
     this.art = old ? store.loadArt() : {};
     this.now = Date.now();
+    this.agreed = '';
     this.game = old ? L.afterReload(old, this.now) : L.newGame(newPid(), newCode(), store.loadSettings());
     this.link.open(this.game.code, room);
     store.saveGame(this.game, this.link.room);
@@ -124,10 +131,19 @@ class Session {
     if (this.game) this.commit(L.tick(this.game, this.now, this.online, this.ring));
   }
 
-  start() {
+  /**
+   * Starts the game, unless other packs would lend and the host has not said yes to that question
+   * (`yes` is its key, from the popup): then false, and nothing starts.
+   */
+  start(yes = ''): boolean {
     const g = this.game;
-    if (!g || !L.canStart(g)) return;
-    this.commit(L.startRound({ ...g, titles: dealTitles(brawlPacks(), g.settings.packs, shuffle) }, this.ring(), Date.now()));
+    const c = g && content(g.settings.packs, L.active(g).length);
+    if (!g || !c || !L.canStart(g) || c.problem) return true;
+    const agreed = consent(c.ask, this.agreed, yes);
+    if (agreed === null) return false;
+    this.agreed = agreed;
+    this.commit(L.startRound({ ...g, titles: dealTitles(c, !!c.ask, shuffle) }, this.ring(), Date.now()));
+    return true;
   }
 
   settings(settings: L.Settings) {
@@ -170,6 +186,7 @@ class Session {
     clearInterval(this.timer);
     this.game = null;
     this.art = {};
+    this.agreed = '';
     store.saveGame(null, '');
     store.clearArt();
   }

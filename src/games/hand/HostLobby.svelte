@@ -11,11 +11,15 @@
   import Seats from './Seats.svelte';
   import AddBot from '../../components/room/AddBot.svelte';
   import StartButton from '../../components/room/StartButton.svelte';
+  import LendAsk from '../../components/room/LendAsk.svelte';
+  import { nameList, type Ask } from '../../lib/lend';
   import type { View } from './view';
 
-  let { v, code, demo, brokerChanged, online, onkick, onrebroker }: {
+  let { v, code, demo, brokerChanged, online, onkick, onrebroker, demoAsk }: {
     v: View; code: string; demo: boolean; brokerChanged: number; online?: ReadonlySet<string>;
     onkick?: (pid: string) => void; onrebroker: () => void;
+    /** A demo's question about lending packs, shown at once. */
+    demoAsk?: Ask;
   } = $props();
   const link = $derived.by(() => { void brokerChanged; return joinLink('hand', code, brokerSetting()); });
   const s = $derived(host.game?.settings ?? DEFAULT_SETTINGS);
@@ -27,7 +31,16 @@
   ].join(' · '));
   const need = $derived(Math.max(0, MIN_PLAYERS - v.players.length));
   const noCards = $derived(!!cards.problem);
-  const packLine = $derived(cards.packs.map((p) => p.name).join(', ') + (cards.added.length ? ` (+ cards from ${cards.added.join(', ')})` : ''));
+  const agreed = $derived(!!cards.ask && host.agreed === cards.ask.key);
+  const packLine = $derived(cards.packs.map((p) => p.name).join(', ') +
+    (!cards.ask ? '' : agreed ? ` (+ cards from ${nameList(cards.ask.lenders)})` : ' (too few cards for this room)'));
+  // svelte-ignore state_referenced_locally
+  let asking = $state(!!demoAsk);
+  /** The question on screen: the room's (it follows the room while open), or the demo's. */
+  const shown = $derived(asking ? demoAsk ?? cards.ask : null);
+  function start() {
+    if (!demo && !host.start()) asking = true;
+  }
 </script>
 
 <main class="lobby">
@@ -46,12 +59,16 @@
       <span>{packLine} · {rules}</span>
       <Button size="sm" variant="secondary" onclick={() => go('/hand/settings')} tip="Pick packs, time to answer, points to win and house rules">Settings</Button>
     </div>
-    <StartButton size="lg" players={v.players} {online} disabled={need > 0 || noCards} onstart={() => { if (!demo) host.start(); }}>
+    <StartButton size="lg" players={v.players} {online} disabled={need > 0 || noCards} onstart={start}>
       {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : noCards ? `${cards.problem}: pick packs in Settings` : `Start with ${v.players.length} players`}
     </StartButton>
     <ConnectionLink onchange={onrebroker} />
   </section>
 </main>
+{#if shown}
+  <LendAsk ask={shown} onclose={() => (asking = false)} onpacks={() => { asking = false; go('/hand/settings'); }}
+    onyes={() => { const key = shown.key; asking = !demo && !host.start(key); }} />
+{/if}
 
 <style>
   .lobby { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: clamp(var(--s-4), 5vw, 5rem); }

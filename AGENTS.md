@@ -169,7 +169,8 @@ Original titles for fighters in a drawing contest. List existing titles with
 `npm run list -- brawl`. Put the pack in `src/content/brawl/<id>.json` as
 `{"id": "<id>", "name": "...", "blurb": "...", "added": "...", "titles": ["World's okayest roommate"]}`. Use 2–8 words (60 characters at most) in sentence case, no closing . ! or ?, and write
 something specific and funny a player can draw. Titles must be unique across packs. A pack
-needs at least 24 titles to run a full eight-player game on its own. After Dark is cheeky.
+needs at least 24 titles to run a full eight-player game on its own (fewer players need fewer:
+13 for three); a room with too few asks the host before adding titles from other packs. After Dark is cheeky.
 Run `npm run test:content`.
 
 ### Would You Rather packs (`rather/`)
@@ -211,7 +212,9 @@ ideas must be new across *all* Sketchy packs. Default size 100 words and 30 idea
 
 Fill-in-the-blank cards: a judge reads a prompt and picks the funniest answer card played.
 List what exists first (`npm run list -- hand`): prompts and answers must be new across *all*
-Bad Hand packs. Default size 30 prompts and 120 answers (about four answers per prompt).
+Bad Hand packs. Default size 30 prompts and 120 answers (about four answers per prompt): 120
+answers run a full room of ten on their own; a room with too few asks the host before adding
+cards from other packs.
 
 ```json
 {"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "added": "2026-11-21T15:40", "prompts": ["My RA wrote me up for ___", "What got me through finals?", "___ and ___: the two pillars of dorm life"], "answers": ["A suspiciously large rice cooker", "Crying in the library stairwell"]}

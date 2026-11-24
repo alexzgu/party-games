@@ -127,4 +127,11 @@ describe('Doodle Brawl game', () => {
     expect((L.join(again, 'c', 'C', seats()) as { game: L.Game }).game.players.map((p) => p.pid)).toEqual(['a', 'c']);
     expect(L.leave(lobby, 'c').players.map((p) => p.pid)).toEqual(['a', 'b']);
   });
+
+  it("deals round two from the room's own titles, the ones already dealt again when late joiners outrun them", () => {
+    const one = L.startRound({ ...L.newGame('room', 'BCDF', L.DEFAULT_SETTINGS), players, titles: ['t0', 't1', 't2', 't3'] }, ring, at);
+    const two = L.startRound({ ...one, phase: 'scores' }, ['a', 'b', 'c', 'd'], at);
+    const dealt = two.bouts.flatMap((b) => [b.title, b.surprise]);
+    expect(dealt).toEqual(['t3', 't0', 't1', 't2', 't3', 't0', 't1', 't2']);
+  });
 });

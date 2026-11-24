@@ -935,7 +935,9 @@ On every host screen the button that closes the room says "Close" in every phase
 first ("Close the room?", with "The game ends." while one is being played); after a game "Lobby"
 keeps the room and its players for another. Start asks first while any player's phone is
 disconnected (`StartButton`: "2 phones are disconnected. Start anyway?", naming them), since those
-players are dealt in too; the question closes when too few are left to start.
+players are dealt in too; the question closes when too few are left to start. In Bad Hand and
+Doodle Brawl, Start also asks before other packs lend to picks too small for the room
+(`LendAsk`, `src/lib/lend.ts`; see each game).
 "Leave room" on a phone (any time, after a confirm) tells the host (`{t: 'leave'}`) before the
 link closes: the player is out like a removed one (no more turns or prompts, nobody waits for
 them) but may rejoin with the same code and keeps their score; a removed player may not, not even
@@ -1176,12 +1178,25 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
   drawing it lacks (`{t: 'art?', id}`) and keeps the answer. Drawings travel through the shared
   link's parts.
 - **Content** (`src/content/brawl/*.json`): `{"id", "name", "blurb", "added"?, "titles": ["..."]}`; titles and rematch titles
-  come from one pool, never repeating within a game: the picked packs' titles shuffled, then
-  every other pack's (*house*), so a small pack of a player's own never runs out.
+  come from one pool, never repeating within a game: the picked packs' titles shuffled (Classic's
+  when none of the picks exists any more).
+- **Too few titles** (*house*, `src/games/brawl/pack.ts`, shared steps in `src/lib/lend.ts`): a
+  game of N players needs N titles for round 1 and two per bout in round 2 (title and rematch
+  title), with round 2 sized for two late joiners: N + 2 × min(N + 2, 8), so 13 for three, 16
+  for four, 19, 22, 23 and 24 for eight. When the picks have fewer, Start does not start: a popup
+  says how many the picks have and the room needs, names the packs that would lend, and asks
+  "Add titles from Classic for this game?". Packs lend whole, in pack order (built-ins as
+  shipped, Classic first, then the player's own), only as many as reach the count; their
+  titles follow the picks' in the pool. "Add & start" starts with them; "Change packs" opens
+  the room's settings; closing does neither. The room keeps the yes while the question stays the
+  same (same picks, same lenders), never into another room or after the host screen reloads.
+  Nothing else adds titles: should more late joiners come than the count allowed for, round 2
+  deals the game's own titles again, the least recent first.
 - **Settings** (`#/brawl/settings`, a pack page like Snark Tank's): title packs (search/sort,
   editor, Make a pack or Add pack → New / 🌍 Community / Import, Export; a pack just made or
-  imported joins the picked ones; under 24 titles picked, a note says the game adds some from the
-  other packs) and a Rules row over Done opening seconds per drawing. Make a pack: paste titles
+  imported joins the picked ones; with too few titles for the lobby's players (at least three), a
+  note says how many and that the game will ask before adding titles from the packs it names) and
+  a Rules row over Done opening seconds per drawing. Make a pack: paste titles
   (one per line) or ask the wizard (a theme or a suggestion, 10–60 titles, default 30); own packs
   have "🧙 Add more" (5–40, default 15). Every route keeps a title only when it meets the content
   rules (2–8 words, capital first, no closing . ! or ?, 60 characters; `src/games/brawl/rules.ts`),
@@ -1199,7 +1214,8 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
   The lobby supports removing players, choosing packs and changing brokers. Reconnects
   and History work as in Snark Tank. Classic has 120 titles and After Dark has 60.
 - Demos at `#/brawl/host?demo=` and `#/brawl/join?demo=` with
-  `lobby|lobby-empty|draw|challenge|title|vote|payout|tag|rematch|scores|over|paused`.
+  `lobby|lobby-empty|topup|draw|challenge|title|vote|payout|tag|rematch|scores|over|paused`
+  (`topup`: the question before Start).
   Phone demos also have `join|wait|late|voted|watching|tagged`.
 - **Bots** (see Shared room link): draw a random doodle and name it from a short list, vote at
   random, keep or tag in at random.
@@ -1398,10 +1414,23 @@ prompt and the answers. Amounts marked *house* are ours.
   phase of play and also stops the missing judge's 20 s. A Players button mid-game removes a player (after a confirm). Settings
   (`#/hand/settings`, a pack page like Snark Tank's): card packs (Classic by default; search/sort,
   editor, Make a pack or Add pack → New / 🌍 Community / Import, Export; a pack just made or
-  imported joins the picked ones, like an expansion; if none of the chosen packs exists, all packs
-  are used), and a Rules row over Done opening answer time, target and the options; they apply to
-  the next game. Done says "Pick a pack with prompts" (or answers) while the picks lack either, and
-  a note warns when under 50 answer cards are picked (hands of ten run short).
+  imported joins the picked ones, like an expansion; if none of the chosen packs exists, Classic
+  is used), and a Rules row over Done opening answer time, target and the options; they apply to
+  the next game. Done says "No pack has prompt cards" (or answer cards) when no pack on the phone
+  has any, and a note says when the picks are too small for the lobby's players (at least three)
+  and that the game will ask before adding cards from the packs it names.
+- **Too few cards** (*house*, `src/games/hand/pack.ts`, shared steps in `src/lib/lend.ts`): a
+  room of N players needs (min(N, 8) + 2) × 10 + 20 answer cards (a hand of ten each, two seats
+  spare for late joiners, and a refill: 70 for three, 100 for six, 120 for eight or more) and at
+  least one prompt. When the picks fall short, Start does not start: a popup says what is short
+  ("Your packs have 40 answer cards. 6 players need 100.") and asks "Add cards from Classic for
+  this game?". Packs lend whole, in pack order (built-ins as shipped, Classic first, then the
+  player's own), only as many as cover the shortfall, and only the kind that is short (answers,
+  prompts or both). "Add & start" starts with them; "Change packs" opens the room's settings;
+  closing does neither. The lobby's pack line shows "(+ cards from Classic)" once the host said
+  yes and "(too few cards for this room)" before. The room keeps the yes while the question
+  stays the same (same picks, same lenders), never into another room or after the host screen
+  reloads. Nothing else adds cards: late joiners and refills draw from the room's own deck.
 - **Making packs**: paste cards, one per line (a line with `___` or ending in "?" is a prompt, the
   rest answers), or ask the wizard (a theme or a suggestion, 5–40 prompts, default 20, and four
   answers per prompt); own packs have "🧙 Add more" (5–30 prompts, default 10, answers likewise).
@@ -1417,7 +1446,8 @@ prompt and the answers. Amounts marked *house* are ours.
   are new across packs. Classic has 100 prompts and 400 answers; After Dark 50 and 200; about one
   prompt in six takes two cards.
 - Demos at `#/hand/host?demo=` and `#/hand/join?demo=` with
-  `lobby|play|judge|spotlight|reveal|vote|over|paused`; phone demos also have
+  `lobby|topup|play|judge|spotlight|reveal|vote|over|paused` (`topup`: the question before
+  Start); phone demos also have
   `join|wait|played|judging|trade|blank` (`wait` is the judge's phone while others answer).
 - **Bots** (see Shared room link): play random cards (a short stock line on a blank card); as
   judge show each answer large for about 3 s, then pick one at random; vote at random, never for

@@ -16,13 +16,14 @@
   import { brokerSetting } from '../../lib/room/broker';
   import { joinLink } from '../../lib/room/look';
   import { keepAwake } from '../../lib/wakelock';
-  import { host } from './host.svelte';
-  import { demo, demoArt } from './demo';
+  import { host, content } from './host.svelte';
+  import { demo, demoArt, demoAsk } from './demo';
   import { view } from './view';
   import { active, canStart } from './logic';
   import Stage from './Stage.svelte';
   import AddBot from '../../components/room/AddBot.svelte';
   import StartButton from '../../components/room/StartButton.svelte';
+  import LendAsk from '../../components/room/LendAsk.svelte';
   import Rules from './Rules.svelte';
   import { phaseLabel } from './labels';
 
@@ -37,6 +38,16 @@
   const playing = $derived(!!v && v.phase !== 'lobby' && v.phase !== 'over');
   const need = $derived(v ? Math.max(0, 3 - v.players.length) : 3);
   function rebroker() { brokerChanged++; if (!fixed) host.rebroker(); }
+  // The same titles Start deals from: Start is off when even the lenders have none, and asks
+  // before other packs lend (src/lib/lend.ts).
+  const titles = $derived(game && v ? content(game.settings.packs, v.players.length) : null);
+  // svelte-ignore state_referenced_locally
+  let asking = $state(fixed === 'topup');
+  /** The question on screen: the room's (it follows the room while open), or the demo's. */
+  const shown = $derived(asking ? fixed ? demoAsk : titles?.ask : null);
+  function start() {
+    if (!fixed && !host.start()) asking = true;
+  }
   function askKick(pid: string) {
     const p = game && active(game).find((x) => x.pid === pid);
     if (p) kicking = p;
@@ -97,8 +108,8 @@
             <p role="status">{host.trouble} <Button size="sm" variant="secondary" onclick={() => (connection = true)} tip="See how phones connect, or use a backup server">Trouble connecting?</Button></p>
           {/if}
           <div class="controls">
-            <StartButton players={v.players} online={fixed ? undefined : host.online} disabled={fixed ? v.players.length < 3 : !game || !canStart(game)} onstart={() => { if (!fixed) host.start(); }}>
-              {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${v.players.length} players`}
+            <StartButton players={v.players} online={fixed ? undefined : host.online} disabled={fixed ? v.players.length < 3 : !game || !canStart(game) || !!titles?.problem} onstart={start}>
+              {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : titles?.problem ? `${titles.problem}: pick packs in Settings` : `Start with ${v.players.length} players`}
             </StartButton>
             <Button variant="secondary" onclick={() => go('/brawl/settings')} tip="Pick the packs and the drawing time">Settings</Button>
           </div>
@@ -126,6 +137,10 @@
     <Button variant="danger" onclick={() => { if (!fixed) host.close(); back('/brawl'); }}>Close</Button>
     <Button variant="secondary" onclick={() => (confirm = false)}>{playing ? 'Keep playing' : 'Stay'}</Button>
   </Popup>
+{/if}
+{#if shown}
+  <LendAsk ask={shown} onclose={() => (asking = false)} onpacks={() => { asking = false; go('/brawl/settings'); }}
+    onyes={() => { const key = shown.key; asking = !fixed && !host.start(key); }} />
 {/if}
 {#if connection}
   <Connection onclose={() => (connection = false)} onchange={rebroker} />

@@ -1,4 +1,5 @@
 import type { Drawing } from '../../lib/ink';
+import { ask } from '../../lib/lend';
 import type { Phase, Result } from './logic';
 import type { View } from './view';
 
@@ -29,7 +30,7 @@ const phases: Phase[] = ['lobby', 'draw', 'challenge', 'title', 'vote', 'payout'
 
 export function demo(key: string, phone: boolean): View {
   const phase = phases.find((p) => p === key) ?? ({
-    'lobby-empty': 'lobby', wait: 'draw', late: 'challenge', voted: 'vote', watching: 'vote',
+    'lobby-empty': 'lobby', topup: 'lobby', wait: 'draw', late: 'challenge', voted: 'vote', watching: 'vote',
     'tagged': 'tag', rematch: 'vote', paused: 'draw',
   } as const)[key as 'wait'] ?? 'lobby';
   const v: View = {
@@ -63,3 +64,7 @@ export function demo(key: string, phone: boolean): View {
   if (phase === 'over') v.results = [result, { ...result, title: 'Champion of parking lot karaoke', fighters: [moth, toast], winner: 0, rematch: true }];
   return v;
 }
+
+/** The host's question before Start (`topup`) when the picks are too small. */
+export const demoAsk = ask([{ id: 'ours', name: 'Office Legends' }], [{ id: 'classic', name: 'Classic' }],
+  'Your packs have 10 titles. 4 players need 16.', 'titles')!;

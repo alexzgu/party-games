@@ -9,6 +9,7 @@
   import { handPacks } from '../../lib/content';
   import { active, ANSWER_TIMES, MIN_PLAYERS, TARGETS } from './logic';
   import { roomCards } from './pack';
+  import { nameList } from '../../lib/lend';
   import { loadSettings } from './store';
   import { host } from './host.svelte';
   import { packEntry } from './find';
@@ -34,8 +35,8 @@
     untrack(() => { if (next.packs.length) host.settings(next); });
   });
 
-  // What the room would deal with these picks for the players in the lobby (at least three):
-  // the same cards Start uses, topped up from other packs when the picks alone would stall.
+  // What the room would deal with these picks for the players in the lobby (at least three): the
+  // same cards Start uses, and the packs Start would ask to borrow from when the picks would stall.
   const players = Math.max(MIN_PLAYERS, host.game ? active(host.game).length : 0);
   const cards = $derived(roomCards(packs, selected, players));
   /** Why the room cannot start with these packs, or ''. */
@@ -49,7 +50,7 @@
     makeHint="Paste cards or ask the wizard" keepOnImport {onedit} {onmake} onimported={() => (packs = handPacks())}>
     {#snippet notice()}
       {#if locked}<p class="note">A game is running: these apply to the next one.</p>{/if}
-      {#if !missing && cards.added.length}<p class="note">The picked packs alone would run short ({cards.packs.some((p) => p.prompts.length) ? 'hands of ten need more answer cards' : 'they have no prompts'}), so the game adds cards from {cards.added.join(', ')}.</p>{/if}
+      {#if !missing && cards.ask}<p class="note">{cards.ask.short} The game will ask before adding cards from {nameList(cards.ask.lenders)}.</p>{/if}
     {/snippet}
   </PackList>
   {#snippet actions()}

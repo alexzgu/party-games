@@ -3,6 +3,8 @@ import { sameName } from '../../lib/room/names';
 export const DRAW_DELIVERY_MS = 1000;
 /** Characters in a player's name, at most. */
 export const NAME_MAX = 20;
+/** Players in a room, at most. */
+export const MAX_PLAYERS = 8;
 export const DRAW_TIMES = [60, 90, 120, 180] as const;
 export type Settings = { seconds: number; packs: string[] };
 export const DEFAULT_SETTINGS: Settings = { seconds: 90, packs: ['classic'] };
@@ -47,7 +49,7 @@ export function join(g: Game, pid: string, name: string, online: ReadonlySet<str
   if (!pid || Object.hasOwn(Object.prototype, pid) || !name) return { error: 'Enter a player name to join.' };
   const gone = g.left ?? [];
   if (gone.includes(pid)) {
-    if (active(g).length >= 8) return { error: 'This room is full.' };
+    if (active(g).length >= MAX_PLAYERS) return { error: 'This room is full.' };
     return { pid, game: { ...g, kicked: g.kicked.filter((x) => x !== pid), left: gone.filter((x) => x !== pid) } };
   }
   if (g.kicked.includes(pid)) return { error: 'The host removed you from this room.' };
@@ -55,7 +57,7 @@ export function join(g: Game, pid: string, name: string, online: ReadonlySet<str
   if (own) return { pid, game: g };
   const match = sameName(inRoom(g), name);
   if (match) return online.has(match.pid) || gone.includes(match.pid) ? { error: 'That name is already in use.' } : { pid: match.pid, game: g };
-  if (active(g).length >= 8) return { error: 'This room is full.' };
+  if (active(g).length >= MAX_PLAYERS) return { error: 'This room is full.' };
   return { pid, game: { ...g, players: [...g.players, { pid, name, score: 0 }] } };
 }
 
@@ -85,10 +87,19 @@ function enter(g: Game, phase: Phase, now: number, seconds?: number): Game {
 export function startRound(g: Game, ring: string[], now: number): Game {
   if (ring.length < 2) return enter(g, 'over', now);
   const titles = [...g.titles];
+  // More players than the room's titles were counted for: its titles already dealt come round again.
+  const dealt = g.bouts.flatMap((b) => [b.title, b.surprise]).filter(Boolean);
+  let again = 0;
+  const next = () => {
+    const t = titles.shift();
+    if (t === undefined) return dealt[again++ % dealt.length];
+    dealt.push(t);
+    return t;
+  };
   const round = g.round + 1;
   const bouts = ring.map((pid, i): Bout => ({
-    title: titles.shift()!, artists: [pid, ring[(i + 1) % ring.length]], fighters: [null, null],
-    surprise: round === 2 ? titles.shift()! : '',
+    title: next(), artists: [pid, ring[(i + 1) % ring.length]], fighters: [null, null],
+    surprise: round === 2 ? next() : '',
   }));
   return enter({ ...g, round, titles, bouts, index: 0, rematch: false }, 'draw', now, g.settings.seconds);
 }
