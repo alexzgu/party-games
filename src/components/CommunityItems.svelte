@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PackGameId } from '../app.config';
+  import { parts } from '../games/trivia/rules';
 
   // A Community pack's contents before it is imported, as plain text in a simple list per game
   // (Snark Tank: with each prompt's stock answer, then its finals; Bad Hand: prompts, then answers;
@@ -39,6 +40,7 @@
       {:else if game === 'gibberish'}<li class="row"><span>{t(o.phrase)}</span><span class="answer">→ {t(o.answer)}{#if t(o.hint)} · {t(o.hint)}{/if}</span></li>
       {:else if game === 'quick'}<li class="row line"><span class="dim">Name 3</span> {t(x)}</li>
       {:else if game === 'rather'}<li class="row line"><span class="dim">Would you rather</span> {t(x)}</li>
+      {:else if game === 'trivia'}<li class="row line"><span class="dim">{parts(t(x)).category}</span> {parts(t(x)).question}</li>
       {:else if game === 'taboo'}<li class="row"><span>{t(o.word)}</span><span class="answer">{list(o.banned).map(t).join(' · ')}</span></li>
       {:else if game === 'snark'}<li class="row"><span>{t(x)}</span>{#if t(stock[t(x)])}<span class="answer">Suggest: {t(stock[t(x)])}</span>{/if}</li>
       {:else}<li class="row line">{t(x)}</li>

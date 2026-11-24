@@ -222,12 +222,13 @@ chip beside the count (nothing for a pack without one; no "made by" wording), th
 "Owned" or "Skipped" chip when it is; the preview shows the
 username chip under its count. Tapping a pack shows everything in it (Snark
 Tank: with its stock answers and finals; Bad Hand: prompts, then answers; Sketchy: words, then
-ideas; Brain Freeze and Would You Rather: each item after a dim "Name 3" or "Would you rather"). Everything fetched is rebuilt from each game's own
+ideas; Brain Freeze and Would You Rather: each item after a dim "Name 3" or "Would you rather"; Smarty Pants: each question after its
+category, dim, never the answers). Everything fetched is rebuilt from each game's own
 fields first (`src/lib/libraryShape.ts`, the same rules the server stores by).
 "Import" saves it through the pack-file import above (same checks, fresh id and name, ticked on
 its own) and leaves out items a built-in pack already has in games whose items must be new
 across packs (Spectrum, Inn Co Hear Ant, Brain Freeze, Don't Say It, Snark Tank, Doodle Brawl,
-Sketchy, Bad Hand, Would You Rather).
+Sketchy, Bad Hand, Would You Rather, Smarty Pants).
 Two filters under the order choose among the packs, each on its own (`cown`, `cskip` in the
 address): Owned (All, the default; Owned; Not owned) and Skipped (All; Skipped; Not skipped, the
 default). "Skip" in a preview leaves the pack out on this phone and returns to the list; "Unskip"
@@ -1738,7 +1739,7 @@ Bad Hand). Amounts marked *house* are ours.
   removes a player (after a confirm). The host is saved under `trivia:host`, a phone's seat under
   `trivia:me`.
 - **Settings** (`#/trivia/settings`, a pack page like Would You Rather's): question packs (Classic
-  by default; search/sort, editor, Make a pack or Add pack → New / Import, Export; a pack just made
+  by default; search/sort, editor, Make a pack or Add pack → New / 🌍 Community / Import, Export; a pack just made
   or imported joins the picked ones; when the picks hold fewer questions than a game asks, a note
   says so), and a Rules row over Done opening questions per game and seconds to answer; they apply
   to the next game. Solo reads the same picks and seconds.
@@ -1759,7 +1760,8 @@ Bad Hand). Amounts marked *house* are ours.
   three letters, as in "Washington D.C." and "Martin Luther King Jr."; nothing is reordered), and the wizard's are also new to every Smarty Pants pack on the phone; anything else
   is dropped unseen. The wizard is asked for facts that are certain and will not change, exactly
   one right answer, wrong answers of the same kind and length as the right one, and a spread of
-  categories.
+  categories. Community: wizard packs and Add more are shared; questions a built-in has (the same
+  question text, whatever its category and answers) are left out on import.
 - **Content** (`src/content/trivia/*.json`): `{"id", "name", "blurb", "added"?, "questions": [...]}`.
   A question is one line of six parts split by " | ": category, question, the right answer, three
   wrong answers; none empty after trimming (an answer may be only a sign, "%") and none holding a

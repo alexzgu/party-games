@@ -5,7 +5,7 @@ import { afterRun, canShare, failureWords, getPack, importLibraryPack, listPacks
 import { lastShared, noteShared } from './shareLog.svelte';
 import { WIZARD_SERVER } from './wizardServer';
 import { setUsername } from './username';
-import { customDecks, customHand, customQuick, customQuiz, customSnark, quizBoards, type HandPack, type QuickPack, type QuizBoard, type SnarkPack, type SpectrumPack, type WordDeck } from './content';
+import { customDecks, customHand, customQuick, customQuiz, customSnark, customTrivia, quizBoards, type HandPack, type QuickPack, type QuizBoard, type SnarkPack, type SpectrumPack, type WordDeck } from './content';
 import { exportFile, importPacks } from './packfile';
 import { addClues } from '../games/quiz/more';
 import { tidyBoard } from '../games/quiz/board';
@@ -314,6 +314,16 @@ describe('browsing and importing', () => {
     const r = importLibraryPack('rather', shared({ game: 'rather', items: ['Never eat pizza again or have pizza for every meal for a month', 'lick a subway pole or swallow a fly'] }));
     if ('error' in r) throw new Error(r.error);
     expect(r.saved[0]).toMatchObject({ prompts: ['lick a subway pole or swallow a fly'] });
+    expect(r.problems).toEqual(['1 already in the built-in packs left out.']);
+  });
+
+  it('imports a Smarty Pants pack, leaving out a question a built-in pack already has, whatever its category and answers', () => {
+    const builtin = { id: 'classic', name: 'Classic', blurb: '', questions: ['Science | What gas do plants take in from the air? | Carbon dioxide | Oxygen | Nitrogen | Helium'] };
+    const spy = vi.spyOn(customTrivia, 'builtins').mockReturnValue([builtin]); // the gate's own built-ins may not exist yet
+    const r = importLibraryPack('trivia', shared({ game: 'trivia', items: ['Nature | WHAT gas do plants take in from the air | CO2 | Argon | Neon | Xenon', 'Geography | Which river flows through Cairo? | The Nile | The Amazon | The Danube | The Ganges'] }));
+    spy.mockRestore();
+    if ('error' in r) throw new Error(r.error);
+    expect(r.saved[0]).toMatchObject({ questions: ['Geography | Which river flows through Cairo? | The Nile | The Amazon | The Danube | The Ganges'] });
     expect(r.problems).toEqual(['1 already in the built-in packs left out.']);
   });
 
