@@ -172,6 +172,24 @@ something specific and funny a player can draw. Titles must be unique across pac
 needs at least 24 titles to run a full eight-player game on its own. After Dark is cheeky.
 Run `npm run test:content`.
 
+### Would You Rather packs (`rather/`)
+
+Questions with two choices; everyone picks a side. Default size 60 questions. List what exists
+first (`npm run list -- rather`): a question must be new across *all* Would You Rather packs, and
+the same two choices in the other order count as the same question. The app shows "Would you
+rather" in front of each question, so store only the rest:
+
+```json
+{"id": "college-life", "name": "College Life", "blurb": "Dorms, finals and dining halls", "added": "2026-11-24T15:10", "prompts": ["live in the library or live in the dining hall", "retake your hardest final or redo freshman year"]}
+```
+
+Quality bar (`src/games/rather/rules.ts`): exactly one " or " joining two different choices,
+each 1–12 words and 60 characters at most, the whole question 130 at most; starts lowercase
+(names keep their capitals inside); never starts with "Would you rather"; no closing . ! or ?.
+Both choices tempting or both awful, so the room splits about in half; specific and funny
+beats vague; original wording, never copied from a commercial game. "After Dark": cheeky,
+never explicit. Run `npm run test:content`.
+
 ### Sketchy packs (`sketch/`)
 
 Two lists for the drawing game. List what exists first (`npm run list -- sketch`): words and

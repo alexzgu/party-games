@@ -6,8 +6,8 @@
 // nothing on the phone uses yet, so an import never overwrites a pack.
 import { APP, gameName, GAMES, RETIRED_GAMES, type PackGameId } from '../app.config';
 import {
-  customBrawl, customDecks, customGibberish, customHand, customQuick, customQuiz, customSketch, customSnark, customSpectra, customTaboo, slugify,
-  type BrawlPack, type GibberishCard, type HandPack, type SketchPack, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type SnarkPack,
+  customBrawl, customDecks, customGibberish, customHand, customQuick, customQuiz, customRather, customSketch, customSnark, customSpectra, customTaboo, slugify,
+  type BrawlPack, type GibberishCard, type HandPack, type SketchPack, type GibberishPack, type QuickPack, type QuizBoard, type QuizCategory, type RatherPack, type SnarkPack,
   type Spectrum, type SpectrumPack, type TabooCard, type TabooPack, type WordDeck,
 } from './content';
 import { MAX_ITEM_CHARS, MAX_WORDS_PER_ITEM } from '../games/forehead/words';
@@ -30,6 +30,7 @@ export { freshId, freshName };
 import { BRAWL_LISTS } from '../games/brawl/rules';
 import { HAND_LISTS } from '../games/hand/rules';
 import { SKETCH_LISTS } from '../games/sketch/rules';
+import { RATHER_LISTS } from '../games/rather/rules';
 
 export const FORMAT = 1;
 export const MAX_FILE_BYTES = 1_000_000;
@@ -37,11 +38,11 @@ export const MAX_FILE_BYTES = 1_000_000;
 export const MAX_PACKS = 100;
 export const MAX_ITEMS = 1000;
 
-export type AnyPack = WordDeck | SpectrumPack | GibberishPack | QuizBoard | QuickPack | SnarkPack | TabooPack | BrawlPack | SketchPack | HandPack;
+export type AnyPack = WordDeck | SpectrumPack | GibberishPack | QuizBoard | QuickPack | SnarkPack | TabooPack | BrawlPack | SketchPack | HandPack | RatherPack;
 type Field = 'words' | 'cards' | 'categories' | 'prompts' | 'titles' | 'answers' | 'ideas';
 
 /** Games whose packs are plain text lists, checked by their specs (listPack.ts). */
-const LIST_SPECS: Partial<Record<PackGameId, readonly ListSpec[]>> = { brawl: BRAWL_LISTS, hand: HAND_LISTS, sketch: SKETCH_LISTS };
+const LIST_SPECS: Partial<Record<PackGameId, readonly ListSpec[]>> = { brawl: BRAWL_LISTS, hand: HAND_LISTS, sketch: SKETCH_LISTS, rather: RATHER_LISTS };
 
 /**
  * Each game's item lists, the main one first: what the Community library calls a pack's items.
@@ -49,13 +50,13 @@ const LIST_SPECS: Partial<Record<PackGameId, readonly ListSpec[]>> = { brawl: BR
  */
 const LISTS: Record<PackGameId, readonly Field[]> = {
   forehead: ['words'], dial: ['cards'], gibberish: ['cards'], quiz: ['categories'], quick: ['prompts'], snark: ['prompts'], taboo: ['cards'],
-  brawl: ['titles'], hand: ['prompts', 'answers'], sketch: ['words', 'ideas'],
+  brawl: ['titles'], hand: ['prompts', 'answers'], sketch: ['words', 'ideas'], rather: ['prompts'],
 };
 const FIELD = (game: PackGameId): Field => LISTS[game][0];
 /** What the items are called on screen, plural (all of a pack's lists together). */
 const UNIT: Record<PackGameId, string> = {
   forehead: 'words', dial: 'cards', gibberish: 'cards', quiz: 'clues', quick: 'prompts', snark: 'prompts', taboo: 'cards',
-  brawl: 'titles', hand: 'cards', sketch: 'items',
+  brawl: 'titles', hand: 'cards', sketch: 'items', rather: 'questions',
 };
 
 /** What a game's items are called on screen: plural, and one of them ("words", "word"). */
@@ -303,7 +304,7 @@ function readData(data: unknown, game: PackGameId): ReadResult | { error: string
 interface PackStore { saved(): AnyPack[]; putAll(p: readonly AnyPack[]): boolean; markShared(id: string): boolean; isBuiltin(id: string): boolean; names(): string[]; builtins(): readonly AnyPack[] }
 const STORES: Record<PackGameId, PackStore> = {
   forehead: customDecks, dial: customSpectra, gibberish: customGibberish, quiz: customQuiz,
-  quick: customQuick, snark: customSnark, taboo: customTaboo, brawl: customBrawl, hand: customHand, sketch: customSketch,
+  quick: customQuick, snark: customSnark, taboo: customTaboo, brawl: customBrawl, hand: customHand, sketch: customSketch, rather: customRather,
 } as Record<PackGameId, PackStore>;
 
 /** Every pack saved on this phone for a game: the player's own and their edits of built-ins. */

@@ -231,3 +231,10 @@ const handFiles = import.meta.glob<HandPack>('../content/hand/*.json', { eager: 
 const builtinHand = ordered(Object.values(handFiles), ['classic', 'after-dark']);
 export const customHand = customStore<HandPack>('custom:hand', builtinHand, 'hand');
 export const handPacks = (): HandPack[] => merged(customHand.saved(), builtinHand);
+
+/** Would You Rather packs: what follows "Would you rather", two choices joined by "or" ("be able to fly or be invisible"). */
+export interface RatherPack extends PackMeta { id: string; name: string; blurb: string; prompts: string[] }
+const ratherFiles = import.meta.glob<RatherPack>('../content/rather/*.json', { eager: true, import: 'default' });
+const builtinRather = ordered(Object.values(ratherFiles), ['classic', 'after-dark']);
+export const customRather = customStore<RatherPack>('custom:rather', builtinRather, 'rather');
+export const ratherPacks = (): RatherPack[] => merged(customRather.saved(), builtinRather);

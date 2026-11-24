@@ -8,6 +8,7 @@ import { checked, type ListSpec } from './listSpec';
 import { BRAWL_LISTS } from '../games/brawl/rules';
 import { HAND_LISTS } from '../games/hand/rules';
 import { SKETCH_LISTS } from '../games/sketch/rules';
+import { RATHER_LISTS } from '../games/rather/rules';
 
 export const SHAPE = {
   /** Items in one list of a pack, at most (Bad Hand and Sketchy have two lists; Big Board: its tiles, at most 8 × 10 anyway). */
@@ -29,7 +30,7 @@ export const SHAPE = {
   answer: 200,
 };
 
-export type ShapeGame = 'forehead' | 'dial' | 'gibberish' | 'quick' | 'quiz' | 'taboo' | 'snark' | 'brawl' | 'hand' | 'sketch';
+export type ShapeGame = 'forehead' | 'dial' | 'gibberish' | 'quick' | 'quiz' | 'taboo' | 'snark' | 'brawl' | 'hand' | 'sketch' | 'rather';
 
 /** Two-list games: the second list, beside the items (Bad Hand: prompts are the items, answers beside). */
 const SECOND: Partial<Record<ShapeGame, { field: string; max: number }>> = {
@@ -38,7 +39,7 @@ const SECOND: Partial<Record<ShapeGame, { field: string; max: number }>> = {
 };
 
 /** Games whose items keep their own rules in the library too (each list's, the main one first). */
-const SPECS: Partial<Record<ShapeGame, readonly ListSpec[]>> = { brawl: BRAWL_LISTS, hand: HAND_LISTS, sketch: SKETCH_LISTS };
+const SPECS: Partial<Record<ShapeGame, readonly ListSpec[]>> = { brawl: BRAWL_LISTS, hand: HAND_LISTS, sketch: SKETCH_LISTS, rather: RATHER_LISTS };
 
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
 
@@ -54,7 +55,7 @@ type Item = string | Record<string, unknown>;
 /** One item rebuilt with only its game's fields, or null when it does not fit. */
 function item(game: ShapeGame, x: unknown): Item | null {
   if (game === 'forehead' || game === 'sketch') return text(x, SHAPE.word);
-  if (game === 'quick' || game === 'snark' || game === 'brawl' || game === 'hand') return text(x, SHAPE.phrase);
+  if (game === 'quick' || game === 'snark' || game === 'brawl' || game === 'hand' || game === 'rather') return text(x, SHAPE.phrase);
   if (!isObj(x)) return null;
   if (game === 'dial') {
     const left = text(x.left, SHAPE.word), right = text(x.right, SHAPE.word);

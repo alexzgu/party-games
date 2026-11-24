@@ -4,7 +4,7 @@ export const APP = {
   shortName: 'Jerk Box',
 } as const;
 
-export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl' | 'sketch' | 'hand' | 'odd';
+export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl' | 'sketch' | 'hand' | 'odd' | 'rather';
 
 /** Games whose packs players can make, import and export on a phone (Odd One Out plays Heads Down.'s). */
 export type PackGameId = Exclude<GameId, 'salad' | 'odd'>;
@@ -37,6 +37,7 @@ export const GAMES: GameInfo[] = [
   { id: 'sketch', name: 'Sketchy', players: '3–10 players · own phones', tags: ['Own phones', 'Drawing'], accent: 'var(--c-sketch)', emoji: '✏️' },
   { id: 'hand', name: 'Bad Hand', players: '3–10 players · own phones', tags: ['Own phones', 'Funny'], accent: 'var(--c-hand)', emoji: '🃏' },
   { id: 'odd', name: 'Odd One Out', players: '3–12 players', tags: ['One phone', 'Words'], accent: 'var(--c-odd)', emoji: '🕵️' },
+  { id: 'rather', name: 'Would You Rather', players: '3–12 players · own phones', tags: ['One phone', 'Own phones', 'Funny'], accent: 'var(--c-rather)', emoji: '🤔' },
 ];
 
 /** Games taken out of the app, by id: an old pack file of one is turned away by name. */

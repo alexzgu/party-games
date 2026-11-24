@@ -12,7 +12,7 @@
   import { slugify, type PackMeta } from '../lib/content';
   import { hasKey, WANTS } from '../lib/claude';
   import { sfx } from '../lib/sound';
-  import { afterRun, passedSoFar, shareWizardPack } from '../lib/library';
+  import { afterRun, libraryOn, passedSoFar, shareWizardPack } from '../lib/library';
   import { NO_ROOM, putSplit, type AnyPack } from '../lib/packfile';
   import { addItems, itemKey, packItems, parseLists, type ListItem, type ListPack, type ListSpec } from '../lib/listPack';
   import { askLine, generateItems, type ListWizard } from '../lib/listWizard';
@@ -95,10 +95,13 @@
     else unsaved = NO_ROOM;
   }
 
-  /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
+  /**
+   * Whether everything the wizard put on screen came through a magic-words pass (shared only then),
+   * in a game the Community library takes: a pack of any other game is never marked for sharing.
+   */
   let byPass = false;
   async function run() {
-    byPass = passedSoFar(byPass, items.length);
+    byPass = libraryOn(game) && passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     if (!name.trim()) name = theme.trim().replace(/^\w/, (c) => c.toUpperCase()).slice(0, 40);
     reviewing = true;

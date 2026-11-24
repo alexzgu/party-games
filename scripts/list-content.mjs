@@ -1,15 +1,16 @@
 // Lists what a game's built-in packs already contain, so a new pack can avoid repeats:
-//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl|sketch|hand
-import { readdirSync, readFileSync } from 'node:fs';
+//   node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl|sketch|hand|rather
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const game = process.argv[2];
 const dir = join(import.meta.dirname, '..', 'src', 'content', game ?? '');
-if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'salad', 'brawl', 'sketch', 'hand'].includes(game)) {
-  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl|sketch|hand');
+if (!['forehead', 'dial', 'gibberish', 'quiz', 'taboo', 'quick', 'snark', 'salad', 'brawl', 'sketch', 'hand', 'rather'].includes(game)) {
+  console.error('usage: node scripts/list-content.mjs forehead|dial|gibberish|quiz|taboo|quick|snark|salad|brawl|sketch|hand|rather');
   process.exit(1);
 }
-const packs = readdirSync(dir)
+// A game whose first pack is not written yet has no folder: nothing exists, so nothing is listed.
+const packs = (existsSync(dir) ? readdirSync(dir) : [])
   .filter((f) => f.endsWith('.json'))
   .flatMap((f) => { const d = JSON.parse(readFileSync(join(dir, f), 'utf8')); return d.packs ?? [d]; });
 

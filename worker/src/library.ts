@@ -7,7 +7,7 @@ import type { Checked } from './validate';
 /** Change these to loosen or tighten the library. */
 export const LIBRARY = {
   /** Games whose packs the library takes (the app's pack games). */
-  games: ['forehead', 'dial', 'gibberish', 'quick', 'quiz', 'taboo', 'snark', 'brawl', 'hand', 'sketch'] as const,
+  games: ['forehead', 'dial', 'gibberish', 'quick', 'quiz', 'taboo', 'snark', 'brawl', 'hand', 'sketch', 'rather'] as const,
   nameMax: 60,
   blurbMax: 140,
   /** The pack's items and extras as JSON, at most. */
