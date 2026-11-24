@@ -276,7 +276,7 @@ preview, past its list too) and ticks the new pack, as before.
   Any other address, such as one of a game taken out of the app (`#/song`), shows Home.
 - **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours; pack lists as Tiles or List, the same choice as the switch on every pack list), Heads Down. (scored-word feedback,
   "Calibrate tilt" with the calibration note under it, "Check tilt" with its notes under it),
-  The wizard, Cards (reset card history), and App (refresh the offline cache and reload).
+  The wizard, Cards (allow repeats), and App (refresh the offline cache and reload).
   The wizard never mentions invite links. Without a key
   or pass: "Fizzwick the Wizard is not on this phone yet. Say the magic words the host told
   you:", a hidden field with Show (no autofill) and "Say them", answered "Fizzwick heard you.
