@@ -1188,10 +1188,14 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
   "Add titles from Classic for this game?". Packs lend whole, in pack order (built-ins as
   shipped, Classic first, then the player's own), only as many as reach the count; their
   titles follow the picks' in the pool. "Add & start" starts with them; "Change packs" opens
-  the room's settings; closing does neither. The room keeps the yes while the question stays the
-  same (same picks, same lenders), never into another room or after the host screen reloads.
-  Nothing else adds titles: should more late joiners come than the count allowed for, round 2
-  deals the game's own titles again, the least recent first.
+  the room's settings; closing does neither. The popup opens only from Start and stays while the
+  question stays the same (a player joining only updates its numbers); once the question goes
+  away or changes it closes for good, and only Start asks again. The room keeps the yes while
+  the question stays the same (same picks, same lenders), never into another room or after the
+  host screen reloads; History names the lending packs with the picked ones. Nothing else adds
+  titles: should more late joiners come than the count allowed for, round 2 reuses round 1's
+  titles, one not yet dealt that round and that neither artist had while there is one (a
+  pool smaller than the bouts simply repeats).
 - **Settings** (`#/brawl/settings`, a pack page like Snark Tank's): title packs (search/sort,
   editor, Make a pack or Add pack → New / 🌍 Community / Import, Export; a pack just made or
   imported joins the picked ones; with too few titles for the lobby's players (at least three), a
@@ -1427,10 +1431,13 @@ prompt and the answers. Amounts marked *house* are ours.
   this game?". Packs lend whole, in pack order (built-ins as shipped, Classic first, then the
   player's own), only as many as cover the shortfall, and only the kind that is short (answers,
   prompts or both). "Add & start" starts with them; "Change packs" opens the room's settings;
-  closing does neither. The lobby's pack line shows "(+ cards from Classic)" once the host said
-  yes and "(too few cards for this room)" before. The room keeps the yes while the question
-  stays the same (same picks, same lenders), never into another room or after the host screen
-  reloads. Nothing else adds cards: late joiners and refills draw from the room's own deck.
+  closing does neither. The popup opens only from Start and stays while the question stays the
+  same (a player joining only updates its numbers); once the question goes away or changes it
+  closes for good, and only Start asks again. The lobby's pack line shows "(+ cards from
+  Classic)" once the host said yes and "(too few cards for this room)" before. The room keeps the
+  yes while the question stays the same (same picks, same lenders), never into another room or
+  after the host screen reloads; History names the lending packs with the picked ones. Nothing
+  else adds cards: late joiners and refills draw from the room's own deck.
 - **Making packs**: paste cards, one per line (a line with `___` or ending in "?" is a prompt, the
   rest answers), or ask the wizard (a theme or a suggestion, 5–40 prompts, default 20, and four
   answers per prompt); own packs have "🧙 Add more" (5–30 prompts, default 10, answers likewise).

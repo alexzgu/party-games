@@ -3,7 +3,7 @@ import { newCode, newPid } from '../../lib/room/code';
 import { seatIn } from '../../lib/room/seats';
 import { brawlPacks } from '../../lib/content';
 import { record } from '../../lib/history';
-import { consent } from '../../lib/lend';
+import { consent, stillAsked } from '../../lib/lend';
 import { Bots, isBot } from '../../lib/room/bots';
 import { brawlBrain } from './bot';
 import * as L from './logic';
@@ -30,6 +30,8 @@ class Session {
   now = $state(Date.now());
   /** The question about lending packs the host said yes to in this room (its key), or ''. */
   agreed = $state('');
+  /** The question about lending packs put to the host after Start (its key) while it still stands, or ''. */
+  asked = $state('');
   private timer?: ReturnType<typeof setInterval>;
   private lastSkip = -Infinity;
   readonly link = new HostLink('brawl', {
@@ -67,6 +69,7 @@ class Session {
     this.art = old ? store.loadArt() : {};
     this.now = Date.now();
     this.agreed = '';
+    this.asked = '';
     this.game = old ? L.afterReload(old, this.now) : L.newGame(newPid(), newCode(), store.loadSettings());
     this.link.open(this.game.code, room);
     store.saveGame(this.game, this.link.room);
@@ -112,13 +115,14 @@ class Session {
     const scores = L.standings(g).map(({ name, score }) => ({ name, score }));
     const leaders = scores.filter((s) => s.score === scores[0]?.score).map((s) => s.name);
     record({ game: 'brawl', title: leaders.join(' & ') + (finished ? ' won' : ' led'), finished, scores,
-      packs: brawlPacks().filter((p) => g.settings.packs.includes(p.id)).map((p) => p.name) });
+      packs: [...content(g.settings.packs, 0).packs.map((p) => p.name), ...(g.lent ?? [])] });
   }
 
   private commit(next: L.Game) {
     if (next === this.game) return;
     const finished = next.phase === 'over' && this.game?.phase !== 'over';
     this.game = next;
+    this.asked = stillAsked(this.asked, next.phase === 'lobby' ? content(next.settings.packs, L.active(next).length).ask : null);
     store.saveGame(next, this.link.room);
     if (finished) this.history(next, true);
     for (const pid of this.link.pids()) this.send(pid);
@@ -133,18 +137,23 @@ class Session {
 
   /**
    * Starts the game, unless other packs would lend and the host has not said yes to that question
-   * (`yes` is its key, from the popup): then false, and nothing starts.
+   * (`yes` is its key, from the popup): then nothing starts and the question is put to the host.
    */
-  start(yes = ''): boolean {
+  start(yes = '') {
     const g = this.game;
     const c = g && content(g.settings.packs, L.active(g).length);
-    if (!g || !c || !L.canStart(g) || c.problem) return true;
+    if (!g || !c || !L.canStart(g) || c.problem) return;
     const agreed = consent(c.ask, this.agreed, yes);
-    if (agreed === null) return false;
+    if (agreed === null) {
+      this.asked = c.ask!.key;
+      return;
+    }
     this.agreed = agreed;
-    this.commit(L.startRound({ ...g, titles: dealTitles(c, !!c.ask, shuffle) }, this.ring(), Date.now()));
-    return true;
+    this.commit(L.startRound({ ...g, titles: dealTitles(c, !!c.ask, shuffle), lent: c.ask?.lenders }, this.ring(), Date.now()));
   }
+
+  /** The host closed the question without an answer. */
+  dismiss() { this.asked = ''; }
 
   settings(settings: L.Settings) {
     store.saveSettings(settings);
@@ -187,6 +196,7 @@ class Session {
     this.game = null;
     this.art = {};
     this.agreed = '';
+    this.asked = '';
     store.saveGame(null, '');
     store.clearArt();
   }

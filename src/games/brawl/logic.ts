@@ -25,6 +25,8 @@ export type Game = {
   rematch: boolean; results: Result[]; deadline: number | null; frozen: number | null;
   /** Players out by their own choice ("Leave room"), among `kicked` until they come back. */
   left?: string[];
+  /** The packs that lent titles to this game after the host said yes, by name. */
+  lent?: string[];
 };
 
 export const newGame = (id: string, code: string, settings: Settings): Game => ({
@@ -84,23 +86,33 @@ function enter(g: Game, phase: Phase, now: number, seconds?: number): Game {
   return { ...g, phase, at: g.at + 1, deadline: seconds === undefined ? null : now + seconds * 1000, frozen: null };
 }
 
+/**
+ * A title from an earlier round for a bout between `artists`, once the fresh ones ran out (more late
+ * joiners than the room's titles were counted for): one not dealt this round yet (`used`) that
+ * neither artist had, else one not dealt this round, else one neither had, else any. With no
+ * earlier round, this round's titles come round again.
+ */
+function reuse(earlier: readonly Bout[], used: readonly string[], artists: readonly string[]): string {
+  const old = [...new Set(earlier.flatMap((b) => [b.title, b.surprise]).filter(Boolean))];
+  const theirs = new Set(earlier.filter((b) => b.artists.some((a) => artists.includes(a))).flatMap((b) => [b.title, b.surprise]));
+  const unused = (t: string) => !used.includes(t), notTheirs = (t: string) => !theirs.has(t);
+  return old.find((t) => unused(t) && notTheirs(t)) ?? old.find(unused) ?? old.find(notTheirs) ?? old[0] ?? used[0];
+}
+
 export function startRound(g: Game, ring: string[], now: number): Game {
   if (ring.length < 2) return enter(g, 'over', now);
   const titles = [...g.titles];
-  // More players than the room's titles were counted for: its titles already dealt come round again.
-  const dealt = g.bouts.flatMap((b) => [b.title, b.surprise]).filter(Boolean);
-  let again = 0;
-  const next = () => {
-    const t = titles.shift();
-    if (t === undefined) return dealt[again++ % dealt.length];
-    dealt.push(t);
+  const used: string[] = [];
+  const next = (artists: Pair<string>) => {
+    const t = titles.shift() ?? reuse(g.bouts, used, artists);
+    used.push(t);
     return t;
   };
   const round = g.round + 1;
-  const bouts = ring.map((pid, i): Bout => ({
-    title: next(), artists: [pid, ring[(i + 1) % ring.length]], fighters: [null, null],
-    surprise: round === 2 ? next() : '',
-  }));
+  const bouts = ring.map((pid, i): Bout => {
+    const artists: Pair<string> = [pid, ring[(i + 1) % ring.length]];
+    return { title: next(artists), artists, fighters: [null, null], surprise: round === 2 ? next(artists) : '' };
+  });
   return enter({ ...g, round, titles, bouts, index: 0, rematch: false }, 'draw', now, g.settings.seconds);
 }
 

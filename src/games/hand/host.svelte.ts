@@ -3,7 +3,7 @@ import { newCode, newPid } from '../../lib/room/code';
 import { seatIn } from '../../lib/room/seats';
 import { handPacks } from '../../lib/content';
 import { record } from '../../lib/history';
-import { consent } from '../../lib/lend';
+import { consent, stillAsked } from '../../lib/lend';
 import { Bots, isBot } from '../../lib/room/bots';
 import { handBrain } from './bot';
 import { filled } from './cards';
@@ -21,6 +21,8 @@ class Session {
   now = $state(Date.now());
   /** The question about lending packs the host said yes to in this room (its key), or ''. */
   agreed = $state('');
+  /** The question about lending packs put to the host after Start (its key) while it still stands, or ''. */
+  asked = $state('');
   private timer?: ReturnType<typeof setInterval>;
   private lastSkip = -Infinity;
   readonly link = new HostLink('hand', {
@@ -58,6 +60,7 @@ class Session {
     const { game: old, room } = store.loadRoom();
     this.now = Date.now();
     this.agreed = '';
+    this.asked = '';
     this.game = old ? L.afterReload(old, this.now) : L.newGame(newPid(), newCode(), store.loadSettings());
     this.link.open(this.game.code, room);
     store.saveGame(this.game, this.link.room);
@@ -99,7 +102,7 @@ class Session {
     const top = scores.filter((s) => s.score === scores[0]?.score).map((s) => s.name);
     const title = g.house >= g.settings.target ? 'The house won: everyone lost' : top.join(' & ') + (finished ? ' won' : ' led');
     const name = (pid: string) => pid === L.HOUSE ? 'The house' : g.players.find((p) => p.pid === pid)?.name ?? 'Player';
-    record({ game: 'hand', title, finished, scores, packs: content(g.settings.packs, 0).packs.map((p) => p.name),
+    record({ game: 'hand', title, finished, scores, packs: [...content(g.settings.packs, 0).packs.map((p) => p.name), ...(g.lent ?? [])],
       details: g.results.map((w) => `${name(w.by)}: ${filled(w.prompt, w.texts)}`) });
   }
 
@@ -107,6 +110,7 @@ class Session {
     if (next === this.game) return;
     const finished = next.phase === 'over' && this.game?.phase !== 'over';
     this.game = next;
+    this.asked = stillAsked(this.asked, next.phase === 'lobby' ? content(next.settings.packs, L.active(next).length).ask : null);
     store.saveGame(next, this.link.room);
     if (finished) this.history(next, true);
     for (const pid of this.link.pids()) this.send(pid);
@@ -119,18 +123,23 @@ class Session {
 
   /**
    * Starts the game, unless other packs would lend and the host has not said yes to that question
-   * (`yes` is its key, from the popup): then false, and nothing starts.
+   * (`yes` is its key, from the popup): then nothing starts and the question is put to the host.
    */
-  start(yes = ''): boolean {
+  start(yes = '') {
     const g = this.game;
     const c = g && content(g.settings.packs, L.active(g).length);
-    if (!g || !c || !L.canStart(g) || c.problem) return true;
+    if (!g || !c || !L.canStart(g) || c.problem) return;
     const agreed = consent(c.ask, this.agreed, yes);
-    if (agreed === null) return false;
+    if (agreed === null) {
+      this.asked = c.ask!.key;
+      return;
+    }
     this.agreed = agreed;
-    this.commit(L.start(g, deal(c, !!c.ask), Date.now()));
-    return true;
+    this.commit({ ...L.start(g, deal(c, !!c.ask), Date.now()), lent: c.ask?.lenders });
   }
+
+  /** The host closed the question without an answer. */
+  dismiss() { this.asked = ''; }
 
   settings(settings: L.Settings) {
     store.saveSettings(settings);
@@ -179,6 +188,7 @@ class Session {
     clearInterval(this.timer);
     this.game = null;
     this.agreed = '';
+    this.asked = '';
     store.saveGame(null, '');
   }
 }

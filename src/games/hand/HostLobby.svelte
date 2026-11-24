@@ -12,7 +12,7 @@
   import AddBot from '../../components/room/AddBot.svelte';
   import StartButton from '../../components/room/StartButton.svelte';
   import LendAsk from '../../components/room/LendAsk.svelte';
-  import { nameList, type Ask } from '../../lib/lend';
+  import { nameList, onScreen, type Ask } from '../../lib/lend';
   import type { View } from './view';
 
   let { v, code, demo, brokerChanged, online, onkick, onrebroker, demoAsk }: {
@@ -35,12 +35,10 @@
   const packLine = $derived(cards.packs.map((p) => p.name).join(', ') +
     (!cards.ask ? '' : agreed ? ` (+ cards from ${nameList(cards.ask.lenders)})` : ' (too few cards for this room)'));
   // svelte-ignore state_referenced_locally
-  let asking = $state(!!demoAsk);
-  /** The question on screen: the room's (it follows the room while open), or the demo's. */
-  const shown = $derived(asking ? demoAsk ?? cards.ask : null);
-  function start() {
-    if (!demo && !host.start()) asking = true;
-  }
+  let demoOpen = $state(!!demoAsk);
+  /** The question on screen: the room's while it is the one put to the host after Start (host.svelte.ts), or the demo's. */
+  const shown = $derived(demoAsk ? (demoOpen ? demoAsk : null) : onScreen(host.asked, cards.ask));
+  const dismiss = () => { if (demoAsk) demoOpen = false; else host.dismiss(); };
 </script>
 
 <main class="lobby">
@@ -59,15 +57,15 @@
       <span>{packLine} · {rules}</span>
       <Button size="sm" variant="secondary" onclick={() => go('/hand/settings')} tip="Pick packs, time to answer, points to win and house rules">Settings</Button>
     </div>
-    <StartButton size="lg" players={v.players} {online} disabled={need > 0 || noCards} onstart={start}>
+    <StartButton size="lg" players={v.players} {online} disabled={need > 0 || noCards} onstart={() => { if (!demo) host.start(); }}>
       {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : noCards ? `${cards.problem}: pick packs in Settings` : `Start with ${v.players.length} players`}
     </StartButton>
     <ConnectionLink onchange={onrebroker} />
   </section>
 </main>
 {#if shown}
-  <LendAsk ask={shown} onclose={() => (asking = false)} onpacks={() => { asking = false; go('/hand/settings'); }}
-    onyes={() => { const key = shown.key; asking = !demo && !host.start(key); }} />
+  <LendAsk ask={shown} onclose={dismiss} onpacks={() => { dismiss(); go('/hand/settings'); }}
+    onyes={() => { if (demoAsk) dismiss(); else host.start(shown.key); }} />
 {/if}
 
 <style>

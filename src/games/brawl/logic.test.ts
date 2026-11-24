@@ -128,10 +128,23 @@ describe('Doodle Brawl game', () => {
     expect(L.leave(lobby, 'c').players.map((p) => p.pid)).toEqual(['a', 'b']);
   });
 
-  it("deals round two from the room's own titles, the ones already dealt again when late joiners outrun them", () => {
-    const one = L.startRound({ ...L.newGame('room', 'BCDF', L.DEFAULT_SETTINGS), players, titles: ['t0', 't1', 't2', 't3'] }, ring, at);
+  it("deals round two from the room's own titles, reusing earlier ones without repeats or an artist's own where it can", () => {
+    const eight = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const lobby = { ...L.newGame('room', 'BCDF', L.DEFAULT_SETTINGS), players: eight.map((pid) => ({ pid, name: pid, score: 0 })) };
+    const one = L.startRound({ ...lobby, titles: Array.from({ length: 10 }, (_, i) => `t${i}`) }, eight, at);
     const two = L.startRound({ ...one, phase: 'scores' }, ['a', 'b', 'c', 'd'], at);
     const dealt = two.bouts.flatMap((b) => [b.title, b.surprise]);
-    expect(dealt).toEqual(['t3', 't0', 't1', 't2', 't3', 't0', 't1', 't2']);
+    expect(dealt.slice(0, 2)).toEqual(['t8', 't9']);
+    expect(new Set(dealt).size).toBe(8);
+    for (const b of two.bouts) {
+      const theirs = one.bouts.filter((x) => x.artists.some((pid) => b.artists.includes(pid))).map((x) => x.title);
+      expect(theirs).not.toContain(b.title);
+      expect(theirs).not.toContain(b.surprise);
+    }
+    // Too few titles for the bouts: every bout still gets one.
+    const small = L.startRound({ ...lobby, titles: ['only'] }, ring, at);
+    const smallTwo = L.startRound({ ...small, phase: 'scores' }, eight, at);
+    expect(small.bouts.map((b) => b.title)).toEqual(['only', 'only', 'only']);
+    expect(smallTwo.bouts.flatMap((b) => [b.title, b.surprise]).every((t) => t === 'only')).toBe(true);
   });
 });

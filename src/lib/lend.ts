@@ -55,6 +55,16 @@ export function consent(a: Ask | null, agreed: string, yes: string): string | nu
   return yes === a.key || agreed === a.key ? a.key : null;
 }
 
+/**
+ * After the room changes: the key of the question the host was shown after pressing Start
+ * (`asked`), kept only while the room's question (`now`, null outside the lobby) is still that
+ * one. A question that went away or changed is forgotten, so only a new Start shows it again.
+ */
+export const stillAsked = (asked: string, now: Ask | null): string => (asked && now?.key === asked ? asked : '');
+
+/** The question on screen: the room's, while it is the one the host was shown after Start. */
+export const onScreen = (asked: string, now: Ask | null): Ask | null => (stillAsked(asked, now) ? now : null);
+
 /** "Classic", "Classic and After Dark", "A, B and C". */
 export const nameList = (names: readonly string[]): string =>
   names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;

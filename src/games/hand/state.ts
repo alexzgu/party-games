@@ -59,6 +59,8 @@ export type Game = {
   round: Round | null; house: number; results: Win[];
   /** Each player's count of point trades, so a re-sent trade is done once. */
   traded: Record<string, number>;
+  /** The packs that lent cards to this game after the host said yes, by name. */
+  lent?: string[];
 };
 
 export const newGame = (id: string, code: string, settings: Settings): Game => ({
