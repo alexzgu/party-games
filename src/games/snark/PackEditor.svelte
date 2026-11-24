@@ -135,7 +135,7 @@
   {:else}
     {@const n = toFill(p).length}
     <AddMore title="🧙 Stock answers" name={p.name} noun="stock answers" range={null} steerHint="e.g. sillier, shorter"
-      cta="✨ Write {n} stock {n === 1 ? 'answer' : 'answers'}" ask={(o) => fillStock(p, o)} keyOf={itemKey}
+      cta="✨ Write answers" ask={(o) => fillStock(p, o)} keyOf={itemKey}
       onadd={(kept: Stock[], byPass: boolean) => added((now) => addStock(now, kept), byPass)} onclose={() => (adding = '')}>
       {#snippet size()}<p class="muted">{missing} {missing === 1 ? 'prompt has' : 'prompts have'} no stock answer for “Suggest”.{missing > n ? ` Fizzwick does ${n} at a time.` : ''}</p>{/snippet}
       {#snippet item(i: Stock)}<WizardItem {i} />{/snippet}

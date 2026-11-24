@@ -79,7 +79,7 @@
     {#if won >= 0}
       <Button size="lg" onclick={onwin}>🏆 Winner</Button>
     {:else}
-      <Button size="lg" onclick={onbegin}>I'm {up.name}</Button>
+      <Button size="lg" onclick={onbegin}>Start clock</Button>
     {/if}
     {#if game.prev}<Button variant="ghost" size="sm" onclick={onundo} tip="Back to judging the last try; any point comes off">Undo</Button>{/if}
   {/snippet}

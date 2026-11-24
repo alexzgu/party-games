@@ -154,7 +154,7 @@
 {#snippet savedActions()}
   <Button size="lg" onclick={() => savedPack && onuse(savedPack.id)} tip="Back to setup, with this pack picked">Use now</Button>
   {#if hasKey()}
-    <Button variant="secondary" onclick={moreLikeSaved} tip="Fizzwick writes more cards to add to this pack">More</Button>
+    <Button variant="secondary" onclick={moreLikeSaved} tip="Fizzwick writes more cards to add to this pack">Add more</Button>
   {:else}
     <Button variant="secondary" onclick={pasteMore} tip="Add another list of cards to this pack">Paste more</Button>
   {/if}
@@ -215,7 +215,7 @@
       {#if mine.length}
         <p class="faint or">or add them to one of yours</p>
         {#each mine as p (p.id)}
-          <Button variant="secondary" onclick={() => addTo(p)}>+ {p.name}</Button>
+          <Button variant="secondary" onclick={() => addTo(p)}>+ {p.name} ({p.cards.length})</Button>
         {/each}
       {/if}
       <Button variant="ghost" onclick={() => (step = 'review')}>Back</Button>

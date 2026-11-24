@@ -74,7 +74,7 @@
   {/if}
 </div>
 {#if !sent && screen.choices.length}
-  <div class="send"><Button size="lg" disabled={used === 0} onclick={send} tip={used ? "Sends your votes; they can't be changed after" : undefined}>{used ? `Send ${used}` : 'Tap answers'}</Button></div>
+  <div class="send"><Button size="lg" disabled={used === 0} onclick={send} tip={used ? "Sends your votes; they can't be changed after" : undefined}>{used ? 'Send votes' : 'Tap answers'}</Button></div>
 {/if}
 
 <style>

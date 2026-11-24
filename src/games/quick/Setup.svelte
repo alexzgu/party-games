@@ -116,8 +116,9 @@
     </RulesCard>
     {#if inProgress}
       <Button size="lg" disabled={names.length < MIN_PLAYERS} onclick={() => { unlockAudio(); keepRoster(); onresume(); }} tip={names.length < MIN_PLAYERS ? undefined : 'Carries on with the game saved on this device'}>{names.length < MIN_PLAYERS ? missing : 'Resume game'}</Button>
+      {#if confirming}<p class="faint" role="status">This ends the saved game.</p>{/if}
       <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!missing} tip={missing ? undefined : 'Ends the saved game; asks for a second tap first'}>
-        {missing || (confirming ? 'Really restart?' : 'New game')}
+        {missing || (confirming ? 'Start over' : 'New game')}
       </Button>
     {:else}
       <Button size="lg" onclick={start} disabled={!!missing}>{missing || 'Start game'}</Button>

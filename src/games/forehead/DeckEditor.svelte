@@ -150,9 +150,9 @@
       {#if builtin}
         <div class="note" class:edited>
           {#if edited}
-            <p><b>Edited</b> on this phone. Your changes replace the original everywhere.</p>
+            <p><b>Edited</b> on this phone. {confirmRestore ? 'All your edits will be lost.' : 'Your changes replace the original everywhere.'}</p>
             <Button size="sm" variant={confirmRestore ? 'danger' : 'secondary'} onclick={restore} tip="Undoes your changes and brings back the original pack">
-              {confirmRestore ? 'Really undo?' : 'Restore original'}
+              {confirmRestore ? 'Confirm restore' : 'Restore original'}
             </Button>
           {:else}
             <p>Comes with the game. Any change you make saves as your own version; you can restore the original later.</p>

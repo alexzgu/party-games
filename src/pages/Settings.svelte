@@ -107,8 +107,8 @@
   <section class="stack">
     <h3>The wizard</h3>
     {#if hasWizard}
-      <p class="muted small">🧙 Fizzwick the Wizard lives on this phone: he can make packs from any theme. Sent away, he only comes back with the magic words.</p>
-      <button type="button" class="remove" onclick={forgetWords} data-tip="Removes the wizard from this device; he comes back only with the magic words">{sureForget ? 'Really remove?' : 'Send away'}</button>
+      <p class="muted small">🧙 Fizzwick the Wizard lives on this phone: he can make packs from any theme. Removing him clears his pass and any saved key; he only comes back with the magic words.</p>
+      <button type="button" class="remove" onclick={forgetWords} data-tip="Removes the wizard from this device; he comes back only with the magic words">{sureForget ? 'Confirm removal' : 'Remove wizard'}</button>
     {/if}
     <MagicWords />
   </section>
@@ -116,7 +116,7 @@
   <section class="stack">
     <h3>Cards</h3>
     <p class="muted small">Cards you have already seen are held back until a pack runs out, so rounds rarely repeat.</p>
-    <Button variant="secondary" onclick={clearSeen} tip="Lets cards you have already seen come up again">Reset history</Button>
+    <Button variant="secondary" onclick={clearSeen} tip="Lets cards you have already seen come up again">Allow repeats</Button>
     {#if cleared}<p class="status ok" role="status">Card history cleared. Every card can come up again.</p>{/if}
   </section>
   {#if canRefreshApp}

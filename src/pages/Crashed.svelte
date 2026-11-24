@@ -16,13 +16,13 @@
 
 <Screen title="Oops" onback={() => { go('/', true); reset(); }}>
   <h2>That didn't work</h2>
-  <p class="muted">Something in this game broke. Starting it fresh usually fixes it; your own packs are kept.</p>
+  <p class="muted">Something in this game broke. Resetting it usually fixes it: that clears this game's saved progress and settings, but keeps your own packs.</p>
   <details>
     <summary class="faint">Details</summary>
     <pre>{String((error as Error)?.message ?? error)}</pre>
   </details>
   {#snippet actions()}
-    <Button size="lg" onclick={startFresh} tip="Clears this game's saved progress and settings; your packs stay">Start fresh</Button>
+    <Button size="lg" onclick={startFresh} tip="Clears this game's saved progress and settings; your packs stay">Reset game</Button>
     <Button variant="ghost" onclick={() => { go('/', true); reset(); }}>Home</Button>
   {/snippet}
 </Screen>

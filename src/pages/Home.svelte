@@ -70,7 +70,7 @@
   {#if !standalone}
     <div class="install">
       <button class="install-btn" onclick={() => (showInstall = !showInstall)} aria-expanded={showInstall} data-tip="Shows how to install the app on this device">
-        📲 Install app
+        📲 Install help
       </button>
       {#if showInstall}
         <p class="how fade-in">

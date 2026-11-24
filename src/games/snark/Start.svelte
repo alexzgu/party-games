@@ -34,12 +34,12 @@
   <div class="choices">
     <button class="choice" onclick={hostHere}>
       <span class="emoji" aria-hidden="true">📺</span>
-      <span class="what">{openRoom ? `Host on this screen: room ${openRoom.code}` : 'Host on this screen'}</span>
+      <span class="what">{openRoom ? `Room ${openRoom.code}` : 'Host'}</span>
       <span class="why">A laptop on the TV, or a phone in the middle of the table. It shows the code, the answers and the scores.</span>
     </button>
     <button class="choice" onclick={() => go('/snark/join')}>
       <span class="emoji" aria-hidden="true">📱</span>
-      <span class="what">Join a game</span>
+      <span class="what">Join</span>
       <span class="why">Answer and vote on your own phone. You need the 4-letter code from the host screen.</span>
     </button>
   </div>

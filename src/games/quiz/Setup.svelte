@@ -130,8 +130,9 @@
     </RulesCard>
     {#if inProgress}
       <Button size="lg" onclick={() => { unlockAudio(); keepRoster(); onresume(); }} tip="Carries on with the game saved on this device">Resume game</Button>
+      {#if confirming}<p class="faint" role="status">This ends the saved game.</p>{/if}
       <Button variant={confirming ? 'danger' : 'secondary'} onclick={startOver} disabled={!!blocked} tip={blocked ? undefined : 'Ends the saved game; asks for a second tap first'}>
-        {blocked || (confirming ? 'Really restart?' : 'New game')}
+        {blocked || (confirming ? 'Start over' : 'New game')}
       </Button>
     {:else}
       <Button size="lg" onclick={start} disabled={!!blocked}>{blocked || (names.length === 1 ? 'Start solo' : 'Start game')}</Button>

@@ -12,6 +12,7 @@
 <button class="conn" class:backup onclick={() => (open = true)} data-tip={backup ? `Using ${brokerLabel()}. Change the server, or go back to the usual service` : 'See how phones connect, or use a backup server'}>
   {backup ? 'Backup server' : 'Trouble connecting?'}
 </button>
+{#if backup}<span class="addr">{brokerLabel()}</span>{/if}
 {#if open}
   <Connection onclose={() => { open = false; backup = brokerSetting(); }} onchange={() => { backup = brokerSetting(); onchange?.(); }} />
 {/if}
@@ -22,4 +23,5 @@
     padding: 0 var(--s-3); text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere;
   }
   .backup { color: var(--text-dim); font-weight: 700; }
+  .addr { align-self: center; color: var(--text-faint); font-size: 0.85rem; overflow-wrap: anywhere; }
 </style>

@@ -47,7 +47,7 @@
 </div>
 
   {#snippet actions()}
-    <Button size="lg" onclick={onbegin}>I'm {reader.name}</Button>
+    <Button size="lg" onclick={onbegin}>Show card</Button>
   {/snippet}
 </Screen>
 

@@ -31,11 +31,11 @@
   {/if}
 
   <button class="choice" onclick={hostHere}>
-    <b>{openRoom ? `Host on this screen: room ${openRoom.code}` : 'Host on this screen'}</b>
+    <b>{openRoom ? `Room ${openRoom.code}` : 'Host'}</b>
     <span>{openRoom ? 'This screen already has a room open; this goes back to it.' : 'Show the room code, clues, guesses and scores on a screen everyone can see.'}</span>
   </button>
   <button class="choice" onclick={() => go('/salad/join')}>
-    <b>Join a game</b>
+    <b>Join</b>
     <span>Give clues and type guesses on your phone. Use the four-letter code from the host.</span>
   </button>
 

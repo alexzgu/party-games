@@ -284,7 +284,7 @@ preview, past its list too) and ticks the new pack, as before.
   how long to wait. A whole invite link or a bare key typed there is stored as the phone's key
   (`keyFromTyped`, for the host's testing; an iPhone Home Screen app keeps its own storage, so a
   tapped link may not reach it). With either: "Fizzwick the Wizard lives on this phone" and
-  "Send away" (clears both). No key field and no model list. Descriptions are
+  "Remove wizard" (clears both). No key field and no model list. Descriptions are
   --text-dim, weight 600.
   Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
 - **Username** (`src/lib/username.ts`): every phone has one. A phone without one is given a
@@ -703,7 +703,7 @@ few seconds to name three things that fit it out loud; the room judges.
   Steal (default on), and with Steal on "A steal uses the stealer's turn" (default off; saved
   setups and games from before it load as off).
 - **Turn**: hand-off ("Pass the phone to Maya"; the last turn's result and a scoreboard strip in
-  seating order above it) → "I'm Maya, show my prompt" reveals "Name 3 …" huge (`FitText`) and
+  seating order above it) → "Start clock" reveals "Name 3 …" huge (`FitText`) and
   starts the clock at once: a big ring drains, a tick each second (sharper in the last two),
   buzzer at zero. "All 3" stops the clock early with the point. At zero the same screen
   shows "Time!" and the room taps ✓ Got 3 (+1) or ✗ Didn't. Steal on and missed: the next

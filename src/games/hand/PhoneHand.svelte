@@ -67,7 +67,7 @@
     </label>
   {/each}
 {/if}
-{#if trading}<p class="hint" role="status">Tap the cards to swap for new ones.</p>
+{#if trading}<p class="hint" role="status">Tap the cards to swap for new ones. It costs 1 point.</p>
 {:else if !prompt}<h3>Your hand</h3>{/if}
 <ul class="hand" aria-label="Your hand">
   {#each hand as c (c.id)}
