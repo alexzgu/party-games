@@ -39,6 +39,11 @@
   --ink-paper: #fff; --ink-black: #17141f; --ink-red: #b91c36; --ink-orange: #aa470b; --ink-green: #18713b;
   --ink-blue: #1648ad; --ink-purple: #6926a3; --ink-pink: #a31a72; --ink-brown: #713f2a;
 
+  /* Playing cards (components/cards): a white face, red and black, the same in both schemes (red 5.9:1, black 18:1 on it). */
+  --card-face: #fff; --card-red: #c8102e; --card-black: #17141f; --card-edge: rgb(27 21 48 / 0.3);
+  --card-back: #3b2d84; --card-back-2: #5a48b8;
+  --card-w-sm: 30px; --card-w-md: 52px; --card-w-lg: 72px;
+
   /* Spectrum's two rival teams: warm sunrise vs cool moonlight, apart for red-green colour blindness too. */
   --c-team-a: #ff8547;
   --c-team-b: #5b8cff;
