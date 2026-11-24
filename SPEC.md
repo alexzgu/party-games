@@ -779,7 +779,7 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   answers and votes sent while offline are resent, never into the next game after Play again
   (messages and drafts carry which of the room's games they are for). A host reload reopens the same room (same
   peer id) and phones reconnect by themselves; a timer that ran out meanwhile gets 12 s back. A
-  name already in use by an online phone is refused; a phone that lost its storage gets its
+  name already in use (see Shared room link for which names count as one) is refused; a phone that lost its storage gets its
   seat back only when the host opens it with New phone (see Shared room link). Late joiners watch until the next round (they may vote).
   A player who drops keeps their seat; unanswered prompts become "(no answer)". A kicked phone
   cannot rejoin that room. A phone that cannot find its host for about two minutes stops trying.
@@ -894,6 +894,19 @@ A player id is 1–64 letters, digits, `_` or `-`, never a name every JavaScript
 makes a new one for each room it joins and keeps it for that room (after leaving, a refusal, a
 reload, or Play again).
 
+**Names** (`names.ts`, the same in all five own-phones games): two names that look the same are one
+name: the same once compatibility forms (such as full-width letters) are folded, invisible
+characters dropped, spaces trimmed and runs of spaces made one, and case ignored ("Sam Lee",
+"sam  lee"). No two players who may still play (in the room, or gone mid-game and free to come back
+by id) hold one name. A phone with a new id whose name is one already held is refused while that
+player's phone is online or they are gone ("That name is already in use."; Snark Tank: "Someone
+here is already called Sam. Pick another name."); with that player offline and still in the room it
+asks for that player's seat, which the game's rules give it on plain http and which needs the host
+where keys are checked. A Sketchy player gone before Play again comes back into the new lobby under
+the name they type, refused while it is one another player holds. A saved game that already holds
+one name twice keeps both players, each coming back by id or key, and a new id with that name is
+matched to the first of them.
+
 **Seat keys** (`seats.ts`; nobody can take another player's seat). Each seat has a secret key its
 phone made for that room; the player id and the name never prove anything. The room has a random
 id of its own (not its code) that lasts through a host reload, a broker change and Play again, and
@@ -922,7 +935,8 @@ about the game, replaces nobody and changes nothing.
   nothing on its old connection, so it never stops itself. A proof is judged on
   the seat as it is when its check ends (if the player left a lobby meanwhile, the seat is new again).
 - A page from before keys (its `hello` has no `keys`) is refused with "This page is out of date.
-  Refresh the page, then join again." whenever it asks for a seat, new or not, which it shows as it
+  Refresh the page, then join again." whenever it asks for a seat, new or not, before the game's
+  join rules are asked (so also when the room is full or its name is in use), which it shows as it
   shows any refusal; so no seat is ever held without a key, and the host is never asked about a
   phone that could not show a sign. Refreshed, it is a current page: a new seat enrols, and a seat
   the game already has comes back through New phone like any phone.
@@ -935,14 +949,20 @@ about the game, replaces nobody and changes nothing.
   (once a player is in), which lists the room's players (no bots, nobody removed); the host checks
   who is in front of them and picks that player. Their seat is then open to one new phone for a
   minute (one seat at a time: opening another closes the first), shown in a panel on the host screen
-  ("Sam's seat is open to a new phone for a minute. Ask them to join now.", with Close). While it is
-  open, the game's own join rules count that player as offline, so a hello with their name (as that
-  game compares names; Doodle Brawl, Sketchy and Bad Hand keep inner spaces, so "Sam Lee" and
-  "Sam  Lee" are two players) is a claim on that seat, even while the player's old phone is still
-  connected, which a Yes then replaces like any replaced connection. A hello whose player id has a
-  seat of its own stays with that seat and proves its own key. On plain http (no keys) nothing is
-  counted offline, so typing an online player's name gets "name in use" as ever. The first phone
-  that asks for the open seat without a valid proof gets a sign: the host picks one of a fixed list
+  ("Sam's seat is open to a new phone for a minute. Ask them to join now." and "The next phone to
+  join is the one you'll be asked about.", with Close; the list itself says "Pick the player in
+  front of you. For a minute, their seat opens to the next phone that joins."). While it is open, a
+  hello whose player id has no seat of its own (the game does not know the id, and the room holds
+  no key for it and never removed it) asks for that seat, whatever name it typed, even while the
+  player's old phone is still connected, which a Yes then replaces like any replaced connection.
+  So a brand-new player joining in that minute is asked about too; after the host's No it is told
+  "The host said no. If you are new to this room, join again." and then joins as usual. A hello
+  whose player id has a seat of its own is handled as with no seat open: it stays with that seat
+  and proves its own key, whatever name it typed; a removed id is refused. The name typed never
+  decides which seat a phone asks for. On plain http (no keys) nothing changes: the
+  game's join rules alone, so typing an online player's name gets "name in use" as ever and a new
+  phone is a new player. The first phone that asks for the open seat (a new id, or the seat's own id
+  without a valid proof) gets a sign: the host picks one of a fixed list
   of at least 40 pictures, each an emoji and its plain word (`SIGNS`, e.g. 🐙 Octopus), at random
   (crypto where there is one) for that request, never the one the room's previous request got, and
   sends `{t: 'sign', i}` (its place in the list) to that connection alone. The phone shows a sign

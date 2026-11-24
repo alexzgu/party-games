@@ -111,22 +111,18 @@ afterEach(() => {
 });
 
 it('decides each step from the proof, the key on record and the host', () => {
-  const c = (x: Partial<Claim> = {}): Claim => ({ modern: true, proof: 'none', approved: false, ...x });
+  const c = (x: Partial<Claim> = {}): Claim => ({ proof: 'none', approved: false, ...x });
   const cases: [Claim, { keyed: boolean; fresh: boolean; checks?: boolean }, Step][] = [
     [c(), { keyed: false, fresh: true }, 'enrol'],
-    [c({ modern: false }), { keyed: false, fresh: true }, 'old'],
     [c(), { keyed: false, fresh: false }, 'recover'],
-    [c({ modern: false }), { keyed: false, fresh: false }, 'old'],
     [c(), { keyed: true, fresh: true }, 'prove'],
     [c(), { keyed: true, fresh: false }, 'prove'],
     [c({ proof: 'right' }), { keyed: true, fresh: false }, 'admit'],
     [c({ proof: 'wrong' }), { keyed: true, fresh: false }, 'recover'],
-    [c({ modern: false }), { keyed: true, fresh: false }, 'old'],
-    [c({ modern: false }), { keyed: true, fresh: true }, 'old'],
     [c({ approved: true, proof: 'wrong' }), { keyed: true, fresh: false }, 'enrol'],
     // A host that cannot check proofs (plain http): seated by the game's rules alone.
     [c(), { keyed: true, fresh: false, checks: false }, 'admit'],
-    [c({ modern: false }), { keyed: false, fresh: false, checks: false }, 'admit'],
+    [c(), { keyed: false, fresh: false, checks: false }, 'admit'],
     [c(), { keyed: false, fresh: true, checks: false }, 'admit'],
   ];
   for (const [claim, held, step] of cases) expect(nextStep(claim, { checks: true, ...held }), JSON.stringify([claim, held])).toBe(step);
@@ -245,18 +241,19 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     expect(host.link.recovery).toEqual({ pid: 'p1', name: 'Sam', sign: null, note: '' });
     const no = phone(host.link, 'p8', 'sam');
     await settle(no);
-    expect([no.types(), host.link.recovery?.sign]).toEqual([['prove', 'sign'], SIGNS[signOf(no)!]]);
+    expect([no.types(), host.link.recovery?.sign]).toEqual([['sign'], SIGNS[signOf(no)!]]);
     host.link.answer(false);
-    expect([no.types(), why(no), host.link.recovery]).toEqual([['prove', 'sign', 'reject'], 'The host said no.', null]);
+    expect([no.types(), why(no), host.link.recovery]).toEqual([['sign', 'reject'], 'The host said no. If you are new to this room, join again.', null]);
 
     host.link.recoverSeat('p1', 'Sam');
-    const fresh = phone(host.link, 'p9', 'sam');
+    const fresh = phone(host.link, 'p9', 'Ann'); // whatever name it typed
     await settle(fresh);
     await vi.advanceTimersByTimeAsync(20_000); // the hello deadline waits for the host
-    expect(fresh.types()).toEqual(['prove', 'sign']);
+    expect(fresh.types()).toEqual(['sign']);
     expect(signOf(fresh)).not.toBe(signOf(no)); // each request its own sign
     host.link.answer(true);
-    expect(fresh.got.slice(2)).toMatchObject([{ t: 'enrol' }, { t: 'welcome', pid: 'p1' }, { t: 'view' }]);
+    expect(fresh.got.slice(1)).toMatchObject([{ t: 'enrol' }, { t: 'welcome', pid: 'p1' }, { t: 'view' }]);
+    expect(JSON.stringify(host.game)).not.toContain('Ann');
     expect(host.link.recovery).toBeNull();
     // The new key is the seat's only key.
     const late = phone(host.link, 'p1', 'Sam', sam.key);
@@ -373,18 +370,28 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     close(host);
   });
 
-  it('open to a new phone by name while the old one is still here; on Yes the old one is told and cut off', async () => {
+  it('open to a new phone, whatever name it typed, while the old one is still here; on Yes the old one is told and cut off', async () => {
     const host = await load(game);
     const sam = phone(host.link, 'p1', 'Sam');
+    const dan = phone(host.link, 'p2', 'Dan');
     phone(host.link, 'p3', 'Eve');
     host.kick('p3');
     host.link.recoverSeat('p1', 'Sam');
     expect(why(phone(host.link, 'p3', 'Sam'))).toMatch(/removed/); // not by another name either
-    const fresh = phone(host.link, 'p9', ' sam ');
+    // A phone with a seat of its own keeps it, by its key, whatever name it typed; the seat stays open.
+    dan.conn.close();
+    const dan2 = phone(host.link, 'p2', 'Sam', dan.key);
+    await settle(dan2);
+    expect([dan2.types(), dan2.got.find((m) => m.t === 'welcome')?.pid]).toEqual([['prove', 'welcome', 'view'], 'p2']);
+    const nokey = phone(host.link, 'p2', 'Sam'); // without the key, it is not the one asked about either
+    await settle(nokey);
+    expect(sentAway(nokey)).toBe(true);
+    expect(host.link.recovery).toMatchObject({ pid: 'p1', sign: null, note: '' });
+    const fresh = phone(host.link, 'p9', 'Zed');
     await settle(fresh);
-    expect([fresh.types(), host.link.recovery?.sign]).toEqual([['prove', 'sign'], SIGNS[signOf(fresh)!]]);
+    expect([fresh.types(), host.link.recovery?.sign]).toEqual([['sign'], SIGNS[signOf(fresh)!]]);
     host.link.answer(true);
-    expect(fresh.types()).toEqual(['prove', 'sign', 'enrol', 'welcome', 'view']);
+    expect(fresh.types()).toEqual(['sign', 'enrol', 'welcome', 'view']);
     expect(fresh.got.find((m) => m.t === 'welcome')?.pid).toBe('p1');
     expect([sam.got.at(-1), book(host).key('p1')]).toEqual([{ t: 'replaced', moved: 1 }, fresh.key]);
     // Nobody else gets in by that name meanwhile: with no seat open, the game's own rules apply.
@@ -417,30 +424,54 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     const refreshed = phone(host.link, 'p6', 'Sam');
     await settle(refreshed);
     host.link.answer(true);
-    expect(refreshed.types()).toEqual(['prove', 'sign', 'enrol', 'welcome', 'view']);
+    expect(refreshed.types()).toEqual(['sign', 'enrol', 'welcome', 'view']);
     expect(refreshed.got.find((m) => m.t === 'welcome')?.pid).toBe('p1');
     close(host);
   });
 });
 
-describe.each(['brawl', 'sketch', 'hand'] as const)('%s, which keeps inner spaces in names', (game) => {
-  it('lets a player whose name differs from the open seat\'s only by spaces rejoin by their key, their saved room kept', async () => {
+describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s names', (game) => {
+  const taken = /in use|already called/;
+  it('that look like one in use are refused, also one held by a player who left and may come back by key', async () => {
     const host = await load(game);
-    phone(host.link, 'p1', 'Sam Lee');
-    const { PhoneLink, loadMe } = await import('./phone-link.svelte');
-    const lee = new PhoneLink<{ t: string }, BaseView>(game, { keep: () => false });
-    lee.join(host.game!.code, 'Sam  Lee');
-    await until(() => lee.link === 'live');
-    expect(host.link.pids()).toHaveLength(2); // two players
-    host.link.recoverSeat('p1', 'Sam Lee');
-    const reloaded = new PhoneLink<{ t: string }, BaseView>(game, { keep: () => false });
-    reloaded.rejoin();
-    await until(() => reloaded.link === 'live' || reloaded.link === 'stopped');
-    expect([reloaded.link, reloaded.me!.pid, reloaded.sign]).toEqual(['live', lee.me!.pid, null]);
-    expect(loadMe(game)).toMatchObject({ code: host.game!.code, joined: true });
-    expect(host.link.recovery).toMatchObject({ pid: 'p1', sign: null, note: '' });
+    const sam = phone(host.link, 'p1', 'Sam Lee');
+    for (const [i, name] of ['sam lee', 'Sam  Lee', ' SAM\tLEE ', 'Sam\u200B Lee', 'Ｓam Lee'].entries()) {
+      expect(why(phone(host.link, `n${i}`, name)), name).toMatch(taken);
+    }
+    while (host.game!.phase === 'lobby' && host.addBot() === null) host.start();
+    expect(host.game!.phase).not.toBe('lobby');
+    sam.say({ t: 'leave' });
+    expect(why(phone(host.link, 'p8', 'Sam  Lee'))).toMatch(taken);
+    const back = phone(host.link, 'p1', 'Sam Lee', sam.key);
+    await settle(back);
+    expect(back.types()).toEqual(['prove', 'welcome', 'view']);
     close(host);
   });
+
+  it('do not matter to an old page: it is told to refresh before the game\'s rules, also with its name in use or the room full', async () => {
+    const host = await load(game);
+    phone(host.link, 'p1', 'Sam');
+    expect(why(phone(host.link, 'p2', 'Sam', undefined, false))).toBe(OLD_PAGE);
+    for (let n = 0; n < 20 && host.addBot() === null; n++);
+    expect(why(phone(host.link, 'p3', 'Zed'))).toMatch(/full/);
+    expect(why(phone(host.link, 'p4', 'Zed', undefined, false))).toBe(OLD_PAGE);
+    close(host);
+  });
+});
+
+it('Sketchy: a player who left comes back after Play again only under a name nobody else holds then', async () => {
+  const host = await load('sketch');
+  const sam = phone(host.link, 'p1', 'Sam');
+  while (host.game!.phase === 'lobby' && host.addBot() === null) host.start();
+  sam.say({ t: 'leave' });
+  host.rematch(); // leaves out who had left: the name is free again
+  phone(host.link, 'p2', 'Sam');
+  const back = phone(host.link, 'p1', ' sam', sam.key);
+  expect(why(back)).toMatch(/in use/);
+  const renamed = phone(host.link, 'p1', 'Sam B', sam.key);
+  await settle(renamed);
+  expect(renamed.types()).toEqual(['prove', 'welcome', 'view']);
+  close(host);
 });
 
 it('turns away ids the games could not keep records by', async () => {
@@ -476,10 +507,10 @@ it('a proof counts only on the connection it was made for: one passed along by a
 it('a claim still being checked ends when the room moves to another code', async () => {
   const host = await load('snark');
   phone(host.link, 'p1', 'Sam').say({ t: 'leave' }); // the lobby is empty again, so it may move; Sam keeps his row and key
+  const slow = phone(host.link, 'p6', 'Slow', undefined, true, { mute: true });
   host.link.recoverSeat('p1', 'Sam');
   const asker = phone(host.link, 'p1', 'Sam');
   await settle(asker);
-  const slow = phone(host.link, 'p6', 'Slow', undefined, true, { mute: true });
   expect(host.link.recovery?.sign).toBeTruthy();
   (host.link as unknown as { peer: { on_: Handlers } }).peer.on_.error({ type: 'unavailable-id' });
   expect([host.link.recovery, pending(host)]).toEqual([null, 0]);
@@ -516,7 +547,7 @@ it('on plain http (no Web Locks, no crypto.subtle) seats every phone by the game
   close(host);
 });
 
-it('on plain http, New phone gives nobody an online player\'s seat for typing their name', async () => {
+it('on plain http, New phone changes nothing: a typed name gets no online player\'s seat, and a new phone is a new player', async () => {
   const real = globalThis.crypto;
   vi.stubGlobal('crypto', { getRandomValues: <T extends ArrayBufferView>(a: T) => real.getRandomValues(a as never) as T });
   vi.stubGlobal('navigator', {});
@@ -526,6 +557,9 @@ it('on plain http, New phone gives nobody an online player\'s seat for typing th
   const guest = phone(host.link, 'p9', 'Sam');
   expect([guest.types(), why(guest)]).toEqual([['reject'], expect.stringMatching(/in use/)]);
   expect([sam.conn.open, host.link.pids(), host.link.recovery?.sign]).toEqual([true, ['p1'], null]);
+  // A new phone by another name is just a new player there: nobody is asked about it.
+  expect(phone(host.link, 'p7', 'Ann').types()).toEqual(['welcome', 'view']);
+  expect(host.link.recovery).toMatchObject({ pid: 'p1', sign: null });
   close(host);
 });
 
@@ -584,6 +618,18 @@ describe('a seat opened for a new phone', () => {
     return p;
   };
 
+  it('is never asked for by the name typed in a hello that came before it opened', async () => {
+    const host = await load('hand');
+    phone(host.link, 'p1', 'Sam').conn.close();
+    const early = phone(host.link, 'p9', 'Sam', undefined, true, { mute: true });
+    expect(early.types()).toEqual(['prove']); // the game matched it to Sam's seat by name
+    host.link.recoverSeat('p1', 'Sam');
+    early.say({ t: 'proof', macs: [] });
+    await until(() => early.types().includes('reject'));
+    expect([sentAway(early), host.link.recovery]).toEqual([true, expect.objectContaining({ pid: 'p1', sign: null })]);
+    close(host);
+  });
+
   it('goes to nobody when two phones ask for it, and closes', async () => {
     const { host, sam } = await room();
     const first = await ask(host);
@@ -611,10 +657,9 @@ describe('a seat opened for a new phone', () => {
     // A Yes, then the connection drops before its key comes: no key changes, nobody is seated.
     host.link.recoverSeat('p1', 'Sam');
     const slow = phone(host.link, 'p9', 'Sam', undefined, true, { mute: true });
-    slow.say({ t: 'proof', macs: [] });
     await until(() => slow.types().includes('sign'));
     host.link.answer(true);
-    expect(slow.types()).toEqual(['prove', 'sign', 'enrol']);
+    expect(slow.types()).toEqual(['sign', 'enrol']);
     slow.conn.close();
     expect([host.link.pids(), pending(host), host.link.recovery]).toEqual([[], 0, null]);
     const back = phone(host.link, 'p1', 'Sam', sam.key);
@@ -626,15 +671,14 @@ describe('a seat opened for a new phone', () => {
   it('ends a Yes not yet used when the seat is opened again: its late key changes nothing', async () => {
     const { host, sam } = await room();
     const first = phone(host.link, 'p9', 'Sam', undefined, true, { mute: true });
-    first.say({ t: 'proof', macs: [] });
     await until(() => first.types().includes('sign'));
     host.link.answer(true);
-    expect(first.types()).toEqual(['prove', 'sign', 'enrol']); // approved, its key not here yet
+    expect(first.types()).toEqual(['sign', 'enrol']); // approved, its key not here yet
     host.link.recoverSeat('p1', 'Sam');
-    expect(why(first)).toBe('The host said no.');
+    expect(why(first)).toBe('The host said no. If you are new to this room, join again.');
     const second = await ask(host, 'p8');
     host.link.answer(true);
-    expect(second.types()).toEqual(['prove', 'sign', 'enrol', 'welcome', 'view']);
+    expect(second.types()).toEqual(['sign', 'enrol', 'welcome', 'view']);
     first.say({ t: 'key', key: newKey() });
     expect(book(host).key('p1')).toBe(second.key);
     expect(first.types()).not.toContain('welcome');
@@ -648,12 +692,14 @@ describe('a seat opened for a new phone', () => {
 
   it('sends each asker alone a sign of its own, never the last request\'s, and closes after its minute', async () => {
     const { host } = await room();
+    host.link.stopRecovery();
     const dan = phone(host.link, 'p2', 'Dan');
     const quiet = phone(host.link, 'p3', 'Eve', undefined, true, { mute: true });
+    host.link.recoverSeat('p1', 'Sam');
     let last: number | undefined;
     for (let n = 0; n < 30; n++) {
       const asker = await ask(host, `q${n}`);
-      expect(asker.types()).toEqual(['prove', 'sign']);
+      expect(asker.types()).toEqual(['sign']);
       expect(signOf(asker)).not.toBe(last);
       expect(host.link.recovery?.sign).toEqual(SIGNS[signOf(asker)!]);
       last = signOf(asker);
@@ -662,7 +708,7 @@ describe('a seat opened for a new phone', () => {
     }
     expect([dan.types(), quiet.types()]).toEqual([['enrol', 'welcome', 'view'], ['enrol']]);
     const later = await ask(host, 'p7');
-    expect(later.types()).toEqual(['prove', 'sign']);
+    expect(later.types()).toEqual(['sign']);
     await vi.advanceTimersByTimeAsync(OPEN_MS - 500);
     expect(host.link.recovery?.sign).toBeTruthy();
     await vi.advanceTimersByTimeAsync(1000);
@@ -796,7 +842,7 @@ describe('the app\'s phone', () => {
     host.link.recoverSeat('p1', 'Sam'); // refuses the old asker; the phone never hears it
     const guest = phone(host.link, 'p9', 'Sam');
     await settle(guest);
-    expect(guest.types()).toEqual(['prove', 'sign']); // no rest: the seat opens at once
+    expect(guest.types()).toEqual(['sign']); // no rest: the seat opens at once
     expect(p.sign).not.toBeNull();
     expect(host.link.recovery!.sign).toEqual(SIGNS[signOf(guest)!]);
     expect(host.link.recovery!.sign).not.toEqual(p.sign);

@@ -1,9 +1,13 @@
 // Joining, rejoining, leaving and removal. A player who drops keeps their seat, hand and score;
 // one who leaves or is removed gives their hand back to the deck.
 import type { Rand } from './deck';
+import { sameName } from '../../lib/room/names';
 import { MAX_PLAYERS, NAME_MAX, active, deal, isActive, type Game } from './state';
 
 type Joined = { error: string } | { error?: undefined; pid: string; game: Game };
+
+/** Players who may still play: present, or gone and free to come back; no two hold names that look the same. */
+const inRoom = (g: Game) => g.players.filter((p) => !g.kicked.includes(p.pid) || g.left.includes(p.pid));
 
 /** Late joiners and returning leavers are dealt ten at once and play from the next prompt. */
 const seat = (g: Game, pid: string, rand: Rand) => g.phase === 'lobby' || g.phase === 'over' ? g : deal(g, pid, rand);
@@ -18,8 +22,8 @@ export function join(g: Game, pid: string, name: string, online: ReadonlySet<str
   }
   if (g.kicked.includes(pid)) return { error: 'The host removed you from this room.' };
   if (g.players.some((p) => p.pid === pid)) return { pid, game: g };
-  const match = active(g).find((p) => p.name.toLowerCase() === name.toLowerCase());
-  if (match) return online.has(match.pid) ? { error: 'That name is already in use.' } : { pid: match.pid, game: g };
+  const match = sameName(inRoom(g), name);
+  if (match) return online.has(match.pid) || g.left.includes(match.pid) ? { error: 'That name is already in use.' } : { pid: match.pid, game: g };
   if (full) return { error: 'This room is full.' };
   return { pid, game: seat({ ...g, players: [...g.players, { pid, name, score: 0 }] }, pid, rand) };
 }

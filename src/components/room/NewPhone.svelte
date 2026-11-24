@@ -16,7 +16,7 @@
 {/if}
 {#if picking}
   <Popup title="Whose phone?" onclose={() => (picking = false)}>
-    <p>Pick the player in front of you. Their seat opens to one phone for a minute.</p>
+    <p>Pick the player in front of you. For a minute, their seat opens to the next phone that joins.</p>
     {#each people as p (p.pid)}
       <Button variant="secondary" onclick={() => { link.recoverSeat(p.pid, p.name); picking = false; }}>{p.name}</Button>
     {/each}

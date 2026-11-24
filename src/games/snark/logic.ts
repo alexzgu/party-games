@@ -4,6 +4,7 @@
 import { assignPrompts, pairDuels } from './assign';
 import { FINAL_VOTES_EACH, halve, scoreDuel, scoreFinal, scoreLines, validFinalBallot, type Result } from './scoring';
 import { shuffle } from '../../lib/random';
+import { sameName } from '../../lib/room/names';
 import type { ToHost } from './protocol';
 
 export const MIN_PLAYERS = 3;
@@ -140,6 +141,8 @@ export const matchOf = (g: Game) => g.match ?? 0;
 export const isFinalRound = (g: Game, round = g.round) => round >= g.settings.rounds;
 export const multiplier = (g: Game) => (isFinalRound(g) ? 3 : g.round);
 export const present = (g: Game) => g.players.filter((p) => !p.kicked);
+/** Players who may still play: present, or gone and free to come back; no two hold names that look the same. */
+const inRoom = (g: Game) => g.players.filter((p) => !p.kicked || p.left);
 export const player = (g: Game, pid: string) => g.players.find((p) => p.pid === pid);
 export const currentItem = (g: Game): Item | undefined => (g.phase === 'show' || g.phase === 'vote' || g.phase === 'reveal' ? g.items[g.at] : undefined);
 export const authorsOf = (item: Item) => (item.kind === 'final' ? item.authors : [item.a, item.b]);
@@ -157,7 +160,8 @@ export type JoinResult = { game: Game; pid: string; error?: undefined } | { game
 /**
  * A phone asks to join with the id it keeps in localStorage and a name. A known id rejoins as
  * itself (same score); a known name whose phone is offline is taken over (a phone that lost its
- * storage); a name in use by an online phone is refused. Joining mid-game watches until the next round.
+ * storage); a name that looks like one in use by an online phone, or held by a player who left and
+ * may come back, is refused. Joining mid-game watches until the next round.
  */
 export function join(g: Game, pid: string, rawName: string, online: ReadonlySet<string>): JoinResult {
   if (pid === HOUSE) return { game: g, error: 'This phone cannot join. Reload the page and try again.' };
@@ -168,8 +172,8 @@ export function join(g: Game, pid: string, rawName: string, online: ReadonlySet<
   if (known) return { game: g, pid };
   const name = cleanName(rawName);
   if (!name) return { game: g, error: 'Type your name first.' };
-  const same = present(g).find((p) => p.name.toLowerCase() === name.toLowerCase());
-  if (same && online.has(same.pid)) return { game: g, error: `Someone here is already called ${same.name}. Pick another name.` };
+  const same = sameName(inRoom(g), name);
+  if (same && (same.left || online.has(same.pid))) return { game: g, error: `Someone here is already called ${same.name}. Pick another name.` };
   if (same) return { game: g, pid: same.pid };
   if (present(g).length >= MAX_PLAYERS) return { game: g, error: `This game is full (${MAX_PLAYERS} players).` };
   const p: Player = { pid, name, color: g.nextColor, score: 0, active: g.phase === 'lobby' };

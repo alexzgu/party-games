@@ -3,6 +3,10 @@ import { DELIVERY_MS, MAX_PLAYERS, NAME_MAX, RECONNECT_GRACE_MS, active, left, s
 import type { ToHost } from './protocol';
 import * as T from './telephone';
 import * as G from './guess';
+import { sameName } from '../../lib/room/names';
+
+/** Players who may still play: present, or gone and free to come back; no two hold names that look the same. */
+const inRoom = (g: Game) => g.players.filter((p) => !g.kicked.includes(p.pid) || (g.left ?? []).includes(p.pid));
 
 export const canStart = (g: Game) => g.phase === 'lobby' && active(g).length >= 3;
 export const pause = (g: Game, now: number): Game => g.deadline === null ? g : { ...g, frozen: left(g, now) };
@@ -24,12 +28,13 @@ export function join(g: Game, pid: string, name: string, online: ReadonlySet<str
     if (active(g).length >= MAX_PLAYERS) return { error: 'This room is full.' };
     // Back in a new game's lobby (Play again leaves out who had left): a player again.
     const seat: Player[] = g.players.some((p) => p.pid === pid) ? [] : [{ pid, name, score: 0 }];
+    if (seat.length && sameName(inRoom(g), name)) return { error: 'That name is already in use.' };
     return { pid, game: { ...g, players: [...g.players, ...seat], kicked: g.kicked.filter((x) => x !== pid), left: gone.filter((x) => x !== pid) } };
   }
   if (g.kicked.includes(pid)) return { error: 'The host removed you from this room.' };
   if (g.players.some((p) => p.pid === pid)) return { pid, game: g };
-  const match = active(g).find((p) => p.name.toLowerCase() === name.toLowerCase());
-  if (match) return online.has(match.pid) ? { error: 'That name is already in use.' } : { pid: match.pid, game: g };
+  const match = sameName(inRoom(g), name);
+  if (match) return online.has(match.pid) || gone.includes(match.pid) ? { error: 'That name is already in use.' } : { pid: match.pid, game: g };
   if (active(g).length >= MAX_PLAYERS) return { error: 'This room is full.' };
   return { pid, game: { ...g, players: [...g.players, { pid, name, score: 0 }] } };
 }

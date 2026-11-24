@@ -1,3 +1,5 @@
+import { sameName } from '../../lib/room/names';
+
 export const DRAW_DELIVERY_MS = 1000;
 /** Characters in a player's name, at most. */
 export const NAME_MAX = 20;
@@ -29,6 +31,8 @@ export const newGame = (id: string, code: string, settings: Settings): Game => (
 });
 
 export const active = (g: Game) => g.players.filter((p) => !g.kicked.includes(p.pid));
+/** Players who may still play: present, or gone and free to come back; no two hold names that look the same. */
+const inRoom = (g: Game) => g.players.filter((p) => !g.kicked.includes(p.pid) || (g.left ?? []).includes(p.pid));
 export const standings = (g: Game) => [...g.players].sort((a, b) => b.score - a.score);
 export const current = (g: Game) => g.bouts[g.index];
 export const left = (g: Game, now: number) => g.frozen ?? (g.deadline === null ? null : Math.max(0, g.deadline - now));
@@ -49,8 +53,8 @@ export function join(g: Game, pid: string, name: string, online: ReadonlySet<str
   if (g.kicked.includes(pid)) return { error: 'The host removed you from this room.' };
   const own = g.players.find((p) => p.pid === pid);
   if (own) return { pid, game: g };
-  const match = active(g).find((p) => p.name.toLowerCase() === name.toLowerCase());
-  if (match) return online.has(match.pid) ? { error: 'That name is already in use.' } : { pid: match.pid, game: g };
+  const match = sameName(inRoom(g), name);
+  if (match) return online.has(match.pid) || gone.includes(match.pid) ? { error: 'That name is already in use.' } : { pid: match.pid, game: g };
   if (active(g).length >= 8) return { error: 'This room is full.' };
   return { pid, game: { ...g, players: [...g.players, { pid, name, score: 0 }] } };
 }

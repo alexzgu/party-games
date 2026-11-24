@@ -21,7 +21,7 @@ function room(players = new Map<string, string>()) {
     },
     message: (pid, raw) => heard.push([pid, raw]),
     left: (pid) => players.delete(pid),
-    has: (pid) => players.has(pid),
+    known: (pid) => players.has(pid),
     vacant: () => false,
     move: () => {},
   };

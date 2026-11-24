@@ -1,5 +1,6 @@
 import { asPhrase, draftFor, random, redeal, sentence, shuffled, type Draft } from './deal';
 import { matches, normalise } from './match';
+import { sameName } from '../../lib/room/names';
 import { GUESS_MAX, NAME_MAX, type ToHost } from './protocol';
 import { followups, opening, type Secret } from './words';
 
@@ -83,6 +84,8 @@ export function newGame(code: string, packIds = ['classic'], pool: Secret[] = []
 }
 
 export const present = (g: Game) => g.players.filter((p) => !p.kicked);
+/** Players who may still play: present, or gone and free to come back; no two hold names that look the same. */
+const inRoom = (g: Game) => g.players.filter((p) => !p.kicked || p.left);
 export const canStart = (g: Game) => g.phase === 'lobby' && present(g).length >= MIN_PLAYERS && g.pool.length > 0;
 export const currentTurn = (g: Game) => g.turns[g.at];
 export const timerLength = (g: Game) =>
@@ -100,8 +103,8 @@ export function join(g: Game, pid: string, rawName: string, online: ReadonlySet<
   if (known) return { game: g, pid };
   const name = rawName.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
   if (!name) return { game: g, error: 'Type your name first.' };
-  const same = present(g).find((p) => p.name.toLowerCase() === name.toLowerCase());
-  if (same && online.has(same.pid)) return { game: g, error: 'That name is already in use.' };
+  const same = sameName(inRoom(g), name);
+  if (same && (same.left || online.has(same.pid))) return { game: g, error: 'That name is already in use.' };
   if (same) return { game: g, pid: same.pid };
   if (present(g).length >= MAX_PLAYERS) return { game: g, error: 'This room is full.' };
   const player = { pid, name, seat: g.players.length, score: 0, roundPoints: 0, kicked: false };

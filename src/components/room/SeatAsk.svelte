@@ -25,6 +25,7 @@
         </div>
       {:else}
         <p>{r.name}’s seat is open to a new phone for a minute. Ask them to join now.</p>
+        <p class="small">The next phone to join is the one you’ll be asked about.</p>
         <div class="answers"><Button size="sm" variant="secondary" onclick={() => link.stopRecovery()} tip="Shuts the seat again">Close</Button></div>
       {/if}
     </div>

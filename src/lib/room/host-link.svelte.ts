@@ -42,8 +42,11 @@ export interface HostHooks {
   message(pid: string, raw: unknown): void;
   /** The player tapped "Leave room" on their phone: they stop getting turns. */
   left(pid: string): void;
-  /** Whether the game still has a row for this player (a lobby drops one who leaves). */
-  has(pid: string): boolean;
+  /**
+   * Whether the game knows this player id: a row (a lobby drops one who leaves), or removed, or gone
+   * and free to come back.
+   */
+  known(pid: string): boolean;
   /** The code is taken on the broker: whether the room is still an empty lobby that may take another; else this one is retried. */
   vacant(): boolean;
   /** The room has a new code (and is a new room: `room` has changed). */
@@ -79,7 +82,8 @@ export class HostLink {
   constructor(private game: string, private hooks: HostHooks) {
     this.book = new SeatBook(game);
     this.desk = new Desk(this.book, {
-      resolve: (pid, name, away) => this.resolve(pid, name, away),
+      resolve: (pid, name) => this.resolve(pid, name),
+      known: (pid) => this.hooks.known(pid),
       ends: (conn) => ends(conn.peerConnection),
       send: (conn, msg) => this.write(conn, msg),
       refuse: (conn, why, ask) => this.refuse(conn, why, ask),
@@ -342,21 +346,21 @@ export class HostLink {
     if (msg.t === 'leave') {
       this.cut(conn);
       this.hooks.left(pid);
-      if (!this.hooks.has(pid)) this.book.bind(pid, undefined); // no row, no key: the record cannot grow without end
+      if (!this.hooks.known(pid)) this.book.bind(pid, undefined); // not known, no key: the record cannot grow without end
     } else this.hooks.message(pid, msg);
   }
 
   private hello(conn: DataConnection, pid: string, raw: string, modern: boolean): void {
     const name = unmarked(raw);
     if (!name.trim() && raw.trim()) return this.refuse(conn, MARK_ONLY);
+    if (!goodPid(pid)) return this.refuse(conn, BAD_PID);
     if (pid.startsWith(BOT_PID)) return this.refuse(conn, BOT_SEAT); // a phone may not take a seat run here
     this.desk.hello(conn, pid, name, modern);
   }
 
-  /** The seat the game gives a phone now, unless it is run here or its player was removed; `away`: counted offline. */
-  private resolve(pid: string, name: string, away?: string): Seat | { error: string } {
-    const online = away ? new Set([...this.online].filter((p) => p !== away)) : this.online;
-    const res = goodPid(pid) ? this.hooks.hello(pid, name, online) : { error: BAD_PID };
+  /** The seat the game gives a phone now, unless it is run here or its player was removed. */
+  private resolve(pid: string, name: string): Seat | { error: string } {
+    const res = this.hooks.hello(pid, name, this.online);
     if ('error' in res) return res;
     if (!goodPid(res.pid)) return { error: BAD_PID }; // by name, a player saved before ids were checked
     if (this.locals.has(res.pid) || res.pid.startsWith(BOT_PID)) return { error: BOT_SEAT };
