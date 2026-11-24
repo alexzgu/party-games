@@ -914,11 +914,13 @@ about the game, replaces nobody and changes nothing.
   wrong; a key is never sent again. The right proof puts the phone back in its seat at once, mid-round
   too, and replaces the seat's old connection even if it still looks online, so sleep, reload, Wi-Fi
   and broker changes need no tap; nothing another phone does can hold it up. The connection replaced
-  is told `{t: 'replaced'}` before it closes. A page that hears it on the connection it uses now (a
-  second tab of the same phone, or the phone whose seat went to a new one) stops trying, keeps its
-  room and player, and fills its screen with "This game is open in another tab." and "Play here",
-  which rejoins from that page and so replaces the other in turn. A page that has already redialled
-  hears nothing on its old connection, so it never stops itself. A proof is judged on
+  is told `{t: 'replaced'}` before it closes, with `moved: 1` when the seat went to a phone with a new
+  key (the host's Yes). A page that hears it on the connection it uses now stops trying and changes
+  nothing saved. Replaced by a proof of the same key (another tab of the same phone), it fills its
+  screen with "This game is open in another tab." and "Play here", which rejoins from that page and
+  so replaces the other in turn. Moved, it shows "This seat moved to another phone." on its join
+  screen, with no way back but joining like any phone. A page that has already redialled hears
+  nothing on its old connection, so it never stops itself. A proof is judged on
   the seat as it is when its check ends (if the player left a lobby meanwhile, the seat is new again).
 - A page from before keys asking for a seat the game already has is refused with "This page is out
   of date. Refresh the page, then join again.", which it shows as it shows any refusal; it cannot show

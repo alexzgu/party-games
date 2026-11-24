@@ -31,8 +31,10 @@ export interface PhoneHooks<Out, V> {
 }
 
 const DIAL_TIMEOUT = 10000;
-/** Shown when another tab, or another phone, took this seat; the room is kept for `here`. */
+/** Shown when another tab proved this seat's key; the room is kept for `here`. */
 export const ELSEWHERE = 'This game is open in another tab.';
+/** Shown when the host gave this seat to another phone. */
+export const MOVED = 'This seat moved to another phone.';
 /** Consecutive "no such room" answers (about two minutes of retries) before a phone stops looking. */
 const GIVE_UP_AFTER = 15;
 /** How long a leaving phone keeps its link open, so its goodbye reaches the host. */
@@ -61,7 +63,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   /** When the host last said so. */
   private waitAt = 0;
   private cover: ReturnType<typeof setTimeout> | null = null;
-  /** Another tab (or phone) took this seat: this one stopped, and `here` takes it back. */
+  /** Another tab took this seat: this one stopped, and `here` takes it back. */
   elsewhere = $state(false);
   me = $state.raw<Me | null>(null);
   /** The room the phone is in or last tried; kept after a refusal or the end, so the reason stays with that room's code. */
@@ -323,7 +325,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.write({ t: 'key', key: this.keys.make(room) });
   }
 
-  private receive(msg: { t: string; pid?: unknown; v?: unknown; why?: unknown; ask?: unknown; room?: unknown; nonce?: unknown }): void {
+  private receive(msg: { t: string; pid?: unknown; v?: unknown; why?: unknown; ask?: unknown; room?: unknown; nonce?: unknown; moved?: unknown }): void {
     this.heard = Date.now();
     switch (msg.t) {
       case 'ping': this.write({ t: 'pong' }); break;
@@ -352,8 +354,9 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
         break;
       }
       case 'replaced': // said on the connection this page uses now; an old one it redialled from is not heard
-        this.halt(ELSEWHERE);
-        this.elsewhere = true;
+        // Moved: stops, saving nothing (another tab of this browser may be the new phone, sharing the saved player).
+        this.halt(msg.moved === 1 ? MOVED : ELSEWHERE);
+        this.elsewhere = msg.moved !== 1;
         break;
       case 'reject':
         this.halt(msg.ask === 1 ? ASK_HOST : typeof msg.why === 'string' ? msg.why : '');

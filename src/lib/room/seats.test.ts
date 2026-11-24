@@ -200,7 +200,7 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     const again = phone(host.link, 'p1', 'Sam', sam.key);
     await settle(again);
     expect(again.types()).toEqual(['prove', 'welcome', 'view']);
-    expect(sam.types().at(-1)).toBe('replaced'); // told so, then closed once that is out
+    expect(sam.got.at(-1)).toEqual({ t: 'replaced' }); // told so (by a proof: no move), then closed once that is out
     await vi.advanceTimersByTimeAsync(1500);
     expect(sam.conn.open).toBe(false);
     again.say({ t: 'hello', pid: 'p2', name: 'Zed', keys: 1 });
@@ -372,7 +372,7 @@ describe.each(Object.keys(GAMES) as (keyof typeof GAMES)[])('%s seats', (game) =
     host.link.answer(true);
     expect(fresh.types()).toEqual(['prove', 'wait', 'enrol', 'welcome', 'view']);
     expect(fresh.got.find((m) => m.t === 'welcome')?.pid).toBe('p1');
-    expect([sam.types().at(-1), book(host).key('p1')]).toEqual(['replaced', fresh.key]);
+    expect([sam.got.at(-1), book(host).key('p1')]).toEqual([{ t: 'replaced', moved: 1 }, fresh.key]);
     // Nobody else gets in by that name meanwhile: with no seat open, the game's own rules apply.
     expect(phone(host.link, 'p8', 'Sam').types()).toEqual(['reject']);
     close(host);
@@ -763,6 +763,24 @@ describe('the app\'s phone', () => {
     await until(() => first.link === 'live' && second.link === 'stopped');
     await vi.advanceTimersByTimeAsync(60_000);
     expect([first.link, second.link, second.elsewhere]).toEqual(['live', 'stopped', true]);
+    close(host);
+  });
+
+  it('whose seat the host gave to a new phone stops with the reason, no way back that cannot work, and nothing saved changed', async () => {
+    const host = await load('snark');
+    const sam = await join(host);
+    const { MOVED } = await import('./phone-link.svelte');
+    const saved = [localStorage.getItem('hr:snark:me'), localStorage.getItem('hr:snark:keys')];
+    host.link.recoverSeat(sam.me!.pid, 'Sam');
+    const fresh = phone(host.link, 'p9', 'Sam'); // another phone, with storage of its own
+    await settle(fresh);
+    host.link.answer(true);
+    expect(fresh.types()).toContain('welcome');
+    await until(() => sam.link === 'stopped');
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect([sam.link, sam.stopped, sam.elsewhere]).toEqual(['stopped', MOVED, false]);
+    expect([localStorage.getItem('hr:snark:me'), localStorage.getItem('hr:snark:keys')]).toEqual(saved);
+    expect(host.link.pids()).toEqual([sam.me!.pid]); // the new phone's seat, untouched
     close(host);
   });
 

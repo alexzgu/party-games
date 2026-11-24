@@ -83,7 +83,7 @@ export class HostLink {
       ends: (conn) => ends(conn.peerConnection),
       send: (conn, msg) => this.write(conn, msg),
       refuse: (conn, why, ask) => this.refuse(conn, why, ask),
-      admit: (conn, seat) => this.admit(conn, seat),
+      admit: (conn, seat, moved) => this.admit(conn, seat, moved),
       show: (now) => { this.recovery = now; },
     });
   }
@@ -374,11 +374,14 @@ export class HostLink {
     setTimeout(() => conn.close(), 1500);
   }
 
-  /** The seat is this phone's: whatever held it before is told so (another tab, or another phone, has it) and cut off. */
-  private admit(conn: DataConnection, seat: Seat): void {
+  /**
+   * The seat is this phone's: whatever held it before is told so and cut off; `moved`: it went to
+   * another phone with a new key, not to a tab that proved the same one.
+   */
+  private admit(conn: DataConnection, seat: Seat, moved = false): void {
     if (!conn.open) return this.drop(conn);
     const old = this.links.get(seat.pid);
-    if (old && old !== conn) this.part(old, { t: 'replaced' });
+    if (old && old !== conn) this.part(old, { t: 'replaced', ...(moved ? { moved: 1 } : {}) });
     this.links.set(seat.pid, conn);
     this.pidOf.set(conn, seat.pid);
     this.refresh();

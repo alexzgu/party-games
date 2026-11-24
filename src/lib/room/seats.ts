@@ -230,7 +230,8 @@ export interface DeskHooks<C> {
   send(conn: C, msg: object): void;
   /** Says why, and closes; `ask`: the phone shows its own words for "ask the host". */
   refuse(conn: C, why: string, ask?: boolean): void;
-  admit(conn: C, seat: Seat): void;
+  /** `moved`: the seat was given a new key (the host's Yes), so its old phone is not this one. */
+  admit(conn: C, seat: Seat, moved: boolean): void;
   show(now: Recovery | null): void;
 }
 
@@ -352,7 +353,7 @@ export class Desk<C> {
     if (step === 'enrol' && !key) return this.enrol(call);
     if (key) this.book.bind(seat.pid, key);
     this.drop(call.conn);
-    this.hooks.admit(call.conn, seat);
+    this.hooks.admit(call.conn, seat, !!key);
   }
 
   private prove(call: Call<C>): void {

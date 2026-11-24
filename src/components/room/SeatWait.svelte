@@ -5,8 +5,8 @@
 
   // Phone: while the host is asked whether this phone may have a seat, the whole screen shows this
   // phone's own fixed words, large, and nothing from the other end; the host's question quotes them,
-  // so the host can see that the phone in front of them is the one asking. Once another tab (or
-  // phone) has taken this seat, the screen says so, with the way back.
+  // so the host can see that the phone in front of them is the one asking. Once another tab has
+  // taken this seat, the screen says so, with the way back.
   let { link }: { link: { waiting: boolean; elsewhere: boolean; leave(): void; here(): void } } = $props();
 </script>
 
