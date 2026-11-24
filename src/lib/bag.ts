@@ -4,9 +4,10 @@ import { shuffle } from './random';
 /**
  * Deals items without repeats across rounds and app restarts: what was dealt is remembered
  * per pool, and the pool only refills once every item has been seen. On a refill the most
- * recently dealt items stay held back, so tonight's cards never come straight back.
+ * recently dealt items stay held back, so tonight's cards never come straight back. `rand`
+ * shuffles (tests pass a seeded one).
  */
-export function makeBag<T>(poolKey: string, items: readonly T[], idOf: (t: T) => string) {
+export function makeBag<T>(poolKey: string, items: readonly T[], idOf: (t: T) => string, rand: () => number = Math.random) {
   const key = 'seen:' + poolKey;
   const valid = new Set(items.map(idOf));
   // Insertion-ordered, oldest first, so a refill can keep the newest.
@@ -22,7 +23,7 @@ export function makeBag<T>(poolKey: string, items: readonly T[], idOf: (t: T) =>
       keep.forEach((id) => seen.add(id));
       fresh = items.filter((t) => !seen.has(idOf(t)));
     }
-    queue = shuffle(fresh);
+    queue = shuffle(fresh, rand);
   }
 
   return {
@@ -43,7 +44,7 @@ export function makeBag<T>(poolKey: string, items: readonly T[], idOf: (t: T) =>
       const id = idOf(item);
       if (!seen.delete(id)) return;
       save(key, [...seen]);
-      if (queue.length) queue.splice(Math.floor(Math.random() * queue.length), 0, item);
+      if (queue.length) queue.splice(Math.floor(rand() * queue.length), 0, item);
     },
     get remaining() {
       return items.filter((t) => !seen.has(idOf(t))).length;
