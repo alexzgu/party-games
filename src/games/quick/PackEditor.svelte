@@ -163,7 +163,7 @@
 
   {#snippet actions()}
     {#if pack && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = true)} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
-    {#if pack}<Button size="lg" onclick={() => (open = 'new')} tip="Type in a new prompt yourself">+ Add a prompt</Button>{/if}
+    {#if pack}<Button size="lg" onclick={() => (open = 'new')} tip="Type in a new prompt yourself">+ Prompt</Button>{/if}
   {/snippet}
 </Screen>
 {/if}

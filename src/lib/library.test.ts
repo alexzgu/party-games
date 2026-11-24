@@ -494,6 +494,13 @@ describe('sharing a pack by hand', () => {
     customDecks.remove(deck2.id);
     customDecks.put(deck2);
     expect([lastShared('forehead', deck2.id), [...ownedIds('forehead')]]).toEqual([undefined, []]);
+    // Deleting it with no room to write leaves the pack and its record.
+    await shareByHand('forehead', deck2.id);
+    const full = vi.spyOn(localStorage, 'setItem').mockImplementation(() => { throw new Error('full'); });
+    customDecks.remove(deck2.id);
+    full.mockRestore();
+    expect(customDecks.all().some((d) => d.id === deck2.id)).toBe(true);
+    expect(lastShared('forehead', deck2.id)).toBeDefined();
     // Deleted while its share was on its way, too.
     const slow = slowServer();
     const going = shareByHand('forehead', deck2.id);

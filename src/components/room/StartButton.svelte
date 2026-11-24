@@ -35,7 +35,7 @@
     <div class="ask">
       <p>Not connected: <b>{away.map((p) => p.name).join(', ')}</b>. They can rejoin with the same code.</p>
       <Button onclick={start}>Start anyway</Button>
-      <Button variant="secondary" onclick={() => (asking = false)}>Wait for them</Button>
+      <Button variant="secondary" onclick={() => (asking = false)}>Wait</Button>
     </div>
   </Popup>
 {/if}

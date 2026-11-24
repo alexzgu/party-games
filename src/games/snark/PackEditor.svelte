@@ -195,13 +195,13 @@
             <li><button class="prompt" onclick={() => (openFinal = { was: $state.snapshot(f) as SnarkFinal })}>{f.prompt}<span class="stock">House: {f.house.join(' · ')}</span></button></li>
           {/each}
         </ul>
-        <Button variant="secondary" size="sm" onclick={() => (openFinal = { was: null })} tip="Type in a prompt for three-line duels and the house's three lines">+ Add a final</Button>
+        <Button variant="secondary" size="sm" onclick={() => (openFinal = { was: null })} tip="Type in a prompt for three-line duels and the house's three lines">+ Final</Button>
       </section>
     </PinnedPanel>
   {/if}
   {#snippet actions()}
     {#if pack && !gone && !builtin}<Button size="lg" variant="secondary" onclick={() => (adding = 'more')} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
-    {#if pack && !gone}<Button size="lg" onclick={() => edit(null)} tip="Type in a new prompt yourself">+ Add a prompt</Button>{/if}
+    {#if pack && !gone}<Button size="lg" onclick={() => edit(null)} tip="Type in a new prompt yourself">+ Prompt</Button>{/if}
   {/snippet}
 </Screen>
 {/if}

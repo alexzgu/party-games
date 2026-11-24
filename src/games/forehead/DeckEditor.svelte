@@ -220,7 +220,7 @@
 
   {#snippet actions()}
     {#if deck.id && !builtin}<Button size="lg" onclick={() => (adding = true)} tip="Fizzwick writes more; you choose which to add">🧙 Add more</Button>{/if}
-    <Button size="lg" variant="secondary" onclick={paste} disabled={!deck.name.trim() && !deck.words.length} tip="Add a whole list of words at once">📋 Paste a list</Button>
+    <Button size="lg" variant="secondary" onclick={paste} disabled={!deck.name.trim() && !deck.words.length} tip="Add a whole list of words at once">📋 Paste</Button>
   {/snippet}
 </Screen>
 {/if}

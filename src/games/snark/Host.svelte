@@ -123,7 +123,7 @@
       {/if}
       <HowTo><Rules /></HowTo>
       {#if game}
-        <Button size="sm" variant="ghost" onclick={() => (confirmEnd = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close room</Button>
+        <Button size="sm" variant="ghost" onclick={() => (confirmEnd = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close</Button>
       {/if}
     </div>
   </header>
@@ -180,8 +180,8 @@
   <Popup title="Close the room?" onclose={() => (confirmEnd = false)}>
     <div class="confirm">
       <p>This closes room {game.code} and sends everyone's phone back to the start.{playing ? ' The game ends.' : ''}{playing && anyScored(game) ? ' The scores so far go in History as ended early.' : ''}</p>
-      <Button variant="danger" onclick={end}>Close room</Button>
-      <Button variant="secondary" onclick={() => (confirmEnd = false)}>{playing ? 'Keep playing' : 'Keep it open'}</Button>
+      <Button variant="danger" onclick={end}>Close</Button>
+      <Button variant="secondary" onclick={() => (confirmEnd = false)}>{playing ? 'Keep playing' : 'Stay'}</Button>
     </div>
   </Popup>
 {/if}

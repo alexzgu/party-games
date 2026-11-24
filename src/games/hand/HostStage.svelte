@@ -59,8 +59,8 @@
     {:else if v.phase === 'over'}
       <Standings {v} {name} size="lg" />
       <div class="next">
-        <Button size="lg" onclick={onagain} tip="Back to the lobby with the same players, scores at zero">Back to lobby</Button>
-        <Button size="lg" variant="secondary" onclick={onclose} tip="Sends every phone back to the start, after asking">Close room</Button>
+        <Button size="lg" onclick={onagain} tip="Back to the lobby with the same players, scores at zero">Lobby</Button>
+        <Button size="lg" variant="secondary" onclick={onclose} tip="Sends every phone back to the start, after asking">Close</Button>
       </div>
     {/if}
   </TapToFinish>

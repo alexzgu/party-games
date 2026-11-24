@@ -71,7 +71,7 @@
         <Button size="sm" variant="ghost" onclick={() => (showPlayers = true)} tip="Remove a player from the room">Players</Button>
       {/if}
       <HowTo><Rules /></HowTo>
-      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close room</Button>{/if}
+      {#if v}<Button size="sm" variant="ghost" onclick={() => (confirm = true)} tip={playing ? 'Ends the game and sends every phone back, after asking' : 'Sends every phone back to the start, after asking'}>Close</Button>{/if}
     </div>
   </header>
   {#if !fixed && host.status !== 'open'}
@@ -91,8 +91,8 @@
 {#if confirm}
   <Popup title="Close the room?" onclose={() => (confirm = false)}>
     <p>This closes room {code} and sends everyone’s phone back to the start.{playing ? ' The game ends.' : ''}</p>
-    <Button variant="danger" onclick={() => { if (!fixed) host.close(); back('/hand'); }}>Close room</Button>
-    <Button variant="secondary" onclick={() => (confirm = false)}>{playing ? 'Keep playing' : 'Keep it open'}</Button>
+    <Button variant="danger" onclick={() => { if (!fixed) host.close(); back('/hand'); }}>Close</Button>
+    <Button variant="secondary" onclick={() => (confirm = false)}>{playing ? 'Keep playing' : 'Stay'}</Button>
   </Popup>
 {/if}
 {#if connection}<Connection onclose={() => (connection = false)} onchange={rebroker} />{/if}

@@ -775,7 +775,7 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   standings. A phone busy writing or voting is not sent any of this. Pings every 2.5 s;
   a link silent for 9 s is dropped on both sides and the phone redials (1, 2, 4, then every 8 s,
   at once when the phone is unlocked). The room lives at module level, so the host can open
-  settings or a pack and come back without dropping anyone; only Close room ends it.
+  settings or a pack and come back without dropping anyone; only Close ends it.
 - **Robustness**: a phone keeps an id and name in localStorage and rejoins as the same player
   with its score after a lock, reload or Wi-Fi change; half-typed answers survive a reload;
   answers and votes sent while offline are resent. A host reload reopens the same room (same
@@ -798,7 +798,7 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   stock answers" (up to 40 at a time). The editor shows each prompt's stock answer (editable with
   the prompt; it moves with a reworded prompt and goes with a deleted one) and, under the prompts,
   the finals: tap one to change its prompt (3–14 words, new in the pack) and the house's three lines
-  (1–40 characters each) or delete it, "+ Add a final" for a new one.
+  (1–40 characters each) or delete it, "+ Final" for a new one.
   Wizard lines that break the Snark rules (prompts 3–14 words, stock answers 1–8 words, finals
   starting "Three" with three house lines of 1–6 words and 40 characters) or repeat a prompt or
   final of any Snark pack on the phone are dropped unseen.
@@ -873,9 +873,9 @@ host's one-view-per-phone sending. Each game supplies its own message reader, vi
 logic. The host's peer id is `jerkbox-<game>-<CODE>`. Leaving the host screen (its back arrow,
 ending the game or closing the room) and leaving or cancelling on a phone return to the game's
 first screen the way they came (`back()`), and that screen's Back returns to the main menu.
-On every host screen the button that closes the room says "Close room" in every phase and asks
-first ("Close the room?", with "The game ends." while one is being played); after a game "Back to
-lobby" keeps the room and its players for another. Start asks first while any player's phone is
+On every host screen the button that closes the room says "Close" in every phase and asks
+first ("Close the room?", with "The game ends." while one is being played); after a game "Lobby"
+keeps the room and its players for another. Start asks first while any player's phone is
 disconnected (`StartButton`: "2 phones are disconnected. Start anyway?", naming them), since those
 players are dealt in too; the question closes when too few are left to start.
 "Leave room" on a phone (any time, after a confirm) tells the host (`{t: 'leave'}`) before the
@@ -1079,7 +1079,7 @@ on their own phones through the shared room link; a host screen shows the room. 
   wrote", "Alex drew", "Jo thought it was"), the entry before it alongside, one per Next (host
   button, Space or →; ← goes back). Phones follow the same entry, so a group can play from
   phones alone; only the host turns pages. No scores. After the last entry of the last chain:
-  Back to lobby (same room and players; Start deals new chains) or Close room. History gets one
+  Lobby (same room and players; Start deals new chains) or Close. History gets one
   entry on the host when the album opens: "Telephone · N chains", with each chain's first and last line.
 
 ### Draw & guess
@@ -1116,7 +1116,7 @@ on their own phones through the shared room link; a host screen shows the room. 
   the turn's end) of what they earned this turn (non-guessers count as 0), rounded to 5. A drawer
   removed or gone from the room by the turn's end earns nothing for it. Phones and the host show
   "N of M got it" over the same guessers. A scoreboard shows between rounds (8 s, or Next); the
-  game ends after the last round with standings and confetti; ties share a place. Back to lobby
+  game ends after the last round with standings and confetti; ties share a place. Lobby
   keeps the players and resets the scores. History gets one entry on the host.
 
 ### Both modes
@@ -1130,7 +1130,7 @@ on their own phones through the shared room link; a host screen shows the room. 
   ran out meanwhile gets 12 s). For 10 s after the host reopens or changes broker (*house*), while
   phones reconnect, nobody counts as away and "every present player is done" or "every present
   guesser has it" ends nothing; timers still run. A player who chose Leave room and rejoins after
-  Back to lobby is seated in the new lobby. Reconnects, name rules and Leave room as in the shared room link;
+  Lobby is seated in the new lobby. Reconnects, name rules and Leave room as in the shared room link;
   name limit 20 characters.
 - **Content** (`src/content/sketch/*.json`): `{"id", "name", "blurb", "added"?, "words": [...],
   "ideas": [...]}`; words (1–3 words, letters, spaces, hyphens and apostrophes, 24 characters)
@@ -1175,8 +1175,8 @@ prompt and the answers. Amounts marked *house* are ours.
   judging. The host can also skip judging to the vote ("Let the room vote").
 - **Winning**: first to the target (5/7/10 points, default 7, *house*: the original plays until
   the room stops) wins, decided when the point is scored; only players still in the game count (a
-  player who left reaches the target by rejoining and scoring). Standings with confetti, the winning answer of every round, Back to lobby
-  or Close room. History gets one entry on the host.
+  player who left reaches the target by rejoining and scoring). Standings with confetti, the winning answer of every round, Lobby
+  or Close. History gets one entry on the host.
 - **Options** (Settings, off by default; house rules printed with the original):
   - *Trade a point*: a player with a point may, while others answer or during the reveal (never
     judging or voting, and not once someone has reached the target), give it up to swap any of

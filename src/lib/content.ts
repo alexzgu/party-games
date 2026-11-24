@@ -114,8 +114,8 @@ function customStore<T extends { id: string } & PackMeta>(key: string, builtin: 
       return true;
     },
     remove(id: string) {
-      save(key, settle().filter((x) => x.id !== id));
-      forgetShared(game, id);
+      // A pack that could not be deleted (no room to write) keeps its share record.
+      if (trySave(key, settle().filter((x) => x.id !== id))) forgetShared(game, id);
     },
     isBuiltin: (id: string) => builtinIds.has(id),
     /** The built-in packs as shipped. */
