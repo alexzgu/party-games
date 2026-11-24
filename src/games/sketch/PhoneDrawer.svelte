@@ -3,7 +3,7 @@
   import Canvas from '../../components/draw/Canvas.svelte';
   import type { Drawing } from '../../lib/ink';
   import { outgoing, SEND_MS } from './live';
-  import { loadDraft, saveDraft } from './store';
+  import { hasDraft, loadDraft, saveDraft } from './store';
   import { gallery, phone } from './player.svelte';
   import WordShape from './WordShape.svelte';
   import Feed from './Feed.svelte';
@@ -18,18 +18,21 @@
   // svelte-ignore state_referenced_locally
   const at = v.at;
   let draft = $state.raw(loadDraft(id));
+  /** This phone has a drawing of its own, a cleared one too: the host's never replaces it. */
+  let mine = hasDraft(id);
   /** What the host has been sent (null: send it all next time), and the number of that send. */
   let sent: Drawing | null = null;
   let n = 0;
 
   function change(drawing: Drawing) {
     draft = { ...draft, drawing };
+    mine = true;
     if (!demo) saveDraft(draft);
   }
 
   function flush() {
     const d = draft.drawing;
-    const ink = demo || phone.link !== 'live' ? null : outgoing(sent, n, d);
+    const ink = demo || phone.link !== 'live' ? null : outgoing(sent, n, d, mine);
     if (!ink) return;
     phone.ask({ t: 'ink', at, n: ++n, ...ink });
     sent = d;
@@ -38,10 +41,10 @@
   // A phone that took over this turn carries on from the drawing the host has: with none of its
   // own, its pad opens when the host has sent that (blank or not), or soon anyway.
   // svelte-ignore state_referenced_locally
-  let ready = $state(demo || draft.drawing.length > 0);
+  let ready = $state(demo || mine);
   $effect(() => {
     const had = gallery.art[id];
-    if (had?.length && !n && !draft.drawing.length) change(had);
+    if (had?.length && !n && !mine) change(had);
     if (had) ready = true;
   });
   const soon = setTimeout(() => { ready = true; }, 3000);

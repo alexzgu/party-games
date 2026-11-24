@@ -1,3 +1,8 @@
+<script module lang="ts">
+  /** The popups on screen, the last one on top: Tab is the top one's. */
+  const open: object[] = [];
+</script>
+
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { controls, wrapTo } from '../lib/focusRing';
@@ -8,26 +13,34 @@
   let { title, onclose, children, footer, wide = false }: { title: string; onclose: () => void; children: Snippet; footer?: Snippet; wide?: boolean } = $props();
 
   let card: HTMLDivElement;
+  let top: object | null = null;
   const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   $effect(() => {
     card.querySelector<HTMLElement>('.x')?.focus({ focusVisible: false } as FocusOptions);
     return () => opener?.isConnected && opener.focus({ preventScroll: true });
   });
+  $effect(() => {
+    const me = {};
+    open.push(me);
+    top = me;
+    return () => { open.splice(open.indexOf(me), 1); };
+  });
 
   function tab(e: KeyboardEvent) {
-    if (e.key !== 'Tab') return;
-    const at = document.activeElement;
-    const to = wrapTo(controls(card), at === card ? null : (at as HTMLElement | null), e.shiftKey);
+    if (e.key !== 'Tab' || open.at(-1) !== top) return;
+    const at = document.activeElement as HTMLElement | null;
+    // On the card itself, or outside it (its control went, or something behind took the focus): from the start.
+    const to = wrapTo(controls(card), at !== card && card.contains(at) ? at : null, e.shiftKey);
     if (!to) return;
     e.preventDefault();
     to.focus();
   }
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
+<svelte:window onkeydown={(e) => { if (e.key === 'Escape') onclose(); else tab(e); }} />
 
 <div class="scrim fade-in" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
-  <div class="card pop-in" class:wide role="dialog" aria-modal="true" aria-label={title} tabindex="-1" onkeydown={tab} bind:this={card}>
+  <div class="card pop-in" class:wide role="dialog" aria-modal="true" aria-label={title} tabindex="-1" bind:this={card}>
     <header>
       <h2>{title}</h2>
       <button class="x" aria-label="Close" onclick={onclose}>✕</button>

@@ -30,4 +30,6 @@ export function loadDraft(id: string): Draft {
   const saved = load<Draft | null>('sketch:draft', null);
   return saved?.id === id ? saved : { id, text: '', drawing: [] };
 }
+/** Whether this phone has saved one for this job, a cleared one too. */
+export const hasDraft = (id: string): boolean => load<Draft | null>('sketch:draft', null)?.id === id;
 export const saveDraft = (draft: Draft) => save('sketch:draft', draft);

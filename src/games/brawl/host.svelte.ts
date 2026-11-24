@@ -159,8 +159,7 @@ class Session {
   addBot(): string | null { return this.game ? this.bots.add() : null; }
 
   rematch() {
-    const g = this.game;
-    if (g) this.commit({ ...L.newGame(newPid(), g.code, g.settings), at: g.at + 1, players: L.active(g).map((p) => ({ ...p, score: 0 })), kicked: g.kicked });
+    if (this.game) this.commit(L.rematch(this.game, newPid()));
   }
 
   rebroker() { this.link.rebroker(); }

@@ -21,9 +21,9 @@ export function diff(a: Drawing, b: Drawing): Delta | null {
   return { i, o: was.p.length, d: [{ ...now, p: now.p.slice(was.p.length) }, ...b.slice(a.length)] };
 }
 
-/** What the drawer's phone sends next (`sent`: what the host has, null to send it all; `n`: sends so far), or null. A phone that has drawn nothing sends nothing: it may have taken over a turn half drawn. */
-export function outgoing(sent: Drawing | null, n: number, d: Drawing): Delta | { all: Drawing } | null {
-  if (d === sent || (!n && !d.length)) return null;
+/** What the drawer's phone sends next (`sent`: what the host has, null to send it all; `n`: sends so far), or null. A phone that has drawn nothing sends nothing, for it may have taken over a turn half drawn; one with a draft of its own (`own`), a cleared one too, sends that. */
+export function outgoing(sent: Drawing | null, n: number, d: Drawing, own = false): Delta | { all: Drawing } | null {
+  if (d === sent || (!n && !d.length && !own)) return null;
   return (sent && n ? diff(sent, d) : null) ?? { all: d };
 }
 

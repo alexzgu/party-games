@@ -18,6 +18,8 @@ describe('Draw & guess live ink', () => {
   it('sends all first, then additions; an empty pad only when it was cleared here', () => {
     expect(outgoing(null, 0, [])).toBeNull();
     expect(outgoing(null, 0, a)).toEqual({ all: a });
+    // A drawing of this phone's own is sent, a cleared one too.
+    expect(outgoing(null, 0, [], true)).toEqual({ all: [] });
     expect(outgoing(a, 1, a)).toBeNull();
     expect(outgoing(a, 1, [...a, ...a])).toEqual({ i: 0, o: 4, d: [{ ...a[0], p: [] }, ...a] });
     expect(outgoing(a, 1, [])).toEqual({ all: [] });

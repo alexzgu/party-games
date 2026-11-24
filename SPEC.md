@@ -453,7 +453,7 @@ Updates reach phones without interrupting play: a new version downloads in the b
 Heads Up-style. One player holds the phone on their forehead, screen facing out; the others
 shout clues; the holder tilts down for "got it", up for "pass".
 
-- **Setup**: the shared pack list (packs with their icon, word count); tap to select one or several (mixed); the pencil opens a pack to see, edit or restore its words (`#/forehead/deck?id=…`; its "Paste a list" opens Make a pack on the Paste tab; the old pack screen `#/forehead/decks` now opens setup). Add pack → New ("Make a pack") offers Paste, By hand (opens an empty pack in the editor) and 🧙 Wizard.
+- **Setup**: the shared pack list (packs with their icon, word count); tap to select one or several (mixed); the pencil opens a pack to see, edit or restore its words (`#/forehead/deck?id=…`; its "Paste" opens Make a pack on the Paste tab; the old pack screen `#/forehead/decks` now opens setup). Add pack → New ("Make a pack") offers Paste, By hand (opens an empty pack in the editor) and 🧙 Wizard.
   A "Round" card (summary like "60 s rounds · tilt or tap") holds round length 30/60/90/120 s
   (default 60), Controls and, unless Controls is Tap, Calibrate tilt. Controls: Tilt, Tap or Both (default Both on phones
   and tablets, Tap on a laptop; the old saved "Tilt", which always took taps, carries over as

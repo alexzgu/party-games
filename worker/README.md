@@ -124,11 +124,11 @@ in your password manager; never paste it into a chat. Then, in your own terminal
 id (from the export):
 
 ```sh
-bash -c 'read -rsp "LIBRARY_ADMIN: " s; echo; printf "header = \"Authorization: Bearer %s\"\n" "$s" |
-  curl -s -K - -X POST -d "{\"hidden\": true}" https://<the server address>/library/packs/<id>/hide'
+bash -c 'IFS= read -rsp "LIBRARY_ADMIN: " s; echo; printf "Authorization: Bearer %s\n" "$s" |
+  curl -s -H @- -d "{\"hidden\": true}" "https://SERVER/library/packs/PACK/hide"'
 ```
 
-It asks for the secret without showing it, so it stays out of the shell history and the list of running commands.
+Put the server's address for SERVER and the pack's id for PACK. It asks for the secret without showing it, so it stays out of the shell history and the list of running commands.
 Put `{\"hidden\": false}` there instead to show it again. Without the secret, every hide is refused. A hidden
 pack disappears from the list, the preview and the export, and stays hidden when its phone
 updates it.
