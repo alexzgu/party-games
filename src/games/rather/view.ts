@@ -4,8 +4,10 @@ import * as L from './logic';
 
 export type View = {
   phase: L.Phase; at: number; left: number | null; total: number; paused: boolean;
-  /** The question in play (from 1) and how many this game has. */
+  /** The question in play (from 1) and how many this game has (at the end: how many it asked). */
   n: number; count: number;
+  /** The reveal: the next step ends the game. */
+  last?: boolean;
   players: L.Player[];
   prompt?: string;
   /** Voting: who has voted (never which way). */
@@ -28,12 +30,12 @@ export function view(g: L.Game, now: number, pid?: string): View {
   const v: View = {
     phase: g.phase, at: g.at, left: L.left(g, now), paused: g.paused !== null,
     total: g.phase === 'vote' ? g.settings.seconds * 1000 : g.phase === 'reveal' ? L.REVEAL_MS : 0,
-    n: r?.n ?? 0, count: g.phase === 'lobby' ? g.settings.count : g.questions.length,
+    n: r?.n ?? 0, count: g.phase === 'lobby' ? g.settings.count : g.phase === 'over' ? g.results.length : g.questions.length,
     players: g.phase === 'over' ? L.standings(g) : L.active(g),
   };
   if (r && playing) v.prompt = r.prompt;
   if (r && g.phase === 'vote') v.voted = L.active(g).filter((p) => Object.hasOwn(r.votes, p.pid)).map((p) => p.pid);
-  if (r?.tally && g.phase === 'reveal') v.tally = r.tally;
+  if (r?.tally && g.phase === 'reveal') Object.assign(v, { tally: r.tally, last: L.lastStep(g) });
   if (g.phase === 'over') v.results = g.results;
   return pid ? { ...v, ...own(g, pid) } : v;
 }

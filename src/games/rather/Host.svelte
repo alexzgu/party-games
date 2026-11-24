@@ -69,7 +69,7 @@
     <div class="controls">
       {#if playing}
         <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.pause(); }} tip={v?.paused ? 'Starts the clock again on every phone' : 'Stops the clock on every phone'}>{v?.paused ? 'Resume' : 'Pause'}</Button>
-        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }} tip={v?.phase === 'vote' ? 'Shows the votes so far now' : 'Moves on without waiting for the timer'}>{v?.phase === 'vote' ? 'Reveal' : 'Next'}</Button>
+        <Button size="sm" variant="secondary" onclick={() => { if (!fixed) host.skip(); }} tip={v?.phase === 'vote' ? 'Shows the votes so far now' : 'Moves on without waiting for the timer'}>{v?.phase === 'vote' ? 'Reveal' : v?.last ? 'Results' : 'Next'}</Button>
         <Button size="sm" variant="ghost" onclick={() => (showPlayers = true)} tip="Remove a player from the room">Players</Button>
       {/if}
       {#if !fixed && game}<NewPhone link={host.link} players={game.players} />{/if}

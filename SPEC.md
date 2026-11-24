@@ -1479,28 +1479,35 @@ Amounts marked *house* are ours: the folk game keeps no score.
 
 - **Own phones**: 3–12 players join a host screen through the shared room link; name limit 20
   characters.
-- **Questions**: the picked packs' questions shuffled, then every other pack's (`roomQuestions`,
-  the same choices in either order are one question); a game asks the next 10, 15 or 20 (Settings,
-  default 10). Lobby after a game carries on through the room's unused questions and reshuffles
-  only when they run out (*house*); a game started with other picks starts a new order.
+- **Questions**: only the picked packs' questions (when none of the picks exists any more,
+  Classic alone, the default; host and one phone share this rule, `pickedPacks`), shuffled, one per
+  question (the same choices in either order are one; `roomQuestions`). A game asks 10, 15 or 20
+  (Settings, default 10), or as many as the picks hold. The room remembers which questions it has
+  asked by their key, never their text: every Start reads the packs as they are then (so an edited
+  or deleted question is never asked from memory), asks ones the room has not asked yet, and when
+  fewer are left than the game needs, forgets what it asked and carries on with the rest of the
+  picks (*house*), none twice in one game. Keys no longer in the picks are dropped at Start.
 - **Vote** (default 20 s; 15/20/30/no limit, *house*): the host shows "Would you rather…", the two
   choices as two large panels in two fixed colours (the first warm orange, the second blue; side by
   side, stacked on a narrow screen; each text as large as its panel allows), "Question 3 of 10",
   the timer, and every player's name, dimmed until they have voted (never which way). Each phone
   shows the same two choices as two big buttons in the same colours. A tap sends the vote; the
-  chosen button stays marked and the phone says the other can still be tapped to change: the last
+  chosen button is marked at once (a mark that belongs to that room and seat: it goes when the
+  phone leaves the seat, so it never shows in another room) and stays marked and the phone says the other can still be tapped to change: the last
   tap before the reveal counts (*house*). A vote names its phase and question number; the host
   ignores one for another question, from a player not in the game, or after the reveal. Before the
   reveal a phone is sent only its own vote and who has voted, never anyone else's side.
 - **Reveal** when every player in the game whose phone is connected has voted, or at the timer;
-  with no limit, also when the host taps Reveal. It stays 10 s (or Next; the last question's says
-  Results). Both panels show their count and percent, a split bar runs under them and each choice
+  with no limit, also when the host taps Reveal. It stays 10 s (or Next; Results when the next
+  step ends the game, one rule in the logic). The host's reveal shows no score cards (scores are on
+  the phones and at the end), so a full room of long names still fits. Both panels show their count and percent, a split bar runs under them and each choice
   lists its voters. Each player on the side with more votes scores 1 point (*house*). A tie scores
   nobody ("Split down the middle. No points."); no votes at all: "Nobody voted.", no points.
   Players who did not vote get nothing; the votes of players removed or gone by the reveal do not
   count. Phones show which side won, whether they scored, and their total.
-- **End**: after the last question, standings with confetti (ties share a place), Lobby (same
-  players, scores at zero) or Close. History gets one entry on the host, one line per question
+- **End**: after the last question, standings with confetti (ties share a place) and how many
+  questions were asked (fewer when the game ended early), Lobby (same players, scores at zero) or
+  Close. History gets one entry on the host, one line per question
   with each side's count ("be able to fly (3) or be invisible (2)").
 - **Players**: late joiners are seated at once and may vote on the question in play. A player who
   drops keeps their seat and score and nobody waits for them; one who leaves or is removed is out
@@ -1510,14 +1517,14 @@ Amounts marked *house* are ours: the folk game keeps no score.
   Reveal or Next; pause works while voting and in the reveal. A Players button mid-game removes a
   player (after a confirm). The host is saved under `rather:host`, a phone's seat under `rather:me`.
 - **Settings** (`#/rather/settings`, a pack page like Bad Hand's): question packs (Classic by
-  default; search/sort, editor, Make a pack or Add pack → New / Import, Export; a pack just made or
-  imported joins the picked ones; when the picks hold fewer questions than a game asks, a note says
-  the game adds some from the other packs), and a Rules row over Done opening questions per game
+  default; search/sort, editor, Make a pack or Add pack → New / Import, Export; a
+  pack just made or imported joins the picked ones; when the picks hold fewer questions than a game
+  asks, a note says so: "6 questions picked: a game will have 6"), and a Rules row over Done opening questions per game
   and seconds to vote; they apply to the next game.
 - **One phone** (`#/rather/aloud`): for reading aloud with a show of hands. "Would you rather…" and
   the two choices large in the same two colours, Previous and Next, a count ("7 of 100") and a
-  Packs link to the settings. Only the picked packs' questions, shuffled with `roomQuestions`; the
-  place is kept while the app stays open and the picks stay the same. After the last question it
+  Packs link to the settings. The same questions a room would ask from (`roomQuestions`), shuffled;
+  the place is kept while the app stays open and the picked questions stay the same. After the last question it
   says so and offers Start over. No players, no scores, no History; the screen stays awake.
 - **Making packs**: paste questions, one per line, or ask the wizard (a theme or a suggestion,
   10–60 questions, default 30); own packs have "🧙 Add more" (5–40, default 15). Every route keeps
@@ -1532,7 +1539,8 @@ Amounts marked *house* are ours: the folk game keeps no score.
   characters, the whole at most 130; it starts lowercase, never with "Would you rather", and has no
   closing punctuation; the two choices differ. Questions are new across packs (the same choices in
   either order are one question). Classic has 100 questions and After Dark 60.
-- Demos at `#/rather/host?demo=` with `lobby|lobby-empty|vote|reveal|tie|over|paused` and
-  `#/rather/join?demo=` with `join|wait|vote|voted|reveal|over` (the demos use the longest built-in
-  question).
+- Demos at `#/rather/host?demo=` with `lobby|lobby-empty|vote|vote-long|reveal|reveal-full|tie|over|paused`
+  and `#/rather/join?demo=` with `join|wait|vote|voted|reveal|over` (the demos use the longest
+  built-in question; `vote-long` and `reveal-full` the longest a question may be, two 60-character
+  choices, and `reveal-full` twelve players with 20-character names).
 - **Bots** (see Shared room link): tap a side at random after 1–4 s, once a question.

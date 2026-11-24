@@ -1,6 +1,6 @@
 <script module lang="ts">
   // Where the reading is, kept while the app stays open: back from the pack settings carries on
-  // unless the picks changed.
+  // unless the picked questions changed.
   let kept: { key: string; order: string[]; i: number } | null = null;
 </script>
 
@@ -12,23 +12,23 @@
   import { ratherPacks } from '../../lib/content';
   import { back, go } from '../../lib/router.svelte';
   import { keepAwake } from '../../lib/wakelock';
-  import { packKey } from './logic';
+  import { ratherKey } from './rules';
   import { roomQuestions } from './pack';
   import { loadSettings } from './store';
   import Choices from './Choices.svelte';
   import Rules from './Rules.svelte';
 
   // One phone, read aloud: "Would you rather" and the two choices large in their colours; the room
-  // picks with a show of hands. The packs picked in settings (only those), shuffled; Next and
-  // Previous; at the end, Start over. No players, no scores, no History.
-  const settings = loadSettings();
-  const key = packKey(settings);
-  const shuffled = () => {
-    const picked = ratherPacks().filter((p) => settings.packs.includes(p.id));
-    return roomQuestions(picked, settings.packs);
-  };
+  // picks with a show of hands. The picked packs' questions as a room asks them (pack.ts: only the
+  // picks, Classic when none of them exists), shuffled; Next and Previous; at the end, Start over.
+  // No players, no scores, no History.
+  const { packs } = loadSettings();
+  const shuffled = () => roomQuestions(ratherPacks(), packs);
+  const first = shuffled();
+  // The questions themselves, so a pack edited or deleted meanwhile starts a new reading.
+  const key = first.map(ratherKey).sort().join('\n');
   // svelte-ignore state_referenced_locally
-  let reading = $state(kept?.key === key ? kept : { key, order: shuffled(), i: 0 });
+  let reading = $state(kept?.key === key ? kept : { key, order: first, i: 0 });
   const done = $derived(reading.i >= reading.order.length);
   $effect(() => { kept = { ...reading }; });
   $effect(() => {

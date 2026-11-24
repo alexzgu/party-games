@@ -9,7 +9,8 @@
   import type { View } from './view';
 
   // The shared screen during play, made to read from across a room: the question's two choices,
-  // who has voted (never which way), then the split with everyone's names, and the end.
+  // who has voted (never which way), then the split with everyone's names (scores are on the
+  // phones and at the end, so a full room still fits), and the end.
   let { v, online, onnext, onagain, onclose }: {
     v: View; online?: ReadonlySet<string>; onnext: () => void; onagain: () => void; onclose: () => void;
   } = $props();
@@ -33,10 +34,9 @@
       {#key v.at}<div class="pop-in"><Choices prompt={v.prompt} size="lg" /></div>{/key}
       <Seats {v} {online} />
     {:else if v.phase === 'reveal' && v.prompt && v.tally}
-      {@render head(outcome(v), scorers.length ? `+1 point each for ${scorers.map(name).join(', ')}.` : '')}
+      {@render head(outcome(v), !scorers.length ? '' : scorers.length > 4 ? `+1 point each for the ${scorers.length} on the bigger side.` : `+1 point each for ${scorers.map(name).join(', ')}.`)}
       <div class="pop-in"><Choices prompt={v.prompt} size="lg" tally={v.tally} {name} /></div>
-      <Seats {v} {online} scores />
-      <div class="next"><Button size="lg" onclick={onnext}>{v.n < v.count ? 'Next' : 'Results'}</Button></div>
+      <div class="next"><Button size="lg" onclick={onnext}>{v.last ? 'Results' : 'Next'}</Button></div>
     {:else if v.phase === 'over'}
       <Standings {v} size="lg" />
       <div class="next">
@@ -54,5 +54,6 @@
   h2 { font-size: clamp(1.4rem, 3.4vw, 3rem); line-height: 1.1; overflow-wrap: anywhere; }
   .note { color: var(--text-dim); font-size: clamp(1rem, 1.6vw, 1.4rem); }
   .paused { color: var(--c-pass); font: 800 clamp(1rem, 2vw, 1.6rem) / 1 var(--font-display); }
+  @media (max-height: 620px) { .stage { gap: var(--s-2); } }
   .next { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); width: min(100%, 900px); margin-inline: auto; }
 </style>

@@ -6,21 +6,14 @@ import { record } from '../../lib/history';
 import { Bots, isBot } from '../../lib/room/bots';
 import { ratherBrain } from './bot';
 import * as L from './logic';
-import { roomQuestions } from './pack';
+import { pickedPacks, roomQuestions } from './pack';
 import { readToHost } from './protocol';
 import { sides } from './rules';
 import { view } from './view';
 import * as store from './store';
 
-/** The chosen packs that exist; every pack when none of them does. */
-export function chosenPacks(ids: string[]) {
-  const all = ratherPacks();
-  const some = all.filter((p) => ids.includes(p.id));
-  return some.length ? some : all;
-}
-
-/** The room's questions in the order a game asks them: the picks', then every other pack's (pack.ts). */
-export const pool = (ids: string[]): string[] => roomQuestions(ratherPacks(), ids);
+/** The packs a room with these picks asks from (pack.ts: Classic when none of them exists). */
+export const chosenPacks = (ids: string[]) => pickedPacks(ratherPacks(), ids);
 
 /** One History line: "be able to fly (3) or be invisible (2)". */
 function line(p: L.Past): string {
@@ -82,14 +75,11 @@ class Session {
     const m = readToHost(raw);
     const g = this.game;
     if (!m || !g) return;
-    const next = L.vote(g, pid, m.at, m.n, m.side);
-    if (next !== g) this.commit(next);
-    else {
-      this.send(pid);
-      // The phone showed its tap at once: tell it this one did not count (a tap it already made counts).
-      const counted = g.phase === 'vote' && g.at === m.at && g.round?.votes[pid] === m.side;
-      if (!counted) this.link.send(pid, { t: 'refused', m: m.t });
-    }
+    const { game, refused } = L.tap(g, pid, m.at, m.n, m.side);
+    if (game !== g) this.commit(game);
+    else this.send(pid);
+    // The phone showed its tap at once: tell it this one did not count.
+    if (refused) this.link.send(pid, { t: 'refused', m: m.t });
     this.tick();
   }
 
@@ -118,7 +108,7 @@ class Session {
   start() {
     const g = this.game;
     if (!g || !L.canStart(g)) return;
-    this.commit(L.start(g, pool(g.settings.packs), Date.now()));
+    this.commit(L.start(g, roomQuestions(ratherPacks(), g.settings.packs), Date.now()));
   }
 
   settings(settings: L.Settings) {

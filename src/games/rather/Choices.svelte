@@ -15,7 +15,7 @@
   const total = $derived(tally ? tally.counts[0] + tally.counts[1] : 0);
   const first = $derived(tally && total ? Math.round((100 * tally.counts[0]) / total) : 0);
   const pct = (side: Side) => side === 0 ? first : 100 - first;
-  const fit = $derived(({ sm: [34, 15], md: [52, 18], lg: [120, 24] } as const)[size]);
+  const fit = $derived(({ sm: [34, 15], md: [52, 18], lg: [120, 18] } as const)[size]);
   const SIDES: Side[] = [0, 1];
 </script>
 
@@ -91,6 +91,16 @@
     .choices { grid-template-columns: minmax(0, 1fr); }
     .lg { --text-h: clamp(90px, 18vh, 240px); }
     .or { margin-block: calc(-1 * var(--gap)); position: relative; z-index: 1; }
+  }
+  /* A short host window (a laptop's browser with its bars, a projector at low resolution): smaller text and tighter panels. */
+  @media (max-height: 620px) {
+    .lg { --text-h: clamp(80px, 26vh, 170px); }
+    .lg.result { --text-h: clamp(64px, 14vh, 120px); }
+    .lg .choice { gap: var(--s-1); padding: var(--s-2) var(--s-3); }
+    .lg .count { font-size: 1.1rem; }
+    .lg .badge, .lg .names { font-size: 0.85rem; }
+    .lg .names { line-height: 1.25; }
+    .result + .bar { height: 1.6rem; margin-top: var(--s-2); }
   }
   @media (prefers-reduced-motion: reduce) { .choice.on { transform: none; } }
 </style>

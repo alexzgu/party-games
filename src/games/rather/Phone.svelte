@@ -26,12 +26,17 @@
   let now = $state(Date.now());
   const remaining = $derived(fixed ? v?.left ?? null : phone.left(now));
   let leaving = $state(false);
-  /** The side this phone has just tapped in this phase (`at`): shown at once, before the host answers. */
-  let sent = $state<{ at: number; side: Side } | null>(null);
   const pid = $derived(fixed ? 'a' : phone.me?.pid ?? '');
+  /** The room and player this phone is seated as ('' when it is not seated in a room). */
+  const seat = $derived(fixed ? 'demo' : phone.me?.code && phone.me.joined && !phone.stopped ? `${phone.me.code}/${phone.me.pid}` : '');
+  /**
+   * The side this phone has just tapped in this phase (`at`) of this seat's room: shown at once,
+   * before the host answers. A phase counter starts again in a new room, so the tap belongs to its seat.
+   */
+  let sent = $state<{ seat: string; at: number; side: Side } | null>(null);
   const me = $derived(v?.players.find((p) => p.pid === pid));
   const name = $derived(v ? nameIn(v) : () => '');
-  const mine = $derived(v && sent?.at === v.at ? sent.side : v?.mine);
+  const mine = $derived(v && seat && sent?.seat === seat && sent.at === v.at ? sent.side : v?.mine);
   const scored = $derived(!!v?.tally && v.tally.winner !== null && v.tally.voters[v.tally.winner].includes(pid));
 
   $effect(() => {
@@ -51,6 +56,11 @@
   $effect(() => {
     if (refusals.count) untrack(() => { sent = null; });
   });
+  // Not seated in that room any more (left, removed, the room closed, another room joined): the tap goes.
+  $effect(() => {
+    const now = seat;
+    untrack(() => { if (sent && sent.seat !== now) sent = null; });
+  });
   $effect(() => {
     keepAwake(!fixed && ['live', 'joining', 'lost'].includes(phone.link));
     return () => keepAwake(false);
@@ -59,7 +69,7 @@
   function pick(side: Side) {
     if (!v || v.paused || v.phase !== 'vote' || side === mine) return;
     sfx.tap();
-    sent = { at: v.at, side };
+    sent = { seat, at: v.at, side };
     if (!fixed) vote(v.at, v.n, side);
   }
 

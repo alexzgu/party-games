@@ -42,13 +42,13 @@ export type Game = {
   /** This game's questions, in the order asked. */
   questions: string[];
   round: Round | null; results: Past[];
-  /** The room's questions not asked yet, in order, and the picks they came from: the next game in this room carries on with them. */
-  queue: string[]; queueOf: string;
+  /** The keys (`ratherKey`) of the questions this room has asked, never their text: the next game asks others while the picks have them. */
+  asked: string[];
 };
 
 export const newGame = (id: string, code: string, settings: Settings): Game => ({
   id, code, settings, phase: 'lobby', at: 0, deadline: null, paused: null, frozen: null, quiet: null,
-  players: [], kicked: [], left: [], questions: [], round: null, results: [], queue: [], queueOf: '',
+  players: [], kicked: [], left: [], questions: [], round: null, results: [], asked: [],
 });
 
 export const active = (g: Game) => g.players.filter((p) => !g.kicked.includes(p.pid));
@@ -57,8 +57,6 @@ export const standings = (g: Game) => [...active(g)].sort((a, b) => b.score - a.
 export const left = (g: Game, now: number) => g.paused !== null ? g.frozen : g.deadline === null ? null : Math.max(0, g.deadline - now);
 export const reconnecting = (g: Game, now: number) => g.quiet !== null && now < g.quiet;
 export const canStart = (g: Game) => g.phase === 'lobby' && active(g).length >= MIN_PLAYERS;
-/** The picks a queue was made from, in one string. */
-export const packKey = (s: Settings) => [...s.packs].sort().join('\n');
 
 export function enter(g: Game, phase: Phase, now: number, ms?: number): Game {
   return { ...g, phase, at: g.at + 1, deadline: ms === undefined ? null : now + ms, paused: null, frozen: null };

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { GAMES } from '../../app.config';
 import * as L from './logic';
+import { roomQuestions } from './pack';
+import { ratherKey } from './rules';
+import { view } from './view';
 
 const questions = Array.from({ length: 25 }, (_, i) => `do thing ${i} or skip thing ${i}`);
 const settings = (patch: Partial<L.Settings> = {}): L.Settings => ({ ...L.DEFAULT_SETTINGS, ...patch });
@@ -93,19 +96,62 @@ describe('Would You Rather game', () => {
     expect([g.phase, g.results.length]).toEqual(['over', 10]);
   });
 
-  it('carries on through the unused questions in a game played again, reshuffling only when they run out', () => {
-    let g = room(3, { count: 10 });
+  it("asks only the picks' questions, game after game, new ones first, then starts over with the rest", () => {
+    const packs = [
+      { id: 'mine', name: 'Mine', blurb: '', prompts: questions.slice(0, 12) },
+      { id: 'other', name: 'Other', blurb: '', prompts: ['wink or nod', 'tea or coffee'] },
+    ];
+    const play = (g: L.Game) => {
+      for (let n = 1; n <= g.questions.length; n++) g = L.step(L.step(g, n), n);
+      return L.rematch(g, 'next', settings());
+    };
+    let g = lobby(3);
+    const games: string[][] = [];
+    for (let i = 0; i < 3; i++) {
+      g = L.start(g, roomQuestions(packs, ['mine']), 0);
+      games.push(g.questions);
+      g = play(g);
+    }
+    expect(games.flat().every((q) => packs[0].prompts.includes(q))).toBe(true);
+    expect(new Set([...games[0], ...games[1].slice(0, 2)]).size).toBe(12); // the second game asks the 2 left first
+    expect(new Set(games[1]).size).toBe(10);
+    expect(g.asked.length).toBeLessThanOrEqual(12);
+  });
+
+  it('reads the packs as they are at each start: an edited or deleted question is never asked from memory', () => {
+    let g = room(3);
     for (let n = 1; n <= 10; n++) g = L.step(L.step(g, n), n);
-    g = L.rematch(g, 'g2', settings({ count: 10 }));
-    expect([g.phase, g.players.map((p) => p.score)]).toEqual(['lobby', [0, 0, 0]]);
-    const second = L.start(g, ['fresh or new'], 0);
-    expect(second.questions).toEqual(questions.slice(10, 20));
-    let h = second;
-    for (let n = 1; n <= 10; n++) h = L.step(L.step(h, n), n);
-    const third = L.start(L.rematch(h, 'g3', settings({ count: 10 })), [questions[0], questions[24], 'fresh or new'], 0);
-    expect(third.questions).toEqual([...questions.slice(20, 25), questions[0], 'fresh or new']);
-    // Other picks start a new order.
-    expect(L.start(L.rematch(h, 'g4', settings({ packs: ['mine'] })), ['mine or yours'], 0).questions).toEqual(['mine or yours']);
+    g = L.rematch(g, 'g2', settings());
+    const edited = ['jump or dive', ...questions.slice(10, 12)];
+    const second = L.start(g, edited, 0);
+    expect(second.questions).toEqual(edited); // the rest of the old questions are gone from the pack
+    expect(second.asked).toEqual(['jump or dive'].map(ratherKey));
+  });
+
+  it('asks swapped choices once a game, and only as many questions as the picks hold', () => {
+    const g = L.start(lobby(3), ['fly or swim', 'swim or fly', 'nap or snack', 'tea or coffee', 'run or walk', 'sing or dance', 'read or write'], 0);
+    expect(g.questions).toEqual(['fly or swim', 'nap or snack', 'tea or coffee', 'run or walk', 'sing or dance', 'read or write']);
+  });
+
+  it('ends when fewer than two players are left, says the step before is the last, and counts the questions asked', () => {
+    let g = L.step(room(3), 1);
+    expect(L.lastStep(g)).toBe(false);
+    g = L.leave(L.kick(g, 'p1'), 'p2');
+    expect(L.lastStep(g)).toBe(true);
+    g = L.step(g, 2);
+    expect([g.phase, view(g, 2).count]).toEqual(['over', 1]);
+    let full = room(3);
+    for (let n = 1; n < 10; n++) full = L.step(L.step(full, n), n);
+    expect([L.lastStep(full), L.lastStep(L.step(full, 10))]).toEqual([false, true]);
+  });
+
+  it('tells a phone its tap did not count only when it did not: a late tap, never a repeated one', () => {
+    const g = vote(room(), 'p0', 1);
+    expect(L.tap(g, 'p0', g.at, 1, 1)).toEqual({ game: g, refused: false });
+    expect(L.tap(g, 'p0', g.at, 1, 0).refused).toBe(false);
+    const late = L.step(g, 1);
+    expect(L.tap(late, 'p0', g.at, 1, 1)).toEqual({ game: late, refused: true });
+    expect(L.tap(g, 'stranger', g.at, 1, 1).refused).toBe(true);
   });
 
   it('gives phones time to reconnect after a host reload before anyone counts as gone', () => {

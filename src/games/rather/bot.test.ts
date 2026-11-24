@@ -16,7 +16,9 @@ describe('Would You Rather bot', () => {
     expect(plan.wait).toBeGreaterThanOrEqual(1000);
     expect(plan.wait).toBeLessThan(15000);
     const [m] = plan.act();
-    expect(readToHost(m)).toEqual({ t: 'vote', at: 5, n: 2, side: (m as { side: number }).side });
+    expect(m).toMatchObject({ t: 'vote', at: 5, n: 2 });
+    expect([0, 1]).toContain((m as { side: number }).side);
+    expect(readToHost(m)).toEqual(m); // the host reads it as sent, nothing dropped or added
     expect(decide({ mine: 1 })).toBeNull();
     expect(decide({ phase: 'reveal' })).toBeNull();
   });

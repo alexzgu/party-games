@@ -6,7 +6,6 @@
   import { go } from '../../lib/router.svelte';
   import { brokerSetting } from '../../lib/room/broker';
   import { joinLink } from '../../lib/room/look';
-  import { ratherPacks } from '../../lib/content';
   import { host, chosenPacks } from './host.svelte';
   import { DEFAULT_SETTINGS, MAX_PLAYERS, MIN_PLAYERS } from './logic';
   import Seats from './Seats.svelte';
@@ -22,9 +21,10 @@
   const s = $derived(host.game?.settings ?? DEFAULT_SETTINGS);
   const rules = $derived(`${s.count} questions · ${s.seconds ? `${s.seconds} s to vote` : 'No time limit'}`);
   const need = $derived(Math.max(0, MIN_PLAYERS - v.players.length));
-  // Start asks from every pack once the picks run out, so it is off only when no pack has a question.
-  const none = !ratherPacks().some((p) => p.prompts.length);
-  const packLine = $derived(chosenPacks(s.packs).map((p) => p.name).join(', '));
+  // The packs Start asks from, so Start is off exactly when they hold no question.
+  const chosen = $derived(chosenPacks(s.packs));
+  const none = $derived(!chosen.some((p) => p.prompts.length));
+  const packLine = $derived(chosen.map((p) => p.name).join(', '));
 </script>
 
 <main class="lobby">

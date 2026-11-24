@@ -10,6 +10,7 @@
   import { loadSettings } from './store';
   import { host } from './host.svelte';
   import { packEntry } from './find';
+  import { roomQuestions } from './pack';
 
   // The room's settings, a pack page: question packs on the page (built-in, made, imported or from
   // the Community), questions per game and seconds to vote behind the Rules row over Done. Saved on
@@ -30,7 +31,8 @@
     untrack(() => { if (next.packs.length) host.settings(next); });
   });
 
-  const questions = $derived(packs.filter((p) => selected.includes(p.id)).reduce((n, p) => n + p.prompts.length, 0));
+  // What a game would ask from: the picks' questions, one per question.
+  const questions = $derived(selected.length ? roomQuestions(packs, selected).length : 0);
   const summary = $derived(`${count} questions · ${seconds ? `${seconds} s to vote` : 'No time limit'}`);
 </script>
 
@@ -39,7 +41,7 @@
     makeHint="Paste questions or ask the wizard" keepOnImport {onedit} {onmake} onimported={() => (packs = ratherPacks())}>
     {#snippet notice()}
       {#if locked}<p class="note">A game is running: these apply to the next one.</p>{/if}
-      {#if selected.length && questions < count}<p class="note">{questions} {questions === 1 ? 'question' : 'questions'} picked: a game of {count} adds some from the other packs.</p>{/if}
+      {#if selected.length && questions < count}<p class="note">{questions} {questions === 1 ? 'question' : 'questions'} picked: a game will have {questions}.</p>{/if}
     {/snippet}
   </PackList>
   {#snippet actions()}

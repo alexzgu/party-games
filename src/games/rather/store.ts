@@ -8,7 +8,7 @@ const SETTINGS = 'rather:settings';
 
 function validGame(x: unknown): Game | null {
   const g = x as Game | null;
-  return g && typeof g.code === 'string' && isCode(g.code) && Array.isArray(g.players) && Array.isArray(g.questions) && Array.isArray(g.queue) ? g : null;
+  return g && typeof g.code === 'string' && isCode(g.code) && Array.isArray(g.players) && Array.isArray(g.questions) && Array.isArray(g.asked) ? g : null;
 }
 export const loadRoom = () => loadSaved(GAME, validGame);
 export const loadGame = (): Game | null => loadRoom().game;
