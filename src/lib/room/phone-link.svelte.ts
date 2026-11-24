@@ -9,7 +9,7 @@ import { BROKER_TROUBLE, LINK_TIMEOUT, backoff, classify, makePeer } from './net
 import { currentBroker } from './broker';
 import { hostPeerId, newPid } from './code';
 import { Assembler, toWire } from './parts';
-import { ASK_HOST, COVER_MS, KeyRing, ends, isKey, proofOf } from './seats';
+import { ASK_HOST, KeyRing, ends, isKey, proofOf, signAt, type Sign } from './seats';
 import { load, remove, save } from '../storage';
 
 /** idle: not in a room. joining/live/lost: trying, connected, reconnecting. stopped: told to stop (see `stopped`). */
@@ -58,11 +58,8 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   /** Why the phone stopped trying (shown as is), or a problem while still trying. */
   stopped = $state('');
   trouble = $state('');
-  /** The host is asked about this phone now: it shows `WAITING`, large, and nothing else (SeatWait); only while the host keeps saying so. */
-  waiting = $state(false);
-  /** When the host last said so. */
-  private waitAt = 0;
-  private cover: ReturnType<typeof setTimeout> | null = null;
+  /** The host is asked about this phone now: it shows this sign full screen (SeatWait) until the answer, or the link goes. */
+  sign = $state.raw<Sign | null>(null);
   /** Another tab took this seat: this one stopped, and `here` takes it back. */
   elsewhere = $state(false);
   me = $state.raw<Me | null>(null);
@@ -90,7 +87,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.me = loadMe(game);
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
-        this.stale();
+        this.check();
         if (document.visibilityState === 'visible' && (this.link === 'lost' || this.link === 'joining')) this.now();
       });
     }
@@ -161,7 +158,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   /** Stops trying; the old link and peer close now, or after `grace` ms so a last message gets out. */
   private halt(why: string, grace = 0): void {
     this.stopped = why;
-    this.waiting = false;
+    this.sign = null;
     this.link = 'stopped';
     if (this.retry) clearTimeout(this.retry);
     if (this.watchdog) clearInterval(this.watchdog);
@@ -244,7 +241,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.conn = conn;
     this.parts = new Assembler();
     this.enrolled = false;
-    this.waiting = false;
+    this.sign = null;
     const timeout = setTimeout(() => { if (this.conn === conn && !conn.open) this.lose(conn); }, DIAL_TIMEOUT);
     conn.on('open', () => {
       clearTimeout(timeout);
@@ -265,7 +262,7 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
   private lose(conn: DataConnection): void {
     if (this.conn !== conn) return;
     this.conn = null;
-    this.waiting = false;
+    this.sign = null;
     conn.close();
     this.later();
   }
@@ -285,28 +282,9 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.connect();
   }
 
-  /** A link that went quiet (phone slept, Wi-Fi changed) is dropped and redialled. */
+  /** A link that went quiet (phone slept, Wi-Fi changed) is dropped and redialled, a sign with it. */
   private check(): void {
-    if (this.link === 'live' && this.conn && Date.now() - this.heard > LINK_TIMEOUT) this.lose(this.conn);
-  }
-
-  /** The host is asking about this phone: shown until COVER_MS after the last time it says so. */
-  private wait(): void {
-    this.waitAt = Date.now();
-    this.waiting = true;
-    this.stale();
-  }
-
-  /**
-   * Judged by the clock, so a page that slept hides it as soon as it runs again; until then it looks
-   * again when the time is up, and again until it is (a timer may fire early).
-   */
-  private stale(): void {
-    if (this.cover) clearTimeout(this.cover);
-    this.cover = null;
-    const left = this.waitAt + COVER_MS - Date.now();
-    if (left <= 0) this.waiting = false;
-    else if (this.waiting) this.cover = setTimeout(() => this.stale(), Math.max(left, 50));
+    if ((this.link === 'live' || this.sign) && this.conn && Date.now() - this.heard > LINK_TIMEOUT) this.lose(this.conn);
   }
 
   /** Shows the host that this phone has its seat's key, without sending it: one proof for each key it may be. */
@@ -325,17 +303,17 @@ export class PhoneLink<Out extends { t: string }, V extends BaseView> {
     this.write({ t: 'key', key: this.keys.make(room) });
   }
 
-  private receive(msg: { t: string; pid?: unknown; v?: unknown; why?: unknown; ask?: unknown; room?: unknown; nonce?: unknown; moved?: unknown }): void {
+  private receive(msg: { t: string; pid?: unknown; v?: unknown; why?: unknown; ask?: unknown; room?: unknown; nonce?: unknown; moved?: unknown; i?: unknown }): void {
     this.heard = Date.now();
     switch (msg.t) {
       case 'ping': this.write({ t: 'pong' }); break;
       case 'prove': void this.prove(msg.room, msg.nonce); break;
       case 'enrol': this.enrol(msg.room); break;
-      case 'wait': this.wait(); break;
+      case 'sign': this.sign = signAt(msg.i) ?? this.sign; break;
       case 'welcome':
         if (this.me && typeof msg.pid === 'string') this.setMe({ ...this.me, pid: msg.pid, joined: true });
         this.link = 'live';
-        this.waiting = false;
+        this.sign = null;
         this.trouble = '';
         this.attempts = 0;
         this.missing = 0;

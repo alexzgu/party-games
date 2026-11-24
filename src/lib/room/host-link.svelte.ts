@@ -79,7 +79,7 @@ export class HostLink {
   constructor(private game: string, private hooks: HostHooks) {
     this.book = new SeatBook(game);
     this.desk = new Desk(this.book, {
-      resolve: (pid, name) => this.resolve(pid, name),
+      resolve: (pid, name, away) => this.resolve(pid, name, away),
       ends: (conn) => ends(conn.peerConnection),
       send: (conn, msg) => this.write(conn, msg),
       refuse: (conn, why, ask) => this.refuse(conn, why, ask),
@@ -353,9 +353,10 @@ export class HostLink {
     this.desk.hello(conn, pid, name, modern);
   }
 
-  /** The seat the game gives a phone now, unless it is run here or its player was removed. */
-  private resolve(pid: string, name: string): Seat | { error: string } {
-    const res = goodPid(pid) ? this.hooks.hello(pid, name, this.online) : { error: BAD_PID };
+  /** The seat the game gives a phone now, unless it is run here or its player was removed; `away`: counted offline. */
+  private resolve(pid: string, name: string, away?: string): Seat | { error: string } {
+    const online = away ? new Set([...this.online].filter((p) => p !== away)) : this.online;
+    const res = goodPid(pid) ? this.hooks.hello(pid, name, online) : { error: BAD_PID };
     if ('error' in res) return res;
     if (!goodPid(res.pid)) return { error: BAD_PID }; // by name, a player saved before ids were checked
     if (this.locals.has(res.pid) || res.pid.startsWith(BOT_PID)) return { error: BOT_SEAT };

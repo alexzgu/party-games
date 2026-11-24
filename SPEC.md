@@ -904,9 +904,8 @@ about the game, replaces nobody and changes nothing.
 - A seat new to the game: the host sends `{t: 'enrol', room}`, the phone makes a new key, stores it
   and sends `{t: 'key', key}`, and the host records it before the welcome. A phone never answers
   `enrol` with a key it already had, and answers one per connection. It keeps the two newest keys of
-  a room, so an enrolment cut short leaves the one before usable. A page that cannot do keys (its
-  `hello` has no `keys`) joins a new seat at once, and that seat has no key. Two phones enrolling
-  one new seat: the first key in takes it, and the other is then asked for a proof like any phone.
+  a room, so an enrolment cut short leaves the one before usable. Two phones enrolling one new
+  seat: the first key in takes it, and the other is then asked for a proof like any phone.
 - A seat with a key: the host sends `{t: 'prove', room, nonce}` (a new random value each time) and
   the phone answers `{t: 'proof', macs}`, for each key it keeps an HMAC-SHA256 under it of both and of the two
   certificate fingerprints of the connection (host's, phone's; each side reads them from its own
@@ -922,10 +921,11 @@ about the game, replaces nobody and changes nothing.
   screen, with no way back but joining like any phone. A page that has already redialled hears
   nothing on its old connection, so it never stops itself. A proof is judged on
   the seat as it is when its check ends (if the player left a lobby meanwhile, the seat is new again).
-- A page from before keys asking for a seat the game already has is refused with "This page is out
-  of date. Refresh the page, then join again.", which it shows as it shows any refusal; it cannot show
-  the words the host would be asked about, so the host is never asked about it. Refreshed, it is a
-  current page with no key and comes back through New phone like any phone.
+- A page from before keys (its `hello` has no `keys`) is refused with "This page is out of date.
+  Refresh the page, then join again." whenever it asks for a seat, new or not, which it shows as it
+  shows any refusal; so no seat is ever held without a key, and the host is never asked about a
+  phone that could not show a sign. Refreshed, it is a current page: a new seat enrols, and a seat
+  the game already has comes back through New phone like any phone.
 - Any other phone asking for a seat the game already has (a wrong or empty proof, a seat with no
   key) gets it only through recovery. Without recovery open for that seat it is refused at
   once (`{t: 'reject', ask: 1}`) and the host keeps nothing of it: no question appears on the host
@@ -936,30 +936,29 @@ about the game, replaces nobody and changes nothing.
   who is in front of them and picks that player. Their seat is then open to one new phone for a
   minute (one seat at a time: opening another closes the first), shown in a panel on the host screen
   ("Sam's seat is open to a new phone for a minute. Ask them to join now.", with Close). While it is
-  open, a hello with that player's name (compared as the games compare names: trimmed, any case) is
-  a claim on that seat, even while the player's old phone is still connected, which a Yes then
-  replaces like any replaced connection. The first
-  phone that asks for that seat without a valid proof is told `wait`; only that phone is ever told
-  so, and the host says it again every second (`PULSE_MS`) while its question is open. The phone
-  then fills its whole screen with its own fixed words, large, "Waiting for a Yes on the host
-  screen", with "Show this screen to the host." and Cancel, and nothing from the other end
-  (`SeatWait`); it shows them only until 2.5 s (`COVER_MS`) after the last `wait`, judged by the
-  clock (so a page that was asleep hides them as soon as it runs, and on becoming visible), and
-  hides them at once on a refusal, a welcome, a drop or a redial. The panel asks "A phone asks for Sam's seat. Does Sam's phone say “Waiting for a Yes
-  on the host screen”?" and "Only that phone is asking. If you can't see those words on it, tap No."
-  (Yes / No; the quoted words and the phone's are one constant, `WAITING`). Yes is for that one
+  open, the game's own join rules count that player as offline, so a hello with their name (as that
+  game compares names; Doodle Brawl, Sketchy and Bad Hand keep inner spaces, so "Sam Lee" and
+  "Sam  Lee" are two players) is a claim on that seat, even while the player's old phone is still
+  connected, which a Yes then replaces like any replaced connection. A hello whose player id has a
+  seat of its own stays with that seat and proves its own key. On plain http (no keys) nothing is
+  counted offline, so typing an online player's name gets "name in use" as ever. The first phone
+  that asks for the open seat without a valid proof gets a sign: the host picks one of a fixed list
+  of at least 40 pictures, each an emoji and its plain word (`SIGNS`, e.g. 🐙 Octopus), at random
+  (crypto where there is one) for that request, never the one the room's previous request got, and
+  sends `{t: 'sign', i}` (its place in the list) to that connection alone. The phone shows a sign
+  only from that list (anything else is ignored), filling its whole screen with the emoji, large
+  (its word as its accessible label), the word under it, "Show this screen to the host" and Cancel,
+  and nothing from the other end (`SeatWait`). It shows it until it is welcomed or refused, Cancel,
+  a redial, or its link going (closed, or silent for `LINK_TIMEOUT`); a sign left on a slow phone
+  from an earlier request never matches the next one. The panel shows the same emoji and word: "A
+  phone asks for Sam's seat. Does Sam's phone show this?" and "If it shows something else, or you
+  can't see it, tap No." (Yes / No). No numbers appear anywhere in the check. Yes is for that one
   connection: the phone enrols a new key, which becomes the seat's only key, and it is welcomed. At most one Yes waits to be used in a room: if that
   connection drops before then, or the host opens New phone again, removes the player or the room
   moves, the Yes is gone, the phone is refused, and a key it sends later changes nothing. Recovery closes without giving the seat to anyone, with a note on the host screen
   (OK puts it away), when a second connection asks for the seat while it is open (both are refused:
   "Another phone asked for that seat too. Ask the host to try again."), when the asking phone
-  disconnects, or when the minute runs out; and with no note on No, Close, or a new code. After a
-  recovery that had an asker ends, for any reason (Yes included), no seat opens to an asker for 4 s
-  (`REST_MS`, over a second longer than `COVER_MS`), so the earlier asker's screen no longer shows
-  the words when a new question can appear, even if its refusal never reached it; a host screen
-  that has just loaded rests too, as it cannot know whom it was asking about. New phone can be
-  tapped meanwhile; the panel says "Sam's seat opens to a new phone in a moment; the minute starts
-  then.", and claims during the rest are refused like any with no recovery open. A phone
+  disconnects, or when the minute runs out; and with no note on No, Close, or a new code. A phone
   proving the key meanwhile is let in as usual and recovery stays open. The 10 s limit on joining
   stands still while the host is asked.
 - A connection is given one seat, once. Leaving, removal and replacement stop the host listening to

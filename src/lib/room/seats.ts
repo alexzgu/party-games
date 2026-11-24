@@ -33,8 +33,31 @@ export async function proofOf(key: string | undefined, c: Challenge): Promise<st
   } catch { return ''; }
 }
 
-/** What a phone shows, in its own words and nothing else, while the host is asked about it; the host's question quotes it. */
-export const WAITING = 'Waiting for a Yes on the host screen';
+/** A picture a phone asking for a seat shows full screen, and the host's question shows beside it. */
+export interface Sign { emoji: string; word: string }
+const sign = (emoji: string, word: string): Sign => ({ emoji, word });
+/** The pictures a request may get: easy to tell apart and to name. A message names one by its place here. */
+export const SIGNS: readonly Sign[] = [
+  sign('🐙', 'Octopus'), sign('🦒', 'Giraffe'), sign('🐘', 'Elephant'), sign('🦀', 'Crab'), sign('🐢', 'Turtle'),
+  sign('🦋', 'Butterfly'), sign('🐝', 'Bee'), sign('🐧', 'Penguin'), sign('🦉', 'Owl'), sign('🦊', 'Fox'),
+  sign('🐸', 'Frog'), sign('🐌', 'Snail'), sign('🦈', 'Shark'), sign('🐳', 'Whale'), sign('🦜', 'Parrot'),
+  sign('🐍', 'Snake'), sign('🦔', 'Hedgehog'), sign('🐪', 'Camel'), sign('🐞', 'Ladybug'), sign('🦄', 'Unicorn'),
+  sign('🍌', 'Banana'), sign('🍉', 'Watermelon'), sign('🍍', 'Pineapple'), sign('🍓', 'Strawberry'), sign('🥕', 'Carrot'),
+  sign('🌽', 'Corn'), sign('🍄', 'Mushroom'), sign('🍕', 'Pizza'), sign('🍩', 'Donut'), sign('🧀', 'Cheese'),
+  sign('🌵', 'Cactus'), sign('🌻', 'Sunflower'), sign('🌈', 'Rainbow'), sign('⚡', 'Lightning'), sign('⛄', 'Snowman'),
+  sign('🔥', 'Fire'), sign('🌙', 'Moon'), sign('🚀', 'Rocket'), sign('🚲', 'Bicycle'), sign('⚓', 'Anchor'),
+  sign('🎸', 'Guitar'), sign('🎈', 'Balloon'), sign('🎩', 'Top hat'), sign('👑', 'Crown'), sign('🏀', 'Basketball'),
+];
+/** The sign at `i` (as a message names it), or null for anything else. */
+export const signAt = (i: unknown): Sign | null => (Number.isInteger(i) && (i as number) >= 0 && SIGNS[i as number]) || null;
+/** A random whole number below `n`: from crypto where there is one. */
+const below = (n: number): number =>
+  globalThis.crypto ? crypto.getRandomValues(new Uint32Array(1))[0] % n : Math.floor(Math.random() * n);
+/** Any sign but `last` (-1: none). */
+export const drawSign = (last: number): number => {
+  const i = below(SIGNS.length - (last < 0 ? 0 : 1));
+  return last >= 0 && i >= last ? i + 1 : i;
+};
 /** What a phone shows, in its own words, when it cannot take its seat by itself. */
 export const ASK_HOST = 'This phone can’t take that seat by itself. Ask the host to tap New phone and pick your name, then join again.';
 
@@ -152,21 +175,8 @@ export const OLD_PAGE = 'This page is out of date. Refresh the page, then join a
 
 /** How long a seat stays open for a new phone once the host opens it. */
 export const OPEN_MS = 60_000;
-/** While a phone is asked about, the host tells it so this often; it shows `WAITING` only until COVER_MS after the last time. */
-export const PULSE_MS = 1_000;
-export const COVER_MS = 2_500;
-/**
- * After a recovery that had an asker ends, no seat opens to another for this long: by then the
- * earlier asker's screen no longer shows `WAITING`, even if its refusal never reached it.
- */
-export const REST_MS = 4_000;
 
 interface Row { pid: string; name: string }
-/** Names as every game compares them. */
-const sameName = (a: string, b: string): boolean => {
-  const n = (x: string) => x.trim().replace(/\s+/g, ' ').toLowerCase();
-  return n(a) === n(b);
-};
 /** The seat a game gives a phone: its player, and whether it is new to the game. `then`: what to do once it is welcomed. */
 export interface Seat extends Row { fresh: boolean; then: () => void }
 
@@ -179,28 +189,28 @@ export const seatIn = (players: readonly Row[], joined: { pid: string; game: { p
 
 /** `modern`: its page can do keys. `approved`: the host said Yes to this connection. */
 export interface Claim { modern: boolean; proof: 'none' | 'right' | 'wrong'; approved: boolean }
-/** 'recover': only through recovery the host has opened for the seat. 'old': refused; its page cannot show what the host would be asked. */
+/** 'recover': only through recovery the host has opened for the seat. 'old': refused; its page can do no keys and cannot show a sign. */
 export type Step = 'admit' | 'enrol' | 'prove' | 'recover' | 'old';
 
 /**
- * What happens next to a phone asking for a seat: a seat with a key wants its proof; a seat the
- * game already had wants the host, and from a page before keys a refresh first. `checks`: this
+ * What happens next to a phone asking for a seat: a page before keys is told to refresh; a seat with
+ * a key wants its proof; a seat the game already had wants the host. `checks`: this
  * host can check proofs (no: plain http, where nothing can be proved, so every phone is seated by
  * the game's rules alone and no key is kept).
  */
 export function nextStep(c: Claim, s: { keyed: boolean; fresh: boolean; checks: boolean }): Step {
   if (!s.checks) return 'admit';
-  if (!c.modern) return s.keyed || !s.fresh ? 'old' : 'admit';
+  if (!c.modern) return 'old';
   if (c.approved) return 'enrol';
   if (s.keyed) return c.proof === 'wrong' ? 'recover' : c.proof === 'none' ? 'prove' : 'admit';
   return s.fresh ? 'enrol' : 'recover';
 }
 
 /**
- * What the host screen shows of recovery: open for `name`'s seat (`asking`: one phone asks for
- * it now), or, with a `note`, closed without giving it to anyone.
+ * What the host screen shows of recovery: open for `name`'s seat (`sign`: one phone asks for it now
+ * and should be showing this), or, with a `note`, closed without giving it to anyone.
  */
-export interface Recovery { pid: string; name: string; asking: boolean; note: string; /** Opens in a moment (REST_MS). */ soon: boolean }
+export interface Recovery { pid: string; name: string; sign: Sign | null; note: string }
 
 interface Call<C> extends Claim {
   conn: C;
@@ -216,15 +226,14 @@ interface Call<C> extends Claim {
 
 interface Open<C> {
   pid: string; name: string; asker: Call<C> | null;
-  /** When it opens to an asker; its minute ends OPEN_MS after. */
-  from: number;
+  /** The asker's sign (its place in SIGNS). */
+  sign: number;
   timer: ReturnType<typeof setTimeout>;
-  /** Tells the asker it is still being asked about. */
-  pulse?: ReturnType<typeof setInterval>;
 }
 
 export interface DeskHooks<C> {
-  resolve(pid: string, name: string): Seat | { error: string };
+  /** The seat the game's join rules give; `away`: a player they count as offline whatever their phone does. */
+  resolve(pid: string, name: string, away?: string): Seat | { error: string };
   /** The connection's ends (this host's, the phone's). */
   ends(conn: C): { here: string; there: string };
   send(conn: C, msg: object): void;
@@ -242,21 +251,13 @@ export class Desk<C> {
   private closed: Recovery | null = null;
   /** The one connection the host said Yes to, until it is seated: a new recovery, a removal or a move ends it. */
   private approved: Call<C> | null = null;
-  /**
-   * Until when no seat opens to an asker: REST_MS after one that had an asker ended, and after this
-   * desk starts (a reloaded host cannot know whom it was asking about).
-   */
-  private rest = Date.now() + REST_MS;
+  /** The last request's sign, so the next one differs (-1: none yet). */
+  private last = -1;
   constructor(private book: SeatBook, private hooks: DeskHooks<C>) {}
 
-  /** While a seat is open for a new phone, a hello with its player's name is a claim on that seat, though its phone may still be here. */
+  /** A phone says hello: the game says whose seat it would get, and the steps for that seat begin. */
   hello(conn: C, pid: string, name: string, modern: boolean): void {
     if (this.calls.has(conn)) return;
-    const o = this.open;
-    if (o && pid !== o.pid && sameName(name, o.name)) {
-      if (this.book.kicked(pid)) return this.hooks.refuse(conn, REMOVED);
-      [pid, name] = [o.pid, o.name];
-    }
     const call: Call<C> = { conn, pid, name, modern, proof: 'none', approved: false, seat: '', stage: '', nonce: '' };
     this.calls.set(conn, call);
     this.advance(call);
@@ -279,28 +280,25 @@ export class Desk<C> {
     if (call?.stage === 'enrol' && isKey(key)) this.advance(call, key);
   }
 
-  /**
-   * The host opens one seat for a new phone, for a minute (from the end of a rest, if one runs);
-   * any seat open before closes, and a Yes not yet used is gone.
-   */
+  /** The host opens one seat for a new phone, for a minute; any seat open before closes, and a Yes not yet used is gone. */
   recover(pid: string, name: string): void {
     this.close('', SAID_NO);
     this.unapprove(SAID_NO);
-    const wait = Math.max(0, this.rest - Date.now());
-    const timer = setTimeout(() => { if (this.open === open) this.close(`No phone took ${name}’s seat in time. Try again.`, NO_ANSWER); }, wait + OPEN_MS);
-    const open: Open<C> = { pid, name, asker: null, from: Date.now() + wait, timer };
-    if (wait) setTimeout(() => { if (this.open === open) this.show(); }, wait);
+    const timer = setTimeout(() => { if (this.open === open) this.close(`No phone took ${name}’s seat in time. Try again.`, NO_ANSWER); }, OPEN_MS);
+    const open: Open<C> = { pid, name, asker: null, sign: -1, timer };
     this.open = open;
     this.closed = null;
     this.show();
   }
 
-  /** The host's answer for the one phone asking: Yes is for that connection alone. */
+  /** The host's answer for the one phone asking: Yes is for that connection alone, and makes it that player's phone. */
   answer(yes: boolean): void {
-    const asker = this.open?.asker;
+    const open = this.open;
+    const asker = open?.asker;
     if (!asker) return;
     this.close('', yes ? undefined : SAID_NO);
     if (!yes) return;
+    [asker.pid, asker.name] = [open!.pid, open!.name];
     asker.approved = true;
     this.approved = asker;
     this.advance(asker);
@@ -341,11 +339,13 @@ export class Desk<C> {
 
   /** The next step for a phone, on the room as it is now; `key`: the one it just made for its seat. */
   private advance(call: Call<C>, key?: string): void {
-    const seat = this.hooks.resolve(call.pid, call.name);
+    const checks = !!globalThis.crypto?.subtle;
+    // While a seat is open for a new phone, the game counts its player offline, so its own rules give
+    // the seat to a phone with that name; never on plain http, where nobody could be asked.
+    const seat = this.hooks.resolve(call.pid, call.name, checks ? this.open?.pid : undefined);
     if ('error' in seat) return this.refuse(call, seat.error);
     if (call.seat && call.seat !== seat.pid) return this.refuse(call, CHANGED);
     call.seat = seat.pid;
-    const checks = !!globalThis.crypto?.subtle;
     const step = nextStep(call, { keyed: checks && this.book.key(seat.pid) !== undefined, fresh: seat.fresh, checks });
     if (step === 'old') return this.refuse(call, OLD_PAGE);
     if (step === 'prove') return this.prove(call);
@@ -367,18 +367,21 @@ export class Desk<C> {
     this.hooks.send(call.conn, { t: 'enrol', room: this.book.room });
   }
 
-  /** Only the seat the host opened, and only once it is open, may be asked for, by one connection; a second one closes it for both. */
+  /**
+   * Only the seat the host opened may be asked for, by one connection, which alone is sent its sign:
+   * new for each request, never the last one's. A second asker closes the seat for both.
+   */
   private ask(call: Call<C>): void {
     const open = this.open;
-    if (open?.pid !== call.seat || Date.now() < open.from) return this.refuse(call, ASK_HOST, true);
+    if (open?.pid !== call.seat) return this.refuse(call, ASK_HOST, true);
     if (open.asker && open.asker !== call) {
       this.close(`Two phones asked for ${open.name}’s seat, so neither got it. Try again.`, TWO);
       return this.refuse(call, TWO);
     }
     open.asker = call;
+    open.sign = this.last = drawSign(this.last);
     call.stage = 'ask';
-    this.hooks.send(call.conn, { t: 'wait' });
-    open.pulse = setInterval(() => this.hooks.send(call.conn, { t: 'wait' }), PULSE_MS);
+    this.hooks.send(call.conn, { t: 'sign', i: open.sign });
     this.show();
   }
 
@@ -387,10 +390,8 @@ export class Desk<C> {
     const open = this.open;
     if (!open) return;
     clearTimeout(open.timer);
-    clearInterval(open.pulse);
     this.open = null;
-    if (open.asker) this.rest = Date.now() + REST_MS;
-    this.closed = note ? { pid: open.pid, name: open.name, asking: false, note, soon: false } : null;
+    this.closed = note ? { pid: open.pid, name: open.name, sign: null, note } : null;
     if (open.asker && why) this.refuse(open.asker, why);
     this.show();
   }
@@ -407,6 +408,6 @@ export class Desk<C> {
 
   private show(): void {
     const o = this.open;
-    this.hooks.show(o ? { pid: o.pid, name: o.name, asking: !!o.asker, note: '', soon: Date.now() < o.from } : this.closed);
+    this.hooks.show(o ? { pid: o.pid, name: o.name, sign: o.asker ? SIGNS[o.sign] : null, note: '' } : this.closed);
   }
 }
