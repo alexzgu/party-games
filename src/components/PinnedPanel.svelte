@@ -6,14 +6,15 @@
   // A page body (in a Screen with `fill`) where only one part scrolls: pinned above it any
   // `notice`, then `top`, which folds away, then the `row` (a list's title and tools, which gets
   // the fold's toggle to place); pinned under it the `foot`. Hairlines mark the scroller's top and
-  // bottom edges only while more is scrolled away that way. A pack page (PackList) and every pack
-  // editor are built on it.
+  // bottom edges only while more is scrolled away that way. A pack page (PackList), every pack
+  // editor and the Community lists are built on it.
   let {
     label,
     kind = 'setup',
     foldId,
     foldName,
     foldSpoken,
+    foldNote = '',
     needed = false,
     keep,
     notice,
@@ -24,7 +25,7 @@
   }: {
     /** The id of the heading that names the whole section. */
     label?: string;
-    /** Which remembered fold choice this page shares: the setups' or the pack editors'. */
+    /** Which remembered fold choice this page shares: the setups', the pack editors' or Community's. */
     kind?: PanelKind;
     /** The fold's id, for its toggle's `aria-controls`. */
     foldId: string;
@@ -32,6 +33,8 @@
     foldName?: string;
     /** What the toggle says it hides or shows, when not its text ("pack details"). */
     foldSpoken?: string;
+    /** What the folded part still does, said in the toggle while folded ("filters on"). */
+    foldNote?: string;
     /** The page needs `top` (too few players, the only way to add a first item): it shows, with no toggle. */
     needed?: boolean;
     /** The scroller's name for keeping its scroll across Back (lib/keepScroll.ts). */
@@ -90,8 +93,9 @@
 
 {#snippet toggle()}
   {#if canFold}
-    <button class="fold-toggle" class:open aria-expanded={open} aria-controls={foldId} aria-label="{open ? 'Hide' : 'Show'} {foldSpoken ?? foldName}" onclick={fold} data-tip="{open ? 'Hide' : 'Show'} {foldSpoken ?? foldName}">
-      <span class="fold-name">{foldName}</span>
+    {@const note = open ? '' : foldNote}
+    <button class="fold-toggle" class:open class:noted={!!note} aria-expanded={open} aria-controls={foldId} aria-label="{open ? 'Hide' : 'Show'} {foldSpoken ?? foldName}{note ? `, ${note}` : ''}" onclick={fold} data-tip="{open ? 'Hide' : 'Show'} {foldSpoken ?? foldName}">
+      {#if note}<span class="fold-note">{note}</span>{:else}<span class="fold-name">{foldName}</span>{/if}
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 9.5l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   {/if}
@@ -172,13 +176,16 @@
     background: var(--overlay); color: var(--text-dim); font-weight: 700; font-size: 0.85rem;
   }
   .fold-toggle:active { background: var(--overlay-strong); }
-  .fold-name::first-letter { text-transform: uppercase; }
+  .fold-name::first-letter, .fold-note::first-letter { text-transform: uppercase; }
+  /* Folded while it still narrows what is shown: said in the accent, so a short list is no mystery. */
+  .fold-toggle.noted { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
   .fold-toggle svg { transition: transform var(--dur) var(--ease-out); }
   .fold-toggle.open svg { transform: rotate(180deg); }
   /* A narrow phone: the arrow alone, so the row's title keeps its room. */
   @media (max-width: 359.98px) {
     .fold-name { display: none; }
     .fold-toggle { padding: 0; justify-content: center; }
+    .fold-toggle.noted { padding: 0 6px 0 var(--s-3); }
   }
   /* A phone on its side: half a tile is enough before the whole screen scrolls. */
   @media (orientation: landscape) and (max-height: 500px) {

@@ -1,5 +1,5 @@
 <script module lang="ts">
-  /** The popups on screen, the last one on top: Tab is the top one's. */
+  /** The popups on screen, the last one on top: Tab and Escape are the top one's. */
   const open: object[] = [];
 </script>
 
@@ -37,7 +37,7 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => { if (e.key === 'Escape') onclose(); else tab(e); }} />
+<svelte:window onkeydown={(e) => { if (e.key === 'Escape') { if (open.at(-1) === top) onclose(); } else tab(e); }} />
 
 <div class="scrim fade-in" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
   <div class="card pop-in" class:wide role="dialog" aria-modal="true" aria-label={title} tabindex="-1" bind:this={card}>

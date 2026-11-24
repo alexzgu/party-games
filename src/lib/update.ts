@@ -1,17 +1,34 @@
 // New versions (e.g. a pack pushed mid-party) download in the background and switch in
-// only on the main menu, so an update never reloads the page in the middle of a game.
+// only on the main menu or the Games page, where phones sit between games, so an update never
+// reloads the page in the middle of a game. Something on those pages holding unsaved work (the
+// Games page's category editor) holds an update back while it is open (`holdUpdates`).
 import { registerSW } from 'virtual:pwa-register';
 import { route } from './router.svelte';
 
 const CHECK_EVERY_MS = 60_000;
 let pending = false;
+/** How many open things hold an update back. */
+let holds = 0;
 
-function onMenu(): boolean {
-  return route.path === '/' || route.path === '';
+/** The main menu or the Games page. */
+export function onMenu(path: string): boolean {
+  return path === '/' || path === '' || path === '/games';
 }
 
 function reloadIfIdle(): void {
-  if (pending && onMenu()) location.reload();
+  if (pending && !holds && onMenu(route.path)) location.reload();
+}
+
+/** Holds a waiting update back until the returned release is called (later calls do nothing). */
+export function holdUpdates(): () => void {
+  holds++;
+  let held = true;
+  return () => {
+    if (!held) return;
+    held = false;
+    holds--;
+    reloadIfIdle();
+  };
 }
 
 function waitForActivation(worker: ServiceWorker): Promise<void> {

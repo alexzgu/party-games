@@ -93,7 +93,7 @@
   }
 </script>
 
-<Screen fill title={gameName('quiz')} onback={() => { keepRoster(); onhome(); }} backLabel="Home">
+<Screen fill title={gameName('quiz')} onback={() => { keepRoster(); onhome(); }} backLabel="Games">
   {#snippet trailing()}<Rules />{/snippet}
 <div class="setup">
   <PackList game="quiz" entries={boards.map(boardEntry)} bind:selected={picked} single noun="clues" placeholder="Search packs and clues"

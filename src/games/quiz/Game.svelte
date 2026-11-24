@@ -71,7 +71,7 @@
       onstart={start}
       onresume={() => go('/quiz/play', true)}
       onroster={(r) => game && commit(reseat(game, r))}
-      onhome={() => back('/')}
+      onhome={() => back('/games')}
       onedit={(id, cat) => go(`/quiz/board?id=${encodeURIComponent(id)}${cat ? `&cat=${cat}` : ''}`)}
       onmake={() => go('/quiz/make')}
     />

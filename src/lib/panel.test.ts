@@ -38,13 +38,17 @@ describe('panelOpen', () => {
     vi.stubGlobal('innerHeight', 844);
   });
   afterEach(() => vi.unstubAllGlobals());
-  it('keeps the setups’ choice apart from the pack editors’', () => {
+  it('keeps the setups’ choice apart from the pack editors’ and Community’s', () => {
     savePanelOpen(false, 'editor');
     expect(panelOpen(false, 'editor')).toBe(false);
     expect(panelOpen(false)).toBe(true);
     savePanelOpen(false);
     savePanelOpen(true, 'editor');
     expect(panelOpen(false, 'setup')).toBe(false);
+    expect(panelOpen(false, 'editor')).toBe(true);
+    expect(panelOpen(false, 'community')).toBe(true);
+    savePanelOpen(false, 'community');
+    expect(panelOpen(false, 'community')).toBe(false);
     expect(panelOpen(false, 'editor')).toBe(true);
   });
 });

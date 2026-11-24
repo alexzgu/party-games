@@ -39,7 +39,7 @@
   {:else if sub === 'pack'}<PackEditor id={route.params.get('id') ?? ''} onback={() => back('/sketch/settings')} />
   {:else if sub === 'make'}<Make onsaved={packMade} onback={() => back('/sketch/settings')} />
   {:else}
-    <Screen title={gameName('sketch')}>
+    <Screen title={gameName('sketch')} onback={() => back('/games')} backLabel="Games">
       {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
       <div class="start">
         {#if openRoom}<p class="open" role="status"><b>Room {openRoom.code} is open</b> on this screen{openRoom.phase === 'lobby' ? ', in the lobby' : ', game in progress'}.</p>{/if}

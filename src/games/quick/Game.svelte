@@ -52,7 +52,7 @@
   {:else if sub === 'make'}
     <Make onsaved={packSaved} onback={() => back('/quick')} demoItems={demo === 'make-review' ? DEMO_PROMPTS : null} />
   {:else}
-    <Setup saved={game} onstart={start} onroster={(r) => game && commit(reseat(game, r))} onresume={() => go('/quick/play', true)} onmake={() => go('/quick/make')} onedit={(id) => go(`/quick/pack?id=${encodeURIComponent(id)}`)} onhome={() => back('/')} />
+    <Setup saved={game} onstart={start} onroster={(r) => game && commit(reseat(game, r))} onresume={() => go('/quick/play', true)} onmake={() => go('/quick/make')} onedit={(id) => go(`/quick/pack?id=${encodeURIComponent(id)}`)} onhome={() => back('/games')} />
   {/if}
 </div>
 

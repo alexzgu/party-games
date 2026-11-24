@@ -19,7 +19,7 @@
   import { back, go, route } from '../lib/router.svelte';
   import { shareOrDownload } from '../lib/share';
 
-  let { game, onmake, onimported }: { game: PackGameId; onmake: () => void; onimported?: (ids: string[]) => void } = $props();
+  let { game, onmake, onimported }: { game: PackGameId; /** Add pack → New; left out when the page makes no packs. */ onmake?: () => void; onimported?: (ids: string[]) => void } = $props();
 
   let input: HTMLInputElement | undefined = $state();
   // svelte-ignore state_referenced_locally
@@ -71,7 +71,7 @@
   }
 
   const adds: MenuItem[] = $derived([
-    { icon: '✨', label: 'New', name: 'New pack', tip: 'Make a pack yourself or with Fizzwick', onselect: onmake },
+    ...(onmake ? [{ icon: '✨', label: 'New', name: 'New pack', tip: 'Make a pack yourself or with Fizzwick', onselect: onmake }] : []),
     ...(community ? [{ icon: '🌍', label: 'Community', name: 'Community packs', tip: 'Browse packs other people shared and add them here', onselect: openCommunity }] : []),
     { icon: '📂', label: 'Import', name: 'Import packs from a file', tip: 'Adds the packs in a file you saved or were sent', onselect: () => input?.click() },
   ]);
@@ -79,7 +79,7 @@
 
 <div class="packfile" class:open={menuOpen}>
   <div class="row">
-    <MenuButton label="Add pack" items={adds} bind:open={menuOpen} tip={community ? 'Make a pack, find one in Community or import a file' : 'Make a pack or import one from a file'}>
+    <MenuButton label="Add pack" items={adds} bind:open={menuOpen} tip={!onmake ? (community ? 'Find a pack in Community or import a file' : 'Import a pack from a file') : community ? 'Make a pack, find one in Community or import a file' : 'Make a pack or import one from a file'}>
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Add pack
     </MenuButton>
     {#if mine}<Button variant="secondary" size="sm" label="Export my packs to a file" onclick={exportMine} tip="Saves or sends all packs you made or edited, in one file">Export</Button>{/if}

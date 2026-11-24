@@ -32,6 +32,8 @@
     notice,
     keepOnImport = false,
     guard = 0,
+    toolsKey = `${game}:packs`,
+    footNote,
     onedit,
     onmake,
     onimported,
@@ -60,9 +62,14 @@
     keepOnImport?: boolean;
     /** Taps in the first `guard` ms are the tail of a double tap on the screen before (Brain Freeze). */
     guard?: number;
-    onedit: (id: string) => void;
-    /** "Make a pack" and Add pack → New: the game's way to make a pack. */
-    onmake: () => void;
+    /** Where search and sort are remembered: a game playing another game's packs keeps its own. */
+    toolsKey?: string;
+    /** Under the packs, in place of "Make a pack" (a game playing another game's packs says where to make them). */
+    footNote?: string;
+    /** The pencil on each pack; without it packs are only picked here. */
+    onedit?: (id: string) => void;
+    /** "Make a pack" and Add pack → New: the game's way to make a pack; without it neither shows. */
+    onmake?: () => void;
     /** After an import: the parent reloads `entries`. */
     onimported: () => void;
   } = $props();
@@ -106,7 +113,7 @@
 
 <PinnedPanel label={headId} foldId={topId} foldName={topName} needed={topNeeded} keep="packs" {notice} {top}>
   {#snippet row(toggle)}
-    <ListTools key="{game}:packs" bind:query bind:sort {placeholder} shown={shown.length} total={entries.length}>
+    <ListTools key={toolsKey} bind:query bind:sort {placeholder} shown={shown.length} total={entries.length}>
       {#snippet title()}
         <div class="head">
           <h3 id={headId}>{heading}</h3>
@@ -144,10 +151,10 @@
             <span class="meta">{e.sizeLabel}{#if !rows && e.tag}{` · ${e.tag}`}{/if}{#if e.warn}<span class="warn">{` · ${e.warn}`}</span>{/if}</span>
           </span>
         </button>
-        <button class="edit" onclick={() => ready() && onedit(e.id)} aria-label="See and edit {e.name}">{@render pencil()}</button>
+        {#if onedit}<button class="edit" onclick={() => ready() && onedit(e.id)} aria-label="See and edit {e.name}">{@render pencil()}</button>{/if}
       </li>
     {/each}
-    {#if !searching}
+    {#if !searching && onmake}
       <li class="item">
         <button class="pack make" onclick={() => ready() && onmake()} data-tip="Make a new pack yourself or with Fizzwick">
           <span class="mark spark" aria-hidden="true">✨</span>
@@ -159,6 +166,7 @@
       </li>
     {/if}
   </ul>
+  {#if footNote}<p class="note">{footNote}</p>{/if}
 
   {#snippet foot()}<PackFile {game} {onmake} onimported={imported} />{/snippet}
 </PinnedPanel>
@@ -172,6 +180,7 @@
   }
   .view:active { background: var(--overlay); }
   .none { margin: 0 0 var(--s-3); color: var(--text-dim); text-align: center; }
+  .note { margin: var(--s-3) 0 0; color: var(--text-dim); font-size: 0.9rem; text-align: center; }
 
   .items { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-2); }
   .items.rows { grid-template-columns: minmax(0, 1fr); }

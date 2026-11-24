@@ -42,16 +42,16 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
   `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
-  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `panel` (whether a pack page's players or teams, or a pack editor's details, start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's tab; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `update` (new versions switch in on the main menu), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
-- `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList` and every pack editor), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `Popup`, `MenuButton` (a button opening a small menu),
+  `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `gamePicker` (the drop-down's search, and when it focuses its field), `panel` (whether a pack page's players or teams, a pack editor's details or a Community list's search and filters start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's game; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `gamesView` (the Games page's rules: default categories, the orders, the categories box's label, own category names, reading the stored choices defensively) and `gamesPage.svelte` (those choices on this phone), `update` (new versions switch in on the main menu or the Games page, held back while the category editor is open), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy).
+- `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList`, every pack editor and the Community list), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `GameCard` (one large row opening a page: a game, or the main menu's Games and Community packs), `CategoryEditor` (making or changing one of the Games page's own categories), `Dropdown` (the searchable drop-down box), `GamePicker` (its pick-one face choosing a game: the Community page, History), `CategoryMenu` (its pick-several face for the Games page's categories), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
   items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
   `ExportPack` (Export), `Community` and `CommunityItems` (browse, preview, import and star
   Community packs, over a pack list or on the Community page), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown).
-- `src/pages/` — the pages that are not a game: `Home`, `Settings`, `History`, `CommunityPage`
-  (the Community packs with a tab per game), `Joined` (an invite link) and `Crashed`.
+- `src/pages/` — the pages that are not a game: `Home`, `Games`, `Settings`, `History`, `CommunityPage`
+  (the Community packs, a game at a time), `Joined` (an invite link) and `Crashed`.
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
   to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`).
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
@@ -213,7 +213,7 @@ when it is a username by the same rules as the phone's (tidied, 1–24 character
 stores the pack without one. Packs shared before usernames have none.
 Add pack → "🌍 Community" (beside "Import" in that menu) opens the Community packs over the pack list (the
 address gains `?community=1`, so Back closes it; the Community page from the main menu, under Shared
-behaviour, is the same browser with a tab per game): a search of pack names and descriptions only
+behaviour, is the same browser with a game picker): a search of pack names and descriptions only
 (not the items, nor usernames), Most stars (then newest) or Newest, 30 at a time with "Show more"; each row
 shows name, description, item count and ★ stars, and the sharer's username as a small, quiet
 chip beside the count (nothing for a pack without one; no "made by" wording), then a small
@@ -236,7 +236,7 @@ library answered with, and goes when the pack is deleted): `ownedIds` in `librar
 imported or last shared before those ids were kept read as not owned. Skips stay on the phone, one
 storage key per pack (`src/lib/communityMarks.svelte.ts`); skipping on a full phone says so. The server knows
 nothing of the filters: the phone chooses among its pages of 30 (`src/lib/communityPages.ts`), and
-a press (opening, a search, order or tab, a filter, "Show more") that shows fewer than 10 packs
+a press (opening, a search, order or game, a filter, "Show more") that shows fewer than 10 packs
 that fit loads the next pages by itself, at most 4 a press and never past page 100. "Show more"
 stays while the server has more, with "None of the packs loaded so far fit these filters." when
 none do.
@@ -257,22 +257,55 @@ preview, past its list too) and ticks the new pack, as before.
 
 ## Shared behaviour
 
-- **Home** shows every game in `GAMES` (name, emoji, player count), History and Settings. No blurbs.
-  Under the games, while the Community library is on, a quieter row "🌍 Community packs" ("Browse
-  packs friends made") opens the Community page (a row, not a header button: the pinned header has
-  no room on a 320 px phone for a third button, and a bare icon would not say what it opens).
+- **Home** (`#/`): the pinned header (🎲 Jerk Box, History, Settings), then two large rows of the
+  same look: "🎉 Games" ("12 party games", the number in `GAMES`) opens the Games page, and, while
+  the Community library is on, "🌍 Community packs" ("Browse packs friends made") opens the
+  Community page with fresh lists. Without it, the Games row stands alone. Install help at the foot.
+- **Games page** (`#/games`, `src/pages/Games.svelte`; Back returns to Home): every game in `GAMES`
+  as a large row (emoji, name in its colour, player count; no blurbs). Above them: the order
+  (Default, the order of `GAMES`; A–Z; Recent, the games last opened from this page first and the
+  never-opened ones after in default order, as they stood when the page was opened from the main
+  menu, so opening a game never moves the list and Back from it finds the list as it was left),
+  then, pinned under the header, the categories box: the drop-down (see Drop-down below) in its
+  pick-several face. Closed it reads "All categories" (none picked), the one picked, or the first
+  picked "+ N" ("Teams + 2"); while anything is picked it is tinted with the accent and holds a ✕
+  ("Clear") that unpicks them all without opening it. Open: "Search categories", then every
+  category with its number of games (a ✓ when picked): the default categories (the `tags` in
+  `GAME_TAGS` order: One phone, Own phones, Teams, Words, Drawing, Trivia, Funny; one no game is in
+  is left out), then the phone's own, each tagged "yours" with a pencil ("Edit <name>"); under the
+  list New and Done. Tapping a category picks or unpicks it and the menu stays open, the games
+  behind changing at once; with several picked a game must be in every one ("No categories
+  match." when a search leaves none). Nothing fitting shows "No games fit." and "Clear", which
+  unpicks the categories. New, or a pencil, opens the category editor over the open menu: a name
+  (1–20 characters, not any category's name nor "All", ignoring case, refused in plain words), a
+  switch per game, Save and Cancel, and for one being edited Delete (asked in a popup over it); a
+  phone holds at most 20. Closing it leaves the menu open with the change in it and focus back on
+  what opened it, or on the search field when that is gone. A new app version waits while the
+  editor is open and switches in once it closes. The order, the picks, the own categories and when
+  each game was last opened stay on this phone only
+  (`src/lib/gamesView.ts`), never in the address; anything broken in storage is dropped, and an own category whose name
+  a default category has since taken keeps its games under a free name ("Cards 2"). A game's
+  first screen's Back returns here; its Home buttons (`backHome()`) still walk back to the main
+  menu.
 - **Community page** (`#/community/<game>`, `src/pages/CommunityPage.svelte`): the Community packs
-  browser of the pack lists (see Community library) with one tab per game in `LIBRARY_GAMES`, in
-  that order, across the top: each tab the game's emoji and name in its colour (outlined; filled
-  when open), a row pinned under the header that scrolls sideways when the games overflow it,
-  keeping the open tab in view; arrow keys, Home and End move between tabs. The page and its glow
-  take the open tab's game colour. A tab changes the address in place, keeps the search and order,
+  browser of the pack lists (see Community library) with the game chosen in the game picker (see
+  below) pinned under the header, its options the games in `LIBRARY_GAMES`, in that order. The page
+  and its glow take the chosen game's colour. Choosing a game changes the address in place, keeps
+  the search and order,
   and starts that game's list from its top, so Back from the page always returns to the main menu.
+  The list screen (here and over a pack list) is built like the pack pages (`PinnedPanel`): pinned
+  under the header the game picker (on this page), then the search, the order and the Owned and Skipped filters,
+  which fold away, then a "Packs" row with the fold's button ("Filters" with an arrow, spoken
+  "Hide search and filters" or "Show search and filters"); only the packs, their states and "Show
+  more" scroll. While folded with a search or a filter other than the default (Owned: All;
+  Skipped: Not skipped) the button reads "Filters on" in the accent. The fold has its own remembered choice,
+  apart from the setups' and the pack editors', with the same start (shown on a screen 700 px tall
+  or more). Leaving for a preview and coming Back finds the packs scrolled where they were.
   Opened from the main menu it starts on the first game with fresh lists. "Import" in a preview
   saves the pack in that game's packs (not ticked) and returns to the list exactly as it was left
-  (same tab, search, order, loaded pages and scroll), with a note pinned at the bottom,
+  (same game, search, order, loaded pages and scroll), with a note pinned at the bottom,
   "“<name>” added to your packs in <game>." (plus anything skipped or left out), until the next
-  search, order, tab or preview, or its ✕. Without a wizard server the address shows Home.
+  search, order, game or preview, or its ✕. Without a wizard server the address shows Home.
   Any other address, such as one of a game taken out of the app (`#/song`), shows Home.
 - **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours; pack lists as Tiles or List, the same choice as the switch on every pack list), Heads Down. (scored-word feedback,
   "Calibrate tilt" with the calibration note under it, "Check tilt" with its notes under it),
@@ -286,7 +319,7 @@ preview, past its list too) and ticks the new pack, as before.
   tapped link may not reach it). With either: "Fizzwick the Wizard lives on this phone" and
   "Remove wizard" (clears both). No key field and no model list. Descriptions are
   --text-dim, weight 600.
-  Home: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
+  Games page: a game name over 13 characters is one size down (min(1.32rem, 6vw)) to stay on one line.
 - **Username** (`src/lib/username.ts`): every phone has one. A phone without one is given a
   random friendly name the first time anything asks: an adjective and an animal from the app's
   own word lists ("Sneaky Otter"), at most 14 characters so it fits every room game's name box.
@@ -421,15 +454,40 @@ preview, past its list too) and ticks the new pack, as before.
   (the button says whether it is open; the arrow keys, Home and End move between the items; Tab
   closes it and moves on). Reduced motion: it appears without growing. An import plays the
   imported packs on their own (Big Board: picks the first; Snark Tank, Doodle Brawl, Sketchy and
-  Bad Hand: adds them to the picked ones, as a made pack is). Brain Freeze's list ignores taps in its first 400 ms (the tail of a double
-  tap on the screen before).
+  Bad Hand: adds them to the picked ones, as a made pack is). Brain Freeze's and Odd One Out's lists ignore taps in their first 400 ms (the tail of a double
+  tap on the screen before). Odd One Out's list shows Heads Down.'s packs with its own picks and
+  its own search and sort: no pencil, no "Make a pack" and no New; a line under the packs says
+  "These are Heads Down. packs. Make and edit them there." Its Community and Import add to Heads
+  Down.'s packs and tick them here, never in Heads Down.
 - **A saved game and its setup**: with a game in progress, setup shows that game's players
   (Big Board: teams). Adding, renaming or removing them changes the saved game on Resume (or on
   leaving setup): a kept player keeps their score, newcomers start at 0, a removed one leaves
-  with their points. Pack and rule changes apply to the next game, and setup says so.
+  with their points. Pack and rule changes apply to the next game, and setup says so. Odd One
+  Out is the exception: its setup shows the remembered list, Resume keeps the saved game's
+  players, and changes there apply to the next game (setup says so).
+- **Drop-down** (`src/components/Dropdown.svelte`, `src/lib/gamePicker.ts`): one full-width box
+  (52 px) with a down arrow; tapping it opens a panel attached under it: a search field and the
+  options (a ✓ on each chosen one; long names wrap) in a list that scrolls on its own; the panel
+  takes at most 60% of the screen's height and what is left under the box. Typing narrows the
+  options to names holding the search anywhere, ignoring case and accents. A tap outside or Escape
+  closes it, focus back on the box, and the page behind stays still meanwhile. Two faces:
+  - **Game picker** (`src/components/GamePicker.svelte`, the Community page and History): pick
+    one. The box shows the chosen game's emoji and name, tinted with its colour ("All games" in
+    the neutral colours); the options have emoji and name, "Search games", "No games match.".
+    Choosing closes it; Tab closes it too.
+  - **Categories** (`src/components/CategoryMenu.svelte`, the Games page, above): pick several
+    (`aria-multiselectable`). Picking keeps it open; Done under the list closes it; the pencils and
+    the foot's buttons are reached with Tab.
+  In both, on a touch phone the search field waits
+  for a tap (so the keyboard does not cover the list); from the keyboard or with a mouse it takes
+  focus at once. The box and the field are comboboxes over one listbox: the arrow keys (wrapping),
+  Home and End move, Enter chooses (and, in the categories, Space from the box). On a touch phone the search field waits
+  for a tap (so the keyboard does not cover the list); from the keyboard or with a mouse it takes
+  focus at once. The box and the field are comboboxes over one listbox: the arrow keys (wrapping),
+  Home and End move, Enter chooses.
 - **History** (`#/history`): one entry per Heads Down. round (rewritten if a word is fixed
   afterwards) and per finished Spectrum or Inn Co Hear Ant game: title, scores, packs and
-  details. Filter by game, open, delete one, or clear all. Stored on the phone only; entries of a
+  details. The game picker above the list ("All games", then every game) shows one game's; open, delete one, or clear all. Stored on the phone only; entries of a
   game taken out of the app are left out.
 - **Search and sort** (`ListTools`): every pack list and every pack's contents has a search
   toggle (matches names, blurbs and the items inside; a pack found only through an item shows
@@ -445,7 +503,8 @@ preview, past its list too) and ticks the new pack, as before.
   Live play (Heads Down. countdown and round, Inn Co Hear Ant card timer) is never skippable.
 
 Updates reach phones without interrupting play: a new version downloads in the background
-(checked every minute) and switches in only on the main menu (`src/lib/update.ts`).
+(checked every minute) and switches in only on the main menu or the Games page, where phones sit
+between games (`src/lib/update.ts`).
 
 ## Game 1 — Heads Down. (`forehead`)
 
@@ -870,7 +929,7 @@ over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone'
 host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
 logic. The host's peer id is `jerkbox-<game>-<CODE>`. Leaving the host screen (its back arrow,
 ending the game or closing the room) and leaving or cancelling on a phone return to the game's
-first screen the way they came (`back()`), and that screen's Back returns to the main menu.
+first screen the way they came (`back()`), and that screen's Back returns to the Games page.
 On every host screen the button that closes the room says "Close" in every phase and asks
 first ("Close the room?", with "The game ends." while one is being played); after a game "Lobby"
 keeps the room and its players for another. Start asks first while any player's phone is
@@ -1362,3 +1421,50 @@ prompt and the answers. Amounts marked *house* are ours.
 - **Bots** (see Shared room link): play random cards (a short stock line on a blank card); as
   judge show each answer large for about 3 s, then pick one at random; vote at random, never for
   their own answer; never trade.
+
+## Game 12 — Odd One Out (`odd`)
+
+Everyone-knows-the-word-but-one folk game. One phone goes round 3–12 players; everyone but one
+sees the same secret word, the odd one out does not, and the room talks it out. Amounts marked
+*house* are ours.
+
+- **Setup**: player names (3–12; remembered, a first visit borrows Brain Freeze's list), packs
+  (Heads Down.'s packs, built-in and own, read through `wordDecks()`; this game has no packs of
+  its own and its picks are its own, see Pack list; first visit: every built-in pack but After
+  Dark), and a Rules row: rounds 3–10 (default 5), Hint (default on: the odd one out is told the
+  word's pack), Odd one never starts (default on). A saved game offers Resume and New game (two taps).
+- **Deal**: a word from the picked packs, at random, without repeats on this phone until the packs
+  run out (per-pack bags under this game's own keys, so Heads Down.'s own rotation is untouched)
+  and never twice in one game; one player at random is the odd one out, and one player at random
+  starts the clues (never the odd one out with that option on). All from one random source, so
+  tests seed them (`logic.ts`, `deal.ts`). When the game's packs have no words left (deleted
+  mid-game), the next round deals from the setup's current picks, which become the game's packs;
+  only when those are empty too does the screen say "These packs are gone. Start a new game."
+- **Pass**: for each player in list order a hand-off ("Pass the phone to Maya", Show) and then
+  their secret: the word large with "from Movies" under it, or "Odd one out" with "Word from
+  Movies" under it (Hint on) or "Blend in" (Hint off). Both secret screens are one card in the
+  same colours with a line above, the big text set the same way (capped in size, a few words at
+  most) and a line under it, so a neighbour's glance cannot tell them apart. Hide goes to the next
+  hand-off. Back from a secret closes it onto its own hand-off; Back from a hand-off goes to the
+  previous player's hand-off (setup from the first). Each takes a back tap only once it has been on
+  screen for the double-tap guard time, so a double tap steps back once. Which secret is open is
+  never saved: a reload mid-pass lands on the current player's hand-off, and the phone's own back
+  gesture from a secret leaves the game for the Games page with the game saved and no secret
+  showing, as in Brain Freeze.
+- **Clues**: who starts and the order (list order from the starter): "Take turns: say one word
+  about the secret word." No timer. Vote.
+- **Vote**: "Count to three and point. Who does the room pick?" The room settles a tie itself;
+  the phone records one name (tap, then Confirm).
+- **Reveal**: "Maya was the odd one out!" then "Maya, guess the word out loud." and Show word,
+  then the word with ✗ Missed / ✓ Got it, which ignore taps in their own first 400 ms (so the
+  tail of a double tap on Show word judges nothing); or "Ben was not the odd one out. It was
+  Maya." with the word at once and Next.
+- **Scores** (*house*): not caught, the odd one out scores 2; caught but named the word, 1;
+  caught and missed, everyone else 1. Between rounds: who it was, the word, the standings with the
+  round's points, Next round. After the last round: the win screen (confetti, the top score or a
+  tie, standings, Play again with the same players, packs and options, Setup, Home).
+- **History**: one entry per game (scores, the packs, one line per round: "Round 2 · Pizza: Maya
+  was the odd one out, caught, named the word"); New game over an unfinished game records it with
+  `finished: false` once the new game starts, and only when it had a finished round. Every step is saved; the screen stays awake during play. Back from the clues,
+  vote, reveal and scores goes to setup with the game saved.
+- Demos at `#/odd?demo=handoff|secret|secret-long|secret-odd|secret-odd-nohint|clues|vote|reveal-caught|reveal-word|reveal-escaped|scores|win`.

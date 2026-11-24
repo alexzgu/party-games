@@ -15,6 +15,7 @@
     hideBack = false,
     split = false,
     fill = false,
+    keep = 'screen',
     trailing,
     actions,
     children,
@@ -38,6 +39,9 @@
      * On a screen too short even for that the whole page scrolls, header and actions still pinned.
      */
     fill?: boolean;
+    /** With `fill`, the screen's name for keeping its scroll across Back (lib/keepScroll.ts): a
+     *  layer filling the screen over another page needs its own. */
+    keep?: string;
     trailing?: Snippet;
     actions?: Snippet;
     children: Snippet;
@@ -51,7 +55,7 @@
   $effect(() => padScroller(head, headH, footH));
 </script>
 
-<div class="screen fade-in" class:split class:fill style:--accent={accent} data-keep-scroll={fill ? 'screen' : undefined}>
+<div class="screen fade-in" class:split class:fill style:--accent={accent} data-keep-scroll={fill ? keep : undefined}>
   <header class="pinned-bg pinned-lift" bind:this={head} bind:offsetHeight={headH}>
     {#if !hideBack}
       <button class="back" onclick={() => (onback ? onback() : back())} aria-label={backLabel}>

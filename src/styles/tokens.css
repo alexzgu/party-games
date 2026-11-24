@@ -25,10 +25,14 @@
   --c-brawl: #818cf8;
   --c-sketch: #e879f9;
   --c-hand: #34d399;
+  --c-odd: #d4e157;
   --c-good: #3ddc84;
   --c-pass: #ffb020;
   --c-bad: #ff4d6d;
   --c-gold: #ffd166;
+  /* The main menu's two rows: Games and Community packs. */
+  --c-games: var(--c-gibberish);
+  --c-community: var(--c-dial);
 
   /* Drawing inks (Doodle Brawl, Sketchy): dark on white paper in both schemes, so a drawing looks the same everywhere. */
   --ink-paper: #fff; --ink-black: #17141f; --ink-red: #b91c36; --ink-orange: #aa470b; --ink-green: #18713b;
@@ -131,6 +135,7 @@
   --c-brawl: #4338ca;
   --c-sketch: #a21caf;
   --c-hand: #047857;
+  --c-odd: #5c6b00;
   --c-good: #15803d;
   --c-pass: #a85207;
   --c-bad: #d1193f;

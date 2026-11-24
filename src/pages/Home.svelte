@@ -5,6 +5,8 @@
   import { haptic } from '../lib/haptics';
   import { forgetListings } from '../lib/communityCache';
   import { communityGames } from '../lib/communityView';
+  import GameCard from '../components/GameCard.svelte';
+  import { freshOrder } from '../lib/gamesPage.svelte';
 
   const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
   const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -15,6 +17,12 @@
     sfx.tap();
     haptic.light();
     go('/' + id);
+  }
+
+  // The Games page opened anew: its Recent order takes in the games opened since.
+  function openGames() {
+    freshOrder();
+    open('games');
   }
 
   // The Community page, while the library is on; opened anew, so its lists load fresh.
@@ -41,31 +49,12 @@
     </div>
   </header>
 
-  <ul class="games">
-    {#each GAMES as g, i (g.id)}
-      <li class="pop-in" style:animation-delay="{60 + i * 70}ms">
-        <button class="card" style:--accent={g.accent} onclick={() => open(g.id)}>
-          <span class="emoji" aria-hidden="true">{g.emoji}</span>
-          <span class="txt">
-            <span class="name" class:long={g.name.length > 13}>{g.name}</span>
-            <span class="players">{g.players}</span>
-          </span>
-          <svg class="chev" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </li>
-    {/each}
-  </ul>
-
-  {#if community}
-    <button class="community pop-in" style:animation-delay="{60 + GAMES.length * 70}ms" onclick={openCommunity}>
-      <span class="emoji" aria-hidden="true">🌍</span>
-      <span class="txt">
-        <span class="cname">Community packs</span>
-        <span class="players">Browse packs friends made</span>
-      </span>
-      <svg class="chev" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-  {/if}
+  <div class="rows">
+    <GameCard emoji="🎉" name="Games" sub="{GAMES.length} party games" accent="var(--c-games)" delay={60} onclick={openGames} />
+    {#if community}
+      <GameCard emoji="🌍" name="Community packs" sub="Browse packs friends made" accent="var(--c-community)" delay={130} onclick={openCommunity} />
+    {/if}
+  </div>
 
   {#if !standalone}
     <div class="install">
@@ -104,34 +93,7 @@
   .brand { display: flex; align-items: center; gap: var(--s-3); }
   .logo { font-size: 2.2rem; }
   .gear { width: 48px; height: 48px; border-radius: var(--r-pill); border: 0; background: var(--surface); display: grid; place-items: center; color: var(--text-dim); }
-  .games { list-style: none; padding: 0; margin: var(--s-3) 0 0; display: flex; flex-direction: column; gap: var(--s-3); }
-  .card {
-    width: 100%; text-align: left; display: flex; align-items: center; gap: var(--s-4);
-    padding: var(--s-5) var(--s-4); border-radius: var(--r-lg); border: 1.5px solid color-mix(in srgb, var(--accent) 40%, transparent);
-    background:
-      radial-gradient(140% 120% at 0% 0%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 60%),
-      var(--bg-raised);
-    box-shadow: var(--shadow);
-    transition: transform var(--dur-fast) var(--ease-out);
-  }
-  .card:active { transform: scale(0.98); }
-  .emoji { font-size: 2.6rem; flex: none; filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--shade) 40%, transparent)); }
-  .txt { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-  .name { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; color: var(--accent); letter-spacing: -0.02em; }
-  /* A long name (Inn Co Hear Ant) a size down, so it stays on one line on a phone. */
-  .name.long { font-size: min(1.32rem, 6vw); white-space: nowrap; }
-  .players { color: var(--text-dim); font-weight: 700; font-size: 0.92rem; margin-top: 2px; }
-  .chev { color: var(--text-faint); flex: none; }
-  /* Community: a quieter row under the games, in the page's own colours. */
-  .community {
-    width: 100%; text-align: left; display: flex; align-items: center; gap: var(--s-3);
-    padding: var(--s-4); border-radius: var(--r-lg); border: 1.5px solid var(--line-strong); background: var(--surface);
-    color: var(--text); transition: transform var(--dur-fast) var(--ease-out);
-  }
-  .community:active { transform: scale(0.98); }
-  .community .emoji { font-size: 1.9rem; }
-  /* One line on a 320 px phone too. */
-  .cname { font-family: var(--font-display); font-weight: 800; font-size: min(1.25rem, 5.6vw); letter-spacing: -0.01em; white-space: nowrap; }
+  .rows { margin-top: var(--s-3); display: flex; flex-direction: column; gap: var(--s-3); }
   .install { margin-top: auto; }
   .install-btn { width: 100%; min-height: var(--tap); border-radius: var(--r-md); border: 1.5px dashed var(--line-strong); background: transparent; color: var(--text-dim); font-weight: 600; }
   .how { color: var(--text-dim); padding: var(--s-3) var(--s-2); font-size: 0.95rem; }

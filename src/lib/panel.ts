@@ -1,4 +1,4 @@
-// The pinned top of a pack page or a pack editor (components/PinnedPanel.svelte) and the parts
+// The pinned top of a pack page, a pack editor or a Community list (components/PinnedPanel.svelte) and the parts
 // that scroll on their own (its scroller, components/ScrollWindow.svelte): whether the part that
 // folds starts shown, which edges of a scrolling part have more behind them (for its fades and
 // hairlines), and bringing an item into view in its scroller.
@@ -7,9 +7,12 @@ import { load, save } from './storage';
 /** Under this height (a small phone, any phone on its side) the part that folds starts hidden. */
 export const SHORT_SCREEN_PX = 700;
 
-/** Pages sharing one fold choice: the setups (players, teams) and the pack editors (pack details). */
-export type PanelKind = 'setup' | 'editor';
-const KEYS: Record<PanelKind, string> = { setup: 'setup:panel', editor: 'editor:panel' };
+/**
+ * Pages sharing one fold choice: the setups (players, teams), the pack editors (pack details) and
+ * the Community lists (search and filters).
+ */
+export type PanelKind = 'setup' | 'editor' | 'community';
+const KEYS: Record<PanelKind, string> = { setup: 'setup:panel', editor: 'editor:panel', community: 'community:panel' };
 
 /**
  * Shown when the game needs changes there to start (too few players), else the phone's own choice
