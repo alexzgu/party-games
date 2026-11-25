@@ -3,17 +3,18 @@
   import Popup from '../Popup.svelte';
   import { nameList, question, type Ask } from '../../lib/lend';
 
-  // Host lobby, after Start: the picked packs are too small for this room, so it asks before other
-  // packs lend to it (src/lib/lend.ts). Yes starts the game with them; Change packs opens the room's
-  // settings; closing does neither.
-  let { ask, onyes, onpacks, onclose }: { ask: Ask; onyes: () => void; onpacks: () => void; onclose: () => void } = $props();
+  // After Start (a host lobby, or a one-phone setup): the picked packs are too small for this game,
+  // so it asks before other packs lend to it (src/lib/lend.ts). Yes starts the game with them;
+  // Change packs goes to where the packs are picked (`packsTip` says where); closing does neither.
+  let { ask, onyes, onpacks, onclose, packsTip = "Opens the room's settings: pick more packs or add to your own" }:
+    { ask: Ask; onyes: () => void; onpacks: () => void; onclose: () => void; packsTip?: string } = $props();
 </script>
 
 <Popup title="Not enough {ask.noun}" {onclose}>
   <div class="ask">
     <p>{ask.short} {question(ask)}</p>
     <Button onclick={onyes} tip="Starts now with {ask.noun} from {nameList(ask.lenders)} added to this game">Add & start</Button>
-    <Button variant="secondary" onclick={onpacks} tip="Opens the room's settings: pick more packs or add to your own">Change packs</Button>
+    <Button variant="secondary" onclick={onpacks} tip={packsTip}>Change packs</Button>
   </div>
 </Popup>
 

@@ -42,6 +42,8 @@ export interface Game {
   played: string[];
   /** Every scored round, oldest first. */
   log: RoundLog[];
+  /** The packs lent to this game once the player said yes (ids, deck.ts); none when the picks had cards. */
+  lent?: string[];
 }
 
 const PHASES: Phase[] = ['handoff', 'reader', 'team', 'steal', 'reveal', 'win'];
@@ -50,8 +52,10 @@ export const other = (t: TeamIndex): TeamIndex => (t === 0 ? 1 : 0);
 
 export const cardId = (c: Spectrum): string => (c.left + '|' + c.right).trim().toLowerCase();
 
-export function newGame(cfg: Config, starter: TeamIndex = 0): Game {
+/** A new game; `lent`, the packs the player agreed may lend to this game alone. */
+export function newGame(cfg: Config, starter: TeamIndex = 0, lent: readonly string[] = []): Game {
   return {
+    ...(lent.length ? { lent: [...lent] } : {}),
     v: 1,
     teams: [{ name: cfg.names[0], score: 0 }, { name: cfg.names[1], score: 0 }],
     goal: cfg.goal,
@@ -134,9 +138,10 @@ export function nextTurn(g: Game): Game {
   return { ...g, phase: 'handoff', active: other(g.active), round: null };
 }
 
-export function rematch(g: Game): Game {
+/** The same teams and picks, scores back to zero; packs lend only when the player says yes again (`lent`). */
+export function rematch(g: Game, lent: readonly string[] = []): Game {
   const starter = other(g.starter);
-  return newGame({ names: [g.teams[0].name, g.teams[1].name], goal: g.goal, steal: g.steal, packIds: g.packIds }, starter);
+  return newGame({ names: [g.teams[0].name, g.teams[1].name], goal: g.goal, steal: g.steal, packIds: g.packIds }, starter, lent);
 }
 
 const isNum = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n);
@@ -161,6 +166,7 @@ export function restore(raw: unknown): Game | null {
   if (!g || typeof g !== 'object' || g.v !== 1 || !PHASES.includes(g.phase)) return null;
   if (!Array.isArray(g.teams) || g.teams.length !== 2 || !g.teams.every(validTeam)) return null;
   if (!isNum(g.goal) || g.goal < 1 || typeof g.steal !== 'boolean' || !isStrs(g.packIds) || !isStrs(g.played)) return null;
+  if (g.lent !== undefined && !isStrs(g.lent)) return null;
   if (!isIdx(g.active) || !isIdx(g.starter) || !isNum(g.roundNo) || g.roundNo < 0) return null;
   if (g.winner !== null && !isIdx(g.winner)) return null;
   if (g.phase === 'win' ? g.winner === null : g.phase !== 'handoff' && !validRound(g.round)) return null;

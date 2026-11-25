@@ -14,22 +14,39 @@
   import { saveConfig } from './persist';
   import { rulesSummary } from './rulesSummary';
   import type { Config } from './state';
+  import { DEFAULT_PACKS, roomDeck } from './deck';
+  import LendAsk from '../../components/room/LendAsk.svelte';
+  import { consent, keptPicks, nameList, type Ask } from '../../lib/lend';
 
-  let { config, onstart, onmake }: { config: Config; onstart: (c: Config) => void; onmake: () => void } = $props();
+  // `lent`: the packs the player agreed may lend to this game alone (deck.ts).
+  let { config, onstart, onmake }: { config: Config; onstart: (c: Config, lent: string[]) => void; onmake: () => void } = $props();
 
   let packs = $state.raw<SpectrumPack[]>(spectrumPacks());
+  // Picks whose packs were all deleted become Classic, ticked here.
   // svelte-ignore state_referenced_locally
-  let cfg = $state<Config>({ ...config, names: [...config.names], packIds: config.packIds.filter((id) => packs.some((p) => p.id === id)) });
+  let cfg = $state<Config>({ ...config, names: [...config.names], packIds: keptPicks(packs, config.packIds, DEFAULT_PACKS) });
 
-  const cardCount = $derived(packs.filter((p) => cfg.packIds.includes(p.id)).reduce((n, p) => n + p.cards.length, 0));
+  // The same cards Start deals from, and the packs it would ask to borrow from when the picks have none.
+  const deck = $derived(roomDeck(packs, cfg.packIds));
+  /** Why no game can start with these picks, or ''. */
+  const missing = $derived(!cfg.packIds.length ? 'Pick packs' : deck.problem);
+  /** The question after Start, until it is answered or closed; there is no room, so a yes lasts for one game. */
+  let asking = $state.raw<Ask | null>(null);
 
   const entries = $derived(packs.map(packEntry));
 
   $effect(() => saveConfig($state.snapshot(cfg) as Config));
 
-  function start() {
+  /** Starts the game, or asks first when other packs would lend to it (`yes`: the key of the question the player agreed to). */
+  function start(yes = '') {
+    if (missing) return;
+    if (consent(deck.ask, '', yes) === null) {
+      asking = deck.ask;
+      return;
+    }
+    asking = null;
     cfg.names = cfg.names.map((n, i) => n.trim() || ['Team 1', 'Team 2'][i]) as [string, string];
-    onstart($state.snapshot(cfg) as Config);
+    onstart($state.snapshot(cfg) as Config, deck.ask ? deck.lent.map((p) => p.id) : []);
   }
 </script>
 
@@ -64,6 +81,9 @@
         </div>
       </section>
     {/snippet}
+    {#snippet notice()}
+      {#if !missing && deck.ask}<p class="note">{deck.ask.short} The game will ask before adding cards from {nameList(deck.ask.lenders)}.</p>{/if}
+    {/snippet}
   </PackList>
 
   {#snippet actions()}
@@ -71,11 +91,16 @@
       <Stepper label="Points to win" bind:value={cfg.goal} min={5} max={30} />
       <Toggle label="Steal rule" hint="After each guess, the other team calls left or right of the needle for 1 point" bind:checked={cfg.steal} />
     </RulesCard>
-    <Button size="lg" disabled={cardCount === 0} onclick={start}>{cardCount === 0 ? 'Pick packs' : 'Start game'}</Button>
+    <Button size="lg" disabled={!!missing} onclick={() => start()}>{missing || 'Start game'}</Button>
   {/snippet}
 </Screen>
+{#if asking}
+  <LendAsk ask={asking} onclose={() => (asking = null)} onpacks={() => (asking = null)} onyes={() => start(asking!.key)}
+    packsTip="Back to the pack list: pick packs with cards or add to your own" />
+{/if}
 
 <style>
+  .note { margin-bottom: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: color-mix(in srgb, var(--c-pass) 14%, var(--surface)); font-weight: 600; }
   .teams { display: flex; flex-direction: column; gap: var(--s-2); }
   .team { display: block; }
   .team input {

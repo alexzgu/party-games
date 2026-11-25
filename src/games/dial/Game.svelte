@@ -14,7 +14,9 @@
   import { route, go, back, backHome } from '../../lib/router.svelte';
   import { unlockAudio } from '../../lib/sound';
   import { keepAwake } from '../../lib/wakelock';
-  import { drawCard } from './deck';
+  import { drawCard, gamePacks, roomDeck } from './deck';
+  import LendAsk from '../../components/room/LendAsk.svelte';
+  import { consent, type Ask } from '../../lib/lend';
   import { nextTarget } from './targets';
   import { clearGame, loadConfig, loadGame, saveGame } from './persist';
   import { demoGame, demoItems } from './demo';
@@ -52,20 +54,34 @@
     unlockAudio();
   }
 
-  function start(cfg: Config) {
+  function start(cfg: Config, lent: string[]) {
     unlockAudio();
-    set(newGame(cfg));
+    set(newGame(cfg, 0, lent));
+  }
+
+  /** A rematch's question before other packs lend to it again (a yes lasts for one game), or null. */
+  let asking = $state.raw<Ask | null>(null);
+  /** Rematch, or the question first when other packs would lend (`yes`: the key of the question agreed to). */
+  function again(g: Game, yes = '') {
+    const deck = roomDeck(spectrumPacks(), g.packIds);
+    if (deck.problem) return close();
+    if (consent(deck.ask, '', yes) === null) {
+      asking = deck.ask;
+      return;
+    }
+    asking = null;
+    set(rematch(g, deck.ask ? deck.lent.map((p) => p.id) : []));
   }
 
   function openReader(g: Game) {
-    const card = drawCard(g.packIds, g.played);
+    const card = drawCard(g.packIds, g.played, g.lent);
     if (!card) return;
     set(beginRound(g, card, nextTarget()));
     readerOpen = true;
   }
 
   function newCard(g: Game) {
-    const card = drawCard(g.packIds, g.played);
+    const card = drawCard(g.packIds, g.played, g.lent);
     if (card) set(redraw(g, card));
   }
 
@@ -73,10 +89,11 @@
     readerOpen = false;
     const n = nextTurn(g);
     set(n);
-    if (n.phase === 'win' && !demo) record(summarize(n, packNames(n.packIds)));
+    if (n.phase === 'win' && !demo) record(summarize(n, packNames(n)));
   }
 
-  const packNames = (ids: string[]) => spectrumPacks().filter((p) => ids.includes(p.id)).map((p) => p.name);
+  /** The packs a game dealt from, for History: its picks', then the lenders'. */
+  const packNames = (g: Game) => gamePacks(spectrumPacks(), g.packIds, g.lent).map((p) => p.name);
 
   const home = backHome;
   /** Clears a game that is over (already in History) to go back to setup. */
@@ -88,7 +105,7 @@
   function end() {
     const g = game;
     if (!g) return;
-    const early = demo ? null : summarizeEarly(g, packNames(g.packIds));
+    const early = demo ? null : summarizeEarly(g, packNames(g));
     if (early) record(early);
     set(null);
   }
@@ -155,7 +172,11 @@
     <Reveal game={g} round={g.round!} onrevealed={() => set(markRevealed(game!))} onnext={() => next(game!)} onhome={home} onend={end} />
   {:else if game.phase === 'win'}
     {@const g = game}
-    <Win game={g} onrematch={() => set(rematch(g))} onsetup={close} onhome={() => { close(); home(); }} />
+    <Win game={g} onrematch={() => again(g)} onsetup={close} onhome={() => { close(); home(); }} />
+    {#if asking}
+      <LendAsk ask={asking} onclose={() => (asking = null)} onpacks={() => { asking = null; close(); }} onyes={() => again(g, asking!.key)}
+        packsTip="Back to the setup: pick packs with cards or add to your own" />
+    {/if}
   {/if}
 </div>
 
