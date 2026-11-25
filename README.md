@@ -1,4 +1,4 @@
-# Jerk Box
+# Party Box
 
 Party games for one phone and a loud room: **Heads Down.** (forehead word guessing),
 **Spectrum** (team dial guessing) and **Inn Co Hear Ant** (gibberish phrases). A web app that

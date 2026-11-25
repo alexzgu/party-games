@@ -1,5 +1,6 @@
 // Pack files: packs saved to a file to keep or send to friends, and read back in on any phone.
-// A file is {"jerkBox": 1, "game": "<game id>", "packs": [...]}, each pack in its stored shape
+// A file is {"jerkBox": 1, "game": "<game id>", "packs": [...]} (the marker keeps the app's first
+// name, so files from before the rename and phones not yet updated still read), each pack in its stored shape
 // without the fields that only mean something on one phone (custom, added, the Community marks). Reading a file
 // checks every item with that game's own rules (the ones its pack editor or paste route uses),
 // drops the items that fail with a count, and saves each pack as the player's own under an id
@@ -99,9 +100,9 @@ export function exportFile(game: PackGameId, packs: readonly AnyPack[]): string 
   return JSON.stringify({ jerkBox: FORMAT, game, packs: packs.map((p) => plain(game, p)) }, null, 2);
 }
 
-/** "heads-down-movies.jerkbox.txt", or "…-my-packs.jerkbox.txt" for every pack of one phone. */
+/** "heads-down-movies.partybox.txt", or "…-my-packs.partybox.txt" for every pack of one phone. */
 export const fileName = (game: PackGameId, packId?: string): string =>
-  `${slugify(gameName(game))}-${packId ? slugify(packId) : 'my-packs'}.jerkbox.txt`;
+  `${slugify(gameName(game))}-${packId ? slugify(packId) : 'my-packs'}.partybox.txt`;
 
 /**
  * The file to hand over. Plain text, because Chrome on Android shares only some file types

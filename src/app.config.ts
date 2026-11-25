@@ -1,7 +1,7 @@
 // Names shown to players live here only, so renaming is a one-line change.
 export const APP = {
-  name: 'Jerk Box',
-  shortName: 'Jerk Box',
+  name: 'Party Box',
+  shortName: 'Party Box',
 } as const;
 
 export type GameId = 'forehead' | 'dial' | 'gibberish' | 'quiz' | 'taboo' | 'quick' | 'snark' | 'salad' | 'brawl' | 'sketch' | 'hand' | 'odd' | 'rather' | 'fish' | 'trivia';

@@ -114,7 +114,7 @@ const base = process.argv[1], packs = [];
     after = page.next || "";
   } while (after);
   console.log(JSON.stringify({ packs }));
-})();' https://<the server's address> > jerkbox-library-$(date +%F).json
+})();' https://<the server's address> > partybox-library-$(date +%F).json
 ```
 
 **Hiding a pack.** Hiding is off until you add the optional secret `LIBRARY_ADMIN`: in
@@ -140,7 +140,7 @@ No secret ever goes into this repo or to an AI chat. You type them into Cloudfla
 1. **Cloudflare account.** Sign up free at <https://dash.cloudflare.com/sign-up>. The free
    Workers plan is enough.
 2. **A separate Anthropic key with a spending cap.** In the Claude Console
-   (<https://platform.claude.com>): Settings → Workspaces → Create workspace (e.g. "Jerk Box
+   (<https://platform.claude.com>): Settings → Workspaces → Create workspace (e.g. "Party Box
    wizard"). Open that workspace's limits and set a monthly spend limit you are happy to lose
    (e.g. $10). Then Settings → API keys → Create key, and pick that workspace. Copy the key into
    your password manager; don't paste it into any chat. Use this key only here, never in an

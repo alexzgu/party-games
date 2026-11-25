@@ -1,4 +1,4 @@
-# Jerk Box — instructions for coding agents
+# Party Box — instructions for coding agents
 
 Party games web app (Svelte 5 + TypeScript + Vite PWA), published to
 https://alexzgu.github.io/party-games/ by `.github/workflows/deploy.yml` on every push to `main`.

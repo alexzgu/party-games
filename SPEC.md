@@ -1,4 +1,4 @@
-# Jerk Box — specification
+# Party Box — specification
 
 A web app of pass-and-play party games for one phone, played by adults in their 20s at a
 house party. Guests have iPhones and Android phones, so it runs in the browser, installs to
@@ -156,9 +156,10 @@ History names the lending packs with the picked ones. Nothing else ever adds ite
 runs short mid-game (more late joiners than counted) deals its own items again.
 
 **Import and export** (`src/lib/packfile.ts`, buttons in `PackFile` and `ExportPack`): a pack file
-is JSON, `{"jerkBox": 1, "game": "<game id>", "packs": [...]}`, each pack as stored (id, name,
+is JSON, `{"jerkBox": 1, "game": "<game id>", "packs": [...]}` (`jerkBox` is the format's fixed
+marker from the app's first name, kept so every phone reads every file), each pack as stored (id, name,
 icon (`emoji`, any one character) for Heads Down., blurb, items) without `custom` and `added`; named
-`<game>-<pack id or my-packs>.jerkbox.txt` (JSON inside, plain-text type so Chrome on Android
+`<game>-<pack id or my-packs>.partybox.txt` (JSON inside, plain-text type so Chrome on Android
 can share it; import also takes `.json`). "Export" sits in every pack editor (built-ins
 included); Add pack → "Import" (packs from a file) and "Export" (every pack made or edited on this
 phone; hidden when there are none) sit in the row under every game's pack list (the
@@ -172,7 +173,7 @@ when a built-in or a pack on the phone already has its id, so nothing is overwri
 name ("Movies (2)") when one already has its name. A pack just made is likewise played on its own. A file of
 another game says which game to open; one of a game taken out of the app (`RETIRED_GAMES` in
 `src/app.config.ts`) says so by name, even when it is too big to read ("Earworm is no longer in
-Jerk Box."); anything else says it isn't a pack file.
+Party Box."); anything else says it isn't a pack file.
 
 **Community library** (`src/lib/library.ts`; server routes `/library/…` in `worker/`, see
 `worker/README.md`): packs Fizzwick makes on any phone with a magic-words pass are shared
@@ -284,7 +285,7 @@ preview, past its list too) and ticks the new pack, as before.
 
 ## Shared behaviour
 
-- **Home** (`#/`): the pinned header (🎲 Jerk Box, History, Settings), then two large rows of the
+- **Home** (`#/`): the pinned header (🎲 Party Box, History, Settings), then two large rows of the
   same look: "🎉 Games" ("15 party games", the number in `GAMES`) opens the Games page, and, while
   the Community library is on, "🌍 Community packs" ("Browse packs friends made") opens the
   Community page with fresh lists. Without it, the Games row stands alone. Install help at the foot.
@@ -368,7 +369,7 @@ preview, past its list too) and ticks the new pack, as before.
 - **Pinned bars**: every screen's header (back, title, "?") stays at the top as the page scrolls,
   in the page's own background (under the status bar too), with a hairline once something slides
   under it; its title is one line, cut with "…" when long (the whole title is still read out). The
-  main menu's header (🎲 Jerk Box, History, Settings) likewise. A screen's actions (a setup's rules
+  main menu's header (🎲 Party Box, History, Settings) likewise. A screen's actions (a setup's rules
   row and Start) stay at the bottom; they sit in the page's flow, so at the end of the page they
   cover nothing. A phone on its side (height ≤ 500 px) also shrinks the screen header to 48 px and
   puts the rules row and the start buttons side by side. Whatever the page scrolls to (a new row, a

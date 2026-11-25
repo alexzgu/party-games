@@ -61,8 +61,15 @@ describe('pack files', () => {
   });
 
   it('names the file after the game and the pack', () => {
-    expect(fileName('forehead', 'our-trip')).toBe('heads-down-our-trip.jerkbox.txt');
-    expect(fileName('quiz')).toBe('big-board-my-packs.jerkbox.txt');
+    expect(fileName('forehead', 'our-trip')).toBe('heads-down-our-trip.partybox.txt');
+    expect(fileName('quiz')).toBe('big-board-my-packs.partybox.txt');
+  });
+
+  it('reads a file saved before the app was renamed, and writes the same marker so older phones read new files', () => {
+    // As a "heads-down-our-trip.jerkbox.txt" export held it: the import never looks at the file's name.
+    const old = '{\n  "jerkBox": 1,\n  "game": "forehead",\n  "packs": [\n    {\n      "id": "our-trip",\n      "name": "Our Trip",\n      "emoji": "🚗",\n      "blurb": "Summer 2026",\n      "words": ["Road Trip", "Gas Station", "Taylor Swift"]\n    }\n  ]\n}';
+    expect(readFile(old, 'forehead')).toEqual({ packs: [SAMPLES.forehead], skipped: 0, problems: [] });
+    expect(JSON.parse(exportFile('forehead', [SAMPLES.forehead]))).toMatchObject({ jerkBox: 1, game: 'forehead' });
   });
 
   it('sends a file of another game to that game', () => {
@@ -70,7 +77,7 @@ describe('pack files', () => {
   });
 
   it('names a game no longer in the app, even in a file too big to read', () => {
-    const gone = { error: 'Earworm is no longer in Jerk Box.' };
+    const gone = { error: 'Earworm is no longer in Party Box.' };
     const old = JSON.stringify({ jerkBox: 1, game: 'song', packs: [{ id: 'pop', name: 'Pop', blurb: '', songs: [] }] }, null, 2);
     expect(readFile(old, 'forehead')).toEqual(gone);
     const clips = JSON.stringify({ jerkBox: 1, game: 'song', packs: [], clips: { x: 'a'.repeat(MAX_FILE_BYTES) } });
@@ -79,7 +86,7 @@ describe('pack files', () => {
   });
 
   it('refuses anything that is not a pack file', () => {
-    const notOurs = { error: "This isn't a Jerk Box pack file." };
+    const notOurs = { error: "This isn't a Party Box pack file." };
     expect(readFile('not json {', 'forehead')).toEqual(notOurs);
     expect(readFile('{"hello": 1}', 'forehead')).toEqual(notOurs);
     expect(readFile('[1, 2]', 'forehead')).toEqual(notOurs);
