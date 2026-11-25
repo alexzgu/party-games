@@ -10,49 +10,52 @@ import { playerView } from './view';
 import { readToHost } from './protocol';
 import { loadRoom, loadSettings, saveGame, saveSettings } from './store';
 import { gameRecord } from './record';
-import { dedupe, snarkPacks, type SnarkPack } from '../../lib/content';
+import { snarkPacks } from '../../lib/content';
+import { consent, stillAsked } from '../../lib/lend';
+import { dealIn, finalsIn, lending, pools, poolNames, promptsOf, roomPrompts, type RoomPrompts } from './room';
+import { promptKey } from './pack';
 import { makeBag } from '../../lib/bag';
 import { record } from '../../lib/history';
 import { Bots, isBot } from '../../lib/room/bots';
 import { snarkBrain } from './bot';
 
-export const packNames = (ids: string[]) => snarkPacks().filter((p) => ids.includes(p.id)).map((p) => p.name);
-
-/** The chosen packs, or Classic when none of them has what `has` asks for. */
-function source(packIds: string[], has: (p: SnarkPack) => boolean): SnarkPack[] {
-  const packs = snarkPacks();
-  const chosen = packs.filter((p) => packIds.includes(p.id) && has(p));
-  return chosen.length ? chosen : packs.filter((p) => p.id === 'classic' && has(p));
-}
+/** The room's prompts and finals for `players` players: the picks', and the packs that would lend when they are too few (room.ts). */
+export const content = (s: L.Settings, players: number): RoomPrompts => roomPrompts(snarkPacks(), s, players);
 
 /**
- * Prompts for a round from the chosen packs, never repeating until the pool runs out (across
- * games too), each with its pack's stock answer when it has one.
+ * Prompts for a round: the picks' first, then the lenders', none this game already dealt while
+ * any is left, each with its pack's stock answer when it has one. Each pool keeps its own bag,
+ * so prompts never repeat across games either until the pool runs out.
  */
-export function drawPrompts(packIds: string[], count: number): L.Dealt[] {
-  const packs = source(packIds, (p) => p.prompts.length > 0);
-  const pool = packs.length ? dedupe(packs.flatMap((p) => p.prompts)) : ['Say something funny'];
-  const safety = new Map(packs.flatMap((p) => Object.entries(p.safety ?? {})));
-  const bag = makeBag('snark', pool, (x) => x);
-  return Array.from({ length: count }, () => {
-    const prompt = bag.next()!;
+export function drawPrompts(from: ReturnType<typeof pools>, count: number, used: Set<string>): L.Dealt[] {
+  const picks = promptsOf(from.picks), mine = new Set(picks.map(promptKey));
+  const lent = promptsOf(from.prompts).filter((q) => !mine.has(promptKey(q)));
+  const safety = new Map(from.prompts.flatMap((p) => Object.entries(p.safety ?? {})));
+  const keys = ['snark', 'snark:lent'];
+  return dealIn([picks, lent], count, (q) => q, used, (i) => makeBag(keys[i], i ? lent : picks, (x) => x)).map((prompt) => {
     const stock = safety.get(prompt);
     return stock ? { prompt, safety: stock } : prompt;
   });
 }
 
-/** Finals for three-line duels from the chosen packs (else Classic), never repeating like prompts; none when no pack has any. */
-export function drawFinals(packIds: string[], count: number): L.Dealt[] {
-  const finals = source(packIds, (p) => !!p.finals?.length).flatMap((p) => p.finals ?? []);
-  const seen = new Set<string>();
-  const pool = finals.filter((f) => !seen.has(f.prompt) && seen.add(f.prompt));
-  const bag = makeBag('snark:finals', pool, (f) => f.prompt);
-  return pool.length ? Array.from({ length: count }, () => bag.next()!) : [];
+/** Finals for three-line duels, dealt like prompts: the picks', then the lenders'; none when neither has any. */
+export function drawFinals(from: ReturnType<typeof pools>, count: number, used: Set<string>): L.Dealt[] {
+  const picks = finalsIn(from.picks), mine = new Set(picks.map((f) => f.prompt));
+  const lent = finalsIn(from.finals).filter((f) => !mine.has(f.prompt));
+  const keys = ['snark:finals', 'snark:finals:lent'];
+  return dealIn([picks, lent], count, (f) => f.prompt, used, (i) => makeBag(keys[i], i ? lent : picks, (f) => f.prompt));
 }
+
+/** The packs a game dealt from, for History: the picks', then the lenders'. */
+const names = (g: L.Game) => poolNames(snarkPacks(), g.settings.packIds, g.lent);
 
 class HostSession {
   game = $state.raw<L.Game | null>(null);
   now = $state(Date.now());
+  /** The question about lending packs the host said yes to in this room (its key), or ''. */
+  agreed = $state('');
+  /** The question about lending packs put to the host after Start (its key) while it still stands, or ''. */
+  asked = $state('');
 
   readonly link = new HostLink('snark', {
     hello: (pid, name, online) => {
@@ -87,6 +90,8 @@ class HostSession {
     const { game: saved, room } = loadRoom();
     const g = saved ? L.afterReload(saved, Date.now()) : L.newGame(newCode(), loadSettings());
     this.game = g;
+    this.agreed = '';
+    this.asked = '';
     this.link.open(g.code, room);
     saveGame(g, this.link.room);
     this.bots.open();
@@ -114,28 +119,50 @@ class HostSession {
   private commit(next: L.Game): void {
     if (next === this.game) return;
     if (next.phase === 'over' && !next.recorded) {
-      const entry = gameRecord(next, packNames(next.settings.packIds));
+      const entry = gameRecord(next, names(next));
       if (entry) record(entry);
       next = { ...next, recorded: true };
     }
     this.game = next;
+    this.asked = stillAsked(this.asked, next.phase === 'lobby' ? content(next.settings, L.present(next).length).ask : null);
     saveGame(next, this.link.room);
     for (const pid of this.link.pids()) this.sendView(pid);
   }
 
-  private draw: L.Draw = (n, kind) => (kind === 'lines' ? drawFinals : drawPrompts)(this.game?.settings.packIds ?? [], n);
+  /** Deals for `g` from its picks and the packs lent to it (each kind on its own), read when a round starts. */
+  private draw = (g: L.Game): L.Draw => (n, kind) => {
+    const from = pools(snarkPacks(), g.settings.packIds, g.lent), used = new Set(g.dealt ?? []);
+    return kind === 'lines' ? drawFinals(from, n, used) : drawPrompts(from, n, used);
+  };
 
   private tick(): void {
     this.now = Date.now();
-    if (this.game) this.commit(L.tick(this.game, this.now, this.online, this.draw));
+    if (this.game) this.commit(L.tick(this.game, this.now, this.online, this.draw(this.game)));
   }
 
-  start(): void {
-    if (this.game && L.canStart(this.game)) this.commit(L.startRound(this.game, this.draw, Date.now()));
+  /**
+   * Starts the game, unless other packs would lend and the host has not said yes to that question
+   * (`yes` is its key, from the popup): then nothing starts and the question is put to the host.
+   */
+  start(yes = ''): void {
+    const g = this.game;
+    const c = g && content(g.settings, L.present(g).length);
+    if (!g || !c || !L.canStart(g) || c.problem) return;
+    const agreed = consent(c.ask, this.agreed, yes);
+    if (agreed === null) {
+      this.asked = c.ask!.key;
+      return;
+    }
+    this.agreed = agreed;
+    const next = { ...g, lent: lending(c, !!c.ask) };
+    this.commit(L.startRound(next, this.draw(next), Date.now()));
   }
+
+  /** The host closed the question without an answer. */
+  dismiss(): void { this.asked = ''; }
 
   skip(): void {
-    if (this.game) this.commit(L.step(this.game, Date.now(), this.draw));
+    if (this.game) this.commit(L.step(this.game, Date.now(), this.draw(this.game)));
   }
 
   pause(): void { if (this.game) this.commit(L.pause(this.game, Date.now())); }
@@ -167,7 +194,7 @@ class HostSession {
     const g = this.game;
     if (!g) return;
     if (!g.recorded) {
-      const entry = gameRecord(L.endEarly(g), packNames(g.settings.packIds));
+      const entry = gameRecord(L.endEarly(g), names(g));
       if (entry) record(entry);
     }
     this.link.close();
@@ -175,6 +202,8 @@ class HostSession {
     if (this.ticker) clearInterval(this.ticker);
     this.ticker = null;
     this.game = null;
+    this.agreed = '';
+    this.asked = '';
     saveGame(null, '');
   }
 }

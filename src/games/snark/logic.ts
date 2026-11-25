@@ -124,6 +124,10 @@ export interface Game {
   /** Ended by the host before the final. */
   ended?: boolean;
   nextColor: number;
+  /** The packs lent to this game once the host said yes, by kind (room.ts); none when the picks sufficed. */
+  lent?: { prompts: string[]; finals: string[] };
+  /** Every prompt and final dealt this game, so none is dealt twice while another is left. */
+  dealt?: string[];
 }
 
 /** A dealt prompt: its text, or with its pack's stock answer, or (a final for three-line duels) the house's three lines. */
@@ -204,7 +208,7 @@ export function startRound(g: Game, draw: Draw, now: number, rand: () => number 
   const final = isFinalRound(g, round);
   if (pids.length < (final ? 2 : MIN_PLAYERS)) return finish({ ...g, players });
   const items = final ? finalItems({ ...g, players }, pids, draw, rand) : duels(pids, draw(pids.length), rand);
-  return { ...g, players, round, items, at: 0, phase: 'write', deadline: now + g.settings.answerSecs * 1000, paused: null };
+  return { ...g, players, round, items, dealt: [...(g.dealt ?? []), ...items.map((x) => x.prompt)], at: 0, phase: 'write', deadline: now + g.settings.answerSecs * 1000, paused: null };
 }
 
 function duels(pids: string[], dealt: Dealt[], rand: () => number): Duel[] {

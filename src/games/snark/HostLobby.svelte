@@ -4,11 +4,13 @@
   import Avatar from '../../components/room/Avatar.svelte';
   import Qr from '../../components/room/Qr.svelte';
   import { MAX_PLAYERS, MIN_PLAYERS, canStart, present, type Game } from './logic';
-  import { host, packNames } from './host.svelte';
+  import { host, content } from './host.svelte';
   import AddBot from '../../components/room/AddBot.svelte';
   import StartButton from '../../components/room/StartButton.svelte';
   import { route } from '../../lib/router.svelte';
   import ConnectionLink from '../../components/room/ConnectionLink.svelte';
+  import LendAsk from '../../components/room/LendAsk.svelte';
+  import { nameList, onScreen } from '../../lib/lend';
 
   // The room before the game: how to join (QR, address, code), who is in, settings, Start.
   let { game, online, link, onstart, onkick, onsettings, onrebroker }: {
@@ -25,7 +27,15 @@
   const need = $derived(Math.max(0, MIN_PLAYERS - players.length));
   const site = location.host + location.pathname.replace(/\/$/, '');
   const s = $derived(game.settings);
-  const summary = $derived(`${s.rounds} rounds${s.final === 'duels' ? ' (three-line duel final)' : ''} · ${s.answerSecs} s to write · ${s.voteSecs} s to vote · ${packNames(s.packIds).join(', ') || 'Classic'}`);
+  // The same prompts Start deals from: Start is off when even the lenders have none, and asks
+  // before other packs lend (src/lib/lend.ts).
+  const room = $derived(content(s, players.length));
+  const agreed = $derived(!!room.ask && host.agreed === room.ask.key);
+  const packLine = $derived(room.packs.map((p) => p.name).join(', ') +
+    (!room.ask ? '' : agreed ? ` (+ ${room.ask.noun} from ${nameList(room.ask.lenders)})` : ` (too few ${room.ask.noun} for this room)`));
+  const summary = $derived(`${s.rounds} rounds${s.final === 'duels' ? ' (three-line duel final)' : ''} · ${s.answerSecs} s to write · ${s.voteSecs} s to vote · ${packLine}`);
+  /** The question on screen: the room's while it is the one put to the host after Start (host.svelte.ts). */
+  const shown = $derived(route.params.get('demo') ? null : onScreen(host.asked, room.ask));
   let kicking = $state<{ pid: string; name: string } | null>(null);
   // A tile that has just appeared ignores taps for 400 ms, so a double tap never kicks.
   const shownAt = new Map<string, number>();
@@ -71,13 +81,16 @@
       <span class="sum">{summary}</span>
       <Button size="sm" variant="secondary" onclick={onsettings} tip="Pick packs, rounds, times and the kind of final">Settings</Button>
     </div>
-    <StartButton size="lg" {players} {online} disabled={!canStart(game)} {onstart}>
-      {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${players.length} players`}
+    <StartButton size="lg" {players} {online} disabled={!canStart(game) || !!room.problem} {onstart}>
+      {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : room.problem ? `${room.problem}: pick packs in Settings` : `Start with ${players.length} players`}
     </StartButton>
     <ConnectionLink onchange={onrebroker} />
   </section>
 </div>
 
+{#if shown}
+  <LendAsk ask={shown} onclose={() => host.dismiss()} onpacks={() => { host.dismiss(); onsettings(); }} onyes={() => host.start(shown.key)} />
+{/if}
 {#if kicking}
   {@const k = kicking}
   <Popup title="Remove {k.name}?" onclose={() => (kicking = null)}>

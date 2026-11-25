@@ -8,7 +8,9 @@
   import { settingsSummary } from './settingsSummary';
   import { packEntry } from './find';
   import { snarkPacks } from '../../lib/content';
-  import { ANSWER_CHOICES, VOTE_CHOICES, type FinalStyle } from './logic';
+  import { ANSWER_CHOICES, MIN_PLAYERS, VOTE_CHOICES, present, type FinalStyle } from './logic';
+  import { roomPrompts } from './room';
+  import { nameList } from '../../lib/lend';
   import { loadSettings } from './store';
   import { host } from './host.svelte';
 
@@ -33,8 +35,12 @@
     const next = { rounds, answerSecs, voteSecs, packIds: $state.snapshot(selected), final };
     untrack(() => host.settings(next));
   });
-  // Duels need finals; packs without any borrow Classic's (logic falls back to the 3-vote final if there are none at all).
-  const ownFinals = $derived(packs.some((p) => selected.includes(p.id) && p.finals?.length));
+  // What the room would deal with these picks for the players in the lobby (at least three): the
+  // same prompts and finals Start uses, and the packs Start would ask to borrow from when they are too few.
+  const players = Math.max(MIN_PLAYERS, host.game ? present(host.game).length : 0);
+  const room = $derived(roomPrompts(packs, { packIds: selected, rounds, final }, players));
+  /** Why the room cannot start with these packs, or ''. */
+  const missing = $derived(!selected.length ? 'Pick packs' : room.problem);
 </script>
 
 <Screen fill title="Game settings" {onback}>
@@ -42,6 +48,7 @@
     makeHint="Paste a list or ask the wizard" keepOnImport {onedit} {onmake} onimported={() => (packs = snarkPacks())}>
     {#snippet notice()}
       {#if locked}<p class="note">A game is running: these apply to the next one.</p>{/if}
+      {#if !missing && room.ask}<p class="note">{room.ask.short} The game will ask before adding {room.ask.noun} from {nameList(room.ask.lenders)}.</p>{/if}
     {/snippet}
   </PackList>
   {#snippet actions()}
@@ -64,12 +71,12 @@
         <span class="label">Final round</span>
         <Segmented label="Final round" bind:value={final} options={[{ value: 'everyone', label: 'Everyone, 3 votes', tip: 'One prompt for all; each player gives three votes' }, { value: 'duels', label: 'Three-line duels', tip: 'Players pair off and each writes three short lines' }]} />
         <span class="hint">{final === 'duels'
-          ? `Players pair off and each writes up to three short lines; with an odd number, last place takes on the house.${ownFinals ? '' : ' The picked packs have no duel prompts, so Classic’s are used.'}`
+          ? 'Players pair off and each writes up to three short lines; with an odd number, last place takes on the house.'
           : 'One prompt for everyone; each player spreads 3 votes over the other answers.'}</span>
       </div>
       <p class="faint">Each game deals prompts this device has not shown lately.</p>
     </RulesCard>
-    <Button size="lg" onclick={onback} disabled={selected.length === 0}>{selected.length ? 'Done' : 'Pick packs'}</Button>
+    <Button size="lg" onclick={onback} disabled={!!missing}>{missing || 'Done'}</Button>
   {/snippet}
 </Screen>
 
