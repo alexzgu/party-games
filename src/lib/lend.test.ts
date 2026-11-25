@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ask, keptPicks, onScreen, stillAsked } from './lend';
+import { ask, consent, keptPicks, onScreen, stillAsked } from './lend';
 
 const mine = { id: 'mine', name: 'Mine' }, classic = { id: 'classic', name: 'Classic' }, dark = { id: 'dark', name: 'After Dark' };
 
@@ -31,5 +31,16 @@ describe("a setup screen's ticks as it opens", () => {
     expect(keptPicks(all, ['gone', 'mine'], ['classic'])).toEqual(['mine']);
     expect(keptPicks(all, ['gone'], ['classic'])).toEqual(['classic']);
     expect(keptPicks(all, [], ['classic'])).toEqual([]);
+  });
+});
+
+describe('the key of the question', () => {
+  it('differs when the same packs would lend another kind, so a yes never carries over to it', () => {
+    const words = ask([mine], [classic], 'Your packs have 12 words. 4 players need 30.', 'words')!;
+    const ideas = ask([mine], [classic], 'Your packs have 2 ideas. 3 players need 3.', 'ideas')!;
+    const answers = ask([mine], [classic], '', 'cards', ['answers'])!, prompts = ask([mine], [classic], '', 'cards', ['prompts'])!;
+    expect(consent(ideas, words.key, '')).toBeNull();
+    expect(consent(prompts, answers.key, '')).toBeNull();
+    expect(ask([mine], [classic], '', 'cards', ['prompts', 'answers'])!.key).toBe(ask([mine], [classic], '', 'cards', ['answers', 'prompts'])!.key);
   });
 });

@@ -12,7 +12,7 @@ export interface Ask {
   noun: string;
   /** The lending packs' names, in pack order. */
   lenders: string[];
-  /** The same key is the same question (same picks, same lenders): a yes holds while it stays. */
+  /** The same key is the same question (same picks, same lenders, same kinds lent): a yes holds while it stays. */
   key: string;
 }
 
@@ -49,10 +49,14 @@ export function lenders<P extends Pack>(others: readonly P[], short: (lent: read
   return lent;
 }
 
-/** The question for these picks and lenders, or null when nobody would lend. */
-export function ask(picks: readonly Pack[], lent: readonly Pack[], short: string, noun: string): Ask | null {
+/**
+ * The question for these picks and lenders, or null when nobody would lend. `kinds` names what
+ * they lend ("answers", "prompts"; by default the noun): it is part of the key, so a yes to lending
+ * one kind never counts for another from the same packs.
+ */
+export function ask(picks: readonly Pack[], lent: readonly Pack[], short: string, noun: string, kinds: readonly string[] = [noun]): Ask | null {
   if (!lent.length) return null;
-  return { short, noun, lenders: lent.map((p) => p.name), key: JSON.stringify([picks.map((p) => p.id), lent.map((p) => p.id)]) };
+  return { short, noun, lenders: lent.map((p) => p.name), key: JSON.stringify([picks.map((p) => p.id), lent.map((p) => p.id), [...kinds].sort()]) };
 }
 
 /**

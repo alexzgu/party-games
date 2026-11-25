@@ -59,4 +59,11 @@ describe("a Bad Hand room's cards", () => {
     expect(roomCards([pack('a', 0, 5)], ['a'], 3).problem).toBe('No pack has prompt cards');
     expect(roomCards([pack('a', 5, 0)], ['a'], 3).problem).toBe('No pack has answer cards');
   });
+
+  it('treats lending answers and lending prompts from the same packs as two questions', () => {
+    const answersShort = roomCards([pack('mine', 3, 12), classic], ['mine'], 3).ask!;
+    const promptsShort = roomCards([pack('mine', 0, 200), classic], ['mine'], 3).ask!;
+    expect([answersShort.lenders, promptsShort.lenders]).toEqual([['classic'], ['classic']]);
+    expect(consent(promptsShort, answersShort.key, '')).toBeNull();
+  });
 });

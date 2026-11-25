@@ -38,7 +38,8 @@ export function roomCards(all: readonly HandPack[], ids: readonly string[], play
   const lent = lenders(all.filter((p) => !packs.includes(p)), short, helps);
   const dealt = deal({ packs, lent, need }, true);
   const problem = !dealt.prompts.length ? 'No pack has prompt cards' : !dealt.answers.length ? 'No pack has answer cards' : '';
-  return { packs, lent, need, ask: ask(packs, lent, shortfall(packs, need, players), 'cards'), problem };
+  const kinds = [...(noPrompts ? ['prompts'] : []), ...(answers(packs) < need ? ['answers'] : [])];
+  return { packs, lent, need, ask: ask(packs, lent, shortfall(packs, need, players), 'cards', kinds), problem };
 }
 
 /** "Your packs have no prompt cards." / "Your packs have 40 answer cards. 6 players need 100." */
