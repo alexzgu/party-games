@@ -146,7 +146,8 @@ own), only as many as reach the count, and only the kind that is short. "Add & s
 them; "Change packs" goes to where the packs are picked; closing does neither. The popup opens
 only from Start. In a room it stays while the question stays the same (a player joining only
 updates its numbers); once the question goes away or changes it closes for good, and only Start
-asks again; the room keeps the yes while the question stays the same (same picks, same lenders),
+asks again; the room keeps the yes while the question stays the same (same picks, same lenders
+lending the same kinds of item: a yes to words is never a yes to ideas from the same packs),
 never into another room or after the host screen reloads. A one-phone game has no room: a yes
 lasts for that game only, and Rematch asks again. While the picks fall short the lobby's pack line
 adds "(too few cards for this room)", and "(+ cards from Classic)" after the yes; the settings or
@@ -651,7 +652,9 @@ team sets a dial to where they think the target is.
   ticked packs hold none (an empty pack of the player's own), the setup's note says so, and Start
   asks "Your packs have no cards. Add cards from Classic for this game?" ("Change packs" closes the
   popup over the pack list). The yes lasts for that game only: Rematch asks again, and its "Change
-  packs" goes back to the setup.
+  packs" goes back to the setup. Should the game's packs lose every card mid-game (a pack of the
+  player's own emptied), the hand-off says "The chosen packs have no cards. Go back to setup and
+  pick a pack." and its button becomes "Back to setup", which ends the game.
 
 Community: wizard packs and Add more are shared; "🌍 Community" is in Add pack under the pack list on setup; scales a built-in pack has are left out on import.
 
@@ -924,8 +927,12 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   with its own, sized likewise: ⌈min(N + 2, 8) ÷ 2⌉ finals (3 for three, 4 from five), and no final
   prompt. When the picks fall short of either, Start asks: "Your packs have 6 prompts. 5 players
   need 13.", "Your packs have no finals." or both at once, "Add prompts from Classic for this
-  game?" ("finals" when only finals are short); packs lend only the kind that is short, and the
-  game keeps which packs lent which kind. Settings shows the same note, and Done says "No pack has
+  game?" ("finals" when only finals are short; "Not enough prompts and finals" and "Add prompts and
+  finals from Classic for this game?" when both are); packs lend only the kind that is short, and
+  the game keeps which packs lent which kind. Should a round find no prompt left to deal at all (a
+  pack emptied mid-game), the game's own prompts already dealt come round again, and a game that
+  has dealt none plays the plain line "Say something funny"; with no finals left, the final is
+  the one prompt for everyone. Settings shows the same note, and Done says "No pack has
   prompts" when no pack on the phone has any.
 - **Bots** (see Shared room link): answer with the prompt's stock answer when sent one, else a
   short stock line or a random two-word phrase; three short lines in a three-line duel; vote at
@@ -1335,8 +1342,9 @@ on their own phones through the shared room link; a host screen shows the room. 
 
 - **Steps**: as many steps as players at the start (the original's default). Step 1: everyone
   writes a line (80 characters; "Suggest" fills the box with one of the room's ideas, *house*:
-  the host sends five with the step, a different five per seat, and each tap shows the next, so it
-  is instant and never offers an idea from a pack the room did not pick or borrow). Then steps alternate: draw the
+  the host sends five with the step and each tap shows the next; each seat's five start further
+  along the room's ideas, so while the room has an idea per seat no two seats are offered the
+  same idea on the same tap; it is instant and never offers an idea from a pack the room did not pick or borrow). Then steps alternate: draw the
   line you were handed, then describe the drawing you were handed (80 characters), and so on.
   Done is ready once something is written or drawn and sends at once; each step ends when every
   present player is done, or at its timer (at the buzzer the phone sends what it has; the host
@@ -1347,8 +1355,11 @@ on their own phones through the shared room link; a host screen shows the room. 
   who hands to whom changes from step to step; step 1 is each player's own chain). A player only
   ever sees the one entry handed to them, never the chain's start; the host screen shows only
   who is done.
-- **Gaps** (*house*): an empty or missing line becomes the room's next idea not yet used (once
-  all are used, the room's own ideas come round again, least recently used first), marked in
+- **Gaps** (*house*): an empty or missing line becomes the room's next idea not yet used (on step
+  1, one no seat is offered by Suggest where there is one; a line a player wrote from Suggest
+  counts as used; once all are used, the room's own ideas come round again, least recently used
+  first, so when the picks hold only as many ideas as players a blank line may get an idea the
+  room already used), marked in
   the album "The game filled this in"; an empty drawing is handed on as blank and the next phone
   says "Nothing was drawn. Make up what it might have been."
 - **Players**: no late joins into the chains once the game starts (they watch the album; they
@@ -1367,7 +1378,8 @@ on their own phones through the shared room link; a host screen shows the room. 
   draw from the next round; a drawer no longer in the room is passed over). The drawer picks one
   of three words from the room's (15 s, *house*; else the first is taken); words never repeat
   within a game until the room's words are all offered, and then its own come round again, least
-  recently offered first.
+  recently offered first (a game saved by an older version, which did not keep them, brings round
+  its last offer); a turn with no word to offer ends the game.
 - **Drawing live**: the drawer's phone sends what it added since its last send about every
   100 ms, numbered; undo and clear (or a reconnect, or the host asking after a gap) send the
   whole drawing. The host checks each against the drawing limits, shows it and relays it to every
