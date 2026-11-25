@@ -215,7 +215,7 @@
   .live {
     min-height: 100dvh; display: grid; place-content: center; text-align: center; gap: var(--s-4); padding: 16px;
   }
-  .cue { font-size: clamp(2rem, 12vw, 6rem); font-weight: 800; margin: 0; }
+  .cue { font-size: clamp(2rem, calc(12vw * var(--text-scale)), 6rem); font-weight: 800; margin: 0; }
   .cue.down { color: var(--c-good); }
   .cue.up { color: var(--c-pass); }
   input { font: inherit; padding: 12px; border-radius: 12px; border: 1px solid var(--line-strong); background: transparent; color: inherit; }

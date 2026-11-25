@@ -185,7 +185,7 @@
   .label.no { color: var(--c-taboo); padding-top: var(--s-2); border-top: 2px dashed color-mix(in srgb, var(--c-taboo) 40%, transparent); }
   .word { flex: 1 1 90px; min-height: 90px; position: relative; color: var(--text); }
   .banned { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; text-align: center; }
-  .banned li { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.2rem, 5.4vw, 1.5rem); line-height: 1.25; color: var(--text-dim); }
+  .banned li { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.2rem, calc(5.4vw * var(--text-scale)), 1.5rem); line-height: 1.25; color: var(--text-dim); }
 
   .pad { display: grid; grid-template-columns: 2fr 3fr; grid-template-rows: 1fr auto; gap: var(--s-2); }
   .pad button {
@@ -214,7 +214,7 @@
     .card { grid-column: 1; grid-row: 3; min-height: 0; gap: var(--s-1); padding: var(--s-2) var(--s-3) var(--s-3); }
     .word { flex: 1 1 auto; min-height: 44px; }
     .label.no { padding-top: var(--s-1); }
-    .banned li { font-size: clamp(1rem, 4.6dvh, 1.35rem); line-height: 1.2; }
+    .banned li { font-size: clamp(1rem, calc(4.6dvh * var(--text-scale)), 1.35rem); line-height: 1.2; }
     .pad { grid-column: 2; grid-row: 3; min-height: 0; }
     .buzz { min-height: 0; }
     .got { min-height: 0; }

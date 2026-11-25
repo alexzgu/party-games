@@ -76,33 +76,33 @@
 
 <style>
   .duel { flex: 1; display: flex; flex-direction: column; gap: clamp(12px, 2.5vmin, 28px); width: min(100%, 1200px); margin: 0 auto; padding: var(--s-3) 0; }
-  .eyebrow { color: var(--text-faint); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: clamp(0.8rem, 1.8vmin, 1rem); text-align: center; }
-  .prompt { text-align: center; font-size: clamp(1.8rem, 6vmin, 3.8rem); line-height: 1.1; text-wrap: balance; }
+  .eyebrow { color: var(--text-faint); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: clamp(calc(0.8 * var(--rem-far)), 1.8vmin, var(--rem-far)); text-align: center; }
+  .prompt { text-align: center; font-size: clamp(calc(1.8 * var(--rem-far)), 6vmin, calc(3.8 * var(--rem-far))); line-height: 1.1; text-wrap: balance; }
   .answers { flex: 1; display: grid; grid-template-columns: 1fr auto 1fr; gap: clamp(8px, 2vw, 28px); align-items: stretch; }
-  .vs { align-self: center; font-family: var(--font-display); font-weight: 800; color: var(--text-faint); font-size: clamp(1.1rem, 3vmin, 2rem); }
+  .vs { align-self: center; font-family: var(--font-display); font-weight: 800; color: var(--text-faint); font-size: clamp(calc(1.1 * var(--rem-far)), 3vmin, calc(2 * var(--rem-far))); }
   .answer {
     display: flex; flex-direction: column; gap: var(--s-3); padding: clamp(16px, 3vmin, 32px); border-radius: var(--r-lg);
     background: var(--surface); border: 3px solid color-mix(in srgb, var(--who) 40%, transparent);
     transition: border-color var(--dur-slow) ease, opacity var(--dur-slow) ease, transform var(--dur-slow) var(--ease-out);
     min-width: 0;
   }
-  .text { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.5rem, 5vmin, 3.2rem); line-height: 1.12; overflow-wrap: anywhere; text-wrap: balance; }
+  .text { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: clamp(calc(1.5 * var(--rem-far)), 5vmin, calc(3.2 * var(--rem-far))); line-height: 1.12; overflow-wrap: anywhere; text-wrap: balance; }
   .missing .text { color: var(--text-faint); font-style: italic; }
   .win { border-color: var(--who); background: color-mix(in srgb, var(--who) 14%, var(--surface)); box-shadow: 0 0 40px color-mix(in srgb, var(--who) calc(30% * var(--glow)), transparent); }
   .lose { opacity: 0.72; }
   .votes { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); }
-  .n { font-weight: 800; color: var(--text-dim); font-size: clamp(1rem, 2.4vmin, 1.4rem); }
+  .n { font-weight: 800; color: var(--text-dim); font-size: clamp(var(--rem-far), 2.4vmin, calc(1.4 * var(--rem-far))); }
   .backers { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 36px; }
-  .backers li { display: flex; align-items: center; gap: 6px; padding: 3px 12px 3px 3px; border-radius: var(--r-pill); background: var(--overlay); font-weight: 700; font-size: clamp(0.85rem, 1.9vmin, 1.05rem); }
-  .by { display: flex; align-items: center; gap: var(--s-2); font-size: clamp(1.1rem, 3vmin, 1.8rem); }
+  .backers li { display: flex; align-items: center; gap: 6px; padding: 3px 12px 3px 3px; border-radius: var(--r-pill); background: var(--overlay); font-weight: 700; font-size: clamp(calc(0.85 * var(--rem-far)), 1.9vmin, calc(1.05 * var(--rem-far))); }
+  .by { display: flex; align-items: center; gap: var(--s-2); font-size: clamp(calc(1.1 * var(--rem-far)), 3vmin, calc(1.8 * var(--rem-far))); }
   .by b { flex: 1; min-width: 0; color: var(--who); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pts { font-family: var(--font-display); font-weight: 800; font-variant-numeric: tabular-nums; }
-  .safety { text-align: center; color: var(--text-dim); font-weight: 700; font-size: clamp(0.85rem, 1.9vmin, 1.05rem); }
+  .safety { text-align: center; color: var(--text-dim); font-weight: 700; font-size: clamp(calc(0.85 * var(--rem-far)), 1.9vmin, calc(1.05 * var(--rem-far))); }
   .tag { padding: 2px 10px; margin-right: 4px; border-radius: var(--r-pill); background: var(--overlay-strong); color: var(--text); font-size: 0.8em; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
-  .sweep { text-align: center; font-weight: 800; color: var(--c-gold); font-size: clamp(1rem, 2.4vmin, 1.4rem); }
+  .sweep { text-align: center; font-weight: 800; color: var(--c-gold); font-size: clamp(var(--rem-far), 2.4vmin, calc(1.4 * var(--rem-far))); }
   .foot { display: flex; align-items: center; justify-content: center; gap: var(--s-4); min-height: 88px; }
   .voting { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); }
-  .call { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.2rem, 3vmin, 1.8rem); color: var(--accent); }
+  .call { font-family: var(--font-display); font-weight: 800; font-size: clamp(calc(1.2 * var(--rem-far)), 3vmin, calc(1.8 * var(--rem-far))); color: var(--accent); }
   @media (max-width: 640px) {
     .answers { grid-template-columns: 1fr; }
     .vs { justify-self: center; }

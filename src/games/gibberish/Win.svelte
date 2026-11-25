@@ -32,14 +32,14 @@
 <style>
   .champ { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--s-2); padding: var(--s-4) 0 var(--s-2); }
   .trophy { font-size: 5rem; line-height: 1; filter: drop-shadow(0 10px 30px color-mix(in srgb, var(--c-gold) calc(50% * var(--glow)), transparent)); }
-  .name { font-family: var(--font-display); font-weight: 800; font-size: clamp(2.6rem, 15vw, 4.5rem); line-height: 1; color: var(--c); letter-spacing: -0.03em; overflow-wrap: anywhere; animation-delay: 120ms; }
+  .name { font-family: var(--font-display); font-weight: 800; font-size: clamp(2.6rem, calc(15vw * var(--text-scale)), 4.5rem); line-height: 1; color: var(--c); letter-spacing: -0.03em; overflow-wrap: anywhere; animation-delay: 120ms; }
   .wins { color: var(--text-dim); font-size: 1.05rem; }
   /* A phone on its side (Screen's split): the scores on the left; the winner, trophy beside the
      name, and the buttons on the right. */
   @media (orientation: landscape) and (max-height: 500px) {
     .champ { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s-3); row-gap: var(--s-1); align-items: center; text-align: left; padding: 0; }
     .trophy { grid-row: 1 / 3; font-size: 3.2rem; filter: none; } /* its glow would be cut square by the column's edge */
-    .name { font-size: clamp(2rem, 6vw, 3rem); }
+    .name { font-size: clamp(2rem, calc(6vw * var(--text-scale)), 3rem); }
     .wins { font-size: 1rem; }
   }
 </style>

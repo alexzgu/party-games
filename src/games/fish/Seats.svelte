@@ -19,7 +19,7 @@
 
 <style>
   .seats { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s-2); grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
-  li { display: flex; align-items: center; gap: var(--s-2); min-height: 52px; padding: var(--s-1) var(--s-3); border: 2px solid var(--line); border-radius: var(--r-md); background: var(--surface); min-width: 0; }
+  li { display: flex; align-items: center; gap: var(--s-2); min-height: var(--tap-md); padding: var(--s-1) var(--s-3); border: 2px solid var(--line); border-radius: var(--r-md); background: var(--surface); min-width: 0; }
   .who { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
   .who strong { overflow-wrap: anywhere; }
   .who span { color: var(--text-dim); font-size: 0.92rem; }

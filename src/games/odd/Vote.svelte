@@ -42,7 +42,7 @@
   .ask { font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; line-height: 1.15; text-align: center; padding-top: var(--s-2); }
   .players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   button {
-    width: 100%; min-height: 56px; display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-3);
+    width: 100%; min-height: var(--tap); display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-3);
     border-radius: var(--r-md); border: 2px solid var(--line); background: var(--surface); color: var(--text); text-align: left;
   }
   button.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }

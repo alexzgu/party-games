@@ -162,13 +162,13 @@
     border: 4px solid var(--text); background: var(--accent); box-shadow: 0 16px 40px color-mix(in srgb, var(--accent) calc(45% * var(--glow)), transparent);
     animation: lift 2.4s var(--ease-out) infinite;
   }
-  .phone span { font-size: clamp(2rem, 9vmin, 3.2rem); }
+  .phone span { font-size: clamp(2rem, calc(9vmin * var(--text-scale)), 3.2rem); }
   @keyframes lift {
     0%, 100% { transform: translateY(10px) rotate(-4deg); }
     50% { transform: translateY(-10px) rotate(3deg); }
   }
-  h1 { font-size: clamp(2.1rem, 9vmin, 3.6rem); max-width: 14ch; }
-  .sub { color: var(--text-dim); font-size: clamp(1.05rem, 4vmin, 1.35rem); margin-top: var(--s-2); }
+  h1 { font-size: clamp(2.1rem, calc(9vmin * var(--text-scale)), 3.6rem); max-width: 14ch; }
+  .sub { color: var(--text-dim); font-size: clamp(1.05rem, calc(4vmin * var(--text-scale)), 1.35rem); margin-top: var(--s-2); }
   .legend { display: flex; gap: var(--s-2); justify-content: center; width: min(100%, 420px); }
   .key {
     display: flex; align-items: center; gap: var(--s-3); text-align: left; padding: var(--s-3);

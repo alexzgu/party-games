@@ -13,9 +13,14 @@
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>Party Box</title>
     <script>
-      // Puts the saved colour scheme on <html> before the first paint; applyTheme() takes over once the app loads.
+      // Puts the saved colour scheme and display choices on <html> before the first paint;
+      // applyTheme() and applyDisplay() take over once the app loads. Anything unknown is Normal.
       try {
-        var t = (JSON.parse(localStorage.getItem('hr:settings') || '{}') || {}).theme || 'dark';
+        var s = JSON.parse(localStorage.getItem('hr:settings') || '{}') || {};
+        var root = document.documentElement;
+        root.dataset.text = s.textSize === 'small' || s.textSize === 'large' ? s.textSize : 'normal';
+        root.dataset.density = s.spacing === 'compact' ? 'compact' : 'normal';
+        var t = s.theme || 'dark';
         if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
         if (t === 'light') document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f5f3fa');

@@ -305,7 +305,7 @@
   .right { display: flex; align-items: center; gap: var(--s-2); }
   .timer, .score {
     font-family: var(--font-display); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1;
-    font-size: clamp(1.5rem, 7vmin, 2.4rem); padding: 8px 16px; border-radius: var(--r-pill); background: var(--overlay-strong);
+    font-size: clamp(calc(1.5 * var(--rem-far)), 7vmin, calc(2.4 * var(--rem-far))); padding: 8px 16px; border-radius: var(--r-pill); background: var(--overlay-strong);
   }
   .timer.hot { background: var(--c-bad); color: #fff; animation: beat 600ms var(--ease-out); }
   @keyframes beat { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }

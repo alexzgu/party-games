@@ -39,7 +39,7 @@
   figure { margin: 0; display: grid; gap: var(--s-2); justify-items: center; width: 100%; }
   figcaption { color: var(--text-dim); font-weight: 700; }
   blockquote { margin: 0; text-align: center; font: 800 clamp(1.1rem, 3.2vmin, 2rem)/1.2 var(--font-display); overflow-wrap: anywhere; }
-  .big blockquote { font-size: clamp(1.4rem, 5vmin, 3rem); }
+  .big blockquote { font-size: clamp(calc(1.4 * var(--rem-far)), 5vmin, calc(3 * var(--rem-far))); }
   .filled { font-style: italic; }
   .pic { width: min(100%, 52dvh); }
   .big .pic { width: min(100%, 60dvh); }

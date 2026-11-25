@@ -59,7 +59,7 @@
     background: radial-gradient(110% 55% at var(--x) 0%, color-mix(in srgb, var(--team) 38%, transparent), transparent 75%), var(--bg);
   }
   .trophy { font-size: 5rem; line-height: 1; filter: drop-shadow(0 10px 24px color-mix(in srgb, var(--shade) 50%, transparent)); }
-  h1 { font-size: clamp(2.6rem, 12vw, 4rem); line-height: 1; }
+  h1 { font-size: clamp(2.6rem, calc(12vw * var(--text-scale)), 4rem); line-height: 1; }
   h1 span { color: var(--team); display: block; text-shadow: 0 0 36px color-mix(in srgb, var(--team) calc(55% * var(--glow)), transparent); overflow-wrap: anywhere; }
   .final { width: 100%; display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-3); }
   .row {
@@ -82,7 +82,7 @@
       padding-top: calc(var(--safe-top) + var(--s-3)); padding-bottom: calc(var(--safe-bottom) + var(--s-2));
     }
     .trophy { grid-column: 1; grid-row: 1; align-self: end; font-size: 3rem; }
-    h1 { grid-column: 1; grid-row: 2; font-size: clamp(2rem, 6vw, 3.2rem); }
+    h1 { grid-column: 1; grid-row: 2; font-size: clamp(2rem, calc(6vw * var(--text-scale)), 3.2rem); }
     .faint { grid-column: 1; grid-row: 3; align-self: start; }
     .final, .actions { grid-column: 2; margin: 0; }
     .final { grid-row: 1 / 3; }

@@ -103,7 +103,7 @@
 <style>
   .write { display: flex; flex-direction: column; gap: var(--s-3); }
   .step { color: var(--text-faint); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.82rem; }
-  .prompt { font-size: clamp(1.5rem, 7vw, 2.1rem); line-height: 1.15; }
+  .prompt { font-size: clamp(1.5rem, calc(7vw * var(--text-scale)), 2.1rem); line-height: 1.15; }
   .box { position: relative; display: block; }
   textarea { width: 100%; min-height: 120px; font-size: 1.25rem; line-height: 1.35; padding-bottom: 28px; resize: none; }
   .count { position: absolute; right: 12px; bottom: 8px; font-size: 0.8rem; color: var(--text-faint); font-variant-numeric: tabular-nums; }

@@ -98,7 +98,7 @@
     background: var(--bg-sunk); border: 1.5px solid var(--line); border-radius: var(--r-pill);
   }
   .search:focus-within { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
-  .search input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0; color: var(--text); font: inherit; font-size: 1rem; }
+  .search input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0; color: var(--text); font: inherit; font-size: max(16px, 1rem); }
   .search input::-webkit-search-cancel-button { display: none; }
   .count { flex: none; font-size: 0.8rem; color: var(--text-faint); }
   .clear { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); background: var(--overlay); font-size: 0.8rem; }

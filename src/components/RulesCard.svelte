@@ -61,7 +61,7 @@
     flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
     color: var(--accent); background: var(--overlay);
   }
-  .compact { min-height: 52px; padding: var(--s-1) var(--s-1) var(--s-1) var(--s-4); }
+  .compact { min-height: var(--tap-md); padding: var(--s-1) var(--s-1) var(--s-1) var(--s-4); }
   .compact .text { flex-direction: row; align-items: baseline; gap: var(--s-2); }
   .compact .title { flex: none; }
   .compact .summary { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }

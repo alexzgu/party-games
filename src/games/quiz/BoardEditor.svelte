@@ -369,7 +369,7 @@
     color: var(--accent); font-variant-numeric: tabular-nums;
   }
   .inputs { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-  textarea { min-height: 64px; resize: vertical; line-height: 1.35; }
+  textarea { min-height: var(--tap-lg); resize: vertical; line-height: 1.35; }
   .inputs input { font-weight: 700; }
   .missing { border-color: color-mix(in srgb, var(--c-pass) 60%, var(--line-strong)); }
   .more { display: flex; flex-direction: column; gap: 2px; }

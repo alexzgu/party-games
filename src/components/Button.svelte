@@ -58,7 +58,7 @@
   }
   .btn:active:not(:disabled) { transform: scale(0.97); }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .lg { min-height: 68px; font-size: 1.35rem; }
+  .lg { min-height: var(--tap-xl); font-size: 1.35rem; }
   .sm { min-height: 44px; font-size: 0.98rem; padding: 0 var(--s-4); width: auto; }
   .primary { background: var(--accent); color: var(--on-accent); box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) calc(35% * var(--glow)), transparent); }
   .secondary { background: var(--surface); color: var(--text); }

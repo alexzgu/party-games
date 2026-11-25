@@ -127,5 +127,5 @@
   .verdict { font: 800 1.2rem / 1.3 var(--font-display); overflow-wrap: anywhere; }
   .verdict b { font-family: inherit; }
   .win { color: var(--accent); }
-  .score { color: var(--accent); text-align: center; font-size: clamp(2rem, 10vw, 3.2rem); }
+  .score { color: var(--accent); text-align: center; font-size: clamp(2rem, calc(10vw * var(--text-scale)), 3.2rem); }
 </style>

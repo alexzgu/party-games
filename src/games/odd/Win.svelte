@@ -34,7 +34,7 @@
 <style>
   .champ { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--s-2); padding: var(--s-4) 0 var(--s-4); }
   .trophy { font-size: 4.5rem; line-height: 1; filter: drop-shadow(0 10px 30px color-mix(in srgb, var(--c-gold) calc(50% * var(--glow)), transparent)); }
-  .name { font-family: var(--font-display); font-weight: 800; font-size: clamp(2.2rem, 13vw, 4rem); line-height: 1.02; color: var(--c); letter-spacing: -0.03em; overflow-wrap: anywhere; animation-delay: 120ms; }
+  .name { font-family: var(--font-display); font-weight: 800; font-size: clamp(2.2rem, calc(13vw * var(--text-scale)), 4rem); line-height: 1.02; color: var(--c); letter-spacing: -0.03em; overflow-wrap: anywhere; animation-delay: 120ms; }
   .wins { color: var(--text-dim); font-size: 1.05rem; }
   .error { color: var(--bad-ink); text-align: center; margin-top: var(--s-3); }
 </style>

@@ -247,7 +247,7 @@
   .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-1); }
   .card {
     width: 100%; display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: var(--s-2);
-    min-height: 52px; padding: var(--s-2) var(--s-3) var(--s-2) var(--s-4); border-radius: var(--r-md);
+    min-height: var(--tap-md); padding: var(--s-2) var(--s-3) var(--s-2) var(--s-4); border-radius: var(--r-md);
     background: var(--surface); border: 0; text-align: left; font-weight: 600; line-height: 1.2;
   }
   .card:active { background: var(--surface-hi); }

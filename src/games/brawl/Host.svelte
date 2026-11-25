@@ -168,7 +168,7 @@
   main { flex: 1; min-height: 0; display: grid; }
   .heading { justify-content: center; text-align: center; }
   .heading p { color: var(--text-dim); }
-  .title { font-size: clamp(1.3rem, 4.5vmin, 3rem); overflow-wrap: anywhere; }
+  .title { font-size: clamp(calc(1.3 * var(--rem-far)), 4.5vmin, calc(3 * var(--rem-far))); overflow-wrap: anywhere; }
   .play { grid-template-rows: auto minmax(0, 1fr); gap: var(--s-2); }
   .stage { min-height: 0; overflow: hidden; display: grid; align-content: center; width: min(100%, 960px); margin-inline: auto; }
   .stage > :global(div) > :global(p), .stage > :global(div) > :global(h3) { text-align: center; }

@@ -7,7 +7,7 @@
   import TiltCheck from '../components/TiltCheck.svelte';
   import { calibration } from '../games/forehead/calibration.svelte';
   import { go } from '../lib/router.svelte';
-  import { settings, saveSettings, applyTheme } from '../lib/settings.svelte';
+  import { settings, saveSettings, applyTheme, applyDisplay } from '../lib/settings.svelte';
   import MagicWords from '../components/MagicWords.svelte';
   import { hasKey } from '../lib/claude';
   import { sfx, unlockAudio } from '../lib/sound';
@@ -91,6 +91,25 @@
   </section>
 
   <section class="stack">
+    <h3>Display</h3>
+    <span class="lbl" aria-hidden="true">Text size</span>
+    <Segmented
+      label="Text size"
+      options={[{ value: 'small', label: 'Small' }, { value: 'normal', label: 'Normal' }, { value: 'large', label: 'Large' }]}
+      bind:value={settings.textSize}
+      onchange={() => { saveSettings(); applyDisplay(); }}
+    />
+    <span class="lbl" aria-hidden="true">Spacing</span>
+    <Segmented
+      label="Spacing"
+      options={[{ value: 'compact', label: 'Compact', tip: 'Less space around buttons, rows and cards' }, { value: 'normal', label: 'Normal' }]}
+      bind:value={settings.spacing}
+      onchange={() => { saveSettings(); applyDisplay(); }}
+    />
+    <p class="faint">For every screen on this phone. Words the room reads from across it, like the word on your forehead, keep their size.</p>
+  </section>
+
+  <section class="stack">
     <h3>{gameName('forehead')}</h3>
     <Segmented
       label="When a word is scored"
@@ -137,6 +156,7 @@
   section :global(:is(.faint, .muted, .hint)) { color: var(--text-dim); font-weight: 600; font-size: 0.98rem; }
   h3 { color: var(--text-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--font-body); font-weight: 700; }
   .small { font-size: 0.92rem; }
+  .lbl { font-weight: 600; color: var(--text-dim); font-size: 0.92rem; margin-bottom: calc(-1 * var(--s-2)); }
   .remove { align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; color: var(--text-dim); font-size: 0.92rem; text-decoration: underline; text-underline-offset: 3px; }
   .status { padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--surface); }
   .status.ok { color: var(--c-good); }

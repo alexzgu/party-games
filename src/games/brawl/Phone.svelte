@@ -117,7 +117,7 @@
 <style>
   .play { display: grid; gap: var(--s-2); padding-bottom: var(--s-4); }
   .heading { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
-  .heading h3 { font-size: clamp(1.25rem, 5vw, 2rem); }
+  .heading h3 { font-size: clamp(1.25rem, calc(5vw * var(--text-scale)), 2rem); }
   .heading p { color: var(--text-dim); }
   .me { color: var(--text-dim); overflow-wrap: anywhere; }
   .me b { color: var(--accent); font-family: var(--font-display); }

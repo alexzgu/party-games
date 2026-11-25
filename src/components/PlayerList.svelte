@@ -132,7 +132,7 @@
   .count { color: var(--text-faint); font-weight: 600; font-size: 0.9rem; }
   .count.short { color: var(--c-pass); }
   .list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
-  li { display: flex; align-items: center; gap: var(--s-1); padding: 4px 0 4px 8px; border-radius: var(--r-md); background: var(--surface); min-height: 52px; }
+  li { display: flex; align-items: center; gap: var(--s-1); padding: 4px 0 4px 8px; border-radius: var(--r-md); background: var(--surface); min-height: var(--tap-md); }
   li.fixed { padding-right: 8px; }
   .name { flex: 1; min-width: 0; min-height: 44px; display: flex; align-items: center; gap: var(--s-1); padding: 0 0 0 var(--s-1);
     border: 0; border-radius: var(--r-sm); background: transparent; color: inherit; font: inherit; font-weight: 700; text-align: left; }
@@ -150,7 +150,7 @@
   input { flex: 1; min-width: 0; min-height: 44px; margin-right: 6px; padding: 0 var(--s-2); font-weight: 700; border-radius: var(--r-sm); }
   .x { width: 44px; height: 44px; flex: none; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--text-faint); display: grid; place-items: center; }
   .x:active { background: var(--surface-hi); }
-  .add { min-height: 52px; border-radius: var(--r-md); border: 0; background: var(--accent); color: var(--on-accent); font-weight: 800; font-family: var(--font-display); font-size: 1.05rem; }
+  .add { min-height: var(--tap-md); border-radius: var(--r-md); border: 0; background: var(--accent); color: var(--on-accent); font-weight: 800; font-family: var(--font-display); font-size: 1.05rem; }
   .add:disabled { background: var(--surface); color: var(--text-faint); }
   .error { color: var(--c-pass); font-size: 0.95rem; }
 </style>

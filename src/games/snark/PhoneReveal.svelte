@@ -61,7 +61,7 @@
   .reveal { display: flex; flex-direction: column; gap: var(--s-3); }
   .gain { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; color: var(--c-good); text-align: center; }
   .gain.zero { color: var(--text-dim); }
-  .prompt { font-size: clamp(1.2rem, 5.4vw, 1.6rem); line-height: 1.15; }
+  .prompt { font-size: clamp(1.2rem, calc(5.4vw * var(--text-scale)), 1.6rem); line-height: 1.15; }
   .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   .card {
     display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-4); border-radius: var(--r-lg); min-width: 0;

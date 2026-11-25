@@ -46,7 +46,7 @@
   }
   .name {
     position: relative; font-family: var(--font-display); font-weight: 800; color: var(--c);
-    font-size: clamp(2.6rem, 16vw, 5rem); line-height: 1; letter-spacing: -0.03em; overflow-wrap: anywhere;
+    font-size: clamp(2.6rem, calc(16vw * var(--text-scale)), 5rem); line-height: 1; letter-spacing: -0.03em; overflow-wrap: anywhere;
   }
   .hint { font-size: 1.05rem; font-weight: 600; max-width: 22em; color: var(--text-dim); }
   @keyframes breathe { 50% { transform: scale(1.12); opacity: 0.7; } }

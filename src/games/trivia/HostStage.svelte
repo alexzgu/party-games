@@ -69,8 +69,8 @@
   .stage { flex: 1; display: grid; align-content: start; gap: var(--s-3); width: min(100%, 1400px); margin-inline: auto; padding-bottom: var(--s-4); }
   .head { display: flex; align-items: center; gap: var(--s-3); }
   .head > div { flex: 1; min-width: 0; }
-  h2 { font-size: clamp(1.3rem, 2.8vw, 2.6rem); line-height: 1.15; overflow-wrap: anywhere; }
-  .note { color: var(--text-dim); font-size: clamp(1rem, 1.5vw, 1.3rem); }
+  h2 { font-size: clamp(calc(1.3 * var(--rem-far)), 2.8vw, calc(2.6 * var(--rem-far))); line-height: 1.15; overflow-wrap: anywhere; }
+  .note { color: var(--text-dim); font-size: clamp(var(--rem-far), 1.5vw, calc(1.3 * var(--rem-far))); }
   .paused { color: var(--c-pass); font: 800 clamp(1rem, 2vw, 1.6rem) / 1 var(--font-display); }
   .category {
     margin: clamp(var(--s-4), 10vh, 8rem) auto 0; max-width: 100%; color: var(--accent); text-align: center; overflow-wrap: anywhere;
@@ -81,11 +81,11 @@
   h3 { font: 800 clamp(1rem, 1.5vw, 1.3rem) / 1.2 var(--font-display); color: var(--text-dim); }
   ul, ol { list-style: none; padding: 0; margin: 0; }
   .gains { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); }
-  .gains li { display: flex; gap: var(--s-1); align-items: baseline; padding: 2px var(--s-2); border-radius: var(--r-pill); background: var(--bg-sunk); font-size: clamp(0.9rem, 1.2vw, 1.1rem); min-width: 0; }
+  .gains li { display: flex; gap: var(--s-1); align-items: baseline; padding: 2px var(--s-2); border-radius: var(--r-pill); background: var(--bg-sunk); font-size: clamp(calc(0.9 * var(--rem-far)), 1.2vw, calc(1.1 * var(--rem-far))); min-width: 0; }
   .gains span { overflow-wrap: anywhere; }
   .gains b, .top b { color: var(--accent); font-family: var(--font-display); white-space: nowrap; }
   .top { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
-  .top li { display: flex; gap: var(--s-2); align-items: baseline; font-size: clamp(0.95rem, 1.3vw, 1.2rem); }
+  .top li { display: flex; gap: var(--s-2); align-items: baseline; font-size: clamp(calc(0.95 * var(--rem-far)), 1.3vw, calc(1.2 * var(--rem-far))); }
   .top .place { min-width: 2.4em; color: var(--text-dim); }
   .top .who { flex: 1; min-width: 0; overflow-wrap: anywhere; }
   .next { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); width: min(100%, 900px); margin-inline: auto; }
@@ -93,7 +93,7 @@
   /* A short host window: everything a size down so the reveal fits; the bar's own Next stands in for the big one. */
   @media (max-height: 620px) {
     .stage { gap: var(--s-2); padding-bottom: var(--s-2); }
-    h2 { font-size: clamp(1.05rem, 2.2vw, 1.6rem); }
+    h2 { font-size: clamp(calc(1.05 * var(--rem-far)), 2.2vw, calc(1.6 * var(--rem-far))); }
     .note { font-size: 0.95rem; }
     .category { margin-top: var(--s-4); }
     section { gap: var(--s-1); padding: var(--s-1) var(--s-2); }

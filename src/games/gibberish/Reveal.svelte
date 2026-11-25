@@ -66,6 +66,6 @@
     .banner { padding-top: 0; }
     .big { font-size: 1.5rem; }
     .answer { flex: 1 1 auto; min-height: 0; padding: var(--s-3); }
-    .fit { flex: 1; height: auto; min-height: 56px; }
+    .fit { flex: 1; height: auto; min-height: var(--tap); }
   }
 </style>

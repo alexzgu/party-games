@@ -80,11 +80,11 @@
 <style>
   .vote3 { display: flex; flex-direction: column; gap: var(--s-3); flex: 1; }
   .step { color: var(--c-gold); font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.82rem; }
-  .prompt { font-size: clamp(1.25rem, 5.6vw, 1.7rem); line-height: 1.15; }
+  .prompt { font-size: clamp(1.25rem, calc(5.6vw * var(--text-scale)), 1.7rem); line-height: 1.15; }
   .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   li { display: flex; gap: var(--s-2); }
   .pick {
-    flex: 1; min-height: 64px; display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); text-align: left;
+    flex: 1; min-height: var(--tap-lg); display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); text-align: left;
     border-radius: var(--r-md); background: var(--surface); border: 2px solid var(--line-strong); color: var(--text); font-weight: 700; font-size: 1.1rem; line-height: 1.25;
   }
   .pick:disabled { opacity: 0.5; }

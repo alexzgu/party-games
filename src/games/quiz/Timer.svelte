@@ -97,14 +97,14 @@
   .grip { align-self: stretch; min-width: 28px; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; display: grid; place-items: center; cursor: inherit; }
   .grip::before { content: ''; width: 12px; height: 32px; background: radial-gradient(circle, var(--text-faint) 1.5px, transparent 2px) 0 0 / 6px 8px; }
   .time {
-    min-width: 104px; min-height: 64px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-md);
+    min-width: 104px; min-height: var(--tap-lg); padding: 0 var(--s-3); border: 0; border-radius: var(--r-md);
     background: var(--surface); color: var(--text);
     font-family: var(--font-display); font-weight: 800; font-size: 2rem; font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
   }
   .on .time { color: var(--accent); }
   .up .time { color: var(--c-bad); animation: pulse 0.9s ease-in-out infinite; }
   .small {
-    min-width: var(--tap-min); min-height: 64px; padding: 0 4px; border: 0; border-radius: var(--r-sm);
+    min-width: var(--tap-min); min-height: var(--tap-lg); padding: 0 4px; border: 0; border-radius: var(--r-sm);
     background: transparent; color: var(--text-dim); font-weight: 800; font-size: 0.95rem;
   }
   .x { font-size: 1.5rem; }
@@ -114,8 +114,8 @@
     .chip { display: grid; grid-template-columns: repeat(4, auto); row-gap: 0; }
     .grip { grid-column: 1 / -1; min-height: 20px; }
     .grip::before { width: 36px; height: 8px; background-size: 6px 4px; }
-    .time { min-width: 80px; min-height: 48px; font-size: 1.6rem; padding: 0 var(--s-2); }
-    .small { min-height: 48px; }
+    .time { min-width: 80px; min-height: var(--tap-sm); font-size: 1.6rem; padding: 0 var(--s-2); }
+    .small { min-height: var(--tap-sm); }
   }
   @keyframes pulse { 50% { transform: scale(1.06); } }
   @media (prefers-reduced-motion: reduce) { .up .time { animation: none; } }

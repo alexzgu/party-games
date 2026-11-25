@@ -67,7 +67,7 @@
   .paste { display: flex; flex-direction: column; gap: var(--s-3); }
   .field { display: flex; flex-direction: column; gap: var(--s-1); }
   .lbl { font-weight: 600; color: var(--text-dim); font-size: 0.92rem; }
-  textarea { min-height: 236px; line-height: 1.45; }
+  textarea { min-height: 236px; line-height: var(--leading); }
   textarea::placeholder { color: var(--text-faint); }
   .problem { color: var(--c-bad); font-weight: 600; }
 </style>

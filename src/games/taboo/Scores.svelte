@@ -95,7 +95,7 @@
       radial-gradient(70% 45% at 100% 30%, color-mix(in srgb, var(--c-team-b) 18%, transparent), transparent 70%),
       var(--bg);
   }
-  header { display: flex; align-items: center; justify-content: space-between; min-height: 48px; }
+  header { display: flex; align-items: center; justify-content: space-between; min-height: var(--tap-sm); }
   .kicker { font-size: 0.85rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
   .menu { flex: none; width: 48px; height: 48px; border-radius: var(--r-pill); border: 0; background: var(--surface); color: var(--text-dim); display: grid; place-items: center; }
   .board { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); align-content: center; }
@@ -108,7 +108,7 @@
   .team.on { border-color: var(--team); box-shadow: 0 0 28px color-mix(in srgb, var(--team) calc(40% * var(--glow)), transparent); }
   .name { font-weight: 800; font-size: 1.1rem; color: var(--team); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .score {
-    font-family: var(--font-display); font-weight: 800; font-size: clamp(4rem, 22vw, 6.5rem); line-height: 1;
+    font-family: var(--font-display); font-weight: 800; font-size: clamp(4rem, calc(22vw * var(--text-scale)), 6.5rem); line-height: 1;
     font-variant-numeric: tabular-nums; color: var(--text); display: inline-block;
   }
   .delta {
@@ -131,7 +131,7 @@
     header { grid-column: 1 / -1; min-height: 0; }
     .board { grid-column: 1; grid-row: 2 / 4; min-height: 0; }
     .team { padding: var(--s-3); justify-content: center; }
-    .score { font-size: clamp(3.5rem, 22dvh, 6rem); }
+    .score { font-size: clamp(3.5rem, calc(22dvh * var(--text-scale)), 6rem); }
     .status { grid-column: 2; grid-row: 2; align-self: center; }
     .go { grid-column: 2; grid-row: 3; }
   }

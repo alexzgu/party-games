@@ -40,7 +40,7 @@
 
 <style>
   .hold {
-    width: 100%; min-height: 64px; padding: var(--s-2) var(--s-3); border-radius: var(--r-md);
+    width: 100%; min-height: var(--tap-lg); padding: var(--s-2) var(--s-3); border-radius: var(--r-md);
     border: 1.5px dashed var(--line-strong); background: var(--bg-sunk); color: var(--text-dim);
     display: flex; align-items: center; justify-content: center; gap: var(--s-2); font-weight: 700;
     -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none;

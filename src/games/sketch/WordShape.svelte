@@ -23,6 +23,6 @@
   .w { display: flex; flex-wrap: wrap; gap: 3px; align-items: end; }
   .w > span { min-width: 0.6em; text-align: center; font: 800 1.3rem/1 var(--font-display); }
   .box { width: 1.15em; height: 1.5em; display: grid !important; place-items: center; border-bottom: 3px solid var(--text); }
-  .lg .w > span { font-size: clamp(1.4rem, 4vmin, 2.4rem); }
+  .lg .w > span { font-size: clamp(calc(1.4 * var(--rem-far)), 4vmin, calc(2.4 * var(--rem-far))); }
   small { color: var(--text-dim); align-self: center; }
 </style>

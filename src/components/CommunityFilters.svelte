@@ -27,5 +27,5 @@
 <style>
   .filters { display: flex; gap: var(--s-3); }
   label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-weight: 600; font-size: 0.9rem; color: var(--text-dim); }
-  select { min-width: 0; width: 100%; min-height: 48px; padding: 0 var(--s-1) 0 var(--s-3); color: var(--text); }
+  select { min-width: 0; width: 100%; min-height: var(--tap-sm); padding: 0 var(--s-1) 0 var(--s-3); color: var(--text); }
 </style>

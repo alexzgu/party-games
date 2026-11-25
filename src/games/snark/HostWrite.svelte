@@ -54,11 +54,11 @@
 <style>
   .write { flex: 1; display: flex; flex-direction: column; gap: var(--s-4); width: min(100%, 1100px); margin: 0 auto; padding: var(--s-4) 0; }
   .top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
-  h1 { font-size: clamp(2rem, 6.5vmin, 4rem); line-height: 1.05; }
-  .sub { color: var(--text-dim); font-size: clamp(1rem, 2.6vmin, 1.5rem); margin-top: var(--s-2); }
+  h1 { font-size: clamp(calc(2 * var(--rem-far)), 6.5vmin, calc(4 * var(--rem-far))); line-height: 1.05; }
+  .sub { color: var(--text-dim); font-size: clamp(var(--rem-far), 2.6vmin, calc(1.5 * var(--rem-far))); margin-top: var(--s-2); }
   .pairs { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-2); }
-  .pairs li { padding: 4px 14px; border-radius: var(--r-pill); background: var(--overlay); font-weight: 700; font-size: clamp(0.95rem, 2vmin, 1.2rem); }
-  .tally { font-weight: 700; color: var(--text-dim); font-size: clamp(1rem, 2.2vmin, 1.3rem); }
+  .pairs li { padding: 4px 14px; border-radius: var(--r-pill); background: var(--overlay); font-weight: 700; font-size: clamp(calc(0.95 * var(--rem-far)), 2vmin, calc(1.2 * var(--rem-far))); }
+  .tally { font-weight: 700; color: var(--text-dim); font-size: clamp(var(--rem-far), 2.2vmin, calc(1.3 * var(--rem-far))); }
   .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: var(--s-3); }
   li {
     display: flex; align-items: center; gap: var(--s-3); padding: clamp(10px, 2vmin, 20px) var(--s-4); border-radius: var(--r-lg);
@@ -66,8 +66,8 @@
   }
   li.done { border-color: var(--c-good); background: color-mix(in srgb, var(--c-good) 12%, var(--surface)); }
   .who { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .name { font-weight: 800; font-size: clamp(1.15rem, 3vmin, 1.7rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .state { color: var(--text-dim); font-weight: 700; font-size: clamp(0.9rem, 2vmin, 1.1rem); }
+  .name { font-weight: 800; font-size: clamp(calc(1.15 * var(--rem-far)), 3vmin, calc(1.7 * var(--rem-far))); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .state { color: var(--text-dim); font-weight: 700; font-size: clamp(calc(0.9 * var(--rem-far)), 2vmin, calc(1.1 * var(--rem-far))); }
   li.done .state { color: var(--c-good); }
   .late { font-size: 1rem; }
 </style>

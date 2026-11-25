@@ -84,9 +84,9 @@
   .stage { flex: 1; display: grid; align-content: start; gap: var(--s-3); width: min(100%, 1400px); margin-inline: auto; padding-bottom: var(--s-3); }
   .head { display: flex; align-items: center; gap: var(--s-3); min-height: 5.5rem; }
   .now { flex: 1; min-width: 0; display: grid; gap: var(--s-1); }
-  h2 { font-size: clamp(1.3rem, 2.6vw, 2.4rem); line-height: 1.15; overflow-wrap: anywhere; }
+  h2 { font-size: clamp(calc(1.3 * var(--rem-far)), 2.6vw, calc(2.4 * var(--rem-far))); line-height: 1.15; overflow-wrap: anywhere; }
   .who { color: var(--accent); }
-  .note { color: var(--text-dim); font-size: clamp(1rem, 1.5vw, 1.3rem); }
+  .note { color: var(--text-dim); font-size: clamp(var(--rem-far), 1.5vw, calc(1.3 * var(--rem-far))); }
   .paused { color: var(--c-pass); font: 800 clamp(1rem, 2vw, 1.6rem) / 1 var(--font-display); }
   .board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); gap: var(--s-4); align-items: start; }
   .table { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr)); }

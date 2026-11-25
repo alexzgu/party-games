@@ -114,7 +114,7 @@
 <style>
   .board { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: clamp(8px, 1.2vmin, 16px); }
   .name {
-    font-size: clamp(1.1rem, 2.6vmin, 2rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text);
+    font-size: clamp(calc(1.1 * var(--rem-far)), 2.6vmin, calc(2 * var(--rem-far))); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text);
   }
   .grid {
     position: relative; flex: 1; min-height: 0;
@@ -161,7 +161,7 @@
   /* The last thing scored can be one long word: it wraps inside the card, which scrolls on a low screen. */
   .done > :global(*) { flex: none; }
   .done :global(.btn) { max-width: 100%; padding-block: var(--s-1); overflow-wrap: anywhere; }
-  .big { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.8rem, 5vmin, 3rem); color: var(--accent); }
+  .big { font-family: var(--font-display); font-weight: 800; font-size: clamp(calc(1.8 * var(--rem-far)), 5vmin, calc(3 * var(--rem-far))); color: var(--accent); }
   .note { margin-bottom: var(--s-4); }
   /* Beats the top bar's own .tool display rule. */
   .board .wide-only { display: none; }

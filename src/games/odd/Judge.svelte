@@ -16,7 +16,7 @@
 <style>
   .judge { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
   .call {
-    --c: var(--c-good); min-height: 72px; border-radius: var(--r-lg); display: flex; align-items: center; justify-content: center; gap: var(--s-2);
+    --c: var(--c-good); min-height: var(--tap-xxl); border-radius: var(--r-lg); display: flex; align-items: center; justify-content: center; gap: var(--s-2);
     font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; color: var(--text);
     border: 2.5px solid var(--c); background: color-mix(in srgb, var(--c) 20%, var(--surface));
     transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) ease;

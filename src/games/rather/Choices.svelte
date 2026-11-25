@@ -69,18 +69,18 @@
     align-self: center; justify-self: center; display: grid; place-items: center; width: 2.6em; height: 2.6em; border-radius: var(--r-pill);
     background: var(--surface); color: var(--text-dim); font: 800 1rem / 1 var(--font-display);
   }
-  .lg .or { font-size: clamp(1rem, 2vw, 1.6rem); }
+  .lg .or { font-size: clamp(var(--rem-far), 2vw, calc(1.6 * var(--rem-far))); }
   button.choice { cursor: pointer; }
   button.choice:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
   .picking.chosen .choice:not(.on) { opacity: 0.72; }
   .choice.on { border-color: var(--text); transform: translateY(-2px); box-shadow: var(--shadow); }
   .mark, .count, .badge { font: 800 1rem / 1.2 var(--font-display); }
   .badge { align-self: center; padding: 2px var(--s-3); border-radius: var(--r-pill); background: var(--bg); color: var(--text); }
-  .lg .count { font-size: clamp(1.1rem, 2.2vw, 2rem); }
-  .lg .badge { font-size: clamp(1rem, 1.6vw, 1.4rem); }
+  .lg .count { font-size: clamp(calc(1.1 * var(--rem-far)), 2.2vw, calc(2 * var(--rem-far))); }
+  .lg .badge { font-size: clamp(var(--rem-far), 1.6vw, calc(1.4 * var(--rem-far))); }
   .count b { font-size: 1.3em; }
   .names { font-weight: 600; overflow-wrap: anywhere; }
-  .lg .names { font-size: clamp(1rem, 1.6vw, 1.4rem); }
+  .lg .names { font-size: clamp(var(--rem-far), 1.6vw, calc(1.4 * var(--rem-far))); }
   .won { border-color: var(--text); }
   .bar { display: flex; height: 2.2rem; margin-top: var(--s-3); overflow: hidden; border-radius: var(--r-pill); background: var(--surface); }
   .bar span { display: grid; place-items: center; min-width: 3.5em; color: var(--on-accent); font: 800 1rem / 1 var(--font-display); flex-basis: 0; }

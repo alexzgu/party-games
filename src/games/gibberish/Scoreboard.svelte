@@ -29,7 +29,7 @@
   .board { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   li {
     position: relative; display: flex; align-items: center; gap: var(--s-3);
-    padding: var(--s-2) var(--s-3); border-radius: var(--r-md); background: var(--surface); min-height: 52px;
+    padding: var(--s-2) var(--s-3); border-radius: var(--r-md); background: var(--surface); min-height: var(--tap-md);
   }
   li.flash { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); box-shadow: inset 0 0 0 2px var(--accent); }
   .name { flex: 1; min-width: 0; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

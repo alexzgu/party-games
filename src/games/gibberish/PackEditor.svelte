@@ -218,7 +218,7 @@
   .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   .card {
-    width: 100%; min-height: 64px; text-align: left; padding: var(--s-2) var(--s-4); border-radius: var(--r-md);
+    width: 100%; min-height: var(--tap-lg); text-align: left; padding: var(--s-2) var(--s-4); border-radius: var(--r-md);
     border: 1.5px solid var(--line); background: var(--surface); display: flex; flex-direction: column;
   }
   .card.fresh { animation: fresh 1.6s var(--ease-out); }

@@ -81,10 +81,10 @@
 
 <style>
   .duel { flex: 1; display: flex; flex-direction: column; gap: clamp(10px, 2.2vmin, 24px); width: min(100%, 1200px); margin: 0 auto; padding: var(--s-3) 0; }
-  .eyebrow { color: var(--c-gold); font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; font-size: clamp(0.8rem, 1.8vmin, 1rem); text-align: center; }
-  .prompt { text-align: center; font-size: clamp(1.6rem, 5.4vmin, 3.4rem); line-height: 1.1; text-wrap: balance; }
+  .eyebrow { color: var(--c-gold); font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; font-size: clamp(calc(0.8 * var(--rem-far)), 1.8vmin, var(--rem-far)); text-align: center; }
+  .prompt { text-align: center; font-size: clamp(calc(1.6 * var(--rem-far)), 5.4vmin, calc(3.4 * var(--rem-far))); line-height: 1.1; text-wrap: balance; }
   .answers { flex: 1; display: grid; grid-template-columns: 1fr auto 1fr; gap: clamp(8px, 2vw, 28px); align-items: stretch; }
-  .vs { align-self: center; font-family: var(--font-display); font-weight: 800; color: var(--text-faint); font-size: clamp(1.1rem, 3vmin, 2rem); }
+  .vs { align-self: center; font-family: var(--font-display); font-weight: 800; color: var(--text-faint); font-size: clamp(calc(1.1 * var(--rem-far)), 3vmin, calc(2 * var(--rem-far))); }
   .answer {
     display: flex; flex-direction: column; gap: var(--s-3); padding: clamp(14px, 2.6vmin, 28px); border-radius: var(--r-lg); min-width: 0;
     background: var(--surface); border: 3px solid color-mix(in srgb, var(--who) 40%, transparent);
@@ -92,24 +92,24 @@
   }
   .lines { flex: 1; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; justify-content: center; gap: clamp(6px, 1.4vmin, 14px); }
   .lines li {
-    font-family: var(--font-display); font-weight: 800; font-size: clamp(1.2rem, 3.6vmin, 2.2rem); line-height: 1.15; overflow-wrap: anywhere;
+    font-family: var(--font-display); font-weight: 800; font-size: clamp(calc(1.2 * var(--rem-far)), 3.6vmin, calc(2.2 * var(--rem-far))); line-height: 1.15; overflow-wrap: anywhere;
     padding-left: var(--s-3); border-left: 4px solid color-mix(in srgb, var(--who) 60%, transparent);
   }
   .missing .lines li { color: var(--text-faint); font-style: italic; border-left-color: transparent; }
   .win { border-color: var(--who); background: color-mix(in srgb, var(--who) 14%, var(--surface)); box-shadow: 0 0 40px color-mix(in srgb, var(--who) calc(30% * var(--glow)), transparent); }
   .lose { opacity: 0.72; }
   .votes { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); }
-  .n { font-weight: 800; color: var(--text-dim); font-size: clamp(1rem, 2.4vmin, 1.4rem); }
+  .n { font-weight: 800; color: var(--text-dim); font-size: clamp(var(--rem-far), 2.4vmin, calc(1.4 * var(--rem-far))); }
   .backers { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; min-height: 36px; }
-  .backers li { display: flex; align-items: center; gap: 6px; padding: 3px 12px 3px 3px; border-radius: var(--r-pill); background: var(--overlay); font-weight: 700; font-size: clamp(0.85rem, 1.9vmin, 1.05rem); }
-  .by { display: flex; align-items: center; gap: var(--s-2); font-size: clamp(1.1rem, 3vmin, 1.8rem); }
+  .backers li { display: flex; align-items: center; gap: 6px; padding: 3px 12px 3px 3px; border-radius: var(--r-pill); background: var(--overlay); font-weight: 700; font-size: clamp(calc(0.85 * var(--rem-far)), 1.9vmin, calc(1.05 * var(--rem-far))); }
+  .by { display: flex; align-items: center; gap: var(--s-2); font-size: clamp(calc(1.1 * var(--rem-far)), 3vmin, calc(1.8 * var(--rem-far))); }
   .by b { flex: 1; min-width: 0; color: var(--who); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .house { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: var(--overlay-strong); font-size: 1.3rem; }
   .pts { font-family: var(--font-display); font-weight: 800; font-variant-numeric: tabular-nums; }
-  .sweep { text-align: center; font-weight: 800; color: var(--c-gold); font-size: clamp(1rem, 2.4vmin, 1.4rem); }
+  .sweep { text-align: center; font-weight: 800; color: var(--c-gold); font-size: clamp(var(--rem-far), 2.4vmin, calc(1.4 * var(--rem-far))); }
   .foot { display: flex; align-items: center; justify-content: center; gap: var(--s-4); min-height: 88px; }
   .voting { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); }
-  .call { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.2rem, 3vmin, 1.8rem); color: var(--accent); text-align: center; }
+  .call { font-family: var(--font-display); font-weight: 800; font-size: clamp(calc(1.2 * var(--rem-far)), 3vmin, calc(1.8 * var(--rem-far))); color: var(--accent); text-align: center; }
   @media (max-width: 640px) {
     .answers { grid-template-columns: 1fr; }
     .vs { justify-self: center; }

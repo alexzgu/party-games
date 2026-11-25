@@ -63,7 +63,7 @@
   }
   .name {
     position: relative; font-family: var(--font-display); font-weight: 800; color: var(--c);
-    font-size: clamp(2.6rem, 17vw, 5rem); line-height: 1; letter-spacing: -0.03em; overflow-wrap: anywhere;
+    font-size: clamp(2.6rem, calc(17vw * var(--text-scale)), 5rem); line-height: 1; letter-spacing: -0.03em; overflow-wrap: anywhere;
   }
   .role { font-size: 1.15rem; font-weight: 600; }
   .look-away {
@@ -84,7 +84,7 @@
     .hand { gap: var(--s-2); }
     .who { min-height: 96px; }
     .glow { width: 140px; height: 140px; }
-    .name { font-size: clamp(2.4rem, 7vw, 4rem); }
+    .name { font-size: clamp(2.4rem, calc(7vw * var(--text-scale)), 4rem); }
     .role { font-size: 1.05rem; }
     .look-away { padding: var(--s-3); font-size: 1rem; }
     .eyes { font-size: 2rem; }

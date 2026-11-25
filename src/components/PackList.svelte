@@ -218,7 +218,7 @@
   .items:not(.rows) .blurb { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 
   /* Rows: the mark on the left, everything said, the pencil on the right. */
-  .rows .pack { min-height: 72px; flex-direction: row; align-items: center; gap: var(--s-3); padding: var(--s-3) 60px var(--s-3) var(--s-3); }
+  .rows .pack { min-height: var(--tap-xxl); flex-direction: row; align-items: center; gap: var(--s-3); padding: var(--s-3) 60px var(--s-3) var(--s-3); }
   .rows .mark { position: static; flex: none; }
   .rows .txt { gap: 1px; }
   .rows .icon { flex: none; margin: 0; font-size: 1.5rem; }

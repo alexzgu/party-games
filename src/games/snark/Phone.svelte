@@ -126,7 +126,7 @@
   .confirm p { margin-bottom: var(--s-2); }
   .phone { min-height: 100dvh; display: flex; flex-direction: column; max-width: 640px; margin: 0 auto;
     padding: calc(var(--safe-top) + var(--s-2)) calc(var(--safe-right) + var(--s-4)) calc(var(--safe-bottom) + var(--s-3)) calc(var(--safe-left) + var(--s-4)); }
-  .bar { display: flex; align-items: center; gap: var(--s-3); min-height: 56px; }
+  .bar { display: flex; align-items: center; gap: var(--s-3); min-height: var(--tap); }
   .who { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
   .who b { font-family: var(--font-display); font-size: 1.15rem; color: var(--me); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .who small { color: var(--text-faint); font-weight: 600; }

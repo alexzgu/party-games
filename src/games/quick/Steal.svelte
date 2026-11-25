@@ -37,13 +37,13 @@
   .missed { color: var(--text-dim); font-weight: 700; font-size: 1.15rem; }
   .missed span { color: var(--c-bad); }
   .steal {
-    font-family: var(--font-display); font-weight: 800; font-size: clamp(3rem, 20vw, 6rem); line-height: 1; letter-spacing: -0.03em;
+    font-family: var(--font-display); font-weight: 800; font-size: clamp(3rem, calc(20vw * var(--text-scale)), 6rem); line-height: 1; letter-spacing: -0.03em;
     color: var(--c-pass);
     animation-delay: 80ms;
   }
   .hand { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); margin-top: var(--s-3); }
   .kicker { color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.85rem; }
-  .name { font-family: var(--font-display); font-weight: 800; color: var(--c); font-size: clamp(2.4rem, 14vw, 4.2rem); line-height: 1; letter-spacing: -0.03em; overflow-wrap: anywhere; animation-delay: 160ms; }
+  .name { font-family: var(--font-display); font-weight: 800; color: var(--c); font-size: clamp(2.4rem, calc(14vw * var(--text-scale)), 4.2rem); line-height: 1; letter-spacing: -0.03em; overflow-wrap: anywhere; animation-delay: 160ms; }
   .hint { font-size: 1.05rem; max-width: 22em; color: var(--text-dim); }
   .hint b { color: var(--text); }
   /* A phone on its side (Screen's split): the miss and "Steal!" on the left, who steals and the
@@ -51,9 +51,9 @@
   @media (orientation: landscape) and (max-height: 500px) {
     .center { display: contents; }
     .split-side, .split-main { align-items: center; text-align: center; }
-    .steal { font-size: clamp(3rem, 11vw, 5.5rem); }
+    .steal { font-size: clamp(3rem, calc(11vw * var(--text-scale)), 5.5rem); }
     .hand { margin-top: 0; }
-    .name { font-size: clamp(2.2rem, 6.5vw, 3.4rem); }
+    .name { font-size: clamp(2.2rem, calc(6.5vw * var(--text-scale)), 3.4rem); }
     .hint { font-size: 1rem; }
   }
 </style>

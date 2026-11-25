@@ -64,7 +64,7 @@
     background: var(--bg-raised); border: 1.5px solid var(--line); text-align: center;
   }
   .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
-  q { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.6rem, 8vw, 2.4rem); line-height: 1.05; overflow-wrap: anywhere; }
+  q { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.6rem, calc(8vw * var(--text-scale)), 2.4rem); line-height: 1.05; overflow-wrap: anywhere; }
   .spoken { font-family: var(--font-display); font-weight: 700; font-size: 1.35rem; color: var(--text-dim); }
   .tuner { display: flex; flex-direction: column; gap: var(--s-3); }
 </style>
