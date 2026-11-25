@@ -101,12 +101,17 @@
   .search input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0; color: var(--text); font: inherit; font-size: max(16px, 1rem); }
   .search input::-webkit-search-cancel-button { display: none; }
   .count { flex: none; font-size: 0.8rem; color: var(--text-faint); }
-  .clear { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); background: var(--overlay); font-size: 0.8rem; }
-  .sorts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .clear { position: relative; flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); background: var(--overlay); font-size: 0.8rem; }
+  /* Small controls are tapped through a clear area 45 px tall and at least 44 px wide around them,
+     drawn no bigger; it stays inside the gaps, so it covers no other control. */
+  .clear::after { content: ''; position: absolute; inset: -6.5px -6px; }
+  /* Rows 8 px apart when the chips wrap: two rows' tap areas then do not overlap. */
+  .sorts { display: flex; gap: 8px 6px; flex-wrap: wrap; }
   .sorts button {
-    padding: 7px 14px; border-radius: var(--r-pill); font-size: 0.88rem; font-weight: 600;
-    min-height: 37.6px; /* its height at Normal: smaller text or Compact never shrinks it */
+    position: relative; padding: 7px 14px; border-radius: var(--r-pill); font-size: 0.88rem; font-weight: 600;
+    min-height: calc(45px - 2 * var(--s-2)); /* Compact: the tap area stops at the controls above, var(--s-2) away */
     color: var(--text-dim); background: var(--surface); border: 1.5px solid var(--line);
   }
+  .sorts button::after { content: ''; position: absolute; inset: min(0px, (100% - 45px) / 2) -1.5px; }
   .sorts button.on { color: var(--text); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
 </style>

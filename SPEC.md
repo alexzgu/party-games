@@ -63,11 +63,14 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   (`applyDisplay`), and `index.html` sets them from storage before the first paint. Text is sized in
   `rem` (the root is `--text-root`); a size that grows with the screen multiplies its screen term by
   `--text-scale`. Compact lowers the spacing steps (`--s-1`…`--s-7`), `--leading` and the row heights
-  (`--tap`, `--tap-sm`…`--tap-xxl`), never under 44 px (`--tap-min`); a control already under 44 px
-  at Normal keeps its Normal height as a floor. A height guessed around a screen-fitted area (a
-  drawing pad) is multiplied by `--chrome-scale`. Text boxes are at least 16 px in every mode, so
-  phones never zoom into them. Normal/Normal is the original look. **Screens read from across the
-  room show Normal text whatever the setting** (`src/lib/farRead.ts`, by address): every own-phones
+  (`--tap`, `--tap-sm`…`--tap-xxl`), never under 44 px (`--tap-min`); a control drawn under 44 px
+  tall (a sort chip, the search's clear button, the wizard note's "Got it") is tapped through a clear
+  area at least 44 px tall and wide that covers no other control, so smaller text and Compact may
+  draw it smaller but never make it harder to tap.
+  A height guessed around a screen-fitted area (a drawing pad) is multiplied by `--chrome-scale`.
+  Text boxes are at least 16 px in every mode, so phones never zoom into them. Normal/Normal is the
+  original look. **Screens read from across the room show Normal text whatever the setting**
+  (`src/lib/farRead.ts`, by address): every own-phones
   game's host screen (`#/<game>/host`: lobby, play, scores, end), Big Board's play screens
   (`#/quiz/play`: board, clue, win) and the Heads Down. round (`#/forehead/play`: ready, countdown,
   play, results). Spacing still applies there. The setting comes back as soon as the screen is left;
