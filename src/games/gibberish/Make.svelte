@@ -62,7 +62,7 @@
   const changes = new Changes({
     game: CHANGE, request: () => theme, asked: () => CHANGE.max, avoid: () => destPack?.cards ?? [],
     items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
-    name: () => (destPack ? null : packName), onItem: () => sfx.tick(), onStart: (n) => (byPass = passedSoFar(byPass, n)),
+    name: () => (destPack ? null : packName), onItem: () => sfx.tick(), running: () => streaming, onStart: (n) => { byPass = passedSoFar(byPass, n); error = ''; },
   });
 
   function pasted(list: GibberishCard[], skipped: string) {
@@ -77,7 +77,8 @@
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
   let byPass = false;
   async function run() {
-    changes.settle();
+    if (changes.writing) return; // one writer at a time: a change or this run
+    changes.newRun();
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     // A new pack gets a name; cards added to one of mine need none.
@@ -200,7 +201,7 @@
     {#if error}
       <div class="error" role="alert">
         <p>{error}</p>
-        {#if !streaming}<Button variant="secondary" size="sm" onclick={run}>Try again</Button>{/if}
+        {#if !changes.writing}<Button variant="secondary" size="sm" onclick={run}>Try again</Button>{/if}
       </div>
     {/if}
 
@@ -208,8 +209,8 @@
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your cards…</p>
     {/if}
 
-    <Triage {items} keyOf={answerKey} bind:dropped streaming={streaming || changes.busy} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
-      {#snippet below()}{#if mode === 'claude'}<WizardChanges {changes} request={theme} />{/if}{/snippet}
+    <Triage {items} keyOf={answerKey} bind:dropped streaming={changes.writing} stopPutsBack={changes.busy} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
+      {#snippet below()}{#if mode === 'claude'}<WizardChanges {changes} />{/if}{/snippet}
       {#snippet item(c)}
         <span class="it">
           <span class="ph">{c.phrase}</span>

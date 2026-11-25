@@ -114,34 +114,56 @@ Three routes, in the order the owner chose to rely on them:
    is "Conjured by Fizzwick: " and the request, cut at a whole word with "…" to 80 characters in
    all (the board editor's limit, inside the library's 60 for names and 140 for descriptions).
    **Asking for changes** (every game with the wizard, present and future; `src/lib/wizardChange.ts`,
-   `wizardChanges.svelte.ts`, `WizardChanges`): on the review of a pack Fizzwick just made, once he
-   has finished writing and only with a key or pass (like "More"), a box "Ask for changes" (grows,
-   at most 200 characters, "e.g. only the ones from France") with "Change". One request, whose answer
-   replaces the list on screen: the whole list again, as many as are kept on screen but never fewer
-   than the run first asked for and never more than one run on that make screen may ask for, keeping
-   what still fits and replacing the rest; the new items stream in as on a first run, and the pack
-   name follows the naming rule above (a typed name stays; otherwise he is asked for one again in
-   the same reply). The request is always three messages: the first run's prompt for the request
-   and count (no avoid list, no name ask); as his own answer, the items the player kept, in exactly
-   the lines that game reads (each game's serialiser sits next to its reader; `read(line(item))`
-   gives the item back); then "The player asks for a change: …", the earlier changes still applied
-   (oldest first, at most 5), the items the player removed ("never bring them back", up to 4,000
-   characters), "Write the whole list again: exactly N …", the first run's avoid list, and the name
-   ask when a name is wanted. Same system prompt, model, effort and token cap as a first run; it
-   counts as one request. A short thread sits above the box once there is a change: the request on
-   one line, then each change and Fizzwick's line "Kept 12 · replaced 28" (kept: its key was in the
-   list before the change; when one run's cap cut the list, also how many came back); only the
-   latest shows, older ones fold under "N earlier changes". "Undo" brings back the list before the
-   last change, with its dropped marks and its name, and takes that change off the thread, one step
-   at a time; "More" ends the Undo steps (the list has grown since). A change that fails, is
-   refused, is stopped or brings no usable item puts the list back exactly as it was, with the error
-   line under the thread. Never on pasted or typed lists, "Add more" or a saved pack's editor.
+   `wizardChanges.svelte.ts`, `WizardChanges`): on the review of a NEW pack Fizzwick made from a
+   request, only with a key or pass (like "More"), a box "Ask for changes" (grows, at most 200
+   characters, "e.g. only the ones from France", line breaks sent as spaces) with "Change". Never on
+   pasted or typed lists, when the make screen adds to an existing pack (Heads Down. into a deck,
+   Inn Co Hear Ant and Brain Freeze into a pack, Spectrum's "more like" a saved pack), on "Add more"
+   or in a saved pack's editor. The answer replaces the list on screen: the whole list again, as
+   many as are kept on screen and never fewer than the run first asked for, keeping what still fits
+   and replacing the rest; the new items stream in as on a first run. Each request is always three
+   messages: the first run's prompt for the request and count (no avoid list, no name ask); as his
+   own answer, the items the player kept, in exactly the lines that game reads (each game's
+   serialiser sits next to its reader; `read(line(item))` gives the item back); then "The player
+   asks for a change: …", the earlier changes still applied (oldest first, at most 5), the items
+   the player removed ("never bring them back"), "Write the whole list again: exactly N …", the
+   first run's avoid list, and the name ask when a name is wanted. Same system prompt, model,
+   effort and token cap as a first run. A list longer than one run on that make screen may ask for
+   is changed in parts, one request after another (each counts as a request): each part holds at
+   most that many kept items and asks for exactly as many, the first-asked count's extra going on
+   the last; a game with two lists (Bad Hand, Sketchy, Snark Tank) cuts each list on its own, the
+   n-th part of each going into the n-th request; later requests also list what this change has
+   already written ("never repeat them"); only the first asks for a name. Every request's body stays
+   within `MAX_REQUEST_BYTES` (`src/lib/addMore.ts`, under the wizard server's 64 KB): what does not
+   fit is left out of the avoid list first, then of the removed items, then of what was already
+   written. One writer at a time: while a change or the screen's own run ("Make", "More", "Try
+   again") writes, every run control waits and the box hides (the thread stays); a new run or
+   change clears the previous error line. While a change writes the pack name is read-only. Leaving
+   the screen stops a change. A short thread sits above the box once there is a change: the
+   request on one line, then each change and Fizzwick's line "Kept 12 · replaced 28" (kept: its key
+   was in the list before the change, summed over the requests); only the latest shows, older ones
+   fold under "N earlier changes". "Undo" brings back the list before the last change, with its
+   dropped marks, and takes that change off the thread, one step at a time; it is offered only
+   while nothing has been changed by hand since that change (a dropped mark toggled, in Big Board
+   any edit but the name) and "More" ends it too; the thread stays. A change that fails, is
+   refused, is stopped, is left or brings no usable item (in any of its requests) puts the list and
+   its marks back exactly as they were, with the error line under the thread. A typed name is
+   never replaced: the name before a change comes back on a failure, Stop or Undo only when the
+   player has not typed a name since. A reply cut off by the token limit never yields its
+   unfinished last line (first runs alike).
    Big Board has no list review: the box sits under the clues in the editor of the board Fizzwick
-   just wrote, until it is saved (the request is kept with the unsaved board, so a reload keeps the
-   box). His list there is the board as it stands, one "Category | level | clue | answer" line per
-   filled tile, row by row; he writes the whole board again at the editor's current size (N =
-   categories × levels); a clue counts as kept when its clue and answer are both unchanged; while
-   he writes, the board shows read-only and Stop replaces Save; a name typed in the editor stays.
+   just wrote, until it is saved. Whether the unsaved board is his comes from what is stored with
+   it (the request, and whether its name was typed), so a reload and "Continue" keep the box and
+   the note below; the address says nothing about it. His list there is the board as it stands, one
+   "Category | level | clue | answer" line per filled tile, row by row, each cell made safe to read
+   back (one line, "|" written as "/"); he writes the whole board again at the editor's current
+   size (N = categories × levels, never cut into parts); a line that brings back one of the tiles
+   from before (compared in that safe form) puts the player's tile back exactly as it was, without
+   the checks on new clues, which only new clues go through; a clue counts as kept when its clue and
+   answer are both unchanged. While he writes, the whole editor is read-only (name, description,
+   size, category tabs, tiles), the board shows from memory and Stop replaces Save: the stored
+   unsaved board stays the whole board from before until the change has finished, so a reload
+   mid-change finds it untouched, box included.
    Fizzwick writes from memory and nobody checks his facts, so wherever items he wrote are on
    screen (the review of a pack he just made, its "Add more" results, and in Big Board the board
    as he writes it and the new board's editor until it is saved), one quiet line (`WizardNote`)

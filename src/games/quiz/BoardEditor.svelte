@@ -18,24 +18,19 @@
   import WizardNote from '../../components/WizardNote.svelte';
   import WizardChanges from '../../components/WizardChanges.svelte';
   import BoardPreview from './BoardPreview.svelte';
-  import { onDestroy } from 'svelte';
-  import { Changes, type ChangeName } from '../../lib/wizardChanges.svelte';
-  import { cleanName } from '../../lib/wizardAsk';
-  import { viaPass } from '../../lib/claude';
-  import { boardChange, boardClues, placeClue } from './generate';
+  import { PackName } from '../../lib/packName.svelte';
+  import { boardChanges } from './changes';
 
   // One board, every tile editable in place: name, blurb, categories (add, remove, rename,
   // reorder), levels (added or removed on every category at once) and each clue and answer.
   // A saved board saves on every change; editing a built-in saves this phone's copy under the
   // same id ("Restore original" drops it). A board just made (`id` null) waits in storage
   // until "Save board". Empty tiles are allowed: the board is then a draft that cannot be played.
-  let { id, note = '', wizard = false, category = 0, onback, onsaved }: {
+  let { id, note = '', category = 0, onback, onsaved }: {
     /** The saved board to edit, or null for the board just made. */
     id: string | null;
     /** What the paste step skipped, shown once at the top. */
     note?: string;
-    /** The board just made was written by Fizzwick: the note that he can be wrong shows over it. */
-    wizard?: boolean;
     /** The category tab to open on (e.g. the one with an empty tile). */
     category?: number;
     onback: () => void;
@@ -61,8 +56,9 @@
   const gapsIn = (c: number) => gaps.filter((g) => g.category === c).length;
   const value = (r: number) => (r + 1) * 100;
 
+  /** A change by hand (none while Fizzwick rewrites the board). */
   function update(next: QuizBoard) {
-    if (!board || next === board) return;
+    if (!board || next === board || changes?.busy) return;
     board = next;
     if (fresh) saveNewBoard(next);
     else {
@@ -73,6 +69,10 @@
   }
 
   const field = (key: 'name' | 'blurb') => (e: Event & { currentTarget: HTMLInputElement }) => board && update({ ...board, [key]: e.currentTarget.value });
+  function typeName(e: Event & { currentTarget: HTMLInputElement }) {
+    if (asked) typedName(e.currentTarget.value);
+    else field('name')(e);
+  }
 
   // Levels change at the bottom (hardest) row, on every category. Removing a row with
   // anything written in it asks first.
@@ -133,39 +133,31 @@
   }
 
   // "Ask for changes" on the board Fizzwick just wrote, until it is saved: he writes the whole
-  // board again at its size as it stands, keeping what fits. Shown while the request is known.
+  // board again at its size as it stands, keeping what fits. Whether the unsaved board is his comes
+  // from what is stored with it (the request), so a reload or "Continue" keeps the box and the note.
+  // While he writes, the board is shown, read-only, from memory: storage keeps the whole board from
+  // before until the change has finished, so a reload mid-change finds it untouched.
   // svelte-ignore state_referenced_locally
-  const asked = fresh && wizard ? loadNewAsk() : null;
-  let nameTyped = asked?.typed ?? false;
-  function typedName() {
-    if (!asked || nameTyped) return;
-    nameTyped = true;
-    saveNewAsk({ ...asked, typed: true });
+  const asked = fresh ? loadNewAsk() : null;
+  /** The board's name follows the same rule as every pack name (lib/packName.svelte.ts). */
+  const boardName = new PackName();
+  // svelte-ignore state_referenced_locally
+  if (asked && board) {
+    boardName.begin('wizard', asked.request, 'My pack');
+    if (asked.typed) boardName.type(board.name);
+    else boardName.value = board.name;
   }
-  const boardName: ChangeName = {
-    get wanted() { return !nameTyped; },
-    askAgain() {},
-    suggest(raw) { const n = cleanName(raw); if (n && board && !nameTyped) update({ ...board, name: n }); },
-  };
-  /** The board's size when the change started: the new board keeps it. */
-  let size = { cats: 0, levels: 0 };
-  const changes = asked && new Changes<StreamClue, StreamClue, { board: QuizBoard; ci: number }>({
-    game: () => boardChange(size.cats, size.levels, (s) => !!board && placeClue(board, s, size.cats, size.levels) !== board),
-    request: () => asked.request, asked: () => size.cats * size.levels, avoid: () => [],
-    name: () => boardName,
-    save: () => {
-      const b = board!;
-      size = { cats: b.categories.length, levels: edit.levels(b) };
-      return { board: b, ci };
-    },
-    restore: (r) => { board = r.board; saveNewBoard(r.board); ci = r.ci; },
-    parts: (r) => ({ kept: boardClues(r.board), removed: [] }),
-    // The tiles empty out (the category names stay until new ones come); the share mark holds only through a pass.
-    clear: () => board && update(afterRun({ ...board, categories: board.categories.map((c) => ({ ...c, clues: c.clues.map(() => ({ clue: '', answer: '' })) })) }, viaPass(), false)),
-    add: (s) => { if (board) update(placeClue(board, s, size.cats, size.levels)); sfx.tick(); },
-    items: () => (board ? boardClues(board) : []),
+  function typedName(value: string) {
+    if (!board || changes?.busy) return;
+    boardName.type(value);
+    saveNewAsk({ request: asked!.request, typed: true });
+    update({ ...board, name: boardName.value });
+  }
+  // svelte-ignore state_referenced_locally
+  const changes = asked && boardChanges({
+    request: asked.request, board: () => board, show: (b) => (board = b), store: saveNewBoard,
+    tab: () => ci, setTab: (i) => (ci = i), name: boardName, onItem: () => sfx.tick(),
   });
-  onDestroy(() => changes?.stop());
 
   function restore() {
     if (id === null) return;
@@ -204,7 +196,10 @@
   /** A blank name gets a sensible one when the field is left. */
   function settleName(key: 'name' | 'category') {
     if (!board) return;
-    if (key === 'name' && !board.name.trim()) update({ ...board, name: 'My pack' });
+    if (key === 'name' && !board.name.trim()) {
+      if (asked) typedName('My pack');
+      else update({ ...board, name: 'My pack' });
+    }
     if (key === 'category' && cat && !cat.name.trim()) update(edit.renameCategory(board, ci, `Category ${ci + 1}`));
   }
 </script>
@@ -230,9 +225,11 @@
     <!-- Pinned: the pack's details (they fold away) and the category tabs; only the open
          category's name, tools and clues scroll. -->
     <PinnedPanel kind="editor" foldId="quiz-details" foldName="details" foldSpoken="pack details" keep="items">
-      {#snippet notice()}{#if note}<p class="faint small">{note}</p>{/if}{#if fresh && wizard}<WizardNote />{/if}{/snippet}
+      {#snippet notice()}{#if note}<p class="faint small">{note}</p>{/if}{#if asked}<WizardNote />{/if}{/snippet}
       {#snippet top()}
         {#if board}
+          <!-- Read-only while Fizzwick rewrites the board: nothing typed then can be lost. -->
+          <div class="lock" inert={!!changes?.busy}>
           <div class="about">
             <p class="muted">
               {#if fresh}Not saved yet{:else if builtin}Comes with the app{edited ? ' · edited on this phone' : ''}{:else if board?.shared}<SharedPill />{:else}Your pack, on this phone only{/if}
@@ -247,7 +244,7 @@
 
           <label class="field">
             <span>Pack name</span>
-            <input type="text" value={board.name} oninput={(e) => { typedName(); field('name')(e); }} onchange={() => settleName('name')} maxlength="40" autocomplete="off" enterkeyhint="done" />
+            <input type="text" value={board.name} oninput={typeName} onchange={() => settleName('name')} maxlength="40" autocomplete="off" enterkeyhint="done" />
           </label>
           <label class="field">
             <span>Short description</span>
@@ -261,11 +258,12 @@
               {#if gaps.length} · {gaps.length} empty {gaps.length === 1 ? 'tile' : 'tiles'}: saved as a draft, playable once filled{:else} · ready to play{/if}
             </p>
           </section>
+          </div>
         {/if}
       {/snippet}
       {#snippet row(toggle)}
         <div class="tabrow">
-          <div class="tabs" role="tablist" aria-label="Categories">
+          <div class="tabs" role="tablist" aria-label="Categories" inert={!!changes?.busy}>
             {#each cats as c, i (i)}
               <button class="tab" class:on={i === ci} role="tab" aria-selected={i === ci} onclick={() => open(i)}>
                 <span class="tname">{c.name.trim() || `Category ${i + 1}`}</span>
@@ -314,7 +312,7 @@
           <p class="faint small">Easiest at the top, hardest at the bottom.</p>
         </div>
       {/if}
-      {#if changes && asked}<WizardChanges {changes} request={asked.request} />{/if}
+      {#if changes}<WizardChanges {changes} />{/if}
     </PinnedPanel>
   {/if}
 
@@ -375,6 +373,7 @@
 {/if}
 
 <style>
+  .lock { display: contents; }
   .about { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: 44px; }
   .about p { margin: 0; }
   .act { flex: none; white-space: nowrap; }

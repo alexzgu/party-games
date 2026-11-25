@@ -44,13 +44,14 @@
   const changes = new Changes({
     game: CHANGE, request: () => theme, asked: () => count, avoid: () => taken(),
     items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
-    name: () => name, onItem: () => sfx.tick(), onStart: (n) => (byPass = passedSoFar(byPass, n)),
+    name: () => name, onItem: () => sfx.tick(), running: () => streaming, onStart: (n) => { byPass = passedSoFar(byPass, n); error = ''; },
   });
 
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
   let byPass = false;
   async function run() {
-    changes.settle();
+    if (changes.writing) return; // one writer at a time: a change or this run
+    changes.newRun();
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     name.begin('wizard', theme, 'My pack');
@@ -101,15 +102,15 @@
   {#if error}
     <div class="error" role="alert">
       <p>{error}</p>
-      {#if !hasKey()}<MagicWords intro={WANTS} />{:else if !streaming}<Button variant="secondary" size="sm" onclick={run}>Try again</Button>{/if}
+      {#if !hasKey()}<MagicWords intro={WANTS} />{:else if !changes.writing}<Button variant="secondary" size="sm" onclick={run}>Try again</Button>{/if}
     </div>
   {/if}
   {#if items.length === 0 && streaming}
     <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your cards…</p>
   {/if}
-  <Triage {items} keyOf={cardId} bind:dropped streaming={streaming || changes.busy} wizard onsave={(kept) => onsave(name.saved(theme, 'My pack'), theme, kept, byPass)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+  <Triage {items} keyOf={cardId} bind:dropped streaming={changes.writing} stopPutsBack={changes.busy} wizard onsave={(kept) => onsave(name.saved(theme, 'My pack'), theme, kept, byPass)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
     {#snippet item(c: TabooCard)}<span class="txt"><span class="w">{c.word}</span><span class="b">{c.banned.join(' · ')}</span></span>{/snippet}
-    {#snippet below()}<WizardChanges {changes} request={theme} />{/snippet}
+    {#snippet below()}<WizardChanges {changes} />{/snippet}
   </Triage>
 {/if}
 

@@ -57,7 +57,7 @@
   const changes = new Changes({
     game: CHANGE, request: () => theme, asked: () => BATCH, avoid: () => savedPack?.cards ?? [],
     items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
-    name: () => (savedPack ? null : packName), onStart: (n) => (byPass = passedSoFar(byPass, n)),
+    name: () => (savedPack ? null : packName), running: () => streaming, onStart: (n) => { byPass = passedSoFar(byPass, n); error = ''; },
   });
 
   /** A new list on review: no marks, no changes. */
@@ -88,7 +88,8 @@
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
   let byPass = false;
   async function run(avoid: Spectrum[]) {
-    changes.settle();
+    if (changes.writing) return; // one writer at a time: a change or this run
+    changes.newRun();
     byPass = passedSoFar(byPass, items.length);
     error = '';
     streaming = true;
@@ -229,16 +230,16 @@
       {/if}
     {/if}
     {#if error}<p class="err" role="alert">{error}</p>{/if}
-    {#if error && !streaming && items.length === 0}
+    {#if error && !changes.writing && items.length === 0}
       <div class="stack">
         <Button size="lg" onclick={() => void run(savedPack?.cards ?? [])}>Try again</Button>
         <Button variant="ghost" onclick={cancel}>Back</Button>
       </div>
     {:else}
     {#key batch}
-      <Triage {items} keyOf={cardId} bind:dropped streaming={streaming || changes.busy} wizard={mode === 'claude'} saveLabel={savedPack ? 'Save' : 'Continue with'} {onsave} oncancel={cancel} onmore={mode === 'claude' ? more : undefined}>
+      <Triage {items} keyOf={cardId} bind:dropped streaming={changes.writing} stopPutsBack={changes.busy} wizard={mode === 'claude'} saveLabel={savedPack ? 'Save' : 'Continue with'} {onsave} oncancel={cancel} onmore={mode === 'claude' ? more : undefined}>
         {#snippet item(c: Spectrum)}<span class="pair">{c.left} <span class="sep" aria-label="to">↔</span> {c.right}</span>{/snippet}
-        {#snippet below()}{#if mode === 'claude'}<WizardChanges {changes} request={theme} />{/if}{/snippet}
+        {#snippet below()}{#if mode === 'claude'}<WizardChanges {changes} />{/if}{/snippet}
       </Triage>
     {/key}
     {/if}

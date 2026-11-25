@@ -95,7 +95,7 @@
   const changes = new Changes({
     game: changeGame(wizard, range.max), request: () => theme, asked: () => count, avoid: () => packs().flatMap((p) => packItems(specs, p)),
     items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
-    name: () => packName, onItem: () => sfx.tick(), onStart: (n) => (byPass = libraryOn(game) && passedSoFar(byPass, n)),
+    name: () => packName, onItem: () => sfx.tick(), running: () => streaming, onStart: (n) => { byPass = libraryOn(game) && passedSoFar(byPass, n); error = ''; },
   });
 
   function newId(n: string): string {
@@ -122,7 +122,8 @@
    */
   let byPass = false;
   async function run() {
-    changes.settle();
+    if (changes.writing) return; // one writer at a time: a change or this run
+    changes.newRun();
     byPass = libraryOn(game) && passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     packName.begin('wizard', theme, defaultName);
@@ -200,15 +201,15 @@
     {#if error}
       <div class="error" role="alert">
         <p>{error}</p>
-        {#if !hasKey()}<MagicWords intro={WANTS} />{:else if !streaming}<Button variant="secondary" size="sm" onclick={run}>Try again</Button>{/if}
+        {#if !hasKey()}<MagicWords intro={WANTS} />{:else if !changes.writing}<Button variant="secondary" size="sm" onclick={run}>Try again</Button>{/if}
       </div>
     {/if}
     {#if items.length === 0 && streaming}
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your {one}…</p>
     {/if}
     {#if unsaved}<div class="error" role="alert"><p>{unsaved}</p></div>{/if}
-    <Triage {items} {keyOf} bind:dropped streaming={streaming || changes.busy} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
-      {#snippet below()}<WizardChanges {changes} request={theme} />{/snippet}
+    <Triage {items} {keyOf} bind:dropped streaming={changes.writing} stopPutsBack={changes.busy} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+      {#snippet below()}<WizardChanges {changes} />{/snippet}
       {#snippet item(i: ListItem)}
         <span class="it">
           {#if specs.length > 1}<span class="tag">{specs.find((s) => s.field === i.field)?.one}</span>{/if}

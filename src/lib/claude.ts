@@ -132,6 +132,8 @@ export async function streamLines(opts: StreamOptions): Promise<void> {
       if (delta.includes('\n')) flush(false);
     });
     const message = await stream.finalMessage();
+    // A reply cut off by a limit ends mid-line: that half line is never an item.
+    if (message.stop_reason === 'max_tokens' || message.stop_reason === 'model_context_window_exceeded') buffer = '';
     flush(true);
     if (message.stop_reason === 'refusal') throw new ClaudeError('Fizzwick refused that one. Try asking for something else.');
   } catch (err) {

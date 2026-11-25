@@ -6,8 +6,9 @@
 
   // "Ask for changes" under the review of a pack Fizzwick just made, in every game: a short
   // thread (the request, then each change and what came of it), the box, "Change" and "Undo".
-  // Needs the wizard on this phone, like "More".
-  let { changes, request }: { changes: Changes<T, A, S>; request: string } = $props();
+  // Needs the wizard on this phone, like "More", and a new pack made from a request. The box
+  // waits while Fizzwick writes; the thread stays.
+  let { changes }: { changes: Changes<T, A, S> } = $props();
 
   /** Only the latest change shows in full; older ones fold away so Save stays on screen. */
   const SHOWN = 1;
@@ -15,11 +16,11 @@
   const recent = $derived(changes.thread.slice(-SHOWN));
 </script>
 
-{#if hasKey()}
+{#if hasKey() && changes.offered}
   <section class="change" aria-label="Ask for changes">
     {#if changes.thread.length}
       <ol class="thread">
-        <li class="you req" title={request}>{request}</li>
+        <li class="you req" title={changes.request}>{changes.request}</li>
         {#if older.length}
           <li class="older">
             <details>
@@ -34,12 +35,14 @@
       </ol>
     {/if}
     {#if changes.error}<p class="error" role="alert">{changes.error}</p>{/if}
+    {#if !changes.writing}
     <label class="lbl" for="wizard-change">Ask for changes</label>
     <textarea id="wizard-change" bind:value={changes.draft} rows="1" maxlength={CHANGE_MAX} placeholder="e.g. only the ones from France" enterkeyhint="enter" autocomplete="off" autocapitalize="sentences"></textarea>
     <div class="row">
-      <Button variant="secondary" size="sm" onclick={() => changes.ask(changes.draft)} disabled={!changes.draft.trim() || changes.busy} tip="Fizzwick writes the whole list again with your change; you can undo it">Change</Button>
+      <Button variant="secondary" size="sm" onclick={() => changes.ask(changes.draft)} disabled={!changes.draft.trim() || changes.writing} tip="Fizzwick writes the whole list again with your change; you can undo it">Change</Button>
       {#if changes.canUndo}<Button variant="ghost" size="sm" onclick={() => changes.undo()} tip="Brings back the list as it was before the last change">Undo</Button>{/if}
     </div>
+    {/if}
   </section>
 {/if}
 

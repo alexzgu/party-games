@@ -25,8 +25,8 @@
   // making is kept in storage, so a reload keeps it.
   // No <form> around the size steppers: their buttons would submit it.
   let { onmade, onresume, onback }: {
-    /** A new board is ready for the editor; `note` says what a paste skipped; `wizard`: Fizzwick wrote it. */
-    onmade: (b: QuizBoard, note: string, wizard: boolean) => void;
+    /** A new board is ready for the editor; `note` says what a paste skipped. */
+    onmade: (b: QuizBoard, note: string) => void;
     /** Open the unsaved board left from before. */
     onresume: () => void;
     onback: () => void;
@@ -66,7 +66,7 @@
   function make(b: QuizBoard, note = '', wizard = false) {
     saveNewBoard(draft(b, wizard));
     saveNewAsk(wizard ? { request: topic, typed: false } : null); // what Fizzwick was asked, for "Ask for changes" in the editor
-    onmade(b, note, wizard);
+    onmade(b, note);
   }
 
   async function ask() {
@@ -81,7 +81,8 @@
       const done = await generateBoard({
         topic, cats, levels: len, signal,
         // Every update is kept as the draft; only a clue landing ticks, never the name alone.
-        onBoard: (b, clue) => { live = b; saveNewBoard(draft(b, true)); if (clue) sfx.tick(); },
+        // The draft is stored with what Fizzwick was asked, so it is known as his after a reload.
+        onBoard: (b, clue) => { live = b; saveNewBoard(draft(b, true)); saveNewAsk({ request: topic, typed: false }); if (clue) sfx.tick(); },
       });
       live = done;
       if (signal.aborted) return;

@@ -67,7 +67,7 @@
   const changes = new Changes({
     game: CHANGE, request: () => theme, asked: () => count, avoid: () => targetDeck?.words ?? [],
     items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
-    name: () => (targetDeck ? null : packName), onItem: () => sfx.tick(), onStart: (n) => (byPass = passedSoFar(byPass, n)),
+    name: () => (targetDeck ? null : packName), onItem: () => sfx.tick(), running: () => streaming, onStart: (n) => { byPass = passedSoFar(byPass, n); error = ''; },
   });
 
   function pasted(list: string[], skipped: string) {
@@ -81,7 +81,8 @@
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
   let byPass = false;
   async function run() {
-    changes.settle();
+    if (changes.writing) return; // one writer at a time: a change or this run
+    changes.newRun();
     byPass = passedSoFar(byPass, items.length);
     error = '';
     streaming = true;
@@ -222,12 +223,12 @@
     {#if error}
       <div class="error" role="alert">
         <p>{error}</p>
-        <Button size="sm" variant="secondary" onclick={run}>Try again</Button>
+        <Button size="sm" variant="secondary" onclick={run} disabled={changes.writing}>Try again</Button>
       </div>
     {/if}
-    <Triage {items} keyOf={itemKey} bind:dropped streaming={streaming || changes.busy} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' && theme ? run : undefined}>
+    <Triage {items} keyOf={itemKey} bind:dropped streaming={changes.writing} stopPutsBack={changes.busy} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' && theme ? run : undefined}>
       {#snippet item(s: string)}<span class="word">{s}</span>{/snippet}
-      {#snippet below()}{#if mode === 'claude' && theme}<WizardChanges {changes} request={theme} />{/if}{/snippet}
+      {#snippet below()}{#if mode === 'claude' && theme}<WizardChanges {changes} />{/if}{/snippet}
     </Triage>
   {/if}
 </Screen>

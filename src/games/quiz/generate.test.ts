@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { settings } from '../../lib/settings.svelte';
 import { boardChange, boardClues, buildPrompt, generateBoard, givesAway, placeClue, emptyBoardFor, SYSTEM } from './generate';
 import { parseStreamLine, streamLine } from './parse';
-import { changeTurns, tally } from '../../lib/wizardChange';
+import { changeTurns, parts, tally } from '../../lib/wizardChange';
 import { NAME_ASK } from '../../lib/wizardAsk';
 import { fakeStream } from '../../lib/testing';
 
@@ -108,6 +108,11 @@ describe('asking for changes on a board', () => {
       { name: 'Snacks', clues: [{ clue: 'Sold by the bucket at the movies.', answer: 'Popcorn' }, { clue: 'Chips piled with melted cheese.', answer: 'Nachos' }] },
     ],
   };
+  const turnsFor = (b: typeof board) => {
+    const { game } = boardChange(b, () => b);
+    const o = { request: 'space and snacks', asked: game.max, kept: boardClues(b), removed: [], earlier: [], ask: 'harder', avoid: [], named: true };
+    return { game, part: parts(game, o.kept, o.asked)[0], turns: changeTurns(game, o, parts(game, o.kept, o.asked)[0]) };
+  };
 
   it('writes each clue back in the line Fizzwick writes', () => {
     for (const s of boardClues(board)) expect(parseStreamLine(streamLine(s))).toEqual(s);
@@ -115,22 +120,50 @@ describe('asking for changes on a board', () => {
   });
 
   it('sends the board as it stands, row by row, and asks for the whole board again at its size', () => {
-    const g = boardChange(2, 2, () => true);
-    const { turns, counts } = changeTurns(g, { request: 'space and snacks', asked: 4, kept: boardClues(board), removed: [], earlier: [], ask: 'harder', avoid: [], named: true });
+    const { turns, part } = turnsFor(board);
     expect(turns.map((t) => t.role)).toEqual(['user', 'assistant', 'user']);
     expect(turns[0].content).toBe(buildPrompt('space and snacks', 2, 2).replace(`\n${NAME_ASK}`, ''));
     expect(turns[1].content).toBe('Space | 1 | This planet is nicknamed the Red Planet. | Mars\nSnacks | 1 | Sold by the bucket at the movies. | Popcorn\nSnacks | 2 | Chips piled with melted cheese. | Nachos');
-    expect(counts).toEqual({ all: 4 });
+    expect(part.counts).toEqual({ all: 4 });
     expect(turns[2].content).toContain('Write the whole list again: exactly 2 categories with 2 levels each: 4 lines in all');
     expect(turns[2].content.endsWith(NAME_ASK)).toBe(true);
   });
 
   it('counts a clue as kept only when its clue and answer are both unchanged', () => {
-    const g = boardChange(2, 2, () => true);
+    const { game } = boardChange(board, () => board);
     const after = [
       { category: 'Planets', level: 1, clue: 'This planet is nicknamed the Red Planet.', answer: 'Mars' },
       { category: 'Snacks', level: 1, clue: 'Sold by the bucket at the movies.', answer: 'Kettle corn' },
     ];
-    expect(tally(boardClues(board), after, g.keyOf)).toEqual({ kept: 1, replaced: 1 });
+    expect(tally(boardClues(board), after, game.keyOf)).toEqual({ kept: 1, replaced: 1 });
+  });
+
+  it("puts the player's own tiles back word for word, whatever they typed in them", () => {
+    const own = {
+      id: '', name: 'Bands', blurb: '',
+      categories: [
+        { name: 'Rock | Roll', clues: [{ clue: 'This band is AC|DC.', answer: 'AC|DC' }, { clue: 'A first line\nand a second', answer: 'Two  lines' }] },
+        { name: 'Pop', clues: [{ clue: 'Repeats Mars.', answer: 'Mars' }, { clue: 'Repeats Mars again.', answer: 'Mars' }] },
+      ],
+    };
+    const { turns } = turnsFor(own);
+    const lines = turns[1].content.split('\n');
+    expect(lines).toHaveLength(4);
+    for (const l of lines) expect(l.split('|')).toHaveLength(4);
+    let cur = { ...own, categories: own.categories.map((c) => ({ ...c, clues: c.clues.map(() => ({ clue: '', answer: '' })) })) };
+    const { game, place } = boardChange(own, () => cur);
+    for (const l of lines) {
+      const s = game.read(l, '');
+      expect(s).not.toBeNull();
+      cur = place(cur, s!);
+    }
+    expect(cur.categories).toEqual(own.categories);
+  });
+
+  it('checks only new clues', () => {
+    const cur = { ...board, categories: board.categories.map((c) => ({ ...c, clues: c.clues.map(() => ({ clue: '', answer: '' })) })) };
+    const { game } = boardChange(board, () => cur);
+    expect(game.read('Space | 2 | This is the planet Mars. | Mars', '')).toBeNull(); // gives its answer away
+    expect(game.read('Space | 2 | The largest planet. | Jupiter', '')).toEqual({ category: 'Space', level: 2, clue: 'The largest planet.', answer: 'Jupiter' });
   });
 });

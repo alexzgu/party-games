@@ -32,9 +32,9 @@ export function readLine(w: ListWizard, line: string): ListItem | null {
 /** An item as the line `readLine` reads: "Prompt: …". */
 export const itemLine = (w: ListWizard, i: ListItem): string => `${w.labels[i.field]}: ${i.text}`;
 
-/** "30 prompts and 120 answers". */
+/** "30 prompts and 120 answers" (a list asked for none is left out). */
 export const askLine = (w: ListWizard, counts: Record<string, number>): string =>
-  w.specs.map((s) => `${counts[s.field]} ${counts[s.field] === 1 ? s.one : s.many}`).join(' and ');
+  w.specs.filter((s) => counts[s.field]).map((s) => `${counts[s.field]} ${counts[s.field] === 1 ? s.one : s.many}`).join(' and ');
 
 /** Items as the request lists them: "Prompt: …". */
 const listed = (w: ListWizard, items: readonly ListItem[]): string[] => items.map((i) => itemLine(w, i));

@@ -34,10 +34,10 @@ export function cardProblems(c: TabooCard): string[] {
   return problems;
 }
 
-/** A card with every field trimmed. */
 /** A card as the line `parseCards` reads: "Word: one, two, three, four, five". */
 export const cardLine = (c: TabooCard): string => `${c.word}: ${c.banned.join(', ')}`;
 
+/** A card with every field trimmed. */
 export const tidy = (c: TabooCard): TabooCard => ({ word: clean(c.word), banned: c.banned.map(clean) });
 
 /**

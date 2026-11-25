@@ -2,14 +2,20 @@
 // as the request's first few words, takes the name he suggests, and once the player types in it,
 // nothing replaces it while that pack is on screen ("More" and "Try again" included). A typed name
 // belongs to the pack it was typed for: a run started in another way (paste, by hand, wizard) or
-// with other words is a new pack, and starts afresh.
+// with other words is a new pack, and starts afresh. A typed name is never replaced: while Fizzwick
+// rewrites the pack the field is read-only, and putting an earlier name back (a failed or stopped
+// change, Undo) happens only when the player has not typed since that name was on screen.
 import { cleanName, cleanRequest, NAME_MAX, nameFrom } from './wizardAsk';
 
-export interface NameSnapshot { value: string; typed: boolean; suggested: boolean; for: string | null }
+export interface NameSnapshot { value: string; typed: boolean; suggested: boolean; for: string | null; typings: number }
 
 export class PackName {
   value = $state('');
+  /** Read-only while Fizzwick rewrites the pack ("Ask for changes"). */
+  locked = $state(false);
   #typed = false;
+  /** How many times the player has typed in the field. */
+  #typings = 0;
   #suggested = false;
   /** The way and the request of the pack on screen ("wizard\u0000pastries"). */
   #for: string | null = null;
@@ -44,8 +50,15 @@ export class PackName {
 
   /** The player typed in the field. */
   type(value: string): void {
+    if (this.locked) return;
     this.value = value;
     this.#typed = true;
+    this.#typings++;
+  }
+
+  /** Makes the field read-only (`on`) or editable again. */
+  hold(on: boolean): void {
+    this.locked = on;
   }
 
   /** Back to the request: a name the player typed stays (for this same pack); anything else goes. */
@@ -62,10 +75,12 @@ export class PackName {
 
   /** Everything about the name, to put back on Undo or when a change fails. */
   snapshot(): NameSnapshot {
-    return { value: this.value, typed: this.#typed, suggested: this.#suggested, for: this.#for };
+    return { value: this.value, typed: this.#typed, suggested: this.#suggested, for: this.#for, typings: this.#typings };
   }
 
+  /** Puts `s` back, unless the player has typed since it was taken: the field then stays theirs. */
   restore(s: NameSnapshot): void {
+    if (s.typings !== this.#typings) return;
     this.value = s.value;
     this.#typed = s.typed;
     this.#suggested = s.suggested;

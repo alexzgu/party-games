@@ -9,7 +9,7 @@
 
 <label class="name">
   <span>Pack name</span>
-  <input type="text" value={name.value} oninput={(e) => name.type(e.currentTarget.value)} {placeholder} maxlength={NAME_MAX} autocomplete="off" enterkeyhint="done" />
+  <input type="text" value={name.value} oninput={(e) => name.type(e.currentTarget.value)} readonly={name.locked} {placeholder} maxlength={NAME_MAX} autocomplete="off" enterkeyhint="done" />
 </label>
 
 <style>

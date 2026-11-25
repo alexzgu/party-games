@@ -33,6 +33,13 @@ export interface MorePack {
 /** How many characters of existing items one request lists (the wizard server takes 64 KB in all). */
 export const MAX_LISTED_CHARS = 24_000;
 
+/**
+ * The most bytes the lists of one request ("Ask for changes") may bring its body to: the wizard
+ * server refuses a body over 64 KB (worker/src/validate.ts, MAX_BODY_BYTES); this leaves room for
+ * the request's other fields.
+ */
+export const MAX_REQUEST_BYTES = 56 * 1024;
+
 /** What the add-more screen says when nothing new came back. */
 export const EMPTY_HANDED = 'Fizzwick came back empty-handed. Try again, or change the steer.';
 

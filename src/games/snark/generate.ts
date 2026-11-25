@@ -91,7 +91,7 @@ export const CHANGE: ChangeGame<SnarkItem, string> = {
   first: (request, count) => buildPrompt(request, count, finalsFor(count), []),
   line: itemLine, read: (line) => readItem(line), keyOf: itemKey,
   kindOf: (i) => i.kind, split: (count) => ({ prompt: count, final: finalsFor(count) }),
-  describe: (c) => `${c.prompt} prompts with stock answers and ${c.final} ${c.final === 1 ? 'final' : 'finals'}`,
+  describe: (c) => [c.prompt ? `${c.prompt} ${c.prompt === 1 ? 'prompt' : 'prompts'} with stock answers` : '', c.final ? `${c.final} ${c.final === 1 ? 'final' : 'finals'}` : ''].filter(Boolean).join(' and '),
   avoidLine: (q) => q, avoidKey: promptKey,
 };
 
