@@ -29,11 +29,11 @@
     {:else if rejoin}
       <RoomBanner title="You're in room {rejoin.code}" detail="as {rejoin.name}" action="Rejoin" label="Rejoin room {rejoin.code} as {rejoin.name}" onclick={() => go(`/rather/join?code=${rejoin.code}`)} tip="Takes you back into that room under your name" />
     {/if}
-    <Button size="lg" onclick={hostHere} tip={openRoom ? 'Goes back to the room open on this device' : 'Opens a room here and shows its code for phones to join'}>{openRoom ? `Room ${openRoom.code}` : 'Host'}</Button>
+    <Button size="lg" onclick={() => go('/rather/aloud')} tip="Read the questions aloud from this phone; everyone picks with a show of hands">Play</Button>
+    <p class="muted">One phone reads the questions aloud and the room picks with a show of hands.</p>
+    <Button size="lg" variant="secondary" onclick={hostHere} tip={openRoom ? 'Goes back to the room open on this device' : 'Opens a room here and shows its code for phones to join'}>{openRoom ? `Room ${openRoom.code}` : 'Host'}</Button>
     <Button size="lg" variant="secondary" onclick={() => go('/rather/join')} tip="Type in a room code to play on this device">Join</Button>
-    <p class="muted">3 to 12 players, each on their own phone, and a screen everyone can see.</p>
-    <Button size="lg" variant="secondary" onclick={() => go('/rather/aloud')} tip="Read the questions aloud from this phone; everyone picks with a show of hands">One phone</Button>
-    <p class="muted">Or read the questions aloud and pick with a show of hands.</p>
+    <p class="muted">Or everyone picks on their own phone, with a screen everyone can see (3 to 12 players).</p>
     <ConnectionLink />
   </div>
 </Screen>

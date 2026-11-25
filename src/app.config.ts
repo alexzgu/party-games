@@ -37,7 +37,7 @@ export const GAMES: GameInfo[] = [
   { id: 'sketch', name: 'Sketchy', players: '3–10 players · own phones', tags: ['Own phones', 'Drawing'], accent: 'var(--c-sketch)', emoji: '✏️' },
   { id: 'hand', name: 'Bad Hand', players: '3–10 players · own phones', tags: ['Own phones', 'Funny'], accent: 'var(--c-hand)', emoji: '🃏' },
   { id: 'odd', name: 'Odd One Out', players: '3–12 players', tags: ['One phone', 'Words'], accent: 'var(--c-odd)', emoji: '🕵️' },
-  { id: 'rather', name: 'Would You Rather', players: '3–12 players · own phones', tags: ['One phone', 'Own phones', 'Funny'], accent: 'var(--c-rather)', emoji: '🤔' },
+  { id: 'rather', name: 'Would You Rather', players: '3–12 players · one phone', tags: ['One phone', 'Own phones', 'Funny'], accent: 'var(--c-rather)', emoji: '🤔' },
   { id: 'fish', name: 'Go Fish', players: '2–6 players · own phones', tags: ['Own phones', 'Cards'], accent: 'var(--c-fish)', emoji: '🎣' },
   { id: 'trivia', name: 'Smarty Pants', players: '2–12 players · own phones', tags: ['Own phones', 'Trivia'], accent: 'var(--c-trivia)', emoji: '🤓' },
 ];

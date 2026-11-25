@@ -1589,10 +1589,13 @@ sees the same secret word, the odd one out does not, and the room talks it out. 
 
 The folk party game, our questions and look. Each question is two choices ("be able to fly or be
 invisible"); everyone picks a side, then the room argues about it. Two ways to play from the start
-screen (`#/rather`: Host, Join and One phone, with the Return / Rejoin banner as in Bad Hand).
-Amounts marked *house* are ours: the folk game keeps no score.
+screen (`#/rather`, with the Return / Rejoin banner as in Bad Hand): the main way in is one phone
+read aloud (Play, the large button: "One phone reads the questions aloud and the room picks with a
+show of hands."); the second choice is a room (Host and Join under it: "Or everyone picks on their
+own phone, with a screen everyone can see (3 to 12 players)."). Its card on the main menu reads
+"3–12 players · one phone" (its tags still list both One phone and Own phones). Amounts marked *house* are ours: the folk game keeps no score.
 
-- **Own phones**: 3–12 players join a host screen through the shared room link; name limit 20
+- **Own phones** (the second choice): 3–12 players join a host screen through the shared room link; name limit 20
   characters.
 - **Questions**: only the picked packs' questions (when none of the picks exists any more,
   Classic alone, the default; host and one phone share this rule, `pickedPacks`), shuffled, one per
@@ -1636,7 +1639,7 @@ Amounts marked *house* are ours: the folk game keeps no score.
   pack just made or imported joins the picked ones; when the picks hold fewer questions than a game
   asks, a note says so: "6 questions picked: a game will have 6"), and a Rules row over Done opening questions per game
   and seconds to vote; they apply to the next game.
-- **One phone** (`#/rather/aloud`): for reading aloud with a show of hands. "Would you rather…" and
+- **One phone** (`#/rather/aloud`, the main way in): for reading aloud with a show of hands. "Would you rather…" and
   the two choices large in the same two colours, Previous and Next, a count ("7 of 100") and a
   Packs link to the settings. The same questions a room would ask from (`roomQuestions`), shuffled;
   the place is kept while the app stays open and the picked questions stay the same. After the last question it
