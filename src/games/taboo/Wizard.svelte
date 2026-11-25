@@ -89,7 +89,7 @@
   {#if items.length === 0 && streaming}
     <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” cards…</p>
   {/if}
-  <Triage {items} keyOf={cardId} {streaming} onsave={(kept) => onsave(name, theme, kept, byPass)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+  <Triage {items} keyOf={cardId} {streaming} wizard onsave={(kept) => onsave(name, theme, kept, byPass)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
     {#snippet item(c: TabooCard)}<span class="txt"><span class="w">{c.word}</span><span class="b">{c.banned.join(' · ')}</span></span>{/snippet}
   </Triage>
 {/if}

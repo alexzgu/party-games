@@ -196,7 +196,7 @@
         <Button size="sm" variant="secondary" onclick={run}>Try again</Button>
       </div>
     {/if}
-    <Triage {items} keyOf={(s: string) => s} {streaming} onsave={save} oncancel={cancel} onmore={mode === 'claude' && theme ? run : undefined}>
+    <Triage {items} keyOf={(s: string) => s} {streaming} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' && theme ? run : undefined}>
       {#snippet item(s: string)}<span class="word">{s}</span>{/snippet}
     </Triage>
   {/if}

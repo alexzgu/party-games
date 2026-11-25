@@ -127,7 +127,7 @@
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring more {noun}…</p>
     {/if}
     {#if unsaved}<div class="error" role="alert"><p>{unsaved}</p></div>{/if}
-    <Triage {items} {keyOf} {streaming} onsave={(kept: T[]) => { unsaved = onadd(kept, byPass) || ''; }} oncancel={cancel} onmore={range && keyed ? run : undefined} {item} />
+    <Triage {items} {keyOf} {streaming} wizard onsave={(kept: T[]) => { unsaved = onadd(kept, byPass) || ''; }} oncancel={cancel} onmore={range && keyed ? run : undefined} {item} />
   {/if}
 </Screen>
 

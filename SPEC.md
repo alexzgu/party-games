@@ -47,7 +47,7 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
-  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
+  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `WizardNote` (the line that Fizzwick can be wrong, over his results), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
   `ExportPack` (Export), `Community` and `CommunityItems` (browse, preview, import and star
   Community packs, over a pack list or on the Community page), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown), `cards/PlayingCard` and `cards/CardFan` (see Playing cards).
 - `src/pages/` — the pages that are not a game: `Home`, `Games`, `Settings`, `History`, `CommunityPage`
@@ -88,6 +88,14 @@ Three routes, in the order the owner chose to rely on them:
    wizard is wanted: Settings and in place of the wizard's form on every make page.
    `streamLines()` hands each line over as soon as it is complete; items stream into `Triage`;
    "More" sends the items already kept so the wizard avoids repeats.
+   Fizzwick writes from memory and nobody checks his facts, so wherever items he wrote are on
+   screen (the review of a pack he just made, its "Add more" results, and in Big Board the board
+   as he writes it and the new board's editor until it is saved), one quiet line (`WizardNote`)
+   says "Fizzwick writes from memory and can get things wrong. Check anything that matters
+   before you play." with a small "Got it" ("Don't show this again"). It never shows on the
+   request form, on a pasted or typed list, or in a saved pack's editor. "Got it" hides it at
+   once and for good on this phone, in every game, present and future (one flag,
+   `settings.wizardNoteSeen`); when storage is blocked the note simply keeps showing.
 4. **The magic words** (second way in, kept apart from invite links): a small Cloudflare Worker
    in `worker/` (setup in `worker/README.md`) holds its own, spend-capped Anthropic key and a few
    shared party phrases as secrets the owner enters in Cloudflare. A friend types a word or a

@@ -15,17 +15,20 @@
   import * as edit from './board';
   import { loadNewBoard, newBoardId, pickBoard, saveNewBoard } from './store';
   import { afterRun, shareWizardPack } from '../../lib/library';
+  import WizardNote from '../../components/WizardNote.svelte';
 
   // One board, every tile editable in place: name, blurb, categories (add, remove, rename,
   // reorder), levels (added or removed on every category at once) and each clue and answer.
   // A saved board saves on every change; editing a built-in saves this phone's copy under the
   // same id ("Restore original" drops it). A board just made (`id` null) waits in storage
   // until "Save board". Empty tiles are allowed: the board is then a draft that cannot be played.
-  let { id, note = '', category = 0, onback, onsaved }: {
+  let { id, note = '', wizard = false, category = 0, onback, onsaved }: {
     /** The saved board to edit, or null for the board just made. */
     id: string | null;
     /** What the paste step skipped, shown once at the top. */
     note?: string;
+    /** The board just made was written by Fizzwick: the note that he can be wrong shows over it. */
+    wizard?: boolean;
     /** The category tab to open on (e.g. the one with an empty tile). */
     category?: number;
     onback: () => void;
@@ -185,7 +188,7 @@
     <!-- Pinned: the pack's details (they fold away) and the category tabs; only the open
          category's name, tools and clues scroll. -->
     <PinnedPanel kind="editor" foldId="quiz-details" foldName="details" foldSpoken="pack details" keep="items">
-      {#snippet notice()}{#if note}<p class="faint small">{note}</p>{/if}{/snippet}
+      {#snippet notice()}{#if note}<p class="faint small">{note}</p>{/if}{#if fresh && wizard}<WizardNote />{/if}{/snippet}
       {#snippet top()}
         {#if board}
           <div class="about">

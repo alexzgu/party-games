@@ -1,6 +1,7 @@
 <script lang="ts" generics="T">
   import type { Snippet } from 'svelte';
   import Button from './Button.svelte';
+  import WizardNote from './WizardNote.svelte';
 
   // Review loop for generated items: everything starts kept; tap to drop the duds.
   // Items stream in while the model is still writing.
@@ -9,6 +10,7 @@
     keyOf,
     item,
     streaming = false,
+    wizard,
     saveLabel = 'Save',
     onsave,
     oncancel,
@@ -18,6 +20,8 @@
     keyOf: (t: T) => string;
     item: Snippet<[T]>;
     streaming?: boolean;
+    /** Fizzwick wrote these (not a pasted list): the note that he can be wrong shows over them. */
+    wizard: boolean;
     /** What the main button says before the count, when a step follows instead of a save. */
     saveLabel?: string;
     onsave: (kept: T[]) => void;
@@ -41,6 +45,7 @@
     {#if streaming}<span class="dot" aria-hidden="true"></span>{/if}
     <span>{#if streaming}Writing… {/if}<b>{kept.length}</b> kept · {items.length - kept.length} dropped · tap to toggle</span>
   </p>
+  {#if wizard && items.length}<WizardNote />{/if}
   <ul class="list">
     {#each items as t (keyOf(t))}
       <li class="pop-in">

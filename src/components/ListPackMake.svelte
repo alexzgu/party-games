@@ -185,7 +185,7 @@
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” {one}…</p>
     {/if}
     {#if unsaved}<div class="error" role="alert"><p>{unsaved}</p></div>{/if}
-    <Triage {items} {keyOf} {streaming} onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+    <Triage {items} {keyOf} {streaming} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
       {#snippet item(i: ListItem)}
         <span class="it">
           {#if specs.length > 1}<span class="tag">{specs.find((s) => s.field === i.field)?.one}</span>{/if}

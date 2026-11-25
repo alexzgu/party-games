@@ -184,7 +184,7 @@
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” prompts…</p>
     {/if}
 
-    <Triage {items} keyOf={promptKey} {streaming} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
+    <Triage {items} keyOf={promptKey} {streaming} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
       {#snippet item(p)}<span class="it"><span class="lead">Name 3</span> {p}</span>{/snippet}
     </Triage>
   {/if}

@@ -199,7 +199,7 @@
       </div>
     {:else}
     {#key batch}
-      <Triage {items} keyOf={cardId} {streaming} saveLabel={savedPack ? 'Save' : 'Continue with'} {onsave} oncancel={cancel} onmore={mode === 'claude' ? more : undefined}>
+      <Triage {items} keyOf={cardId} {streaming} wizard={mode === 'claude'} saveLabel={savedPack ? 'Save' : 'Continue with'} {onsave} oncancel={cancel} onmore={mode === 'claude' ? more : undefined}>
         {#snippet item(c: Spectrum)}<span class="pair">{c.left} <span class="sep" aria-label="to">↔</span> {c.right}</span>{/snippet}
       </Triage>
     {/key}

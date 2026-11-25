@@ -127,7 +127,7 @@
     {#if items.length === 0 && streaming}
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” prompts…</p>
     {/if}
-    <Triage {items} keyOf={itemKey} {streaming} onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+    <Triage {items} keyOf={itemKey} {streaming} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
       {#snippet item(i: SnarkItem)}<WizardItem {i} />{/snippet}
     </Triage>
   {/if}

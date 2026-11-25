@@ -11,6 +11,7 @@
   import { hasKey, viaPass, WANTS } from '../../lib/claude';
   import { afterRun } from '../../lib/library';
   import MagicWords from '../../components/MagicWords.svelte';
+  import WizardNote from '../../components/WizardNote.svelte';
   import { sfx } from '../../lib/sound';
   import { blankBoard, DEFAULT_CATEGORIES, DEFAULT_LEVELS, emptyTiles, MAX_CATEGORIES, MAX_LEVELS } from './board';
   import { parsePastedBoard } from './parse';
@@ -22,8 +23,8 @@
   // anything before saving. The board in the making is kept in storage, so a reload keeps it.
   // No <form> around the size steppers: their buttons would submit it.
   let { onmade, onresume, onback }: {
-    /** A new board is ready for the editor; `note` says what a paste skipped. */
-    onmade: (b: QuizBoard, note: string) => void;
+    /** A new board is ready for the editor; `note` says what a paste skipped; `wizard`: Fizzwick wrote it. */
+    onmade: (b: QuizBoard, note: string, wizard: boolean) => void;
     /** Open the unsaved board left from before. */
     onresume: () => void;
     onback: () => void;
@@ -61,7 +62,7 @@
   /** Opens `b` in the editor; `wizard` for a board Fizzwick wrote. */
   function make(b: QuizBoard, note = '', wizard = false) {
     saveNewBoard(draft(b, wizard));
-    onmade(b, note);
+    onmade(b, note, wizard);
   }
 
   async function ask() {
@@ -118,6 +119,7 @@
       <p class="count" aria-live="polite">
         {#if streaming}<span class="dot" aria-hidden="true"></span> Fizzwick is conjuring… {/if}<b>{filled}</b> of {cats * len} clues
       </p>
+      <WizardNote />
       <BoardPreview board={live} />
       {#if error}
         <div class="error" role="alert">

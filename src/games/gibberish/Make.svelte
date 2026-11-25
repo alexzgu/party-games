@@ -185,7 +185,7 @@
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” cards…</p>
     {/if}
 
-    <Triage {items} keyOf={answerKey} {streaming} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
+    <Triage {items} keyOf={answerKey} {streaming} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
       {#snippet item(c)}
         <span class="it">
           <span class="ph">{c.phrase}</span>

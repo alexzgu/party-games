@@ -17,6 +17,8 @@ export interface Settings {
   theme: 'system' | 'light' | 'dark';
   /** How every game's pack list on setup shows its packs. */
   packView: PackView;
+  /** "Got it" tapped on the note under Fizzwick's results (wizardNote.ts): it never shows again on this phone. */
+  wizardNoteSeen: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -28,6 +30,7 @@ const DEFAULTS: Settings = {
   headsDownFeedback: 'edge',
   theme: 'dark',
   packView: 'tiles',
+  wizardNoteSeen: false,
 };
 
 export const settings = $state<Settings>(load('settings', DEFAULTS));
