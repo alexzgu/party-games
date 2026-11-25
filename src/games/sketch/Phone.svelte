@@ -9,7 +9,7 @@
   import Timer from '../../components/room/Timer.svelte';
   import { back, route } from '../../lib/router.svelte';
   import { keepAwake } from '../../lib/wakelock';
-  import { demo, demoArt } from './demo';
+  import { demo, demoArt, demoGuesses } from './demo';
   import { phone, gallery } from './player.svelte';
   import { artIds } from './view';
   import { phaseLabel, progress } from './labels';
@@ -25,9 +25,7 @@
 
   const fixed = $derived(route.params.get('demo'));
   const code = $derived(route.params.get('code') ?? '');
-  /** A demo's number of guesses (&feed=<n>), when given. */
-  const guesses = (n: string | null) => n && /^\d+$/.test(n) ? Math.min(Number(n), 200) : null;
-  const v = $derived(fixed ? fixed === 'join' ? null : demo(fixed, true, guesses(route.params.get('feed'))) : phone.view);
+  const v = $derived(fixed ? fixed === 'join' ? null : demo(fixed, true, demoGuesses(route.params.get('feed'))) : phone.view);
   const art = $derived(fixed ? demoArt : gallery.art);
   let now = $state(Date.now());
   const remaining = $derived(fixed ? v?.left ?? null : phone.left(now));
@@ -39,9 +37,35 @@
   const steps = $derived(v?.phase === 'write' || v?.phase === 'draw' || v?.phase === 'describe');
   /** Telephone: joined after the chains were dealt. */
   const watching = $derived(!!v && steps && !!me && !v.order?.includes(me.pid));
-  /** A step being done or a drawing being drawn or guessed: the screen fits the phone, nothing
-   *  under the pad scrolls the page, and the guesses take the room that is left. */
-  const fit = $derived(!!v && !watching && ((steps && !!v.task && !v.sent && sent !== v.at) || (v.phase === 'guess' && !!v.ink)));
+  /** The Telephone draw step, or a drawing being drawn or guessed: the screen is meant to fit the
+   *  phone, the pad and its buttons on screen and the guesses taking the room left under them. */
+  const fit = $derived(!!v && !watching && ((steps && v.task?.kind === 'draw' && !v.sent && sent !== v.at) || (v.phase === 'guess' && !!v.ink)));
+  /** Even with the pad at its smallest and the guesses at their shortest it does not fit (a short
+   *  phone, a phone on its side): the page scrolls as one piece, laid out as it always was. */
+  let cramped = $state(false);
+  const fits = $derived(fit && !cramped);
+  let play = $state<HTMLElement>();
+  // Tried again for each turn and whenever the window changes size; checked whenever what is on
+  // screen changes, once the app's fonts are in (text in a stand-in font can be taller).
+  const turn = $derived(v?.phase === 'guess' ? v.ink : v?.task?.id);
+  $effect(() => {
+    void turn;
+    cramped = false;
+  });
+  function check() {
+    if (document.fonts && document.fonts.status !== 'loaded') return void document.fonts.ready.then(check);
+    const screen = play?.closest<HTMLElement>('.screen');
+    if (fits && screen && screen.scrollHeight > screen.clientHeight + 1) cramped = true;
+  }
+  $effect(() => {
+    void v;
+    void phone.link;
+    if (!fits || !play) return;
+    check();
+    const seen = new ResizeObserver(check);
+    for (const part of play.children) seen.observe(part);
+    return () => seen.disconnect();
+  });
   const name = (pid?: string) => v?.players.find((p) => p.pid === pid)?.name ?? 'The drawer';
 
   $effect(() => {
@@ -94,14 +118,15 @@
   }
 </script>
 
+<svelte:window onresize={() => (cramped = false)} />
 {#if !fixed}<SeatWait link={phone} />{/if}
 
 {#if !v || (!fixed && phone.stopped)}
   {#key code}<Join code={code || phone.me?.code || ''} fixed={!!fixed} />{/key}
 {:else}
-  <Screen title={gameName('sketch')} fill={fit} onback={() => fixed ? back('/sketch') : (leaving = true)}>
+  <Screen title={gameName('sketch')} fill={fits} onback={() => fixed ? back('/sketch') : (leaving = true)}>
     {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
-    <div class="play" class:fit>
+    <div class="play" class:fit={fits} bind:this={play}>
       {#if !fixed && phone.link !== 'live'}<p role="status">{phone.trouble || 'Reconnecting…'}</p>{/if}
       {#if me && v.phase !== 'guess' && !(steps && v.task && !v.sent)}<p class="me"><b>{me.name}</b>{v.mode === 'guess' ? ` · ${me.score.toLocaleString()} pts` : ''} · Room {roomCode}</p>{/if}
       {#if v.phase !== 'lobby'}
@@ -146,8 +171,8 @@
         {:else}<p class="big">{name(v.drawer)} is choosing a word…</p>{/if}
       {:else if v.phase === 'guess' && v.ink}
         {#key v.ink}
-          {#if drawing}<PhoneDrawer {v} me={me?.pid} expired={remaining === 0} demo={!!fixed} />
-          {:else}<PhoneGuess {v} {art} me={me?.pid} demo={!!fixed} onguess={guess} />{/if}
+          {#if drawing}<PhoneDrawer {v} me={me?.pid} expired={remaining === 0} demo={!!fixed} fit={fits} />
+          {:else}<PhoneGuess {v} {art} me={me?.pid} demo={!!fixed} fit={fits} onguess={guess} />{/if}
         {/key}
       {:else if v.phase === 'reveal'}
         <Reveal {v} {art} />
@@ -167,7 +192,7 @@
 
 <style>
   .play { display: grid; gap: var(--s-2); padding-bottom: var(--s-4); }
-  /* Fills the room under the header; a part that should give way (the guesses) is the one that grows and shrinks. */
+  /* Fills the room under the header; the guesses are the part that grows and shrinks. */
   .play.fit { flex: 1 1 0; display: flex; flex-direction: column; }
   .heading { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
   .heading h3 { font-size: clamp(1.15rem, calc(5vw * var(--text-scale)), 1.8rem); }

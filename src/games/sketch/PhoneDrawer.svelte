@@ -11,7 +11,7 @@
   // The drawer's phone in Draw & guess: the word, the pad, and the guesses coming in. What is
   // drawn goes to the host about every 100 ms: only what was added, or all of it after an undo
   // or clear, after a reconnect, or when the host missed some.
-  let { v, me, expired, demo = false }: { v: View; me?: string; expired: boolean; demo?: boolean } = $props();
+  let { v, me, expired, demo = false, fit = false }: { v: View; me?: string; expired: boolean; demo?: boolean; fit?: boolean } = $props();
   // The parent keys this screen to the turn.
   // svelte-ignore state_referenced_locally
   const id = v.ink!;
@@ -64,13 +64,15 @@
   <Canvas eraser label="Draw the word" drawing={draft.drawing} onchange={change} disabled={v.paused || expired || !ready} />
 </div>
 <p class="count">{v.got?.length ?? 0} of {v.guessers ?? 0} got it</p>
-<div class="feed"><Feed feed={v.feed ?? []} {me} /></div>
+<div class="feed" class:fit><Feed feed={v.feed ?? []} {me} /></div>
 
 <style>
   .pad { display: grid; gap: var(--s-1); }
   .count { color: var(--text-dim); text-align: center; }
-  /* The room left under the pad (the screen fits the phone: Phone.svelte); the list is as tall as its
-     guesses up to that room, and scrolls inside it past that, newest at the bottom. */
-  .feed { flex: 1 1 0; min-height: 3.5em; display: flex; flex-direction: column; }
-  .feed :global(ol) { flex: 0 1 auto; min-height: 3.5em; max-height: 22dvh; }
+  /* On a screen that fits the phone (Phone.svelte) the list takes all the room left under the pad,
+     never under about two and a half rows, as tall as its guesses and scrolling inside past that;
+     on a screen that scrolls as one piece it is as tall as its guesses up to 22% of the screen. */
+  .feed { display: grid; max-height: 22dvh; min-height: 3.5em; }
+  .feed.fit { display: flex; flex-direction: column; flex: 1 1 0; max-height: none; min-height: 5.2em; }
+  .feed.fit :global(ol) { flex: 0 1 auto; min-height: 3.5em; }
 </style>

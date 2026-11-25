@@ -1,15 +1,38 @@
 <script lang="ts">
   import type { Feed } from './core';
-  // The turn's guesses, newest at the bottom: "Jo: lamp", or "Jo got it!" for a right one.
+  import { afterChange, atEnd } from './follow';
+  // The turn's guesses, newest at the bottom: "Jo: lamp", or "Jo got it!" for a right one. It
+  // keeps the newest in sight as guesses come in or its box changes size, unless scrolled up.
   let { feed, me }: { feed: Feed[]; me?: string } = $props();
   let list = $state<HTMLOListElement>();
+  let following = true;
+  /** Where this list last scrolled itself: the scroll event that follows is not the player's. */
+  let moved = -1;
+
+  function follow() {
+    const top = list ? afterChange(following, list.scrollHeight) : null;
+    if (!list || top === null) return;
+    list.scrollTop = top;
+    moved = list.scrollTop;
+  }
+  function scrolled() {
+    if (!list || list.scrollTop === moved) return;
+    moved = -1;
+    following = atEnd(list.scrollTop, list.scrollHeight, list.clientHeight);
+  }
   $effect(() => {
     void feed.length;
-    if (list) list.scrollTop = list.scrollHeight;
+    follow();
+  });
+  $effect(() => {
+    if (!list) return;
+    const seen = new ResizeObserver(follow);
+    seen.observe(list);
+    return () => seen.disconnect();
   });
 </script>
 
-<ol bind:this={list} aria-label="Guesses" aria-live="polite">
+<ol bind:this={list} aria-label="Guesses" aria-live="polite" onscroll={scrolled}>
   {#each feed as f, i (i)}
     <li class:got={f.got} class:mine={f.pid === me}>{#if f.got}<b>{f.name}</b> got it! ✓{:else}<b>{f.name}:</b> {f.text}{/if}</li>
   {:else}

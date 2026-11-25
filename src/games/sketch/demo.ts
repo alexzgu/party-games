@@ -63,6 +63,11 @@ function guessing(v: View, key: string, phone: boolean, guesses: number | null) 
   if (v.phase === 'reveal') v.points = [{ pid: 'b', points: 390 }, { pid: 'd', points: 130 }];
 }
 
+/** A demo address's guess count (&feed=<n>): a whole number, at most 200; anything else gives the usual four. */
+export function demoGuesses(param: string | null): number | null {
+  return param && /^\d+$/.test(param) ? Math.min(Number(param), 200) : null;
+}
+
 export function demo(key: string, phone: boolean, guesses: number | null = null): View {
   const phase = phases.find((p) => p === key) ?? alias[key] ?? 'lobby';
   const mode = ['pick', 'guess', 'reveal', 'scores', 'over'].includes(phase) ? 'guess' : 'telephone';

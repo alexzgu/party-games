@@ -1497,9 +1497,14 @@ on their own phones through the shared room link; a host screen shows the room. 
   as "Jo got it!". Matching ignores case, accents, spaces, punctuation and a leading "the", "a"
   or "an". A guess one letter off (a letter changed, added or dropped; words of four or more
   letters) still shows in the list and tells only that guesser "Close!" until their next guess.
-  A player who has guessed it sees the word and guesses no more. On the drawer's and the
-  guessers' phones the page never scrolls: the pad or drawing and the actions stay on screen and
-  the list of guesses takes the room left under them, scrolling inside itself (newest at the bottom).
+  A player who has guessed it sees the word and guesses no more. The drawer's and the guessers'
+  phones (and Telephone's draw step) fit the screen when they can: the pad or drawing and the
+  buttons stay on screen, nothing scrolls but the list of guesses, and the list takes all the room
+  left under them (never less than about two and a half rows). Where even the smallest pad (or
+  drawing) and that much list do not fit, as on a short phone or one on its side, the page scrolls
+  as one piece and the list is as tall as its guesses up to 22% of the screen's height (24% on a
+  guesser's phone). The list keeps its newest guess in sight as guesses come in or its room changes, unless the player has
+  scrolled up to read; scrolled back down, it follows again.
 - **Hint**: guessers see the word's shape (a box per letter, gaps between words, hyphens and
   apostrophes shown, the letter count beside it); one letter is shown at half time and another
   at three quarters (*house*: the original's default is two hints), never more than a third of

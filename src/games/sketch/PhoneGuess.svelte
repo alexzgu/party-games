@@ -9,8 +9,8 @@
   import type { View } from './view';
   // A guesser's phone in Draw & guess: the drawing as it is drawn, the word's shape, a guess box
   // and everyone's guesses. One letter off tells only this phone "Close!".
-  let { v, art, me, demo = false, onguess }: {
-    v: View; art: Record<string, Drawing>; me?: string; demo?: boolean; onguess: (text: string) => void;
+  let { v, art, me, demo = false, fit = false, onguess }: {
+    v: View; art: Record<string, Drawing>; me?: string; demo?: boolean; fit?: boolean; onguess: (text: string) => void;
   } = $props();
   // The parent keys this screen to the turn, so what is typed belongs to it.
   // svelte-ignore state_referenced_locally
@@ -43,7 +43,7 @@
     <Button type="submit" disabled={!can || !draft.text.trim()}>Guess</Button>
   </form>
 {:else if v.word}<p class="note">You got it! Watch the others guess.</p>{/if}
-<div class="feed"><Feed feed={v.feed ?? []} {me} /></div>
+<div class="feed" class:fit><Feed feed={v.feed ?? []} {me} /></div>
 
 <style>
   .pic { width: min(100%, max(160px, 100dvh - 400px * var(--chrome-scale))); margin-inline: auto; }
@@ -51,8 +51,10 @@
   input { min-height: 44px; min-width: 0; }
   .close { color: var(--c-pass); font-weight: 800; text-align: center; }
   .note { color: var(--text-dim); text-align: center; }
-  /* The room left under the pad (the screen fits the phone: Phone.svelte); the list is as tall as its
-     guesses up to that room, and scrolls inside it past that, newest at the bottom. */
-  .feed { flex: 1 1 0; min-height: 3.5em; display: flex; flex-direction: column; }
-  .feed :global(ol) { flex: 0 1 auto; min-height: 3.5em; max-height: 24dvh; }
+  /* On a screen that fits the phone (Phone.svelte) the list takes all the room left under the pad,
+     never under about two and a half rows, as tall as its guesses and scrolling inside past that;
+     on a screen that scrolls as one piece it is as tall as its guesses up to 24% of the screen. */
+  .feed { display: grid; max-height: 24dvh; min-height: 3.5em; }
+  .feed.fit { display: flex; flex-direction: column; flex: 1 1 0; max-height: none; min-height: 5.2em; }
+  .feed.fit :global(ol) { flex: 0 1 auto; min-height: 3.5em; }
 </style>
