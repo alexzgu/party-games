@@ -12,6 +12,7 @@
   import { deckEntry } from '../forehead/find';
   import { wordDecks } from '../../lib/content';
   import { defaultPicks } from './deal';
+  import { keptPicks } from '../../lib/lend';
   import { unlockAudio } from '../../lib/sound';
   import { loadPlayers, loadSetup, savePlayers, saveSetup } from './store';
   import { MIN_PLAYERS, ROUNDS_RANGE, standings, type GameOptions, type GameState } from './logic';
@@ -31,9 +32,9 @@
   let rounds = $state(prefs.rounds);
   let hint = $state(prefs.hint);
   let oddNeverStarts = $state(prefs.oddNeverStarts);
-  // First visit: every built-in pack except the adults-only one.
+  // First visit, or every picked pack deleted since: every built-in pack except the adults-only one.
   // svelte-ignore state_referenced_locally
-  let selected = $state((prefs.packIds ?? defaultPicks(decks)).filter((id) => decks.some((d) => d.id === id)));
+  let selected = $state(keptPicks(decks, prefs.packIds ?? defaultPicks(decks), defaultPicks(decks)));
 
   $effect(() => savePlayers($state.snapshot(names)));
   $effect(() => saveSetup({ packIds: $state.snapshot(selected), rounds, hint, oddNeverStarts }));

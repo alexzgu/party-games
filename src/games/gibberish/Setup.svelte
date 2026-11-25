@@ -9,6 +9,7 @@
   import PackList from '../../components/PackList.svelte';
   import { packEntry } from './find';
   import { gibberishPacks } from '../../lib/content';
+  import { keptPicks } from '../../lib/lend';
   import { unlockAudio } from '../../lib/sound';
   import { loadPlayers, loadSetup, savePlayers, saveSetup } from './store';
   import { MIN_PLAYERS, TARGET_RANGE, TIMER_CHOICES, standings, type GameState } from './logic';
@@ -37,8 +38,9 @@
   let seats = $state(live ? live.players.map((_, i) => i) : []);
   let seconds = $state(prefs.seconds);
   let target = $state(prefs.target);
-  // First visit: every built-in pack except the adults-only one.
-  let selected = $state((prefs.packIds ?? allPacks.filter((p) => p.id !== 'after-dark').map((p) => p.id)).filter((id) => allPacks.some((p) => p.id === id)));
+  // First visit, or every picked pack deleted since: every built-in pack except the adults-only one.
+  const firstPicks = allPacks.filter((p) => p.id !== 'after-dark').map((p) => p.id);
+  let selected = $state(keptPicks(allPacks, prefs.packIds ?? firstPicks, firstPicks));
 
   $effect(() => savePlayers($state.snapshot(names)));
   $effect(() => saveSetup({ packIds: $state.snapshot(selected), seconds, target }));

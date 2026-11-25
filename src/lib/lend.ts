@@ -1,7 +1,8 @@
-// When a room's picked packs are too small for the game, other packs may lend to it (Bad Hand,
-// Doodle Brawl): a whole pack at a time, in pack order, only as many as needed, and only once
-// the host says yes. Each game's pack.ts works out what is short and who would lend; this holds
-// the shared steps and the question's wording. Pure.
+// A game plays only the packs the player ticked. When they are too small for the game, other
+// packs may lend to it: a whole pack at a time, in pack order, only as many as needed, and only
+// once the player says yes. Each game works out in one place what is short and who would lend
+// (Bad Hand's and Doodle Brawl's pack.ts, Snark Tank's and Sketchy's room.ts, Spectrum's deck.ts);
+// this holds the shared steps and the question's wording. Pure.
 
 /** The question a host is asked before other packs lend to the room. */
 export interface Ask {
@@ -21,6 +22,15 @@ type Pack = { id: string; name: string; custom?: boolean };
 export function pickedOr<P extends Pack>(all: readonly P[], ids: readonly string[], defaults: readonly string[]): P[] {
   const some = all.filter((p) => ids.includes(p.id));
   return some.length ? some : all.filter((p) => defaults.includes(p.id));
+}
+
+/**
+ * A setup screen's ticks as it opens: the saved ones that still exist; when there were some and
+ * every one has been deleted, the game's default picks instead (never nothing, never every pack).
+ */
+export function keptPicks(all: readonly Pack[], ids: readonly string[], defaults: readonly string[]): string[] {
+  const kept = ids.filter((id) => all.some((p) => p.id === id));
+  return kept.length || !ids.length ? kept : defaults.filter((id) => all.some((p) => p.id === id));
 }
 
 /** Packs in the order they lend: built-ins first, as shipped (Classic first), then the player's own. */

@@ -12,12 +12,15 @@ export interface Prefs { deckIds: string[]; seconds: number; input: Input }
 /** Phones and tablets get tilt and tap; a laptop has no motion sensor worth trying. */
 const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 
+/** The pack a first game plays, and the pick when every picked pack has been deleted. */
+export const DEFAULT_DECKS = ['movies'];
+
 /** Saved prefs, with the older `control` choice carried over: its "tilt" always took taps too. */
 function loadPrefs(): Prefs {
   const saved = load<Partial<Prefs> & { control?: string }>('forehead:prefs', {});
   const input: Input = saved.input === 'tilt' || saved.input === 'tap' || saved.input === 'both' ? saved.input
     : saved.control === 'tap' ? 'tap' : saved.control === 'tilt' || touch ? 'both' : 'tap';
-  return { deckIds: saved.deckIds ?? ['movies'], seconds: saved.seconds ?? 60, input };
+  return { deckIds: saved.deckIds ?? DEFAULT_DECKS, seconds: saved.seconds ?? 60, input };
 }
 
 export const prefs = $state<Prefs>(loadPrefs());

@@ -12,7 +12,8 @@
   import { back, go } from '../../lib/router.svelte';
   import { teamColor } from './look';
   import { packEntry } from './find';
-  import { GOAL, ROUNDS, saveConfig } from './persist';
+  import { DEFAULT_CONFIG, GOAL, ROUNDS, saveConfig } from './persist';
+  import { keptPicks } from '../../lib/lend';
   import { SECONDS, type Config, type EndMode } from './state';
   import { rulesSummary } from './rulesSummary';
 
@@ -20,7 +21,7 @@
 
   let packs = $state.raw<TabooPack[]>(tabooPacks());
   // svelte-ignore state_referenced_locally
-  let cfg = $state<Config>({ ...config, names: [...config.names], packIds: config.packIds.filter((id) => packs.some((p) => p.id === id)) });
+  let cfg = $state<Config>({ ...config, names: [...config.names], packIds: keptPicks(packs, config.packIds, DEFAULT_CONFIG.packIds) });
 
   const cardCount = $derived(packs.filter((p) => cfg.packIds.includes(p.id)).reduce((n, p) => n + p.cards.length, 0));
 

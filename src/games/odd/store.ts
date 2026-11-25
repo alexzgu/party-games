@@ -5,6 +5,7 @@ import type { GameState } from './logic';
 import { validGame, validSetup, type SetupPrefs } from './valid';
 import { wordDecks } from '../../lib/content';
 import { defaultPicks } from './deal';
+import { keptPicks } from '../../lib/lend';
 
 const GAME = 'odd:game';
 const PLAYERS = 'odd:players';
@@ -24,5 +25,8 @@ export const savePlayers = (list: string[]) => save(PLAYERS, list);
 export const loadSetup = (): SetupPrefs => validSetup(load<unknown>(SETUP, null));
 export const saveSetup = (p: SetupPrefs) => save(SETUP, p);
 
-/** The packs picked in setup now (the first-visit picks when nothing was saved yet). */
-export const setupPicks = (): string[] => loadSetup().packIds ?? defaultPicks(wordDecks());
+/** The packs picked in setup now (the first-visit picks when nothing was saved yet, or every picked pack was deleted). */
+export function setupPicks(): string[] {
+  const decks = wordDecks();
+  return keptPicks(decks, loadSetup().packIds ?? defaultPicks(decks), defaultPicks(decks));
+}

@@ -13,6 +13,7 @@
   import PackList from '../../components/PackList.svelte';
   import { packEntry } from './find';
   import { quickPacks } from '../../lib/content';
+  import { keptPicks } from '../../lib/lend';
   import { unlockAudio } from '../../lib/sound';
   import { loadPlayers, loadSetup, savePlayers, saveSetup } from './store';
   import { MIN_PLAYERS, SECONDS_CHOICES, TARGET_RANGE, standings, type GameOptions, type GameState } from './logic';
@@ -39,9 +40,11 @@
   let target = $state(prefs.target);
   let steal = $state(prefs.steal);
   let stealUsesTurn = $state(prefs.stealUsesTurn);
-  // First visit: every built-in pack except the adults-only one.
+  // First visit, or every picked pack deleted since: every built-in pack except the adults-only one.
   // svelte-ignore state_referenced_locally
-  let selected = $state((prefs.packIds ?? packs.filter((p) => p.id !== 'after-dark').map((p) => p.id)).filter((id) => packs.some((p) => p.id === id)));
+  const firstPicks = packs.filter((p) => p.id !== 'after-dark').map((p) => p.id);
+  // svelte-ignore state_referenced_locally
+  let selected = $state(keptPicks(packs, prefs.packIds ?? firstPicks, firstPicks));
 
   $effect(() => savePlayers($state.snapshot(names)));
   $effect(() => saveSetup({ packIds: $state.snapshot(selected), seconds, target, steal, stealUsesTurn }));

@@ -8,7 +8,8 @@
   import RulesCard from '../../components/RulesCard.svelte';
   import { wordDecks } from '../../lib/content';
   import { back, go } from '../../lib/router.svelte';
-  import { prefs, savePrefs, selectedDecks, type Input } from './state.svelte';
+  import { DEFAULT_DECKS, prefs, savePrefs, selectedDecks, type Input } from './state.svelte';
+  import { keptPicks } from '../../lib/lend';
   import { ROUND_LENGTHS } from './round';
   import { startRound } from './flow';
   import { calibration } from './calibration.svelte';
@@ -16,8 +17,9 @@
   import { roundSummary } from './roundSummary';
 
   let decks = $state.raw(wordDecks());
-  // Drop selections of decks that were deleted since.
-  prefs.deckIds = prefs.deckIds.filter((id) => decks.some((d) => d.id === id));
+  // Drop selections of decks that were deleted since; when every one was, Movies is ticked instead.
+  // svelte-ignore state_referenced_locally
+  prefs.deckIds = keptPicks(decks, prefs.deckIds, DEFAULT_DECKS);
   const entries = $derived(decks.map(deckEntry));
   // Every pick (a tap, an import) is kept for next time.
   $effect(() => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ask, onScreen, stillAsked } from './lend';
+import { ask, keptPicks, onScreen, stillAsked } from './lend';
 
 const mine = { id: 'mine', name: 'Mine' }, classic = { id: 'classic', name: 'Classic' }, dark = { id: 'dark', name: 'After Dark' };
 
@@ -22,5 +22,14 @@ describe('the question put to the host after Start', () => {
       expect(onScreen(after, five)).toBeNull();
     }
     expect(onScreen('', five)).toBeNull();
+  });
+});
+
+describe("a setup screen's ticks as it opens", () => {
+  it('keeps the picks that exist, and turns to the default only once every pick was deleted', () => {
+    const all = [mine, classic, dark];
+    expect(keptPicks(all, ['gone', 'mine'], ['classic'])).toEqual(['mine']);
+    expect(keptPicks(all, ['gone'], ['classic'])).toEqual(['classic']);
+    expect(keptPicks(all, [], ['classic'])).toEqual([]);
   });
 });
