@@ -1,13 +1,13 @@
-<script lang="ts" generics="T, A">
+<script lang="ts" generics="T, A, S">
   import Button from './Button.svelte';
   import { hasKey } from '../lib/claude';
   import { CHANGE_MAX } from '../lib/wizardChange';
-  import type { WizardChanges } from '../lib/wizardChanges.svelte';
+  import type { Changes } from '../lib/wizardChanges.svelte';
 
   // "Ask for changes" under the review of a pack Fizzwick just made, in every game: a short
   // thread (the request, then each change and what came of it), the box, "Change" and "Undo".
   // Needs the wizard on this phone, like "More".
-  let { changes, request }: { changes: WizardChanges<T, A>; request: string } = $props();
+  let { changes, request }: { changes: Changes<T, A, S>; request: string } = $props();
 
   /** Only the latest change shows in full; older ones fold away so Save stays on screen. */
   const SHOWN = 1;

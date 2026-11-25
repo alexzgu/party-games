@@ -136,6 +136,12 @@ Three routes, in the order the owner chose to rely on them:
    at a time; "More" ends the Undo steps (the list has grown since). A change that fails, is
    refused, is stopped or brings no usable item puts the list back exactly as it was, with the error
    line under the thread. Never on pasted or typed lists, "Add more" or a saved pack's editor.
+   Big Board has no list review: the box sits under the clues in the editor of the board Fizzwick
+   just wrote, until it is saved (the request is kept with the unsaved board, so a reload keeps the
+   box). His list there is the board as it stands, one "Category | level | clue | answer" line per
+   filled tile, row by row; he writes the whole board again at the editor's current size (N =
+   categories × levels); a clue counts as kept when its clue and answer are both unchanged; while
+   he writes, the board shows read-only and Stop replaces Save; a name typed in the editor stays.
    Fizzwick writes from memory and nobody checks his facts, so wherever items he wrote are on
    screen (the review of a pack he just made, its "Add more" results, and in Big Board the board
    as he writes it and the new board's editor until it is saved), one quiet line (`WizardNote`)

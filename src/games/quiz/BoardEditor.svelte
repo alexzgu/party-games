@@ -13,9 +13,16 @@
   import { customQuiz, quizBoards, type QuizBoard } from '../../lib/content';
   import { sfx } from '../../lib/sound';
   import * as edit from './board';
-  import { loadNewBoard, newBoardId, pickBoard, saveNewBoard } from './store';
+  import { loadNewAsk, loadNewBoard, newBoardId, pickBoard, saveNewAsk, saveNewBoard } from './store';
   import { afterRun, shareWizardPack } from '../../lib/library';
   import WizardNote from '../../components/WizardNote.svelte';
+  import WizardChanges from '../../components/WizardChanges.svelte';
+  import BoardPreview from './BoardPreview.svelte';
+  import { onDestroy } from 'svelte';
+  import { Changes, type ChangeName } from '../../lib/wizardChanges.svelte';
+  import { cleanName } from '../../lib/wizardAsk';
+  import { viaPass } from '../../lib/claude';
+  import { boardChange, boardClues, placeClue } from './generate';
 
   // One board, every tile editable in place: name, blurb, categories (add, remove, rename,
   // reorder), levels (added or removed on every category at once) and each clue and answer.
@@ -125,6 +132,41 @@
     sfx.correct();
   }
 
+  // "Ask for changes" on the board Fizzwick just wrote, until it is saved: he writes the whole
+  // board again at its size as it stands, keeping what fits. Shown while the request is known.
+  // svelte-ignore state_referenced_locally
+  const asked = fresh && wizard ? loadNewAsk() : null;
+  let nameTyped = asked?.typed ?? false;
+  function typedName() {
+    if (!asked || nameTyped) return;
+    nameTyped = true;
+    saveNewAsk({ ...asked, typed: true });
+  }
+  const boardName: ChangeName = {
+    get wanted() { return !nameTyped; },
+    askAgain() {},
+    suggest(raw) { const n = cleanName(raw); if (n && board && !nameTyped) update({ ...board, name: n }); },
+  };
+  /** The board's size when the change started: the new board keeps it. */
+  let size = { cats: 0, levels: 0 };
+  const changes = asked && new Changes<StreamClue, StreamClue, { board: QuizBoard; ci: number }>({
+    game: () => boardChange(size.cats, size.levels, (s) => !!board && placeClue(board, s, size.cats, size.levels) !== board),
+    request: () => asked.request, asked: () => size.cats * size.levels, avoid: () => [],
+    name: () => boardName,
+    save: () => {
+      const b = board!;
+      size = { cats: b.categories.length, levels: edit.levels(b) };
+      return { board: b, ci };
+    },
+    restore: (r) => { board = r.board; saveNewBoard(r.board); ci = r.ci; },
+    parts: (r) => ({ kept: boardClues(r.board), removed: [] }),
+    // The tiles empty out (the category names stay until new ones come); the share mark holds only through a pass.
+    clear: () => board && update(afterRun({ ...board, categories: board.categories.map((c) => ({ ...c, clues: c.clues.map(() => ({ clue: '', answer: '' })) })) }, viaPass(), false)),
+    add: (s) => { if (board) update(placeClue(board, s, size.cats, size.levels)); sfx.tick(); },
+    items: () => (board ? boardClues(board) : []),
+  });
+  onDestroy(() => changes?.stop());
+
   function restore() {
     if (id === null) return;
     customQuiz.restore(id);
@@ -181,7 +223,7 @@
     {/snippet}
   </AddMore>
 {:else}
-<Screen title={fresh ? 'New pack' : 'Edit pack'} onback={() => (fresh && board ? (confirm = 'leave') : onback())} fill={!!board}>
+<Screen title={fresh ? 'New pack' : 'Edit pack'} onback={() => { changes?.stop(); if (fresh && board) confirm = 'leave'; else onback(); }} fill={!!board}>
   {#if !board}
     <p class="muted">{fresh ? 'There is no pack being made on this phone.' : 'This pack is no longer on this phone.'}</p>
   {:else}
@@ -205,7 +247,7 @@
 
           <label class="field">
             <span>Pack name</span>
-            <input type="text" value={board.name} oninput={field('name')} onchange={() => settleName('name')} maxlength="40" autocomplete="off" enterkeyhint="done" />
+            <input type="text" value={board.name} oninput={(e) => { typedName(); field('name')(e); }} onchange={() => settleName('name')} maxlength="40" autocomplete="off" enterkeyhint="done" />
           </label>
           <label class="field">
             <span>Short description</span>
@@ -236,7 +278,9 @@
         </div>
       {/snippet}
 
-      {#if cat}
+      {#if changes?.busy}
+        <BoardPreview {board} />
+      {:else if cat}
         <div class="cat" role="tabpanel" aria-label={cat.name}>
           <div class="cathead" bind:this={head}>
             <label class="field grow">
@@ -270,11 +314,14 @@
           <p class="faint small">Easiest at the top, hardest at the bottom.</p>
         </div>
       {/if}
+      {#if changes && asked}<WizardChanges {changes} request={asked.request} />{/if}
     </PinnedPanel>
   {/if}
 
   {#snippet actions()}
-    {#if board && fresh}
+    {#if changes?.busy}
+      <Button size="lg" variant="secondary" onclick={() => changes.stop()} tip="Stops Fizzwick and brings back the board as it was">Stop</Button>
+    {:else if board && fresh}
       <Button size="lg" onclick={saveNew} tip={gaps.length ? 'Keeps it with its gaps; playable once every tile is filled' : 'Saves it and picks it for your next game'}>{gaps.length ? 'Save draft' : 'Save pack'}</Button>
     {:else}
       {#if shapes.length}<Button size="lg" variant="secondary" onclick={openMore} tip="Fizzwick writes a new category or harder clues; you choose">🧙 Add more</Button>{/if}

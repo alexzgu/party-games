@@ -2,7 +2,10 @@
 // answer, so this runs the real SDK stream, line splitting and board building.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { settings } from '../../lib/settings.svelte';
-import { buildPrompt, generateBoard, givesAway, placeClue, emptyBoardFor, SYSTEM } from './generate';
+import { boardChange, boardClues, buildPrompt, generateBoard, givesAway, placeClue, emptyBoardFor, SYSTEM } from './generate';
+import { parseStreamLine, streamLine } from './parse';
+import { changeTurns, tally } from '../../lib/wizardChange';
+import { NAME_ASK } from '../../lib/wizardAsk';
 import { fakeStream } from '../../lib/testing';
 
 const ANSWER = [
@@ -94,5 +97,40 @@ describe('placing clues', () => {
   });
   it('asks for the right size', () => {
     expect(buildPrompt('Cats', 1, 3)).toContain('1 category with 3 levels each: 3 lines');
+  });
+});
+
+describe('asking for changes on a board', () => {
+  const board = {
+    id: '', name: 'Space and Snacks', blurb: '',
+    categories: [
+      { name: 'Space', clues: [{ clue: 'This planet is nicknamed the Red Planet.', answer: 'Mars' }, { clue: '', answer: '' }] },
+      { name: 'Snacks', clues: [{ clue: 'Sold by the bucket at the movies.', answer: 'Popcorn' }, { clue: 'Chips piled with melted cheese.', answer: 'Nachos' }] },
+    ],
+  };
+
+  it('writes each clue back in the line Fizzwick writes', () => {
+    for (const s of boardClues(board)) expect(parseStreamLine(streamLine(s))).toEqual(s);
+    expect(parseStreamLine(streamLine({ category: 'Old TV', level: 10, clue: 'A show about nothing, set in New York.', answer: 'Seinfeld' }))).toEqual({ category: 'Old TV', level: 10, clue: 'A show about nothing, set in New York.', answer: 'Seinfeld' });
+  });
+
+  it('sends the board as it stands, row by row, and asks for the whole board again at its size', () => {
+    const g = boardChange(2, 2, () => true);
+    const { turns, counts } = changeTurns(g, { request: 'space and snacks', asked: 4, kept: boardClues(board), removed: [], earlier: [], ask: 'harder', avoid: [], named: true });
+    expect(turns.map((t) => t.role)).toEqual(['user', 'assistant', 'user']);
+    expect(turns[0].content).toBe(buildPrompt('space and snacks', 2, 2).replace(`\n${NAME_ASK}`, ''));
+    expect(turns[1].content).toBe('Space | 1 | This planet is nicknamed the Red Planet. | Mars\nSnacks | 1 | Sold by the bucket at the movies. | Popcorn\nSnacks | 2 | Chips piled with melted cheese. | Nachos');
+    expect(counts).toEqual({ all: 4 });
+    expect(turns[2].content).toContain('Write the whole list again: exactly 2 categories with 2 levels each: 4 lines in all');
+    expect(turns[2].content.endsWith(NAME_ASK)).toBe(true);
+  });
+
+  it('counts a clue as kept only when its clue and answer are both unchanged', () => {
+    const g = boardChange(2, 2, () => true);
+    const after = [
+      { category: 'Planets', level: 1, clue: 'This planet is nicknamed the Red Planet.', answer: 'Mars' },
+      { category: 'Snacks', level: 1, clue: 'Sold by the bucket at the movies.', answer: 'Kettle corn' },
+    ];
+    expect(tally(boardClues(board), after, g.keyOf)).toEqual({ kept: 1, replaced: 1 });
   });
 });

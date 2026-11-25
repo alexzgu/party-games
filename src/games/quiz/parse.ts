@@ -94,6 +94,9 @@ export function parsePastedBoard(text: string, name = ''): PastedBoard {
 
 export interface StreamClue { category: string; /** 1 = easiest (top row). */ level: number; clue: string; answer: string }
 
+/** One clue as Fizzwick writes it (`parseStreamLine(streamLine(s))` gives `s` back). */
+export const streamLine = (s: StreamClue): string => `${s.category} | ${s.level} | ${s.clue} | ${s.answer}`;
+
 /**
  * One streamed line, "Category | level | clue | answer", or null for anything else (a header
  * row, a remark). The level may be written 3, "Level 3" or as its value, 300.

@@ -17,7 +17,7 @@
   import { blankBoard, DEFAULT_CATEGORIES, DEFAULT_LEVELS, emptyTiles, MAX_CATEGORIES, MAX_LEVELS } from './board';
   import { parsePastedBoard } from './parse';
   import { emptyBoardFor, generateBoard } from './generate';
-  import { loadNewBoard, saveNewBoard } from './store';
+  import { loadNewBoard, saveNewAsk, saveNewBoard } from './store';
 
   // "Make a board": start blank at a chosen size, paste one, or tell Fizzwick what you want and
   // watch the board fill in, easiest row first, under the name he suggests. Every route ends in the
@@ -65,6 +65,7 @@
   /** Opens `b` in the editor; `wizard` for a board Fizzwick wrote. */
   function make(b: QuizBoard, note = '', wizard = false) {
     saveNewBoard(draft(b, wizard));
+    saveNewAsk(wizard ? { request: topic, typed: false } : null); // what Fizzwick was asked, for "Ask for changes" in the editor
     onmade(b, note, wizard);
   }
 

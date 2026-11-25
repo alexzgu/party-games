@@ -3,9 +3,10 @@
 // the board the moment it arrives.
 import { streamLines } from '../../lib/claude';
 import type { QuizBoard } from '../../lib/content';
-import { parseStreamLine, type StreamClue } from './parse';
+import { parseStreamLine, streamLine, type StreamClue } from './parse';
 import { MAX_CATEGORIES, MAX_LEVELS } from './board';
 import { askedFor, cleanName, nameFrom, NAME_ASK, wizardBlurb } from '../../lib/wizardAsk';
+import type { ChangeGame } from '../../lib/wizardChange';
 
 export const SYSTEM = `You write boards for a team quiz game that a host reads aloud at a house party. Players are adults in their 20s in the US.
 
@@ -29,10 +30,19 @@ Every clue must meet all of these:
 6. Check every fact. Leave out anything you are not sure of or that may have changed recently.
 7. Never repeat a clue or an answer anywhere on the board.`;
 
+const shape = (cats: number, levels: number) =>
+  `${cats} ${cats === 1 ? 'category' : 'categories'} with ${levels} ${levels === 1 ? 'level' : 'levels'} each: ${cats * levels} lines in all, levels numbered 1 to ${levels}`;
+
+/** The prompt for a board from the player's `request`, with no name ask. */
+const boardAsk = (request: string, cats: number, levels: number) =>
+  `${askedFor(request, 'a mix of everything')}\nWrite a board of ${shape(cats, levels)}.`;
+
 /** The prompt for a board from the player's `request`, with a name for it. */
 export function buildPrompt(request: string, cats: number, levels: number): string {
-  return `${askedFor(request, 'a mix of everything')}\nWrite a board of ${cats} ${cats === 1 ? 'category' : 'categories'} with ${levels} ${levels === 1 ? 'level' : 'levels'} each: ${cats * levels} lines in all, levels numbered 1 to ${levels}.\n${NAME_ASK}`;
+  return `${boardAsk(request, cats, levels)}\n${NAME_ASK}`;
 }
+
+const tokensFor = (cats: number, levels: number) => Math.max(4000, 600 + cats * levels * 100);
 
 /** Text compared loosely: case and spacing ignored. */
 export const key = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -98,7 +108,7 @@ export async function generateBoard(opts: {
     system: SYSTEM,
     prompt: buildPrompt(opts.topic, cats, levels),
     signal: opts.signal,
-    maxTokens: Math.max(4000, 600 + cats * levels * 100),
+    maxTokens: tokensFor(cats, levels),
     // Nobody can type in the board's name while it streams: Fizzwick's good name replaces the stand-in.
     onName: (raw) => {
       const name = cleanName(raw);
@@ -116,4 +126,34 @@ export async function generateBoard(opts: {
     },
   });
   return board;
+}
+
+/** The board's filled tiles as Fizzwick would write them: row by row, easiest first. */
+export function boardClues(b: QuizBoard): StreamClue[] {
+  const levels = Math.max(0, ...b.categories.map((c) => c.clues.length));
+  return Array.from({ length: levels }, (_, r) => b.categories.flatMap((c) => {
+    const k = c.clues[r];
+    return k && k.clue.trim() && k.answer.trim() ? [{ category: c.name.trim() || 'Category', level: r + 1, clue: k.clue.trim(), answer: k.answer.trim() }] : [];
+  })).flat();
+}
+
+const clueKey = (s: StreamClue) => `${key(s.clue)}\u0000${key(s.answer)}`;
+
+/**
+ * "Ask for changes" on a board of `cats` × `levels`: the whole board again, the same size (a clue
+ * is kept when its clue and answer are). `fits`: whether a line still has a tile on the board.
+ */
+export function boardChange(cats: number, levels: number, fits: (s: StreamClue) => boolean): ChangeGame<StreamClue> {
+  return {
+    system: SYSTEM,
+    maxTokens: tokensFor(cats, levels),
+    first: (request) => boardAsk(request, cats, levels),
+    line: streamLine,
+    read: (line) => { const s = parseStreamLine(line); return s && fits(s) ? s : null; },
+    keyOf: clueKey,
+    describe: () => shape(cats, levels),
+    max: cats * levels,
+    avoidLine: streamLine,
+    avoidKey: clueKey,
+  };
 }
