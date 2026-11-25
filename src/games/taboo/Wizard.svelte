@@ -41,7 +41,7 @@
   async function run() {
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
-    name.begin(theme, 'My pack');
+    name.begin('wizard', theme, 'My pack');
     const onName = name.wanted ? (s: string) => name.suggest(s) : undefined;
     reviewing = true;
     error = '';

@@ -79,7 +79,8 @@
     try {
       const done = await generateBoard({
         topic, cats, levels: len, signal,
-        onBoard: (b) => { live = b; saveNewBoard(draft(b, true)); sfx.tick(); },
+        // Every update is kept as the draft; only a clue landing ticks, never the name alone.
+        onBoard: (b, clue) => { live = b; saveNewBoard(draft(b, true)); if (clue) sfx.tick(); },
       });
       live = done;
       if (signal.aborted) return;

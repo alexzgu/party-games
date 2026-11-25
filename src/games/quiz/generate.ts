@@ -80,12 +80,15 @@ export function emptyBoardFor(request: string, cats: number, levels: number): Qu
   };
 }
 
-/** Streams a board for the player's request; `onBoard` gets the board after every clue that lands, and after its name. */
+/**
+ * Streams a board for the player's request; `onBoard` gets the board after every clue that lands
+ * (`clue` true) and after Fizzwick names it (`clue` false: nothing new to hear).
+ */
 export async function generateBoard(opts: {
   topic: string;
   cats: number;
   levels: number;
-  onBoard: (b: QuizBoard) => void;
+  onBoard: (b: QuizBoard, clue: boolean) => void;
   signal?: AbortSignal;
 }): Promise<QuizBoard> {
   const cats = Math.min(MAX_CATEGORIES, Math.max(1, opts.cats));
@@ -101,7 +104,7 @@ export async function generateBoard(opts: {
       const name = cleanName(raw);
       if (!name) return;
       board = { ...board, name };
-      opts.onBoard(board);
+      opts.onBoard(board, false);
     },
     onLine: (line) => {
       const s = parseStreamLine(line);
@@ -109,7 +112,7 @@ export async function generateBoard(opts: {
       const next = placeClue(board, s, cats, levels);
       if (next === board) return;
       board = next;
-      opts.onBoard(board);
+      opts.onBoard(board, true);
     },
   });
   return board;

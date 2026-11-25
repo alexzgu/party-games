@@ -97,14 +97,20 @@ Three routes, in the order the owner chose to rely on them:
    calls it a theme, topic, title or name. The prompt carries the whole request ("The player asks
    for: …"). The pack's name is its own "Pack name" field on the review screen (Big Board: the
    board's name in its editor). Fizzwick suggests it in the same reply, no extra request: the
-   prompt asks for one line "Name: …" before everything else; that line is lifted out of the
-   stream and never shown or kept as an item. A good name (1–4 words, at most 40 characters, with a
-   letter) is put in Title Case and fills the field; until it comes, or when it is missing or bad,
-   the field holds a short name from the request's first clause (an empty opening such as "Make
-   me a pack about" and a narrowing clause such as "…you'd find in" left out, at most 4 words and
-   40 characters). A name the player has typed is never replaced, by "More" or "Try again"
-   included; "More" asks for a name only while none has been typed or suggested; going back to the
-   request forgets an untyped name. Adding to an existing pack asks for no name. The description
+   prompt asks him to start with one line "Name: …", the only exception to the game's output
+   rules. Only the reply's first line can be the name, and only with a colon after "Name" or
+   "Pack name" and a good name in it (1–4 words, at most 40 characters, a letter, no commas or
+   bars), put in Title Case; that line is lifted out and never shown or kept as an item. Any other
+   first line, and every later line whatever it looks like ("Name-Brand Snacks", a card for the
+   word "Name"), goes to the game's own reader as usual. Every review of Fizzwick's pack starts
+   with a name in the field: until his comes, or when it is missing or bad, a short name from the
+   request's first clause (an empty opening such as "Make me a pack about" and a narrowing clause
+   such as "…you'd find in" left out, at most 4 words and 40 characters), else the game's default
+   name. A typed name belongs to the pack on screen: "More" and "Try again" never replace it, but a
+   run started another way (paste, by hand, wizard) or with other words is a new pack and forgets
+   it; "More" asks for a name only while none has been typed or suggested; going back to the
+   request forgets an untyped name. Adding to an existing pack asks for no name. In Big Board the
+   name arriving alone updates the board in the making silently (only a clue ticks). The description
    is "Conjured by Fizzwick: " and the request, cut at a whole word with "…" to 80 characters in
    all (the board editor's limit, inside the library's 60 for names and 140 for descriptions).
    Fizzwick writes from memory and nobody checks his facts, so wherever items he wrote are on

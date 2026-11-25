@@ -40,7 +40,7 @@
   /** A new pack's name: Fizzwick's on the review screen, or typed for a pasted list. */
   const packName = new PackName();
   // svelte-ignore state_referenced_locally
-  if (demoItems) packName.begin(theme, 'My pack');
+  if (demoItems) packName.begin('wizard', theme, 'My pack');
   let dest = $state('new');
   let streaming = $state(false);
   let error = $state('');
@@ -55,6 +55,7 @@
   let note = $state('');
 
   function pasted(list: string[], skipped: string) {
+    packName.begin('paste', '', ''); // a pasted list is a new pack: a name typed for another is forgotten
     items = list;
     note = skipped;
     error = '';
@@ -67,7 +68,7 @@
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     // A new pack gets a name; cards added to one of mine need none.
-    if (!destPack) packName.begin(theme, 'My pack');
+    if (!destPack) packName.begin('wizard', theme, 'My pack');
     const onName = !destPack && packName.wanted ? (s: string) => packName.suggest(s) : undefined;
     reviewing = true;
     error = '';

@@ -1,5 +1,9 @@
-// For tests only: a server-sent-events body like the Messages API streams, with `text` cut into
-// small deltas, so a test runs the real SDK stream and line splitting without a key or the network.
+// Test doubles for the app, like worker/src/testing.ts for the server. Only tests import this file.
+
+/**
+ * A server-sent-events body like the Messages API streams, with `text` cut into small deltas, so a
+ * test runs the real SDK stream and line splitting without a key or the network.
+ */
 export function fakeStream(text: string): Response {
   const ev = (type: string, data: object) => `event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`;
   const deltas = text.match(/[\s\S]{1,7}/g) ?? [];

@@ -35,6 +35,8 @@
   let theme = $state('');
   /** A new wizard pack's name, on the review screen. */
   const packName = new PackName();
+  // The review demo is a wizard review: the name field starts with a name.
+  if (start.demo) packName.begin('wizard', '', 'Wizard pack');
   let count = $state(40);
   let phase = $state<'form' | 'triage'>(start.demo ? 'triage' : 'form');
   let items = $state<string[]>(start.demo ? ['Moon Landing', 'Taylor Swift', 'Pizza Rat', 'Spider-Man', 'Eiffel Tower', 'Karaoke Night', 'Hot Dog Eating Contest', 'Netflix and Chill', 'Zebra Crossing'] : []);
@@ -75,7 +77,7 @@
     const ctl = (controller = new AbortController());
     const before = items.length;
     // A new pack gets a name; words added to one of mine need none.
-    if (!targetDeck) packName.begin(theme, 'Wizard pack');
+    if (!targetDeck) packName.begin('wizard', theme, 'Wizard pack');
     const onName = !targetDeck && packName.wanted ? (s: string) => packName.suggest(s) : undefined;
     try {
       await generateWords({

@@ -36,6 +36,9 @@
   let kept = $state<Spectrum[]>([]);
   /** A new pack's name: on the review screen for Fizzwick's cards, and on the save step. */
   const packName = new PackName();
+  // Cards handed in for review are Fizzwick's: the name field starts with a name.
+  // svelte-ignore state_referenced_locally
+  if (initial.length) packName.begin('wizard', '', 'My pack');
   let savedPack = $state<SpectrumPack | null>(null);
   let controller: AbortController | null = null;
   onDestroy(() => controller?.abort());
@@ -47,6 +50,7 @@
   let note = $state('');
 
   function pasted(list: Spectrum[], skipped: string) {
+    packName.begin('paste', '', ''); // a pasted list is a new pack: a name typed for another is forgotten
     theme = '';
     items = list;
     note = skipped;
@@ -72,7 +76,7 @@
     controller = new AbortController();
     const seen = new Set([...avoid, ...items].map(cardId));
     // A new pack gets a name; cards added to the pack just saved need none.
-    if (!savedPack) packName.begin(theme, 'My pack');
+    if (!savedPack) packName.begin('wizard', theme, 'My pack');
     const onName = !savedPack && packName.wanted ? (s: string) => packName.suggest(s) : undefined;
     try {
       await generatePairs({
@@ -125,7 +129,7 @@
   function onsave(k: Spectrum[]) {
     kept = k;
     if (savedPack) { addTo(savedPack); return; }
-    if (mode === 'paste') packName.begin('', 'My pack');
+    if (mode === 'paste') packName.begin('paste', '', 'My pack');
     step = 'save';
   }
 

@@ -112,7 +112,7 @@
   async function run() {
     byPass = libraryOn(game) && passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
-    packName.begin(theme, defaultName);
+    packName.begin('wizard', theme, defaultName);
     reviewing = true;
     error = '';
     streaming = true;

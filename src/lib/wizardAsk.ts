@@ -19,13 +19,17 @@ export const cleanRequest = (request: string): string => request.trim().slice(0,
 /** The prompt's opening line: the whole request, or `fallback` when there is none. */
 export const askedFor = (request: string, fallback: string): string => `The player asks for: ${cleanRequest(request) || fallback}`;
 
-/** What the prompt adds when a name is wanted: one marked line before everything else. */
-export const NAME_ASK = `Before anything else, write one line: "Name: " and a short name for this pack, 1 to ${NAME_WORDS} words in Title Case. Then write everything else exactly as described.`;
+/**
+ * What the prompt adds when a name is wanted: one marked first line, said to be the only exception
+ * to the game's output rules ("Output only the cards…"), so the model never sees two rules at odds.
+ */
+export const NAME_ASK = `Start your reply with one line: "Name: " and a short name for this pack, 1 to ${NAME_WORDS} words in Title Case. That first line is the only exception to the output rules above; after it, write everything else exactly as described.`;
 
 /** The prompt's parts with the name ask after them, when `wanted`. */
 export const withNameAsk = (parts: string[], wanted: boolean): string[] => (wanted ? [...parts, NAME_ASK] : parts);
 
-const NAME_LINE = /^\s*(?:[-*•#>]+\s*)?(?:pack\s+)?name\s*[:：–—-]\s*(.*)$/i;
+/** "Name: …" or "Pack name: …", with a colon only: "Name-Brand Snacks" or "Name-Dropping" is never one. */
+const NAME_LINE = /^\s*(?:[-*•#>]+\s*)?(?:pack\s+)?name\s*[:：]\s*(.*)$/i;
 
 /** The text after a "Name:" marker (markdown and list markers ignored), or null when the line is not one. */
 export function nameIn(line: string): string | null {
@@ -34,15 +38,21 @@ export function nameIn(line: string): string | null {
 }
 
 /**
- * Wraps a stream's line handler: a "Name:" line goes to `onName` (the first one only) and never
- * to `onLine`, so it is never read as an item.
+ * Wraps a stream's line handler: only the reply's first line can be the name, and only when it is
+ * a "Name:" line carrying a good name (`cleanName`), which goes to `onName` and is never an item.
+ * Anything else, that first line included, goes to `onLine` untouched, whatever it looks like, so
+ * a real item ("Name-Brand Snacks | 1 | …", a card for the word "Name") is never swallowed.
  */
 export function liftName(onLine: (line: string) => void, onName: (name: string) => void): (line: string) => void {
-  let named = false;
+  let first = true;
   return (line) => {
-    const n = nameIn(line);
-    if (n === null) return onLine(line);
-    if (!named) { named = true; onName(n); }
+    if (first) {
+      first = false;
+      const raw = nameIn(line);
+      const name = raw === null ? null : cleanName(raw);
+      if (name) return onName(name);
+    }
+    onLine(line);
   };
 }
 
@@ -56,12 +66,12 @@ export function titled(s: string): string {
 
 const squeeze = (s: string) => s.replace(/\s+/g, ' ').trim();
 
-/** A name Fizzwick suggested, tidied, or null when it breaks the rules (empty, over 4 words or 40 characters, no letter). */
+/** A name Fizzwick suggested, tidied, or null when it breaks the rules (empty, over 4 words or 40 characters, no letter, a list's commas or bars). */
 export function cleanName(raw: string): string | null {
   const t = squeeze(raw.replace(/\*\*|__|`/g, '')).replace(/^["“'‘]+|["”'’]+$/g, '').replace(/[.!?,;:…]+$/, '').trim();
   const n = titled(t);
   const words = n.split(' ').filter(Boolean).length;
-  if (!n || words > NAME_WORDS || n.length > NAME_MAX || !/\p{L}/u.test(n)) return null;
+  if (!n || words > NAME_WORDS || n.length > NAME_MAX || !/\p{L}/u.test(n) || /[,|]/.test(n)) return null;
   return n;
 }
 

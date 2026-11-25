@@ -61,7 +61,7 @@
   async function run() {
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
-    packName.begin(theme, 'My prompts');
+    packName.begin('wizard', theme, 'My prompts');
     const onName = packName.wanted ? (s: string) => packName.suggest(s) : undefined;
     reviewing = true;
     error = '';

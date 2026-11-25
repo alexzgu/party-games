@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { settings } from '../../lib/settings.svelte';
 import { buildPrompt, generateBoard, givesAway, placeClue, emptyBoardFor, SYSTEM } from './generate';
-import { fakeStream } from '../../lib/fakeStream';
+import { fakeStream } from '../../lib/testing';
 
 const ANSWER = [
   'Here is your board:',
@@ -57,6 +57,22 @@ describe('Ask Claude for a board', () => {
     expect(board.categories.map((c) => c.name)).toEqual(['Space', 'Snacks']);
     expect(board.blurb.length).toBeLessThanOrEqual(80);
     expect(board.blurb).toMatch(/^Conjured by Fizzwick: space and snacks .*…$/);
+  });
+  it('keeps a category whose name starts with "Name-", and makes no sound for the name alone', async () => {
+    settings.apiKey = 'sk-test';
+    vi.stubGlobal('fetch', vi.fn(async () => fakeStream([
+      'Name: Snack Attack',
+      'Name-Brand Snacks | 1 | This cheese cracker is shaped like a small fish. | Goldfish',
+      'Name-Brand Snacks | 2 | This sandwich cookie has a cream filling between two dark wafers. | Oreo',
+    ].join('\n'))));
+    const updates: boolean[] = [];
+    const board = await generateBoard({ topic: 'snacks', cats: 1, levels: 2, onBoard: (_b, clue) => updates.push(clue) });
+    expect(board.name).toBe('Snack Attack');
+    expect(board.categories).toEqual([{ name: 'Name-Brand Snacks', clues: [
+      { clue: 'This cheese cracker is shaped like a small fish.', answer: 'Goldfish' },
+      { clue: 'This sandwich cookie has a cream filling between two dark wafers.', answer: 'Oreo' },
+    ] }]);
+    expect(updates).toEqual([false, true, true]);
   });
   it('says what went wrong without a key', async () => {
     await expect(generateBoard({ topic: 'x', cats: 1, levels: 1, onBoard: () => {} })).rejects.toThrow(/isn't on this phone yet/);
