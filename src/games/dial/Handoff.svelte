@@ -17,6 +17,8 @@
     onready,
     onclose,
     onend,
+    error = '',
+    onsetup,
   }: {
     game: Game;
     team: TeamIndex;
@@ -27,6 +29,9 @@
     onclose?: () => void;
     /** Ends the game for good (the menu asks first). */
     onend?: () => void;
+    /** Why the game cannot go on (its packs have no cards left); `onsetup` then leads back to setup. */
+    error?: string;
+    onsetup?: () => void;
   } = $props();
 
   let menu = $state(false);
@@ -71,7 +76,12 @@
     </ol>
   </div>
   <div class="go">
-    <Button size="lg" onclick={onready}>{button}</Button>
+    {#if error}
+      <p class="error" role="alert">{error}</p>
+      <Button size="lg" onclick={onsetup}>Back to setup</Button>
+    {:else}
+      <Button size="lg" onclick={onready}>{button}</Button>
+    {/if}
   </div>
 </div>
 
@@ -97,6 +107,7 @@
       var(--bg);
   }
   header { display: flex; align-items: center; gap: var(--s-2); }
+  .error { color: var(--bad-ink); text-align: center; font-weight: 700; margin: 0 0 var(--s-3); }
   .menu {
     flex: none; width: 48px; height: 48px; border-radius: var(--r-pill); border: 0;
     background: var(--surface); color: var(--text-dim); display: grid; place-items: center;

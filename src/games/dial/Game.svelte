@@ -73,16 +73,22 @@
     set(rematch(g, deck.ask ? deck.lent.map((p) => p.id) : []));
   }
 
+  /** Set when the game's packs have no card left to draw (deleted mid-game): the handoff says so and leads back to setup. */
+  let noCards = $state('');
+  const NO_CARDS = 'The chosen packs have no cards. Go back to setup and pick a pack.';
+
   function openReader(g: Game) {
     const card = drawCard(g.packIds, g.played, g.lent);
-    if (!card) return;
+    if (!card) return void (noCards = NO_CARDS);
     set(beginRound(g, card, nextTarget()));
     readerOpen = true;
   }
 
   function newCard(g: Game) {
     const card = drawCard(g.packIds, g.played, g.lent);
-    if (card) set(redraw(g, card));
+    if (card) return set(redraw(g, card));
+    noCards = NO_CARDS;
+    readerOpen = false;
   }
 
   function next(g: Game) {
@@ -107,6 +113,7 @@
     if (!g) return;
     const early = demo ? null : summarizeEarly(g, packNames(g));
     if (early) record(early);
+    noCards = '';
     set(null);
   }
 </script>
@@ -138,6 +145,8 @@
         onready={() => openReader(g)}
         onclose={home}
         onend={end}
+        error={noCards}
+        onsetup={end}
       />
     {/key}
   {:else if game.phase === 'reader' && game.round}
@@ -156,6 +165,8 @@
         onready={() => (readerOpen = true)}
         onclose={home}
         onend={end}
+        error={noCards}
+        onsetup={end}
       />
     {:else}
       <ReaderView game={g} round={r} onredraw={() => newCard(g)} onclue={(c) => set(setClue(game!, c))}
