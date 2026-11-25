@@ -4,7 +4,8 @@ import { streamLines } from '../../lib/claude';
 import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
 import type { QuickPack } from '../../lib/content';
 import { promptKey } from './logic';
-import { cleanPrompt, promptError } from './parse';
+import { cleanPrompt, promptError, promptLine } from './parse';
+import type { ChangeGame } from '../../lib/wizardChange';
 import { askedFor, withNameAsk } from '../../lib/wizardAsk';
 
 export const THEME_CHIPS = ['Food & drink', 'Movies & TV', 'Music', 'Sports', 'Around the house', 'Animals', 'Travel', 'School & work', '2000s throwback', 'After dark'];
@@ -61,6 +62,14 @@ export const MORE_RANGE = { start: 15, min: 5, max: 40, step: 5 };
 const readPrompt = (line: string) => {
   const p = cleanPrompt(line);
   return p && !promptError(p, []) ? p : null;
+};
+
+/** "Ask for changes" on the review of Fizzwick's prompts: a run asks for `BATCH`, so a change does too. */
+export const CHANGE: ChangeGame<string> = {
+  system: SYSTEM, maxTokens: 8000, max: BATCH,
+  first: (request) => buildPrompt(request, []),
+  line: promptLine, read: (line) => readPrompt(line), keyOf: promptKey,
+  describe: (c) => `${c.all} prompts`, avoidLine: promptLine, avoidKey: promptKey,
 };
 
 /**

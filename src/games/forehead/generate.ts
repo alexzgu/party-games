@@ -2,7 +2,8 @@
 import { streamLines } from '../../lib/claude';
 import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
 import type { WordDeck } from '../../lib/content';
-import { cleanLine, itemKey } from './words';
+import { cleanLine, itemKey, wordLine } from './words';
+import type { ChangeGame } from '../../lib/wizardChange';
 import { askedFor, withNameAsk } from '../../lib/wizardAsk';
 
 export const THEME_CHIPS = [
@@ -31,6 +32,17 @@ export function buildPrompt(request: string, count: number, avoid: readonly stri
   }
   return parts.join('\n\n');
 }
+
+/** "Make a pack": how many words one run may ask for. */
+export const MAKE_RANGE = { start: 40, min: 20, max: 80, step: 10 };
+
+/** "Ask for changes" on the review of Fizzwick's words. */
+export const CHANGE: ChangeGame<string> = {
+  system: SYSTEM, maxTokens: 4000, max: MAKE_RANGE.max,
+  first: (request, count) => buildPrompt(request, count, []),
+  line: wordLine, read: (line) => cleanLine(line), keyOf: itemKey,
+  describe: (c) => `${c.all} items`, avoidLine: wordLine, avoidKey: itemKey,
+};
 
 export interface GenerateOptions {
   theme: string;

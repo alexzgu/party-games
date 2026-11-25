@@ -7,13 +7,15 @@
   import MagicWords from '../../components/MagicWords.svelte';
   import WizardRequest from '../../components/WizardRequest.svelte';
   import PackNameField from '../../components/PackNameField.svelte';
+  import WizardChanges from '../../components/WizardChanges.svelte';
+  import { WizardChanges as Changes } from '../../lib/wizardChanges.svelte';
   import { PackName } from '../../lib/packName.svelte';
   import { hasKey, WANTS } from '../../lib/claude';
   import type { TabooCard } from '../../lib/content';
   import { sfx } from '../../lib/sound';
   import { cardId } from './cards';
   import { passedSoFar } from '../../lib/library';
-  import { generateCards, MAKE_RANGE, THEME_CHIPS } from './generate';
+  import { CHANGE, generateCards, MAKE_RANGE, THEME_CHIPS } from './generate';
 
   // "🧙 Ask the wizard" on a new pack: what the player wants and a size, then Fizzwick's cards
   // stream into Triage under the pack's name; the kept ones become the pack. `taken` is every word
@@ -36,9 +38,19 @@
   let ctrl: AbortController | null = null;
   onDestroy(() => ctrl?.abort());
 
+  /** Keys of the cards dropped on review. */
+  let dropped = $state(new Set<string>());
+  /** "Ask for changes" on Fizzwick's cards. */
+  const changes = new Changes({
+    game: CHANGE, request: () => theme, asked: () => count, avoid: () => taken(),
+    items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
+    name: () => name, onItem: () => sfx.tick(), onStart: (n) => (byPass = passedSoFar(byPass, n)),
+  });
+
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
   let byPass = false;
   async function run() {
+    changes.settle();
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     name.begin('wizard', theme, 'My pack');
@@ -59,11 +71,13 @@
   }
 
   function cancel() {
+    if (changes.busy) return changes.stop();
     if (streaming) { ctrl?.abort(); return; }
     items = [];
     error = '';
     reviewing = false;
     name.reset();
+    changes.clear();
   }
 </script>
 
@@ -93,8 +107,9 @@
   {#if items.length === 0 && streaming}
     <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your cards…</p>
   {/if}
-  <Triage {items} keyOf={cardId} {streaming} wizard onsave={(kept) => onsave(name.saved(theme, 'My pack'), theme, kept, byPass)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+  <Triage {items} keyOf={cardId} bind:dropped streaming={streaming || changes.busy} wizard onsave={(kept) => onsave(name.saved(theme, 'My pack'), theme, kept, byPass)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
     {#snippet item(c: TabooCard)}<span class="txt"><span class="w">{c.word}</span><span class="b">{c.banned.join(' · ')}</span></span>{/snippet}
+    {#snippet below()}{#if true}<WizardChanges {changes} request={theme} />{/if}{/snippet}
   </Triage>
 {/if}
 

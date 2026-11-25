@@ -8,6 +8,7 @@ import { ANSWER_MAX, LINE_MAX, LINES_EACH } from './logic';
 import { MAX_PROMPT_CHARS } from './prompts';
 import { itemKey, missingStock, packTexts, promptKey, type SnarkItem, type Stock } from './pack';
 import { askedFor, withNameAsk } from '../../lib/wizardAsk';
+import type { ChangeGame } from '../../lib/wizardChange';
 
 export const THEME_CHIPS = ['Office life', 'Roommates', 'Dating apps', 'Road trips', 'Family dinners', 'Group chats', 'Weddings', 'College', 'Pets', 'The gym', 'Holidays', 'After dark'];
 
@@ -78,6 +79,21 @@ export function readItem(line: string): SnarkItem | null {
   if (!/^three\b/i.test(prompt) || house.length !== LINES_EACH || !house.every((l) => fits(l, 1, 6, LINE_MAX))) return null;
   return { kind: 'final', prompt, house: house as [string, string, string] };
 }
+
+/** An item as the line `readItem` reads: "Prompt | stock answer", or "Final: Prompt | one | two | three". */
+export function itemLine(i: SnarkItem): string {
+  return i.kind === 'prompt' ? `${i.prompt} | ${i.safety}` : `Final: ${i.prompt} | ${i.house.join(' | ')}`;
+}
+
+/** "Ask for changes" on the review of Fizzwick's prompts and finals; the avoid list is every other Snark prompt. */
+export const CHANGE: ChangeGame<SnarkItem, string> = {
+  system: SYSTEM, maxTokens: 6000, max: MAKE_RANGE.max,
+  first: (request, count) => buildPrompt(request, count, finalsFor(count), []),
+  line: itemLine, read: (line) => readItem(line), keyOf: itemKey,
+  kindOf: (i) => i.kind, split: (count) => ({ prompt: count, final: finalsFor(count) }),
+  describe: (c) => `${c.prompt} prompts with stock answers and ${c.final} ${c.final === 1 ? 'final' : 'finals'}`,
+  avoidLine: (q) => q, avoidKey: promptKey,
+};
 
 /** The prompt for `prompts` prompts and `finals` finals from the player's `request`, never one in `avoid`; `named`: ask for a pack name too. */
 export function buildPrompt(request: string, prompts: number, finals: number, avoid: readonly string[], named = false): string {

@@ -2,7 +2,7 @@
 // spirit, never repeating what is there. Each game brings its own system prompt, how an item reads
 // in a list and how a streamed line becomes an item; this file builds the request, keeps the stream
 // to new items and merges the kept ones into the pack.
-import { streamLines } from './claude';
+import { streamLines, type Turn } from './claude';
 
 /** What the player asked for: how many, and an optional steer ("more 90s ones", "harder"). */
 export interface MoreAsk {
@@ -73,6 +73,8 @@ export function morePrompt(pack: MorePack, ask: MoreAsk, noun: string): string {
 export interface MoreStream<T> {
   system: string;
   prompt: string;
+  /** The whole conversation in place of `prompt`, when there is one. */
+  messages?: readonly Turn[];
   /** The most items to hand over; later lines are ignored. */
   count: number;
   maxTokens?: number;
@@ -94,6 +96,7 @@ export async function streamMore<T>(o: MoreStream<T>): Promise<number> {
   await streamLines({
     system: o.system,
     prompt: o.prompt,
+    messages: o.messages,
     signal: o.signal,
     maxTokens: o.maxTokens,
     onName: o.onName,

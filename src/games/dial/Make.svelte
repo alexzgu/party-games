@@ -13,10 +13,12 @@
   import MagicWords from '../../components/MagicWords.svelte';
   import WizardRequest from '../../components/WizardRequest.svelte';
   import PackNameField from '../../components/PackNameField.svelte';
+  import WizardChanges from '../../components/WizardChanges.svelte';
+  import { WizardChanges as Changes } from '../../lib/wizardChanges.svelte';
   import { PackName } from '../../lib/packName.svelte';
   import { wizardBlurb } from '../../lib/wizardAsk';
   import { customSpectra, slugify, type Spectrum, type SpectrumPack } from '../../lib/content';
-  import { generatePairs, parsePastedPairs, THEME_CHIPS } from './generate';
+  import { BATCH, CHANGE, generatePairs, parsePastedPairs, THEME_CHIPS } from './generate';
   import { cardId } from './state';
   import { selectPack } from './persist';
   import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
@@ -49,13 +51,29 @@
   let pasteText = $state('');
   let note = $state('');
 
+  /** Keys of the cards dropped on review. */
+  let dropped = $state(new Set<string>());
+  /** "Ask for changes" on Fizzwick's cards: a run asks for one batch, and so does a change. */
+  const changes = new Changes({
+    game: CHANGE, request: () => theme, asked: () => BATCH, avoid: () => savedPack?.cards ?? [],
+    items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
+    name: () => (savedPack ? null : packName), onStart: (n) => (byPass = passedSoFar(byPass, n)),
+  });
+
+  /** A new list on review: no marks, no changes. */
+  function fresh() {
+    batch++;
+    dropped = new Set();
+    changes.clear();
+  }
+
   function pasted(list: Spectrum[], skipped: string) {
     packName.begin('paste', '', ''); // a pasted list is a new pack: a name typed for another is forgotten
     theme = '';
     items = list;
     note = skipped;
     error = '';
-    batch++;
+    fresh();
     step = 'review';
   }
 
@@ -70,6 +88,7 @@
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
   let byPass = false;
   async function run(avoid: Spectrum[]) {
+    changes.settle();
     byPass = passedSoFar(byPass, items.length);
     error = '';
     streaming = true;
@@ -101,7 +120,7 @@
   function startFresh(t: string) {
     theme = t;
     items = [];
-    batch++;
+    fresh();
     step = 'review';
     void run(savedPack?.cards ?? []);
   }
@@ -114,14 +133,16 @@
     if (!savedPack) return;
     mode = 'claude';
     items = [];
-    batch++;
+    fresh();
     step = 'review';
     void run(savedPack.cards);
   }
 
   function cancel() {
+    if (changes.busy) return changes.stop();
     if (streaming) { controller?.abort(); return; }
     items = [];
+    changes.clear();
     step = savedPack ? 'saved' : 'theme';
     packName.reset();
   }
@@ -215,8 +236,9 @@
       </div>
     {:else}
     {#key batch}
-      <Triage {items} keyOf={cardId} {streaming} wizard={mode === 'claude'} saveLabel={savedPack ? 'Save' : 'Continue with'} {onsave} oncancel={cancel} onmore={mode === 'claude' ? more : undefined}>
+      <Triage {items} keyOf={cardId} bind:dropped streaming={streaming || changes.busy} wizard={mode === 'claude'} saveLabel={savedPack ? 'Save' : 'Continue with'} {onsave} oncancel={cancel} onmore={mode === 'claude' ? more : undefined}>
         {#snippet item(c: Spectrum)}<span class="pair">{c.left} <span class="sep" aria-label="to">↔</span> {c.right}</span>{/snippet}
+        {#snippet below()}{#if mode === 'claude'}<WizardChanges {changes} request={theme} />{/if}{/snippet}
       </Triage>
     {/key}
     {/if}

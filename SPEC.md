@@ -41,13 +41,13 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   `motion` (permission, motion stream, sign fix, upright rotation), `pitch` (forehead pitch from
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
-  `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardAsk` and `packName` (the wizard's request, the name he suggests and its fallback, the description), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
+  `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardAsk` and `packName` (the wizard's request, the name he suggests and its fallback, the description), `wizardChange` and `wizardChanges` (asking for changes on a review), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
   `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `gamePicker` (the drop-down's search, and when it focuses its field), `panel` (whether a pack page's players or teams, a pack editor's details or a Community list's search and filters start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's game; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `gamesView` (the Games page's rules: default categories, the orders, the categories box's label, own category names, reading the stored choices defensively) and `gamesPage.svelte` (those choices on this phone), `update` (new versions switch in on the main menu or the Games page, held back while the category editor is open), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy), `cards/` (a 52-card deck and a hand's layout; see Playing cards).
 - `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList`, every pack editor and the Community list), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `GameCard` (one large row opening a page: a game, or the main menu's Games and Community packs), `CategoryEditor` (making or changing one of the Games page's own categories), `Dropdown` (the searchable drop-down box), `GamePicker` (its pick-one face choosing a game: the Community page, History), `CategoryMenu` (its pick-several face for the Games page's categories), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
-  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `WizardRequest` (the box where the player tells Fizzwick what they want), `PackNameField` (a wizard pack's name on its review screen), `WizardNote` (the line that Fizzwick can be wrong, over his results), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
+  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `WizardRequest` (the box where the player tells Fizzwick what they want), `PackNameField` (a wizard pack's name on its review screen), `WizardChanges` (asking Fizzwick for changes on a review), `WizardNote` (the line that Fizzwick can be wrong, over his results), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
   `ExportPack` (Export), `Community` and `CommunityItems` (browse, preview, import and star
   Community packs, over a pack list or on the Community page), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown), `cards/PlayingCard` and `cards/CardFan` (see Playing cards).
 - `src/pages/` — the pages that are not a game: `Home`, `Games`, `Settings`, `History`, `CommunityPage`
@@ -113,6 +113,29 @@ Three routes, in the order the owner chose to rely on them:
    name arriving alone updates the board in the making silently (only a clue ticks). The description
    is "Conjured by Fizzwick: " and the request, cut at a whole word with "…" to 80 characters in
    all (the board editor's limit, inside the library's 60 for names and 140 for descriptions).
+   **Asking for changes** (every game with the wizard, present and future; `src/lib/wizardChange.ts`,
+   `wizardChanges.svelte.ts`, `WizardChanges`): on the review of a pack Fizzwick just made, once he
+   has finished writing and only with a key or pass (like "More"), a box "Ask for changes" (grows,
+   at most 200 characters, "e.g. only the ones from France") with "Change". One request, whose answer
+   replaces the list on screen: the whole list again, as many as are kept on screen but never fewer
+   than the run first asked for and never more than one run on that make screen may ask for, keeping
+   what still fits and replacing the rest; the new items stream in as on a first run, and the pack
+   name follows the naming rule above (a typed name stays; otherwise he is asked for one again in
+   the same reply). The request is always three messages: the first run's prompt for the request
+   and count (no avoid list, no name ask); as his own answer, the items the player kept, in exactly
+   the lines that game reads (each game's serialiser sits next to its reader; `read(line(item))`
+   gives the item back); then "The player asks for a change: …", the earlier changes still applied
+   (oldest first, at most 5), the items the player removed ("never bring them back", up to 4,000
+   characters), "Write the whole list again: exactly N …", the first run's avoid list, and the name
+   ask when a name is wanted. Same system prompt, model, effort and token cap as a first run; it
+   counts as one request. A short thread sits above the box once there is a change: the request on
+   one line, then each change and Fizzwick's line "Kept 12 · replaced 28" (kept: its key was in the
+   list before the change; when one run's cap cut the list, also how many came back); only the
+   latest shows, older ones fold under "N earlier changes". "Undo" brings back the list before the
+   last change, with its dropped marks and its name, and takes that change off the thread, one step
+   at a time; "More" ends the Undo steps (the list has grown since). A change that fails, is
+   refused, is stopped or brings no usable item puts the list back exactly as it was, with the error
+   line under the thread. Never on pasted or typed lists, "Add more" or a saved pack's editor.
    Fizzwick writes from memory and nobody checks his facts, so wherever items he wrote are on
    screen (the review of a pack he just made, its "Add more" results, and in Big Board the board
    as he writes it and the new board's editor until it is saved), one quiet line (`WizardNote`)

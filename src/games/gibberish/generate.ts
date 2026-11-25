@@ -3,7 +3,8 @@
 import { streamLines } from '../../lib/claude';
 import type { GibberishCard, GibberishPack } from '../../lib/content';
 import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
-import { answerKey, parseLine } from './parse';
+import { answerKey, cardLine, parseLine } from './parse';
+import type { ChangeGame } from '../../lib/wizardChange';
 import { askedFor, withNameAsk } from '../../lib/wizardAsk';
 
 export const THEME_CHIPS = ['Movies', 'Famous people', 'Food & drink', 'Songs', 'TV shows', 'Brands', 'Places', 'Sayings', 'Animals', '2000s throwback'];
@@ -73,6 +74,15 @@ export async function generateCards(opts: {
     },
   });
 }
+
+/** "Ask for changes" on the review of Fizzwick's cards: a run asks for `BATCH`, so a change does too. */
+export const CHANGE: ChangeGame<GibberishCard> = {
+  system: SYSTEM, maxTokens: 8000, max: BATCH,
+  first: (request) => buildPrompt(request, []),
+  line: cardLine, read: (line, request) => parseLine(line, fallbackCategory(request)), keyOf: answerKey,
+  describe: (c) => `${c.all} cards`, avoidLine: (c) => c.answer, avoidKey: answerKey,
+  taken: EXAMPLES.map((e) => answerKey(parseLine(e)!)),
+};
 
 /** "🧙 Add more" on a pack: how many cards to ask for. */
 export const MORE_RANGE = { start: 10, min: 5, max: 30, step: 5 };

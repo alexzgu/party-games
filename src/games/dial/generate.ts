@@ -6,6 +6,7 @@ import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
 import { cardId } from './state';
 import { dropNumberCells, pastedLines } from '../../lib/paste';
 import { askedFor, withNameAsk } from '../../lib/wizardAsk';
+import type { ChangeGame } from '../../lib/wizardChange';
 
 export const BATCH = 20;
 const MAX_END = 40;
@@ -61,6 +62,9 @@ const PREFIX = /^\s*(?:[-*•]\s+|\d+[.)]\s+|card\s*\d+\s*[:.)-]\s*)/i;
 
 const hasWord = (s: string) => /[\p{L}\p{N}]/u.test(s);
 
+/** A card as the line `parsePair` reads. */
+export const pairLine = (c: Spectrum): string => `${c.left} | ${c.right}`;
+
 /** One streamed line to a card, or null when the line is not a usable `Left | Right` pair. */
 export function parsePair(raw: string): Spectrum | null {
   const line = raw.replace(/\*\*|__|`/g, '')
@@ -105,10 +109,17 @@ export function generatePairs(opts: GenerateOptions): Promise<void> {
   });
 }
 
+/** "Ask for changes" on the review of Fizzwick's cards: a run asks for `BATCH`, so a change does too. */
+export const CHANGE: ChangeGame<Spectrum> = {
+  system: SYSTEM, maxTokens: 2000, max: BATCH,
+  first: (request, count) => buildPrompt(request, [], count),
+  line: pairLine, read: (line) => parsePair(line), keyOf: cardId,
+  describe: (c) => `${c.all} cards`, avoidLine: pairLine, avoidKey: cardId,
+};
+
 /** "🧙 Add more" on a pack: how many cards to ask for. */
 export const MORE_RANGE = { start: 10, min: 5, max: 40, step: 5 };
 
-const asLine = (c: Spectrum) => `${c.left} | ${c.right}`;
 
 /**
  * More cards on top of `pack`, never one of its cards, of those already written this time or of
@@ -118,7 +129,7 @@ export function moreCards(pack: SpectrumPack, others: readonly Spectrum[], run: 
   const have = [...run.avoid, ...pack.cards];
   return streamMore({
     system: SYSTEM,
-    prompt: morePrompt({ name: pack.name, blurb: pack.blurb, have: have.map(asLine), others: others.map(asLine) }, run, 'cards'),
+    prompt: morePrompt({ name: pack.name, blurb: pack.blurb, have: have.map(pairLine), others: others.map(pairLine) }, run, 'cards'),
     count: run.count, maxTokens: 3000, read: parsePair, keyOf: cardId, taken: [...have, ...others].map(cardId), onItem: run.onItem, signal: run.signal,
   });
 }

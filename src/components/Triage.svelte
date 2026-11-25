@@ -15,6 +15,8 @@
     onsave,
     oncancel,
     onmore,
+    dropped = $bindable(new Set<string>()),
+    below,
   }: {
     items: T[];
     keyOf: (t: T) => string;
@@ -27,9 +29,11 @@
     onsave: (kept: T[]) => void;
     oncancel: () => void;
     onmore?: () => void;
+    /** Keys of the dropped items; bound by a screen that puts marks back (Undo of a change). */
+    dropped?: Set<string>;
+    /** Shown under the list once Fizzwick has finished writing ("Ask for changes"). */
+    below?: Snippet;
   } = $props();
-
-  let dropped = $state(new Set<string>());
   const kept = $derived(items.filter((t) => !dropped.has(keyOf(t))));
 
   function toggle(t: T) {
@@ -55,6 +59,7 @@
       </li>
     {/each}
   </ul>
+  {#if below && !streaming}{@render below()}{/if}
   <div class="actions">
     <Button onclick={() => onsave(kept)} disabled={kept.length === 0 || streaming} size="lg" tip="Keeps these and leaves out the dropped ones">{saveLabel} {kept.length}</Button>
     <div class="row">

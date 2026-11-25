@@ -30,6 +30,9 @@ export function cleanLine(line: string): string | null {
   return s;
 }
 
+/** A word as the line `cleanLine` reads ("Ask for changes" sends the list back in this form). */
+export const wordLine = (word: string): string => word;
+
 export const itemKey = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
 
 // A pasted list (often copied from the Claude app): one item per line, commas also split.

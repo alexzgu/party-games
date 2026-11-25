@@ -5,6 +5,7 @@
 import { MAX_LISTED_CHARS, morePrompt, streamMore, within, type MoreRun } from './addMore';
 import { checked, itemKey, packItems, type ListItem, type ListPack, type ListSpec } from './listPack';
 import { askedFor, withNameAsk } from './wizardAsk';
+import type { ChangeGame } from './wizardChange';
 
 export interface ListWizard {
   specs: readonly ListSpec[];
@@ -28,12 +29,15 @@ export function readLine(w: ListWizard, line: string): ListItem | null {
   return text ? { field: target.field, text } : null;
 }
 
+/** An item as the line `readLine` reads: "Prompt: …". */
+export const itemLine = (w: ListWizard, i: ListItem): string => `${w.labels[i.field]}: ${i.text}`;
+
 /** "30 prompts and 120 answers". */
 export const askLine = (w: ListWizard, counts: Record<string, number>): string =>
   w.specs.map((s) => `${counts[s.field]} ${counts[s.field] === 1 ? s.one : s.many}`).join(' and ');
 
 /** Items as the request lists them: "Prompt: …". */
-const listed = (w: ListWizard, items: readonly ListItem[]): string[] => items.map((i) => `${w.labels[i.field]}: ${i.text}`);
+const listed = (w: ListWizard, items: readonly ListItem[]): string[] => items.map((i) => itemLine(w, i));
 
 /** The prompt for a new pack from the player's `request`, never an item in `avoid`; `named`: ask for a pack name too. */
 export function buildPrompt(w: ListWizard, request: string, count: number, avoid: readonly ListItem[], named = false): string {
@@ -63,6 +67,18 @@ function stream(w: ListWizard, o: Stream): Promise<number> {
  */
 export function generateItems(w: ListWizard, o: { theme: string; count: number; avoid: readonly ListItem[]; onItem: (i: ListItem) => void; onName?: (name: string) => void; signal?: AbortSignal }): Promise<number> {
   return stream(w, { prompt: buildPrompt(w, o.theme, o.count, o.avoid, !!o.onName), counts: w.split(o.count), taken: o.avoid, onItem: o.onItem, onName: o.onName, signal: o.signal });
+}
+
+/** "Ask for changes" on the review of Fizzwick's items; `max` is the most one run on the make screen asks for. */
+export function changeGame(w: ListWizard, max: number): ChangeGame<ListItem> {
+  const key = itemKey(w.specs);
+  return {
+    system: w.system, maxTokens: 8000, max,
+    first: (request, count) => buildPrompt(w, request, count, []),
+    line: (i) => itemLine(w, i), read: (line) => readLine(w, line), keyOf: key,
+    kindOf: (i) => i.field, split: w.split, describe: (c) => askLine(w, c),
+    avoidLine: (i) => itemLine(w, i), avoidKey: key,
+  };
 }
 
 /** "🧙 Add more": more on top of `pack`, never one of its own, of those written this time or of `others` (every other pack's). */

@@ -11,6 +11,8 @@
   import MagicWords from './MagicWords.svelte';
   import WizardRequest from './WizardRequest.svelte';
   import PackNameField from './PackNameField.svelte';
+  import WizardChanges from './WizardChanges.svelte';
+  import { WizardChanges as Changes } from '../lib/wizardChanges.svelte';
   import { PackName } from '../lib/packName.svelte';
   import { wizardBlurb } from '../lib/wizardAsk';
   import { slugify, type PackMeta } from '../lib/content';
@@ -19,7 +21,7 @@
   import { afterRun, libraryOn, passedSoFar, shareWizardPack } from '../lib/library';
   import { NO_ROOM, putSplit, type AnyPack } from '../lib/packfile';
   import { addItems, itemKey, packItems, parseLists, type ListItem, type ListPack, type ListSpec } from '../lib/listPack';
-  import { askLine, generateItems, type ListWizard } from '../lib/listWizard';
+  import { askLine, changeGame, generateItems, type ListWizard } from '../lib/listWizard';
 
   // "Make a pack" for a list pack (Doodle Brawl, Bad Hand, Sketchy, Would You Rather, Smarty Pants):
   // paste a list, one item per line (numbers, bullets and quotes dropped), or tell Fizzwick what you
@@ -86,6 +88,16 @@
   const pasteSpec = $derived(specs.find((x) => x.field === pasteField) ?? specs[0]);
   const one = $derived(specs.length > 1 ? 'items' : specs[0].many);
 
+  /** Keys of the items dropped on review. */
+  let dropped = $state(new Set<string>());
+  /** "Ask for changes" on Fizzwick's items. */
+  // svelte-ignore state_referenced_locally
+  const changes = new Changes({
+    game: changeGame(wizard, range.max), request: () => theme, asked: () => count, avoid: () => packs().flatMap((p) => packItems(specs, p)),
+    items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
+    name: () => packName, onItem: () => sfx.tick(), onStart: (n) => (byPass = libraryOn(game) && passedSoFar(byPass, n)),
+  });
+
   function newId(n: string): string {
     const taken = new Set(packs().map((p) => p.id));
     let id = slugify(n);
@@ -110,6 +122,7 @@
    */
   let byPass = false;
   async function run() {
+    changes.settle();
     byPass = libraryOn(game) && passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     packName.begin('wizard', theme, defaultName);
@@ -130,11 +143,13 @@
   }
 
   function cancel() {
+    if (changes.busy) return changes.stop();
     if (streaming) { ctrl?.abort(); return; }
     items = [];
     error = '';
     reviewing = false;
     packName.reset();
+    changes.clear();
   }
 
   function save(kept: ListItem[]) {
@@ -192,7 +207,8 @@
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your {one}…</p>
     {/if}
     {#if unsaved}<div class="error" role="alert"><p>{unsaved}</p></div>{/if}
-    <Triage {items} {keyOf} {streaming} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+    <Triage {items} {keyOf} bind:dropped streaming={streaming || changes.busy} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+      {#snippet below()}{#if true}<WizardChanges {changes} request={theme} />{/if}{/snippet}
       {#snippet item(i: ListItem)}
         <span class="it">
           {#if specs.length > 1}<span class="tag">{specs.find((s) => s.field === i.field)?.one}</span>{/if}

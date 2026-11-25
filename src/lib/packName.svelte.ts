@@ -5,6 +5,8 @@
 // with other words is a new pack, and starts afresh.
 import { cleanName, cleanRequest, NAME_MAX, nameFrom } from './wizardAsk';
 
+export interface NameSnapshot { value: string; typed: boolean; suggested: boolean; for: string | null }
+
 export class PackName {
   value = $state('');
   #typed = false;
@@ -51,6 +53,23 @@ export class PackName {
     if (this.#typed) return;
     this.#suggested = false;
     this.value = '';
+  }
+
+  /** A change is asked for: a name the player has not typed is asked of Fizzwick again (the old one may no longer fit). */
+  askAgain(): void {
+    if (!this.#typed) this.#suggested = false;
+  }
+
+  /** Everything about the name, to put back on Undo or when a change fails. */
+  snapshot(): NameSnapshot {
+    return { value: this.value, typed: this.#typed, suggested: this.#suggested, for: this.#for };
+  }
+
+  restore(s: NameSnapshot): void {
+    this.value = s.value;
+    this.#typed = s.typed;
+    this.#suggested = s.suggested;
+    this.#for = s.for;
   }
 
   /** The name to save under: what is in the field, else the request's first words, else `empty`. */

@@ -11,10 +11,12 @@
   import MagicWords from '../../components/MagicWords.svelte';
   import WizardRequest from '../../components/WizardRequest.svelte';
   import PackNameField from '../../components/PackNameField.svelte';
+  import WizardChanges from '../../components/WizardChanges.svelte';
+  import { WizardChanges as Changes } from '../../lib/wizardChanges.svelte';
   import { PackName } from '../../lib/packName.svelte';
   import { wizardBlurb } from '../../lib/wizardAsk';
   import { sfx } from '../../lib/sound';
-  import { generatePrompts, THEME_CHIPS } from './generate';
+  import { CHANGE, generatePrompts, THEME_CHIPS } from './generate';
   import { parsePasted } from './parse';
   import { promptKey } from './logic';
   import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
@@ -54,7 +56,17 @@
   let pasteText = $state('');
   let note = $state('');
 
+  /** Keys of the items dropped on review. */
+  let dropped = $state(new Set<string>());
+  /** "Ask for changes" on Fizzwick's list: a run asks for one batch, and so does a change. */
+  const changes = new Changes({
+    game: CHANGE, request: () => theme, asked: () => CHANGE.max, avoid: () => destPack?.prompts ?? [],
+    items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
+    name: () => (destPack ? null : packName), onItem: () => sfx.tick(), onStart: (n) => (byPass = passedSoFar(byPass, n)),
+  });
+
   function pasted(list: string[], skipped: string) {
+    changes.clear();
     packName.begin('paste', '', ''); // a pasted list is a new pack: a name typed for another is forgotten
     items = list;
     note = skipped;
@@ -65,6 +77,7 @@
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
   let byPass = false;
   async function run() {
+    changes.settle();
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     // A new pack gets a name; cards added to one of mine need none.
@@ -94,12 +107,14 @@
   }
 
   function cancel() {
+    if (changes.busy) return changes.stop();
     if (streaming) { ctrl?.abort(); return; }
     items = [];
     error = '';
     note = '';
     reviewing = false;
     packName.reset();
+    changes.clear();
   }
 
   function uniqueId(name: string): string {
@@ -192,7 +207,8 @@
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your prompts…</p>
     {/if}
 
-    <Triage {items} keyOf={promptKey} {streaming} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
+    <Triage {items} keyOf={promptKey} bind:dropped streaming={streaming || changes.busy} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
+      {#snippet below()}{#if mode === 'claude'}<WizardChanges {changes} request={theme} />{/if}{/snippet}
       {#snippet item(p)}<span class="it"><span class="lead">Name 3</span> {p}</span>{/snippet}
     </Triage>
   {/if}

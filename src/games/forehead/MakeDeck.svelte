@@ -13,14 +13,16 @@
   import MagicWords from '../../components/MagicWords.svelte';
   import WizardRequest from '../../components/WizardRequest.svelte';
   import PackNameField from '../../components/PackNameField.svelte';
+  import WizardChanges from '../../components/WizardChanges.svelte';
+  import { WizardChanges as Changes } from '../../lib/wizardChanges.svelte';
   import { PackName } from '../../lib/packName.svelte';
   import { wizardBlurb } from '../../lib/wizardAsk';
   import { back, go } from '../../lib/router.svelte';
   import { freshName } from '../../lib/packfile';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
-  import { generateWords, THEME_CHIPS } from './generate';
-  import { parsePastedWords } from './words';
+  import { CHANGE, generateWords, MAKE_RANGE, THEME_CHIPS } from './generate';
+  import { itemKey, parsePastedWords } from './words';
 
   // "Make a deck": paste a list, type one by hand in the deck editor, or tell Fizzwick what you
   // want and watch words stream in → name the pack, drop the duds → save as a new deck or add to
@@ -37,7 +39,7 @@
   const packName = new PackName();
   // The review demo is a wizard review: the name field starts with a name.
   if (start.demo) packName.begin('wizard', '', 'Wizard pack');
-  let count = $state(40);
+  let count = $state(MAKE_RANGE.start);
   let phase = $state<'form' | 'triage'>(start.demo ? 'triage' : 'form');
   let items = $state<string[]>(start.demo ? ['Moon Landing', 'Taylor Swift', 'Pizza Rat', 'Spider-Man', 'Eiffel Tower', 'Karaoke Night', 'Hot Dog Eating Contest', 'Netflix and Chill', 'Zebra Crossing'] : []);
   let streaming = $state(start.demo);
@@ -59,7 +61,17 @@
   let note = $state('');
   let deckName = $state('');
 
+  /** Keys of the words dropped on review. */
+  let dropped = $state(new Set<string>());
+  /** "Ask for changes" on Fizzwick's words. */
+  const changes = new Changes({
+    game: CHANGE, request: () => theme, asked: () => count, avoid: () => targetDeck?.words ?? [],
+    items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
+    name: () => (targetDeck ? null : packName), onItem: () => sfx.tick(), onStart: (n) => (byPass = passedSoFar(byPass, n)),
+  });
+
   function pasted(list: string[], skipped: string) {
+    changes.clear();
     items = list;
     note = skipped;
     error = '';
@@ -69,6 +81,7 @@
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
   let byPass = false;
   async function run() {
+    changes.settle();
     byPass = passedSoFar(byPass, items.length);
     error = '';
     streaming = true;
@@ -121,6 +134,7 @@
   }
 
   function cancel() {
+    if (changes.busy) return changes.stop();
     if (streaming) {
       controller?.abort();
       streaming = false;
@@ -131,6 +145,7 @@
     note = '';
     phase = 'form';
     packName.reset();
+    changes.clear();
   }
 
   function chip(t: string) {
@@ -176,7 +191,7 @@
             <button type="button" class="chip" class:on={theme === t} onclick={() => chip(t)}>{t}</button>
           {/each}
         </div>
-        <Stepper label="How many words" bind:value={count} min={20} max={80} step={10} />
+        <Stepper label="How many words" bind:value={count} min={MAKE_RANGE.min} max={MAKE_RANGE.max} step={MAKE_RANGE.step} />
         {@render saveTo()}
         <WizardEffort />
         <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make {count}</Button>
@@ -210,8 +225,9 @@
         <Button size="sm" variant="secondary" onclick={run}>Try again</Button>
       </div>
     {/if}
-    <Triage {items} keyOf={(s: string) => s} {streaming} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' && theme ? run : undefined}>
+    <Triage {items} keyOf={itemKey} bind:dropped streaming={streaming || changes.busy} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' && theme ? run : undefined}>
       {#snippet item(s: string)}<span class="word">{s}</span>{/snippet}
+      {#snippet below()}{#if mode === 'claude' && theme}<WizardChanges {changes} request={theme} />{/if}{/snippet}
     </Triage>
   {/if}
 </Screen>

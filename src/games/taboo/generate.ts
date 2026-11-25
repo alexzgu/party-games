@@ -3,7 +3,8 @@
 // only when it passes the same rules as every other card (cards.ts) and its word is new.
 import { MAX_LISTED_CHARS, morePrompt, streamMore, within, type MoreRun } from '../../lib/addMore';
 import type { TabooCard, TabooPack } from '../../lib/content';
-import { cardId, key, parseCards } from './cards';
+import { cardId, cardLine, key, parseCards } from './cards';
+import type { ChangeGame } from '../../lib/wizardChange';
 import { askedFor, withNameAsk } from '../../lib/wizardAsk';
 
 export const THEME_CHIPS = ['Food & drink', 'Movies & TV', 'Music', 'Sports', 'Around the house', 'Animals', 'Travel', 'School & work', '2000s throwback', 'After dark'];
@@ -54,6 +55,14 @@ export function generateCards(o: { theme: string; count: number; avoid: readonly
     count: o.count, maxTokens: 4000, read: readCard, keyOf: cardId, taken: o.avoid.map(key), onItem: o.onCard, onName: o.onName, signal: o.signal,
   });
 }
+
+/** "Ask for changes" on the review of Fizzwick's cards; the avoid list is every other word on the phone. */
+export const CHANGE: ChangeGame<TabooCard, string> = {
+  system: SYSTEM, maxTokens: 4000, max: MAKE_RANGE.max,
+  first: (request, count) => buildPrompt(request, count, []),
+  line: cardLine, read: (line) => readCard(line), keyOf: cardId,
+  describe: (c) => `${c.all} cards`, avoidLine: (w) => w, avoidKey: key,
+};
 
 /** More cards on top of `pack`, never a word of its own, of those already written this time or of `others` (every other pack's words). */
 export function moreCards(pack: TabooPack, others: readonly string[], run: MoreRun<TabooCard>): Promise<number> {

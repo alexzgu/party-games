@@ -10,13 +10,15 @@
   import MagicWords from '../../components/MagicWords.svelte';
   import WizardRequest from '../../components/WizardRequest.svelte';
   import PackNameField from '../../components/PackNameField.svelte';
+  import WizardChanges from '../../components/WizardChanges.svelte';
+  import { WizardChanges as Changes } from '../../lib/wizardChanges.svelte';
   import { PackName } from '../../lib/packName.svelte';
   import { wizardBlurb } from '../../lib/wizardAsk';
   import { customSnark, slugify, snarkPacks } from '../../lib/content';
   import { hasKey, WANTS } from '../../lib/claude';
   import { sfx } from '../../lib/sound';
   import { parsePrompts as parse } from './prompts';
-  import { generateItems, MAKE_RANGE, THEME_CHIPS } from './generate';
+  import { CHANGE, generateItems, MAKE_RANGE, THEME_CHIPS } from './generate';
   import { addItems, itemKey, packTexts, type SnarkItem } from './pack';
   import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
   import WizardItem from './WizardItem.svelte';
@@ -42,6 +44,15 @@
   let ctrl: AbortController | null = null;
   onDestroy(() => ctrl?.abort());
 
+  /** Keys of the items dropped on review. */
+  let dropped = $state(new Set<string>());
+  /** "Ask for changes" on Fizzwick's prompts. */
+  const changes = new Changes({
+    game: CHANGE, request: () => theme, asked: () => count, avoid: () => snarkPacks().flatMap(packTexts),
+    items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
+    name: () => packName, onItem: () => sfx.tick(), onStart: (n) => (byPass = passedSoFar(byPass, n)),
+  });
+
   function newId(n: string): string {
     const taken = new Set(snarkPacks().map((p) => p.id));
     let id = slugify(n);
@@ -59,6 +70,7 @@
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
   let byPass = false;
   async function run() {
+    changes.settle();
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
     packName.begin('wizard', theme, 'My prompts');
@@ -79,11 +91,13 @@
   }
 
   function cancel() {
+    if (changes.busy) return changes.stop();
     if (streaming) { ctrl?.abort(); return; }
     items = [];
     error = '';
     reviewing = false;
     packName.reset();
+    changes.clear();
   }
 
   function save(kept: SnarkItem[]) {
@@ -133,7 +147,8 @@
     {#if items.length === 0 && streaming}
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your prompts…</p>
     {/if}
-    <Triage {items} keyOf={itemKey} {streaming} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+    <Triage {items} keyOf={itemKey} bind:dropped streaming={streaming || changes.busy} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+      {#snippet below()}{#if true}<WizardChanges {changes} request={theme} />{/if}{/snippet}
       {#snippet item(i: SnarkItem)}<WizardItem {i} />{/snippet}
     </Triage>
   {/if}
