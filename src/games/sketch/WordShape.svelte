@@ -18,11 +18,11 @@
 {/if}
 
 <style>
-  .word { font: 800 clamp(1.4rem, 6vw, 2.4rem)/1.1 var(--font-display); color: var(--accent); text-align: center; overflow-wrap: anywhere; }
+  .word { font: 800 clamp(1.4rem, calc(6vw * var(--text-scale)), 2.4rem)/1.1 var(--font-display); color: var(--accent); text-align: center; overflow-wrap: anywhere; }
   .shape { display: flex; flex-wrap: wrap; justify-content: center; align-items: end; gap: var(--s-1) var(--s-3); }
   .w { display: flex; flex-wrap: wrap; gap: 3px; align-items: end; }
   .w > span { min-width: 0.6em; text-align: center; font: 800 1.3rem/1 var(--font-display); }
   .box { width: 1.15em; height: 1.5em; display: grid !important; place-items: center; border-bottom: 3px solid var(--text); }
-  .lg .w > span { font-size: clamp(calc(1.4 * var(--rem-far)), 4vmin, calc(2.4 * var(--rem-far))); }
+  .lg .w > span { font-size: clamp(1.4rem, calc(4vmin * var(--text-scale)), 2.4rem); }
   small { color: var(--text-dim); align-self: center; }
 </style>

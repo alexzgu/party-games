@@ -85,12 +85,14 @@
   --s-6: 32px;
   --s-7: 48px;
 
-  /* Text size (Settings > Display, data-text on <html>): every rem in the app is this root size. */
+  /* Text size (Settings > Display, data-text on <html>): every rem in the app is this root size,
+     and a size that grows with the screen multiplies its screen term by --text-scale. */
   --text-scale: 1;
   --text-root: calc(17px * var(--text-scale));
-  /* Text read from across the room (the Heads Down. word, host screens on a TV) sizes in this,
-     one rem at Normal text size, so the Text size setting never changes it. */
-  --rem-far: 17px;
+  /* How much the parts around a screen-fitted area (a drawing pad) grow with the settings: a
+     height guessed at Normal is multiplied by it. Never under 1: smaller text and Compact only
+     leave more room, so the pad keeps its Normal size; Large text takes room from the pad. */
+  --chrome-scale: max(1, var(--text-scale));
 
   --tap: 56px; /* minimum height of anything tappable */
   --tap-min: 44px; /* the smallest a small icon button may be; never shrinks */

@@ -37,9 +37,9 @@
 
 <style>
   .scores { flex: 1; display: flex; flex-direction: column; gap: clamp(12px, 2.4vmin, 24px); width: min(100%, 980px); margin: 0 auto; padding: var(--s-3) 0; }
-  h1 { text-align: center; font-size: clamp(calc(1.8 * var(--rem-far)), 5.6vmin, calc(3.4 * var(--rem-far))); }
+  h1 { text-align: center; font-size: clamp(1.8rem, calc(5.6vmin * var(--text-scale)), 3.4rem); }
   ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
-  li { display: flex; align-items: center; gap: var(--s-3); padding: clamp(6px, 1.2vmin, 12px) var(--s-4); border-radius: var(--r-md); background: var(--surface); font-size: clamp(var(--rem-far), 2.6vmin, calc(1.5 * var(--rem-far))); }
+  li { display: flex; align-items: center; gap: var(--s-3); padding: clamp(6px, 1.2vmin, 12px) var(--s-4); border-radius: var(--r-md); background: var(--surface); font-size: clamp(1rem, calc(2.6vmin * var(--text-scale)), 1.5rem); }
   .place { width: 1.4em; color: var(--text-faint); font-family: var(--font-display); font-weight: 800; }
   .name { width: 9em; min-width: 0; font-weight: 800; color: var(--who); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bar { flex: 1; height: 10px; border-radius: var(--r-pill); background: var(--bg-sunk); overflow: hidden; }

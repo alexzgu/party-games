@@ -51,6 +51,11 @@ p { margin: 0; }
 button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; border: 0; -webkit-user-select: none; user-select: none; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: var(--r-sm); }
+/* Every control text is typed into, with or without a type: 16px+ stops iOS from zooming on focus,
+   at any text size. Otherwise the size it inherits; the styled boxes below use 1rem. */
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file'], [type='button'], [type='submit'], [type='reset'], [type='image'], [type='hidden']), textarea, select {
+  font-size: max(16px, 1em);
+}
 
 input[type='text'], input[type='password'], input[type='number'], textarea, select {
   width: 100%;
@@ -59,7 +64,7 @@ input[type='text'], input[type='password'], input[type='number'], textarea, sele
   background: var(--bg-sunk);
   border: 1.5px solid var(--line-strong);
   border-radius: var(--r-md);
-  font-size: max(16px, 1rem); /* 16px+ stops iOS from zooming on focus, at any text size */
+  font-size: max(16px, 1rem);
 }
 textarea { min-height: 96px; resize: vertical; }
 input:focus, textarea:focus, select:focus { border-color: var(--accent); outline: none; }

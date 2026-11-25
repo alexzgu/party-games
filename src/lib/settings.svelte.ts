@@ -1,6 +1,7 @@
 import { load, save } from './storage';
 import { DEFAULT_MODEL } from './wizard';
 import type { PackView } from './packList';
+import { farRead } from './farRead';
 
 export interface Settings {
   sound: boolean;
@@ -68,8 +69,10 @@ export function applyTheme(): void {
 }
 
 /** Puts the display choices on <html> (data-text, data-density), where tokens.css turns them into
- *  sizes for every screen at once. index.html does the same from storage before the first paint. */
-export function applyDisplay(root: { dataset: DOMStringMap } = document.documentElement): void {
-  root.dataset.text = textSizeOf(settings.textSize);
+ *  sizes for every screen at once. On a screen read from across the room (farRead) the text stays
+ *  Normal. App.svelte calls it whenever the screen or the settings change; index.html does the same
+ *  from storage before the first paint. */
+export function applyDisplay(path: string, root: { dataset: DOMStringMap } = document.documentElement): void {
+  root.dataset.text = farRead(path) ? 'normal' : textSizeOf(settings.textSize);
   root.dataset.density = spacingOf(settings.spacing);
 }

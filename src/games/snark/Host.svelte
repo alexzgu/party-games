@@ -200,7 +200,7 @@
     padding: calc(var(--safe-top) + var(--s-2)) calc(var(--safe-right) + clamp(12px, 2.5vw, 40px)) calc(var(--safe-bottom) + var(--s-3)) calc(var(--safe-left) + clamp(12px, 2.5vw, 40px));
   }
   .bar { position: relative; z-index: 1; display: flex; align-items: center; gap: var(--s-2); min-height: var(--tap-md); }
-  .where { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--s-3); white-space: nowrap; overflow: hidden; font-family: var(--font-display); font-size: clamp(var(--rem-far), 2.2vmin, calc(1.4 * var(--rem-far))); }
+  .where { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--s-3); white-space: nowrap; overflow: hidden; font-family: var(--font-display); font-size: clamp(1rem, calc(2.2vmin * var(--text-scale)), 1.4rem); }
   .round { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .chip { flex: none; font-family: var(--font-body); font-size: 0.85em; color: var(--text-dim); padding: 4px 12px; border-radius: var(--r-pill); background: var(--overlay); }
   .chip b { color: var(--accent); letter-spacing: 0.12em; }

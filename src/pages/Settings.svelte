@@ -7,7 +7,7 @@
   import TiltCheck from '../components/TiltCheck.svelte';
   import { calibration } from '../games/forehead/calibration.svelte';
   import { go } from '../lib/router.svelte';
-  import { settings, saveSettings, applyTheme, applyDisplay } from '../lib/settings.svelte';
+  import { settings, saveSettings, applyTheme } from '../lib/settings.svelte';
   import MagicWords from '../components/MagicWords.svelte';
   import { hasKey } from '../lib/claude';
   import { sfx, unlockAudio } from '../lib/sound';
@@ -97,16 +97,16 @@
       label="Text size"
       options={[{ value: 'small', label: 'Small' }, { value: 'normal', label: 'Normal' }, { value: 'large', label: 'Large' }]}
       bind:value={settings.textSize}
-      onchange={() => { saveSettings(); applyDisplay(); }}
+      onchange={saveSettings}
     />
     <span class="lbl" aria-hidden="true">Spacing</span>
     <Segmented
       label="Spacing"
       options={[{ value: 'compact', label: 'Compact', tip: 'Less space around buttons, rows and cards' }, { value: 'normal', label: 'Normal' }]}
       bind:value={settings.spacing}
-      onchange={() => { saveSettings(); applyDisplay(); }}
+      onchange={saveSettings}
     />
-    <p class="faint">For every screen on this phone. Words the room reads from across it, like the word on your forehead, keep their size.</p>
+    <p class="faint">For every screen on this phone. Screens the room reads from across it, like a host screen or the word on your forehead, keep the normal text size.</p>
   </section>
 
   <section class="stack">

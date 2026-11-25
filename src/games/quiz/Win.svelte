@@ -71,8 +71,8 @@
     content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background: radial-gradient(110% 55% at 50% 0%, color-mix(in srgb, var(--win) 32%, transparent), transparent 75%), var(--bg);
   }
-  .trophy { font-size: clamp(calc(4 * var(--rem-far)), 12vmin, calc(8 * var(--rem-far))); line-height: 1; }
-  h1 { font-size: clamp(calc(2.4 * var(--rem-far)), 8vmin, calc(5.5 * var(--rem-far))); line-height: 1.02; }
+  .trophy { font-size: clamp(4rem, calc(12vmin * var(--text-scale)), 8rem); line-height: 1; }
+  h1 { font-size: clamp(2.4rem, calc(8vmin * var(--text-scale)), 5.5rem); line-height: 1.02; }
   h1 span { display: block; color: var(--win); overflow-wrap: anywhere; text-shadow: 0 0 36px color-mix(in srgb, var(--win) 50%, transparent); }
   h1 .tie { font-size: 0.6em; margin-top: var(--s-2); }
   .early { color: var(--c-pass); font-weight: 700; }
@@ -80,7 +80,7 @@
   li {
     display: flex; align-items: center; gap: var(--s-3); padding: clamp(10px, 1.6vmin, 18px) var(--s-4); border-radius: var(--r-md);
     background: color-mix(in srgb, var(--team) 8%, var(--surface)); border: 2px solid color-mix(in srgb, var(--team) 35%, transparent);
-    font-weight: 800; font-size: clamp(calc(1.1 * var(--rem-far)), 2.8vmin, calc(2 * var(--rem-far)));
+    font-weight: 800; font-size: clamp(1.1rem, calc(2.8vmin * var(--text-scale)), 2rem);
   }
   li.lead { background: color-mix(in srgb, var(--team) 20%, var(--surface)); border-color: var(--team); box-shadow: 0 0 24px color-mix(in srgb, var(--team) 30%, transparent); }
   .place { width: 1.6em; color: var(--text-faint); font-family: var(--font-display); }
@@ -88,7 +88,7 @@
   li b { font-family: var(--font-display); font-size: 1.4em; line-height: 1; font-variant-numeric: tabular-nums; }
   .actions { width: min(100%, 520px); margin-top: auto; display: flex; flex-direction: column; gap: var(--s-2); }
   .final.many { display: grid; gap: 6px; }
-  .final.many li { padding: 6px var(--s-3); font-size: clamp(var(--rem-far), 2.2vmin, calc(1.4 * var(--rem-far))); border-width: 1.5px; }
+  .final.many li { padding: 6px var(--s-3); font-size: clamp(1rem, calc(2.2vmin * var(--text-scale)), 1.4rem); border-width: 1.5px; }
   .final.many li.lead { box-shadow: none; }
   @media (min-width: 700px) {
     .final.many { grid-template-columns: 1fr 1fr; grid-template-rows: repeat(var(--half), auto); grid-auto-flow: column; column-gap: var(--s-3); }
@@ -101,7 +101,7 @@
       align-items: center; column-gap: var(--s-5); row-gap: var(--s-2); width: min(100%, 960px); padding-top: 0;
     }
     .trophy { grid-column: 1; grid-row: 1; align-self: end; font-size: 3rem; }
-    h1 { grid-column: 1; grid-row: 2; font-size: clamp(calc(2 * var(--rem-far)), 6vw, calc(3.2 * var(--rem-far))); }
+    h1 { grid-column: 1; grid-row: 2; font-size: clamp(2rem, calc(6vw * var(--text-scale)), 3.2rem); }
     .early { grid-column: 1; grid-row: 3; }
     .win > .faint { grid-column: 1; grid-row: 4; align-self: start; }
     .final, .tiles { grid-column: 2; grid-row: 1 / 5; min-width: 0; }
@@ -112,5 +112,5 @@
   }
   .solo-score { display: block; font-size: 1.25em; font-variant-numeric: tabular-nums; }
   .solo-score.neg { color: var(--c-bad); }
-  .tiles { color: var(--text-dim); font-weight: 700; font-size: clamp(calc(1.1 * var(--rem-far)), 2.8vmin, calc(1.8 * var(--rem-far))); }
+  .tiles { color: var(--text-dim); font-weight: 700; font-size: clamp(1.1rem, calc(2.8vmin * var(--text-scale)), 1.8rem); }
 </style>

@@ -58,14 +58,20 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   `--card-w-sm|md|lg`), the same in both schemes. Sizes follow the phone's Display settings
   (Text size: Small, Normal, Large; Spacing: Compact, Normal; kept in `settings.textSize` and
   `settings.spacing`, anything unknown read as Normal) through `data-text` and `data-density` on
-  `<html>`, which only redefine tokens, so every screen follows at once with no reload; `index.html`
-  sets both from storage before the first paint. Text is sized in `rem` (the root is `--text-root`);
-  a size that grows with the screen multiplies its screen term by `--text-scale`. Compact lowers the
-  spacing steps (`--s-1`…`--s-7`), `--leading` and the row heights (`--tap`, `--tap-sm`…`--tap-xxl`),
-  never under 44 px (`--tap-min`). Normal/Normal is the original look. Text read from across the room
-  (the word on the Heads Down. play screen, the countdown, and the big prompts, answers, room code,
-  titles and scores on the host screens and Big Board) is sized in `--rem-far` or fitted in px, so
-  the settings never change it.
+  `<html>`, which only redefine tokens in `tokens.css`, the one place for sizes; every screen follows
+  at once with no reload. `App.svelte` sets both whenever the screen or the settings change
+  (`applyDisplay`), and `index.html` sets them from storage before the first paint. Text is sized in
+  `rem` (the root is `--text-root`); a size that grows with the screen multiplies its screen term by
+  `--text-scale`. Compact lowers the spacing steps (`--s-1`…`--s-7`), `--leading` and the row heights
+  (`--tap`, `--tap-sm`…`--tap-xxl`), never under 44 px (`--tap-min`); a control already under 44 px
+  at Normal keeps its Normal height as a floor. A height guessed around a screen-fitted area (a
+  drawing pad) is multiplied by `--chrome-scale`. Text boxes are at least 16 px in every mode, so
+  phones never zoom into them. Normal/Normal is the original look. **Screens read from across the
+  room show Normal text whatever the setting** (`src/lib/farRead.ts`, by address): every own-phones
+  game's host screen (`#/<game>/host`: lobby, play, scores, end), Big Board's play screens
+  (`#/quiz/play`: board, clue, win) and the Heads Down. round (`#/forehead/play`: ready, countdown,
+  play, results). Spacing still applies there. The setting comes back as soon as the screen is left;
+  the phones' own views of the same parts follow it.
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
 - `src/content/` — built-in packs as JSON (formats in `src/lib/content.ts`).
 

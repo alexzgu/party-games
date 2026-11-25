@@ -168,13 +168,13 @@
   main { flex: 1; min-height: 0; display: grid; }
   .heading { justify-content: center; text-align: center; }
   .heading p { color: var(--text-dim); }
-  .title { font-size: clamp(calc(1.3 * var(--rem-far)), 4.5vmin, calc(3 * var(--rem-far))); overflow-wrap: anywhere; }
+  .title { font-size: clamp(1.3rem, calc(4.5vmin * var(--text-scale)), 3rem); overflow-wrap: anywhere; }
   .play { grid-template-rows: auto minmax(0, 1fr); gap: var(--s-2); }
   .stage { min-height: 0; overflow: hidden; display: grid; align-content: center; width: min(100%, 960px); margin-inline: auto; }
   .stage > :global(div) > :global(p), .stage > :global(div) > :global(h3) { text-align: center; }
   .lobby { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: var(--s-5); }
   section, .qr { display: grid; gap: var(--s-3); }
   .qr { text-align: center; justify-items: center; }
-  .qr strong { color: var(--accent); font: 800 clamp(2rem, 6vw, 4rem)/1 var(--font-display); letter-spacing: 0.18em; }
+  .qr strong { color: var(--accent); font: 800 clamp(2rem, calc(6vw * var(--text-scale)), 4rem)/1 var(--font-display); letter-spacing: 0.18em; }
   @media (max-width: 720px) { .lobby { grid-template-columns: 1fr; } .host { height: auto; min-height: 100dvh; } }
 </style>

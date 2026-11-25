@@ -105,6 +105,7 @@
   .sorts { display: flex; gap: 6px; flex-wrap: wrap; }
   .sorts button {
     padding: 7px 14px; border-radius: var(--r-pill); font-size: 0.88rem; font-weight: 600;
+    min-height: 37.6px; /* its height at Normal: smaller text or Compact never shrinks it */
     color: var(--text-dim); background: var(--surface); border: 1.5px solid var(--line);
   }
   .sorts button.on { color: var(--text); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }

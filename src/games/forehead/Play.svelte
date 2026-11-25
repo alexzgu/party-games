@@ -305,7 +305,7 @@
   .right { display: flex; align-items: center; gap: var(--s-2); }
   .timer, .score {
     font-family: var(--font-display); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1;
-    font-size: clamp(calc(1.5 * var(--rem-far)), 7vmin, calc(2.4 * var(--rem-far))); padding: 8px 16px; border-radius: var(--r-pill); background: var(--overlay-strong);
+    font-size: clamp(1.5rem, calc(7vmin * var(--text-scale)), 2.4rem); padding: 8px 16px; border-radius: var(--r-pill); background: var(--overlay-strong);
   }
   .timer.hot { background: var(--c-bad); color: #fff; animation: beat 600ms var(--ease-out); }
   @keyframes beat { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
@@ -343,7 +343,7 @@
     width: min(42vmin, 220px); height: min(42vmin, 220px); fill: none; stroke: currentColor; stroke-width: 3.4;
     stroke-linecap: round; stroke-linejoin: round; animation: ico-pop 380ms var(--ease-spring) both;
   }
-  .flash-txt { font-family: var(--font-display); font-weight: 800; font-size: min(12vmin, 64px); letter-spacing: -0.02em; text-transform: uppercase; }
+  .flash-txt { font-family: var(--font-display); font-weight: 800; font-size: min(calc(12vmin * var(--text-scale)), 64px); letter-spacing: -0.02em; text-transform: uppercase; }
   /* Solid while input is locked (LOCK_MS of FLASH_MS), then fades over the next word. */
   @keyframes flash { 0% { opacity: 0; } 8% { opacity: 1; } 38% { opacity: 1; } 100% { opacity: 0; } }
   @keyframes ico-pop { from { transform: scale(0.4) rotate(-12deg); } to { transform: none; } }
@@ -372,9 +372,9 @@
     gap: var(--s-2); background: var(--c-bad); color: #fff; animation: pop-in var(--dur-slow) var(--ease-spring) both;
   }
   .ending.out { background: var(--accent); color: var(--on-accent); }
-  .end-ico { font-size: min(22vmin, 120px); line-height: 1; }
-  .end-txt { font-family: var(--font-display); font-weight: 800; font-size: min(16vmin, 96px); letter-spacing: -0.03em; line-height: 1; }
-  .end-sub { font-family: var(--font-display); font-weight: 700; font-size: min(7vmin, 36px); opacity: 0.85; }
+  .end-ico { font-size: min(calc(22vmin * var(--text-scale)), 120px); line-height: 1; }
+  .end-txt { font-family: var(--font-display); font-weight: 800; font-size: min(calc(16vmin * var(--text-scale)), 96px); letter-spacing: -0.03em; line-height: 1; }
+  .end-sub { font-family: var(--font-display); font-weight: 700; font-size: min(calc(7vmin * var(--text-scale)), 36px); opacity: 0.85; }
 
   @media (prefers-reduced-motion: reduce) {
     .flash, .glow, .flash-ico, .word-in, .timer.hot, .ending { animation: none; }

@@ -108,15 +108,15 @@
     align-items: center; width: min(100%, 1200px); margin: 0 auto; padding: var(--s-3) 0;
   }
   .join { display: flex; flex-direction: column; align-items: center; gap: var(--s-3); text-align: center; }
-  .lead { font-family: var(--font-display); font-weight: 800; font-size: clamp(calc(1.3 * var(--rem-far)), 3.4vmin, calc(2.2 * var(--rem-far))); }
+  .lead { font-family: var(--font-display); font-weight: 800; font-size: clamp(1.3rem, calc(3.4vmin * var(--text-scale)), 2.2rem); }
   .qr { width: clamp(180px, 36vmin, 300px); padding: 6px; border-radius: var(--r-md); background: var(--bg-raised); box-shadow: var(--shadow); }
   .qr :global(svg) { width: 100%; height: auto; }
-  .addr { color: var(--text-dim); font-size: clamp(calc(0.9 * var(--rem-far)), 2vmin, calc(1.15 * var(--rem-far))); overflow-wrap: anywhere; }
+  .addr { color: var(--text-dim); font-size: clamp(0.9rem, calc(2vmin * var(--text-scale)), 1.15rem); overflow-wrap: anywhere; }
   .addr b { color: var(--text); }
   .code { display: flex; gap: clamp(6px, 1.2vmin, 14px); }
   .code span {
     width: clamp(52px, 11vmin, 104px); height: clamp(64px, 13.5vmin, 124px); display: grid; place-items: center;
-    font-family: var(--font-display); font-weight: 800; font-size: clamp(calc(2.4 * var(--rem-far)), 9vmin, calc(5.4 * var(--rem-far))); line-height: 1;
+    font-family: var(--font-display); font-weight: 800; font-size: clamp(2.4rem, calc(9vmin * var(--text-scale)), 5.4rem); line-height: 1;
     color: var(--accent); background: var(--surface); border: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: var(--r-md);
     box-shadow: 0 0 28px color-mix(in srgb, var(--accent) calc(22% * var(--glow)), transparent);
   }
@@ -126,7 +126,7 @@
   .count { font-family: var(--font-display); font-weight: 800; color: var(--text-dim); }
   .players { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
   li { display: flex; align-items: center; gap: var(--s-2); padding: 6px 4px 6px 8px; border-radius: var(--r-pill); background: var(--surface); min-width: 0; }
-  .name { flex: 1; min-width: 0; font-weight: 700; font-size: clamp(var(--rem-far), 2.4vmin, calc(1.3 * var(--rem-far))); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .name { flex: 1; min-width: 0; font-weight: 700; font-size: clamp(1rem, calc(2.4vmin * var(--text-scale)), 1.3rem); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .name small { color: var(--text-faint); font-weight: 600; margin-left: 0.5em; font-size: 0.8em; }
   .kick { flex: none; width: 44px; height: 44px; border-radius: 50%; background: transparent; color: var(--text-faint); font-size: 0.95rem; }
   .kick:active { background: var(--overlay); }
@@ -137,6 +137,6 @@
   .confirm p { margin-bottom: var(--s-2); }
   @media (max-width: 760px), (max-aspect-ratio: 1/1) {
     .lobby { grid-template-columns: 1fr; align-items: start; }
-    .code span { width: 60px; height: 72px; font-size: calc(2.8 * var(--rem-far)); }
+    .code span { width: 60px; height: 72px; font-size: 2.8rem; }
   }
 </style>

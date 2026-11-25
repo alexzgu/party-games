@@ -200,7 +200,7 @@
   }
   .num {
     font-family: var(--font-display); font-weight: 800; color: var(--text); line-height: 1;
-    font-size: min(60vmin, 300px); letter-spacing: -0.04em; text-shadow: 0 10px 40px color-mix(in srgb, var(--shade) 35%, transparent);
+    font-size: min(calc(60vmin * var(--text-scale)), 300px); letter-spacing: -0.04em; text-shadow: 0 10px 40px color-mix(in srgb, var(--shade) 35%, transparent);
     animation: count-pop 700ms var(--ease-spring) both;
   }
   @keyframes count-pop {

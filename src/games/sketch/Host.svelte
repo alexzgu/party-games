@@ -196,7 +196,7 @@
   .lobby { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: var(--s-5); }
   section, .qr { display: grid; gap: var(--s-3); }
   .qr { text-align: center; justify-items: center; }
-  .qr strong { color: var(--accent); font: 800 clamp(2rem, 6vw, 4rem)/1 var(--font-display); letter-spacing: 0.18em; }
+  .qr strong { color: var(--accent); font: 800 clamp(2rem, calc(6vw * var(--text-scale)), 4rem)/1 var(--font-display); letter-spacing: 0.18em; }
   .summary { color: var(--text-dim); text-align: center; }
   .end { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 560px); margin-inline: auto; }
   @media (max-width: 720px) { .lobby { grid-template-columns: 1fr; } .host { height: auto; min-height: 100dvh; } }

@@ -70,9 +70,9 @@
   .stage { flex: 1; display: grid; align-content: start; gap: var(--s-4); width: min(100%, 1400px); margin-inline: auto; padding-bottom: var(--s-4); }
   .head { display: flex; align-items: center; gap: var(--s-3); }
   .head > div { flex: 1; min-width: 0; }
-  h2 { font-size: clamp(calc(1.4 * var(--rem-far)), 3.4vw, calc(3 * var(--rem-far))); line-height: 1.1; overflow-wrap: anywhere; }
-  .note { color: var(--text-dim); font-size: clamp(var(--rem-far), 1.6vw, calc(1.4 * var(--rem-far))); }
-  .paused { color: var(--c-pass); font: 800 clamp(1rem, 2vw, 1.6rem) / 1 var(--font-display); }
+  h2 { font-size: clamp(1.4rem, calc(3.4vw * var(--text-scale)), 3rem); line-height: 1.1; overflow-wrap: anywhere; }
+  .note { color: var(--text-dim); font-size: clamp(1rem, calc(1.6vw * var(--text-scale)), 1.4rem); }
+  .paused { color: var(--c-pass); font: 800 clamp(1rem, calc(2vw * var(--text-scale)), 1.6rem) / 1 var(--font-display); }
   .center { width: min(100%, 1100px); margin-inline: auto; }
   .next { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); width: min(100%, 900px); margin-inline: auto; }
 </style>

@@ -23,8 +23,8 @@
   }
   .label { font: 700 0.8rem / 1.2 var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.85; }
   .sm { font-size: 1.05rem; padding: var(--s-3); border-radius: var(--r-md); box-shadow: none; }
-  .lg { font-size: clamp(calc(1.4 * var(--rem-far)), 3.4vw, calc(3 * var(--rem-far))); }
-  .xl { font-size: clamp(calc(1.6 * var(--rem-far)), 4.4vw, calc(4 * var(--rem-far))); line-height: 1.2; }
+  .lg { font-size: clamp(1.4rem, calc(3.4vw * var(--text-scale)), 3rem); }
+  .xl { font-size: clamp(1.6rem, calc(4.4vw * var(--text-scale)), 4rem); line-height: 1.2; }
   .lg, .xl { padding: clamp(var(--s-4), 3vw, var(--s-7)); }
-  .lg .label, .xl .label { font-size: clamp(calc(0.8 * var(--rem-far)), 1.4vw, calc(1.2 * var(--rem-far))); }
+  .lg .label, .xl .label { font-size: clamp(0.8rem, calc(1.4vw * var(--text-scale)), 1.2rem); }
 </style>

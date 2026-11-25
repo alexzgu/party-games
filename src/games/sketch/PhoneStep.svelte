@@ -75,7 +75,7 @@
 <style>
   .handed b { font: 800 1.25rem/1.2 var(--font-display); overflow-wrap: anywhere; }
   .pad { display: grid; gap: var(--s-1); }
-  .pic { width: min(100%, max(180px, 100dvh - 330px)); margin-inline: auto; }
+  .pic { width: min(100%, max(180px, 100dvh - 330px * var(--chrome-scale))); margin-inline: auto; }
   .blank { padding: var(--s-4); border: 2px dashed var(--line-strong); border-radius: var(--r-md); text-align: center; }
   .send { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2); align-items: center; }
   input { min-height: 44px; min-width: 0; }

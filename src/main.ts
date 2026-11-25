@@ -6,9 +6,10 @@ import App from './App.svelte';
 import { startUpdates } from './lib/update';
 import { requestPersistence } from './lib/storage';
 import { applyDisplay, applyTheme } from './lib/settings.svelte';
+import { route } from './lib/router.svelte';
 
 applyTheme();
-applyDisplay();
+applyDisplay(route.path);
 // Older Safari (iOS 13) only has addListener; the app must still start there.
 const schemeQuery = matchMedia('(prefers-color-scheme: dark)');
 if (schemeQuery.addEventListener) schemeQuery.addEventListener('change', applyTheme);

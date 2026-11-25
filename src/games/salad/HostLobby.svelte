@@ -73,7 +73,7 @@
   .join, .room { display: grid; gap: var(--s-3); }
   .join { text-align: center; justify-items: center; overflow-wrap: anywhere; }
   .qr { display: grid; place-items: center; max-width: 100%; padding: var(--s-2); border-radius: var(--r-lg); background: white; }
-  .code { font: 800 clamp(2.7rem, 8vw, 5rem) / 1 var(--font-display); color: var(--accent); letter-spacing: 0.12em; }
+  .code { font: 800 clamp(2.7rem, calc(8vw * var(--text-scale)), 5rem) / 1 var(--font-display); color: var(--accent); letter-spacing: 0.12em; }
   .head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
   .settings, .empty { padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--bg-sunk); color: var(--text-dim); }
   ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: var(--s-2); list-style: none; padding: 0; margin: 0; }
