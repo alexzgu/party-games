@@ -38,8 +38,10 @@ function nextTurn(g: Game, now: number): Game {
   let turn = dg.turn + 1;
   while (turn < dg.order.length && !isActive(g, dg.order[turn])) turn++;
   if (turn >= dg.order.length) return dg.round < g.settings.rounds ? enter(g, 'scores', now, SCORES_SECS) : enter(g, 'over', now);
-  // Once the room's words are all offered, its own words come round again, least recently offered first.
-  const { items: offer, pool, dealt } = nextItems(dg.pool, dg.dealt ?? [], OFFER);
+  // Once the room's words are all offered, its own words come round again, least recently offered
+  // first; a game saved before it kept them has only its last offer to bring round.
+  const { items: offer, pool, dealt } = nextItems(dg.pool, dg.dealt ?? dg.offer, OFFER);
+  if (!offer.length) return enter(g, 'over', now);
   return enter({ ...g, dg: { ...dg, ...blank(), points: dg.points, turn, drawer: dg.order[turn], offer, pool, dealt } }, 'pick', now, PICK_SECS);
 }
 
@@ -97,7 +99,7 @@ export function skip(g: Game, now: number, online: ReadonlySet<string>): Game {
 /** The phase's timer ran out (or the host moved on). */
 export function advance(g: Game, now: number, online: ReadonlySet<string>, rand: () => number = Math.random): Game {
   switch (g.phase) {
-    case 'pick': return draw(g, g.dg!.offer[0], now, rand);
+    case 'pick': return g.dg!.offer[0] ? draw(g, g.dg!.offer[0], now, rand) : enter(g, 'over', now);
     case 'guess': return endTurn(g, now, online);
     case 'reveal': return nextTurn(g, now);
     case 'scores': return startRound(g, now);

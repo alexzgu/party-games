@@ -6,9 +6,9 @@
   import PackList from '../../components/PackList.svelte';
   import RulesCard from '../../components/RulesCard.svelte';
   import { sketchPacks } from '../../lib/content';
-  import { active, DRAW_TIMES, GUESS_TIMES, ROUND_CHOICES, WRITE_TIMES, type Mode } from './core';
+  import { active, DEFAULT_SETTINGS, DRAW_TIMES, GUESS_TIMES, ROUND_CHOICES, WRITE_TIMES, type Mode } from './core';
   import { roomItems } from './room';
-  import { nameList } from '../../lib/lend';
+  import { keptPicks, nameList } from '../../lib/lend';
   import { loadSettings } from './store';
   import { host } from './host.svelte';
   import { settingsSummary } from './summary';
@@ -27,7 +27,7 @@
   let rounds = $state(s.rounds);
   let guessSecs = $state(s.guessSecs);
   // svelte-ignore state_referenced_locally
-  let selected = $state(s.packs.filter((id) => packs.some((p) => p.id === id)));
+  let selected = $state(keptPicks(packs, s.packs, DEFAULT_SETTINGS.packs));
   const settings = $derived({ mode, writeSecs, drawSecs, rounds, guessSecs, packs: [...selected] });
   const locked = host.game !== null && host.game.phase !== 'lobby';
   const options = (xs: readonly number[]) => xs.map((x) => ({ value: x, label: `${x}` }));

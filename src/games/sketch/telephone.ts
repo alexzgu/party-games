@@ -30,16 +30,40 @@ export function task(g: Game, pid: string) {
 /** An empty line's stand-in when the room has no idea at all. */
 export const NO_IDEA = 'Anything at all';
 
+/** How many of the room's ideas Suggest offers a seat on a write step. */
+export const SUGGESTIONS = 5;
+
 /**
- * The room's next idea, marked as written by the game: one not yet used, else (more blanks than
- * the room counted on) the room's own ideas come round again, least recently used first.
+ * Ideas Suggest offers seat `seat` on a write step, tap by tap: the room's own, those not yet used
+ * from the end (blank lines are filled from the front, the picks' first), then those used. Each
+ * seat starts its own share further on, so while the room has at least as many ideas as seats, no
+ * two seats are offered the same idea on the same tap.
  */
-function idea(t: Telephone, by: string): [Entry, Pick<Telephone, 'ideas' | 'dealt'>] {
+export function suggestions(t: Telephone, seat: number): string[] {
+  const room = [...[...t.ideas].reverse(), ...(t.dealt ?? [])];
+  const n = Math.min(SUGGESTIONS, room.length), share = Math.max(1, Math.floor(room.length / t.order.length));
+  return Array.from({ length: n }, (_, i) => room[(seat * share + i) % room.length]);
+}
+
+type Ideas = Pick<Telephone, 'ideas' | 'dealt'>;
+
+/** The room's ideas once `text` is used: out of those not yet used, last among those used. */
+const used = (t: Ideas, text: string): Ideas => ({ ideas: t.ideas.filter((x) => x !== text), dealt: [...(t.dealt ?? []).filter((x) => x !== text), text] });
+
+/**
+ * The room's next idea, marked as written by the game: one not yet used, and on the write step
+ * one no seat is offered by Suggest where there is one; else (more blanks than the room counted
+ * on) the room's own ideas come round again, least recently used first.
+ */
+function idea(t: Telephone, by: string): [Entry, Ideas] {
+  const offered = new Set(t.step ? [] : t.order.flatMap((_, seat) => suggestions(t, seat)));
+  const free = t.ideas.find((x) => !offered.has(x));
+  if (free) return [{ kind: 'text', text: free, by, filled: true }, used(t, free)];
   const { items: [text = NO_IDEA], pool: ideas, dealt } = nextItems(t.ideas, t.dealt ?? [], 1);
   return [{ kind: 'text', text, by, filled: true }, { ideas, dealt }];
 }
 
-function put(g: Game, chain: number, entry: Entry, ideas: Pick<Telephone, 'ideas' | 'dealt'> = g.tel!): Game {
+function put(g: Game, chain: number, entry: Entry, ideas: Ideas = g.tel!): Game {
   const t = g.tel!;
   const chains = t.chains.map((c, i) => i === chain ? c.map((e, s) => s === t.step ? entry : e) : c);
   return { ...g, tel: { ...t, chains, ideas: ideas.ideas, dealt: ideas.dealt } };
@@ -50,7 +74,8 @@ export function submitLine(g: Game, pid: string, at: number, text: string): Game
   const t = task(g, pid);
   if (at !== g.at || !t || t.done || t.kind === 'draw' || !isActive(g, pid)) return g;
   const line = text.trim().replace(/\s+/g, ' ');
-  if (line) return put(g, t.chain, { kind: 'text', text: line, by: pid });
+  // A line that is one of the room's ideas (Suggest) counts as used: no blank is filled with it while another is left.
+  if (line) return put(g, t.chain, { kind: 'text', text: line, by: pid }, g.tel!.ideas.includes(line) ? used(g.tel!, line) : g.tel!);
   const [entry, ideas] = idea(g.tel!, pid);
   return put(g, t.chain, entry, ideas);
 }

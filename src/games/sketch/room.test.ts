@@ -47,6 +47,12 @@ describe("a Sketchy room's words and ideas", () => {
     expect(consent(four, '', four.key)).toBe(four.key);
     expect(consent(eight, four.key, '')).toBeNull();
   });
+
+  it('treats lending words and lending ideas from the same packs as two questions', () => {
+    const words = roomItems(all, { ...guess, packs: ['mine'] }, 4).ask!, ideas = roomItems(all, { ...phone, packs: ['mine'] }, 3).ask!;
+    expect([words.lenders, ideas.lenders]).toEqual([['classic'], ['classic']]);
+    expect(consent(ideas, words.key, '')).toBeNull();
+  });
 });
 
 describe('a Sketchy game that runs out mid-game', () => {
@@ -68,11 +74,49 @@ describe('a Sketchy game that runs out mid-game', () => {
     expect(offers).toEqual([['Lamp', 'Cat', 'Moon'], ['Sock', 'Lamp', 'Cat'], ['Moon', 'Sock', 'Lamp']]);
   });
 
+  it('a game saved before it kept the words offered brings its last offer round again, and a turn with nothing to offer ends the game', () => {
+    let g: Game = G.startGuess({ ...newGame('room', 'BCDF', guess), players: players(['a', 'b', 'c']) }, ['Lamp', 'Cat', 'Moon', 'Sock'], 0);
+    const { dealt: _, ...old } = g.dg!;
+    g = L.skip({ ...g, dg: old }, 0, new Set());
+    expect([g.phase, g.dg!.offer]).toEqual(['pick', ['Sock', 'Lamp', 'Cat']]);
+    const empty: Game = { ...g, dg: { ...g.dg!, pool: [], offer: [], dealt: undefined } };
+    expect(L.skip(empty, 0, new Set()).phase).toBe('over');
+    expect(G.advance(empty, 0, new Set()).phase).toBe('over');
+  });
+
   it("Telephone fills blank lines with the room's own ideas again, and Suggest offers only the room's", () => {
     const pids = ['a', 'b', 'c', 'd'];
     let g: Game = T.startTelephone({ ...newGame('room', 'BCDF', phone), players: players(pids) }, pids, latinSquare(4), ['One', 'Two'], 0);
     expect([view(g, 0, 'a').task?.ideas, view(g, 0, 'b').task?.ideas]).toEqual([['Two', 'One'], ['One', 'Two']]);
     g = T.endStep(g, 0);
     expect(g.tel!.chains.map((c) => (c[0] as { text: string }).text)).toEqual(['One', 'Two', 'One', 'Two']);
+  });
+
+  const ideas = (n: number) => Array.from({ length: n }, (_, i) => `Idea ${i}`);
+  const phoneGame = (seats: number, room: string[]) => {
+    const pids = Array.from({ length: seats }, (_, i) => `p${i}`);
+    return T.startTelephone({ ...newGame('room', 'BCDF', phone), players: players(pids) }, pids, latinSquare(seats), room, 0);
+  };
+  const offered = (g: Game) => g.tel!.order.map((pid) => view(g, 0, pid).task!.ideas!);
+  /** Every tap, every seat is offered a different idea, and no seat is offered one twice. */
+  const apart = (lists: string[][]) => lists[0].every((_, tap) => new Set(lists.map((l) => l[tap])).size === lists.length) && lists.every((l) => new Set(l).size === l.length);
+
+  it('Suggest offers no two seats the same idea on the same tap while the room has an idea per seat', () => {
+    for (const n of [5, 10]) {
+      const lists = offered(phoneGame(5, ideas(n)));
+      expect([lists.length, lists[0].length, apart(lists)]).toEqual([5, 5, true]);
+    }
+    expect(offered(phoneGame(5, ideas(10))).map((l) => l[0])).toEqual(['Idea 9', 'Idea 7', 'Idea 5', 'Idea 3', 'Idea 1']);
+  });
+
+  it('fills a blank line with an idea nobody is offered or wrote where there is one', () => {
+    let g = phoneGame(3, ideas(20));
+    const shown = new Set(offered(g).flat());
+    g = T.submitLine(g, 'p0', g.at, offered(g)[1][0]);
+    g = T.endStep(g, 0);
+    const lines = g.tel!.chains.map((c) => (c[0] as { text: string; filled?: boolean }));
+    expect(lines.filter((l) => l.filled).every((l) => !shown.has(l.text))).toBe(true);
+    expect(new Set(lines.map((l) => l.text)).size).toBe(3);
+    expect(g.tel!.ideas).not.toContain(offered(phoneGame(3, ideas(20)))[1][0]);
   });
 });

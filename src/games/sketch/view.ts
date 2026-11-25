@@ -1,7 +1,7 @@
 // What the host screen (no pid) and each phone see. A phone sees only what is handed to it:
 // never a chain's start before the album, never the word while it still has to guess it.
 import { active, nameOf, present, standings, left, type Feed, type Game, type Mode, type Phase, type Player } from './core';
-import { albumEnd, task, inStep, type StepKind } from './telephone';
+import { albumEnd, suggestions, task, inStep, type StepKind } from './telephone';
 import { canGuess, guessers } from './guess';
 import { shape } from './hint';
 
@@ -32,17 +32,6 @@ export type View = {
   /** Draw & guess: how many count as guessers this turn (all who got it, and the rest of the room online). */
   guessers?: number;
 };
-
-/**
- * Ideas Suggest offers on a write step: a few of the room's own, a different few per seat, from
- * the end of those not yet used (blank lines are filled from the front, the picks' first).
- */
-export const SUGGESTIONS = 5;
-function suggestions(t: NonNullable<Game['tel']>, seat: number): string[] {
-  const room = [...[...t.ideas].reverse(), ...(t.dealt ?? [])];
-  const n = Math.min(SUGGESTIONS, room.length);
-  return Array.from({ length: n }, (_, i) => room[(seat * SUGGESTIONS + i) % room.length]);
-}
 
 export const inkId = (g: Game) => `${g.id}/${g.dg!.round}/${g.dg!.turn}`;
 
