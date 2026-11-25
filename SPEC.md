@@ -131,6 +131,29 @@ an edit under the same id that replaces it everywhere on that phone, marked "Edi
 **Packs are called packs in every game** (a Heads Down. pack is a list of words, a Big Board
 pack is one whole board). Code, routes and storage keys keep their older names (`decks`, `board`).
 
+**A game plays only the packs the player ticked** (every game, present and future; shared steps
+in `src/lib/lend.ts`, the question in `LendAsk`). No item from a pack the player did not tick is
+dealt, shown, suggested or played by a bot without asking first. A pick whose packs have all been
+deleted becomes the game's default pick (Classic, or that game's own default), shown on screen as
+the pick, never every pack (a setup screen ticks it; a room's lobby names it). A game that needs
+a certain number of items for a whole game works out, in one function per game, what it deals
+from, how many the room needs, what is short and which packs would lend; Start, the lobby or setup
+line, the settings note and the question all read that one answer. When the picks fall short,
+Start does not start: a popup titled "Not enough cards" (the game's own word) says what is short
+("Your packs have 40 answer cards. 6 players need 100.") and asks "Add cards from Classic for this
+game?". Packs lend whole, in pack order (built-ins as shipped, Classic first, then the player's
+own), only as many as reach the count, and only the kind that is short. "Add & start" starts with
+them; "Change packs" goes to where the packs are picked; closing does neither. The popup opens
+only from Start. In a room it stays while the question stays the same (a player joining only
+updates its numbers); once the question goes away or changes it closes for good, and only Start
+asks again; the room keeps the yes while the question stays the same (same picks, same lenders),
+never into another room or after the host screen reloads. A one-phone game has no room: a yes
+lasts for that game only, and Rematch asks again. While the picks fall short the lobby's pack line
+adds "(too few cards for this room)", and "(+ cards from Classic)" after the yes; the settings or
+setup note says what is short and that the game will ask before adding from the packs it names.
+History names the lending packs with the picked ones. Nothing else ever adds items: a game that
+runs short mid-game (more late joiners than counted) deals its own items again.
+
 **Import and export** (`src/lib/packfile.ts`, buttons in `PackFile` and `ExportPack`): a pack file
 is JSON, `{"jerkBox": 1, "game": "<game id>", "packs": [...]}`, each pack as stored (id, name,
 icon (`emoji`, any one character) for Heads Down., blurb, items) without `custom` and `added`; named
@@ -598,7 +621,8 @@ Wavelength-genre. Two teams. Each round one player of the active team (the reade
 sees where a target sits on a scale between two opposites, gives one clue out loud, and their
 team sets a dial to where they think the target is.
 
-- **Setup**: two team names (editable), packs (multi-select), and behind the Rules card
+- **Setup**: two team names (editable), packs (multi-select; Classic ticked when every picked pack
+  has been deleted), and behind the Rules card
   ("First to 10 points · steals on") points to win (default 10) and the optional "steal" rule: the other team then guesses whether the target is left or right of
   the needle for 1 point. Add pack → New at the end of the pack list makes a pack (paste a list or ask the wizard). Each
   pack's pencil opens the pack editor; on the player's own packs, "🧙 Add more" as in Heads Down. (5–40 cards, default 10; never a scale any pack on the phone has).
@@ -621,6 +645,13 @@ team sets a dial to where they think the target is.
   full height and everything else, the main button included, on the left; the hand-off and win
   screens split the same way. Nothing scrolls, and turning the phone re-fits the page at once.
 - Game state saved after every step; reopening resumes.
+- **Cards** (`src/games/dial/deck.ts`; the shared rule is under "A game plays only the packs the
+  player ticked"): a game deals only from its picked packs and never repeats a card until all of
+  them are played. A game runs until a team reaches the goal, so it needs only a card: when the
+  ticked packs hold none (an empty pack of the player's own), the setup's note says so, and Start
+  asks "Your packs have no cards. Add cards from Classic for this game?" ("Change packs" closes the
+  popup over the pack list). The yes lasts for that game only: Rematch asks again, and its "Change
+  packs" goes back to the setup.
 
 Community: wizard packs and Add more are shared; "🌍 Community" is in Add pack under the pack list on setup; scales a built-in pack has are left out on import.
 
@@ -882,7 +913,20 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
 - Demo screens: `#/snark/host?demo=lobby|lobby-empty|write|vote|reveal|vote3|reveal3|scores|over|paused|duel-write|duel-vote|duel-reveal`,
   `#/snark/join?demo=join|lobby|late|write|wait|vote|voted|vote-own|vote3|voted3|reveal|reveal3|scores|over|duel-write|duel-vote|duel-reveal`.
 - **Packs**: `src/content/snark/*.json`, `{"prompts": [...]}`, 3–14 words (Classic 200, After
-  Dark 80); optional `safety` and `finals`, below.
+  Dark 80); optional `safety` and `finals`, below. A game deals only from the picked packs
+  (Classic when none of them exists any more), prompts never repeating until the pool runs out
+  (across games too).
+- **Too few prompts or finals** (*house*, `src/games/snark/room.ts`; the shared rule is under "A
+  game plays only the packs the player ticked"): a game of N players needs a prompt per player in
+  each head-to-head round, round 2 sized for two late joiners, up to eight, and one prompt for a
+  3-vote final: N + min(N + 2, 8) + 1 with 3 rounds (9 for three, 13 for five, 17 for eight), N + 1
+  with 2. A three-line duel final instead needs a final per pair, the odd one out facing the house
+  with its own, sized likewise: ⌈min(N + 2, 8) ÷ 2⌉ finals (3 for three, 4 from five), and no final
+  prompt. When the picks fall short of either, Start asks: "Your packs have 6 prompts. 5 players
+  need 13.", "Your packs have no finals." or both at once, "Add prompts from Classic for this
+  game?" ("finals" when only finals are short); packs lend only the kind that is short, and the
+  game keeps which packs lent which kind. Settings shows the same note, and Done says "No pack has
+  prompts" when no pack on the phone has any.
 - **Bots** (see Shared room link): answer with the prompt's stock answer when sent one, else a
   short stock line or a random two-word phrase; three short lines in a three-line duel; vote at
   random (3 votes spread at random in the final).
@@ -913,11 +957,12 @@ games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amo
   +750 for a clean sweep of 2+ votes (*house*: the head-to-head formula × 3); votes for the house
   score nothing. Phones with nothing to do follow the showing and the reveal like the host. Then
   the winner screen; History gets one line per duel.
-- **Fallbacks**: no finals in the chosen packs → Classic's; none at all, or fewer than 3 players
-  left → the 3-vote final.
+- **Fallbacks**: no finals in the chosen packs → Start asks before another pack lends some (see
+  Too few prompts or finals); no pack on the phone with any finals, or fewer than 3 players left →
+  the 3-vote final.
 - **Content**: a Snark pack may add `"safety": {"<prompt>": "<answer>"}` and
   `"finals": [{"prompt": "...", "house": ["...", "...", "..."]}]`. Finals are dealt from the
-  chosen packs, never repeating until they run out (like prompts). The content gate checks
+  chosen packs and the packs lent finals, never repeating until they run out (like prompts). The content gate checks
   shapes only: safety keys are the pack's own prompts and answers 1–80 characters; final prompts
   are unique across Snark packs and never a regular prompt; exactly 3 house lines of 1–40
   characters. Pack files carry both fields when present (broken entries dropped). Classic and
@@ -938,9 +983,9 @@ On every host screen the button that closes the room says "Close" in every phase
 first ("Close the room?", with "The game ends." while one is being played); after a game "Lobby"
 keeps the room and its players for another. Start asks first while any player's phone is
 disconnected (`StartButton`: "2 phones are disconnected. Start anyway?", naming them), since those
-players are dealt in too; the question closes when too few are left to start. In Bad Hand and
-Doodle Brawl, Start also asks before other packs lend to picks too small for the room
-(`LendAsk`, `src/lib/lend.ts`; see each game).
+players are dealt in too; the question closes when too few are left to start. In Snark Tank,
+Doodle Brawl, Sketchy and Bad Hand, Start also asks before other packs lend to picks too small
+for the room (see "A game plays only the packs the player ticked"; each game says what it counts).
 "Leave room" on a phone (any time, after a confirm) tells the host (`{t: 'leave'}`) before the
 link closes: the player is out like a removed one (no more turns or prompts, nobody waits for
 them) but may rejoin with the same code and keeps their score; a removed player may not, not even
@@ -1204,22 +1249,14 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
 - **Content** (`src/content/brawl/*.json`): `{"id", "name", "blurb", "added"?, "titles": ["..."]}`; titles and rematch titles
   come from one pool, never repeating within a game: the picked packs' titles shuffled (Classic's
   when none of the picks exists any more).
-- **Too few titles** (*house*, `src/games/brawl/pack.ts`, shared steps in `src/lib/lend.ts`): a
-  game of N players needs N titles for round 1 and two per bout in round 2 (title and rematch
-  title), with round 2 sized for two late joiners: N + 2 × min(N + 2, 8), so 13 for three, 16
-  for four, 19, 22, 23 and 24 for eight. When the picks have fewer, Start does not start: a popup
-  says how many the picks have and the room needs, names the packs that would lend, and asks
-  "Add titles from Classic for this game?". Packs lend whole, in pack order (built-ins as
-  shipped, Classic first, then the player's own), only as many as reach the count; their
-  titles follow the picks' in the pool. "Add & start" starts with them; "Change packs" opens
-  the room's settings; closing does neither. The popup opens only from Start and stays while the
-  question stays the same (a player joining only updates its numbers); once the question goes
-  away or changes it closes for good, and only Start asks again. The room keeps the yes while
-  the question stays the same (same picks, same lenders), never into another room or after the
-  host screen reloads; History names the lending packs with the picked ones. Nothing else adds
-  titles: should more late joiners come than the count allowed for, round 2 reuses round 1's
-  titles, one not yet dealt that round and that neither artist had while there is one (a
-  pool smaller than the bouts simply repeats).
+- **Too few titles** (*house*, `src/games/brawl/pack.ts`; the shared rule is under "A game plays
+  only the packs the player ticked"): a game of N players needs N titles for round 1 and two per
+  bout in round 2 (title and rematch title), with round 2 sized for two late joiners:
+  N + 2 × min(N + 2, 8), so 13 for three, 16 for four, 19, 22, 23 and 24 for eight. The popup
+  says "Your packs have 10 titles. 4 players need 16." and "Add titles from Classic for this
+  game?"; lent titles follow the picks' in the pool. Should more late joiners come than the count
+  allowed for, round 2 reuses round 1's titles, one not yet dealt that round and that neither
+  artist had while there is one (a pool smaller than the bouts simply repeats).
 - **Settings** (`#/brawl/settings`, a pack page like Snark Tank's): title packs (search/sort,
   editor, Make a pack or Add pack → New / 🌍 Community / Import, Export; a pack just made or
   imported joins the picked ones; with too few titles for the lobby's players (at least three), a
@@ -1276,7 +1313,8 @@ on their own phones through the shared room link; a host screen shows the room. 
   survive a phone reload (`sketch:draft`, one job at a time).
 - **Settings** (`#/sketch/settings`, a pack page like Snark Tank's): Mode (Telephone, default;
   Draw & guess) over the packs, which count what the mode deals ("100 ideas" or "300 words"; a
-  note when the picked packs have none, so the spares are used); packs as in Snark Tank (search/sort,
+  note when the picks are too few for the lobby's players, at least three, as in "Too few words or
+  ideas" below); packs as in Snark Tank (search/sort,
   editor, Make a pack or Add pack → New / 🌍 Community / Import, Export; at least one picked; a
   pack just made or imported joins the picked ones), and per mode: Telephone, seconds to write 30/45/60
   (default 45, *house*) and to draw 60/90/120/180 (default 90, *house*); Draw & guess, rounds
@@ -1291,15 +1329,14 @@ on their own phones through the shared room link; a host screen shows the room. 
   also new to every Sketchy pack on the phone; anything else is dropped unseen. A pack may hold
   only words or only ideas; the Community library takes one with at least one word. Community:
   wizard packs and Add more are shared with both lists; words and ideas a built-in has are left
-  out on import. "Suggest" picks from the packs on the player's own phone (the room's
-  picks where that phone has them, else all its packs), so a host's own pack's ideas are not
-  offered there.
+  out on import.
 
 ### Telephone
 
 - **Steps**: as many steps as players at the start (the original's default). Step 1: everyone
-  writes a line (80 characters; "Suggest" fills the box with a random idea from the
-  room's packs, picked on the phone so it is instant, *house*). Then steps alternate: draw the
+  writes a line (80 characters; "Suggest" fills the box with one of the room's ideas, *house*:
+  the host sends five with the step, a different five per seat, and each tap shows the next, so it
+  is instant and never offers an idea from a pack the room did not pick or borrow). Then steps alternate: draw the
   line you were handed, then describe the drawing you were handed (80 characters), and so on.
   Done is ready once something is written or drawn and sends at once; each step ends when every
   present player is done, or at its timer (at the buzzer the phone sends what it has; the host
@@ -1310,8 +1347,8 @@ on their own phones through the shared room link; a host screen shows the room. 
   who hands to whom changes from step to step; step 1 is each player's own chain). A player only
   ever sees the one entry handed to them, never the chain's start; the host screen shows only
   who is done.
-- **Gaps** (*house*): an empty or missing line becomes the next idea dealt from the packs (then
-  from a short built-in list; only when all are used does one come round again), marked in
+- **Gaps** (*house*): an empty or missing line becomes the room's next idea not yet used (once
+  all are used, the room's own ideas come round again, least recently used first), marked in
   the album "The game filled this in"; an empty drawing is handed on as blank and the next phone
   says "Nothing was drawn. Make up what it might have been."
 - **Players**: no late joins into the chains once the game starts (they watch the album; they
@@ -1328,8 +1365,9 @@ on their own phones through the shared room link; a host screen shows the room. 
 
 - **Turns**: each round every player draws once, in seat order (late joiners guess at once and
   draw from the next round; a drawer no longer in the room is passed over). The drawer picks one
-  of three words from the packs (15 s, *house*; else the first is taken); words never repeat
-  within a game (after the packs, a built-in list of 40 is dealt; only then could one repeat).
+  of three words from the room's (15 s, *house*; else the first is taken); words never repeat
+  within a game until the room's words are all offered, and then its own come round again, least
+  recently offered first.
 - **Drawing live**: the drawer's phone sends what it added since its last send about every
   100 ms, numbered; undo and clear (or a reconnect, or the host asking after a gap) send the
   whole drawing. The host checks each against the drawing limits, shows it and relays it to every
@@ -1377,15 +1415,25 @@ on their own phones through the shared room link; a host screen shows the room. 
 - **Content** (`src/content/sketch/*.json`): `{"id", "name", "blurb", "added"?, "words": [...],
   "ideas": [...]}`; words (1–3 words, letters, spaces, hyphens and apostrophes, 24 characters)
   for Draw & guess, ideas (3–10 words, capital first, no end punctuation) for Telephone; both new
-  across packs. Classic has 300 words and 100 ideas; After Dark 120 and 50. After the chosen
-  packs (or with none), the game deals from built-in spares (`src/games/sketch/spare.ts`).
+  across packs. Classic has 300 words and 100 ideas; After Dark 120 and 50. A game deals only
+  from the picked packs (Classic when none of them exists any more) and, after a yes, the packs
+  that lent to it.
+- **Too few words or ideas** (*house*, `src/games/sketch/room.ts`; the shared rule is under "A game
+  plays only the packs the player ticked"): Draw & guess offers three words a turn, a turn per
+  player each round, rounds after the first sized for two late joiners up to ten: 3 × (N + (rounds
+  − 1) × min(N + 2, 10)), so 24 for three and 30 for four over 2 rounds, 60 for ten. Telephone
+  needs an idea per chain, enough for every opening line left blank: N (nobody joins once the
+  chains start). The popup says "Your packs have 12 words. 4 players need 30." and "Add words from
+  Classic for this game?" (ideas in Telephone); only the mode's own kind counts. Should more
+  players draw than counted, or more lines be left blank, the room's own items come round again.
 - Demos at `#/sketch/host?demo=` and `#/sketch/join?demo=` with
   `lobby|write|draw|describe|album|pick|guess|reveal|scores|over|paused` (`paused`: a paused
   Draw & guess turn); phone demos also have `join|wait|watching|guessed|drawing`.
-- **Bots** (see Shared room link): Telephone, write a random idea from the room's packs, draw a
-  random doodle, describe with a random word; Draw & guess, pick a word at random and draw a
-  random doodle live, a stroke about every second; guess honestly, up to four words a turn from
-  the packs that fit the word's shape and the letters shown.
+- **Bots** (see Shared room link): Telephone, write one of the ideas the step brings, draw a
+  random doodle, describe with a random word from the room's packs; Draw & guess, pick a word at
+  random and draw a random doodle live, a stroke about every second; guess honestly, up to four
+  words a turn from the room's packs (its picks and the packs lent to it) that fit the word's
+  shape and the letters shown.
 
 ## Game 11 — Bad Hand (`hand`)
 
@@ -1447,21 +1495,13 @@ prompt and the answers. Amounts marked *house* are ours.
   the next game. Done says "No pack has prompt cards" (or answer cards) when no pack on the phone
   has any, and a note says when the picks are too small for the lobby's players (at least three)
   and that the game will ask before adding cards from the packs it names.
-- **Too few cards** (*house*, `src/games/hand/pack.ts`, shared steps in `src/lib/lend.ts`): a
-  room of N players needs (min(N, 8) + 2) × 10 + 20 answer cards (a hand of ten each, two seats
-  spare for late joiners, and a refill: 70 for three, 100 for six, 120 for eight or more) and at
-  least one prompt. When the picks fall short, Start does not start: a popup says what is short
-  ("Your packs have 40 answer cards. 6 players need 100.") and asks "Add cards from Classic for
-  this game?". Packs lend whole, in pack order (built-ins as shipped, Classic first, then the
-  player's own), only as many as cover the shortfall, and only the kind that is short (answers,
-  prompts or both). "Add & start" starts with them; "Change packs" opens the room's settings;
-  closing does neither. The popup opens only from Start and stays while the question stays the
-  same (a player joining only updates its numbers); once the question goes away or changes it
-  closes for good, and only Start asks again. The lobby's pack line shows "(+ cards from
-  Classic)" once the host said yes and "(too few cards for this room)" before. The room keeps the
-  yes while the question stays the same (same picks, same lenders), never into another room or
-  after the host screen reloads; History names the lending packs with the picked ones. Nothing
-  else adds cards: late joiners and refills draw from the room's own deck.
+- **Too few cards** (*house*, `src/games/hand/pack.ts`; the shared rule is under "A game plays
+  only the packs the player ticked"): a room of N players needs (min(N, 8) + 2) × 10 + 20 answer
+  cards (a hand of ten each, two seats spare for late joiners, and a refill: 70 for three, 100 for
+  six, 120 for eight or more) and at least one prompt. The popup says "Your packs have 40 answer
+  cards. 6 players need 100." (or "no prompt cards") and "Add cards from Classic for this game?";
+  packs lend only the kind that is short (answers, prompts or both). Late joiners and refills
+  draw from the room's own deck.
 - **Making packs**: paste cards, one per line (a line with `___` or ending in "?" is a prompt, the
   rest answers), or ask the wizard (a theme or a suggestion, 5–40 prompts, default 20, and four
   answers per prompt); own packs have "🧙 Add more" (5–30 prompts, default 10, answers likewise).
@@ -1500,8 +1540,9 @@ sees the same secret word, the odd one out does not, and the room talks it out. 
   and never twice in one game; one player at random is the odd one out, and one player at random
   starts the clues (never the odd one out with that option on). All from one random source, so
   tests seed them (`logic.ts`, `deal.ts`). When the game's packs have no words left (deleted
-  mid-game), the next round deals from the setup's current picks, which become the game's packs;
-  only when those are empty too does the screen say "These packs are gone. Start a new game."
+  mid-game), the next round deals from the setup's current picks (its default picks when those were
+  deleted too), which become the game's packs; only when those have no words either does the
+  screen say "These packs are gone. Start a new game."
 - **Pass**: for each player in list order a hand-off ("Pass the phone to Maya", Show) and then
   their secret: the word large with "from Movies" under it, or "Odd one out" with "Word from
   Movies" under it (Hint on) or "Blend in" (Hint off). Both secret screens are one card in the

@@ -259,3 +259,7 @@ owner. Never ask for them or put real ones anywhere; tests use obvious fakes. Ch
 Follow `SPEC.md`. Keep each game in `src/games/<id>/`, shared code in `src/lib/` and
 `src/components/`, colours and sizes in `src/styles/tokens.css`. Run all three checks before
 pushing; every push goes live.
+
+A game, new or old, plays only the packs the player ticked: work out in one function what a whole
+game needs and, when the picks fall short, ask before another pack lends (`src/lib/lend.ts`,
+`LendAsk`; SPEC.md, "A game plays only the packs the player ticked").
