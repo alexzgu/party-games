@@ -7,6 +7,8 @@
   import RulesCard from '../../components/RulesCard.svelte';
   import { ratherPacks } from '../../lib/content';
   import { COUNTS, VOTE_TIMES } from './logic';
+  import { DEFAULT_SETTINGS } from './state';
+  import { keptPicks } from '../../lib/lend';
   import { loadSettings } from './store';
   import { host } from './host.svelte';
   import { packEntry } from './find';
@@ -23,7 +25,7 @@
   let count = $state(s.count);
   let seconds = $state(s.seconds);
   // svelte-ignore state_referenced_locally
-  let selected = $state(s.packs.filter((id) => packs.some((p) => p.id === id)));
+  let selected = $state(keptPicks(packs, s.packs, DEFAULT_SETTINGS.packs));
   const locked = host.game !== null && host.game.phase !== 'lobby';
 
   $effect(() => {

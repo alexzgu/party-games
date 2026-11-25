@@ -5,6 +5,8 @@ import { AWAY_CHOICES, AWAY_MS, type Game, type Phase } from './logic';
 
 const GAME = 'salad:host';
 const SETTINGS = 'salad:settings';
+/** The packs a new room starts with, and what a room whose picks were all deleted ticks. */
+export const DEFAULT_PACKS: readonly string[] = ['classic'];
 const phases: Phase[] = ['lobby', 'pick', 'prepare', 'present', 'reveal', 'scores', 'over'];
 
 function validGame(x: unknown): Game | null {
@@ -27,6 +29,6 @@ export function loadSettings(): Settings {
   const raw = load<unknown>(SETTINGS, null);
   const saved = (Array.isArray(raw) ? { packIds: raw } : raw ?? {}) as Partial<Record<keyof Settings, unknown>>;
   const ids = Array.isArray(saved.packIds) ? saved.packIds.filter((id): id is string => typeof id === 'string') : [];
-  return { packIds: ids.length ? ids : ['classic'], awayMs: awayMs(saved.awayMs) };
+  return { packIds: ids.length ? ids : [...DEFAULT_PACKS], awayMs: awayMs(saved.awayMs) };
 }
 export const saveSettings = (s: Settings) => save(SETTINGS, s);

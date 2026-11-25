@@ -8,14 +8,15 @@
   import { back } from '../../lib/router.svelte';
   import { host } from './host.svelte';
   import { AWAY_CHOICES, PICK_MS, PREPARE_MS, PRESENT_MS } from './logic';
-  import { loadSettings } from './store';
+  import { DEFAULT_PACKS, loadSettings } from './store';
+  import { keptPicks } from '../../lib/lend';
 
   const packs = saladPacks();
   const goBack = () => back('/salad/host');
   const locked = host.game !== null && host.game.phase !== 'lobby';
   const saved = loadSettings();
   const initial = host.game?.phase === 'lobby' ? host.game.packIds : saved.packIds;
-  let selected = $state<string[]>(initial.filter((id) => packs.some((p) => p.id === id)));
+  let selected = $state<string[]>(keptPicks(packs, initial, DEFAULT_PACKS));
   let awayMs = $state(host.game?.awayMs ?? saved.awayMs);
   const AWAY = AWAY_CHOICES.map((ms) => ({ value: ms as number, label: ms < 60_000 ? `${ms / 1000} s` : `${ms / 60_000} min` }));
   let query = $state('');

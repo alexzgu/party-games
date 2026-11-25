@@ -8,8 +8,9 @@
   import RulesCard from '../../components/RulesCard.svelte';
   import { handPacks } from '../../lib/content';
   import { active, ANSWER_TIMES, MIN_PLAYERS, TARGETS } from './logic';
+  import { DEFAULT_SETTINGS } from './state';
   import { roomCards } from './pack';
-  import { nameList } from '../../lib/lend';
+  import { keptPicks, nameList } from '../../lib/lend';
   import { loadSettings } from './store';
   import { host } from './host.svelte';
   import { packEntry } from './find';
@@ -27,7 +28,7 @@
   let house = $state(s.house);
   let blanks = $state(s.blanks);
   // svelte-ignore state_referenced_locally
-  let selected = $state(s.packs.filter((id) => packs.some((p) => p.id === id)));
+  let selected = $state(keptPicks(packs, s.packs, DEFAULT_SETTINGS.packs));
   const locked = host.game !== null && host.game.phase !== 'lobby';
 
   $effect(() => {

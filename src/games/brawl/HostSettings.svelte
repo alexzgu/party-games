@@ -6,9 +6,9 @@
   import PackList from '../../components/PackList.svelte';
   import RulesCard from '../../components/RulesCard.svelte';
   import { brawlPacks } from '../../lib/content';
-  import { active, DRAW_TIMES } from './logic';
+  import { active, DEFAULT_SETTINGS, DRAW_TIMES } from './logic';
   import { roomTitles } from './pack';
-  import { nameList } from '../../lib/lend';
+  import { keptPicks, nameList } from '../../lib/lend';
   import { loadSettings } from './store';
   import { host } from './host.svelte';
   import { packEntry } from './find';
@@ -22,7 +22,7 @@
   const s = loadSettings();
   let seconds = $state(s.seconds);
   // svelte-ignore state_referenced_locally
-  let selected = $state(s.packs.filter((id) => packs.some((p) => p.id === id)));
+  let selected = $state(keptPicks(packs, s.packs, DEFAULT_SETTINGS.packs));
   const locked = host.game !== null && host.game.phase !== 'lobby';
 
   $effect(() => {
