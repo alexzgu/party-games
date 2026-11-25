@@ -56,6 +56,6 @@
   .older details[open] summary { margin-bottom: 4px; }
   .error { margin: 0; color: var(--c-bad); font-weight: 600; font-size: 0.9rem; }
   .lbl { font-weight: 600; color: var(--text-dim); }
-  textarea { min-height: calc(1lh + 2 * var(--s-3)); max-height: calc(4lh + 2 * var(--s-3)); field-sizing: content; overflow-y: auto; resize: none; line-height: 1.35; }
+  textarea { min-height: max(var(--tap-min), calc(1lh + 2 * var(--s-3))); /* Compact spacing never takes it under a tappable height */ max-height: calc(4lh + 2 * var(--s-3)); field-sizing: content; overflow-y: auto; resize: none; line-height: 1.35; }
   .row { display: flex; gap: var(--s-2); }
 </style>
