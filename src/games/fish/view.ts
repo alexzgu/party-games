@@ -1,7 +1,7 @@
 // What the host screen and each phone are sent. A phone gets its own hand and nobody else's; the
 // table is public: every player's card count and books, the pool's count (never its order), whose
 // turn it is and the recent events, as at a real table.
-import type { Card, Rank } from '../../lib/cards/deck';
+import { sortHand, type Card, type Rank } from '../../lib/cards/deck';
 import * as L from './logic';
 
 /** A player at the table: how many cards they hold and the books they laid down. */
@@ -20,13 +20,14 @@ export type View = {
   pool: number;
   /** Whose turn it is (turn), or who asked (show). */
   turn?: string;
-  /** Show: who plays next. */
+  /** Show: who will be on turn when the outcome ends (absent: the game ends). */
   next?: string;
   /** Show: the outcome of the ask in play. */
   shown?: L.Event[];
   /** The last few events, oldest first. */
   log: L.Event[];
   // This phone only:
+  /** Its own hand, sorted by rank, then suit. */
   hand?: Card[];
   /** Show: the card this phone's player just drew. */
   drew?: Card;
@@ -48,7 +49,7 @@ function table(g: L.Game): L.Player[] {
 
 function own(g: L.Game, pid: string): Partial<View> {
   if (!L.isActive(g, pid) || !g.seats.includes(pid) || g.phase === 'lobby') return {};
-  const v: Partial<View> = { hand: L.hand(g, pid) };
+  const v: Partial<View> = { hand: sortHand(L.hand(g, pid)) };
   if (g.phase === 'show' && g.turn === pid && g.drew !== null) v.drew = g.drew;
   return v;
 }
@@ -60,6 +61,9 @@ export function view(g: L.Game, now: number, pid?: string): View {
     players: table(g).map((p) => seat(g, p)), pool: g.pool.length, log: g.log,
   };
   if (g.turn && (g.phase === 'turn' || g.phase === 'show')) v.turn = g.turn;
-  if (g.phase === 'show') Object.assign(v, { shown: g.shown, ...(g.next ? { next: g.next } : {}) });
+  if (g.phase === 'show') {
+    const next = L.upcoming(g);
+    Object.assign(v, { shown: g.shown, ...(next ? { next } : {}) });
+  }
   return pid ? { ...v, ...own(g, pid) } : v;
 }

@@ -47,7 +47,7 @@ function lay(g: Game, pid: string): { game: Game; events: NewEvent[] } {
   };
 }
 
-const finish = (g: Game, now: number): Game => enter({ ...g, turn: null, next: null, shown: [], drew: null }, 'over', now);
+const finish = (g: Game, now: number): Game => enter({ ...g, turn: null, from: null, shown: [], drew: null }, 'over', now);
 
 /**
  * Starts `pid`'s turn, or the first one after it that can play: an empty hand draws a card first
@@ -84,7 +84,7 @@ export function begin(g: Game, pid: string | null, now: number, events: NewEvent
     }
     const s = g.settings.seconds;
     const game = note(g, events).game;
-    return enter({ ...game, turn: who, next: null, shown: [], drew: null }, 'turn', now, s ? s * 1000 : undefined);
+    return enter({ ...game, turn: who, from: null, shown: [], drew: null }, 'turn', now, s ? s * 1000 : undefined);
   }
   return finish(note(g, events).game, now);
 }
@@ -95,7 +95,7 @@ export function start(g: Game, now: number, rand: Rand = Math.random): Game {
   const dealt = deal(shuffledDeck(rand), seats.length, handSize(seats.length));
   let game: Game = {
     ...g, seats, pool: dealt.rest, hands: Object.fromEntries(seats.map((p, i) => [p, dealt.hands[i]])),
-    books: Object.fromEntries(seats.map((p) => [p, []])), turn: null, next: null, shown: [], log: [], count: 0, drew: null,
+    books: Object.fromEntries(seats.map((p) => [p, []])), turn: null, from: null, shown: [], log: [], count: 0, drew: null,
   };
   const events: NewEvent[] = [];
   for (const p of seats) {
@@ -132,24 +132,42 @@ export function ask(g: Game, pid: string, at: number, to: string, rank: Rank, no
   }
   const laid = lay(g, pid);
   const { game, added } = note(laid.game, [...events, ...laid.events]);
-  return enter({ ...game, turn: pid, next: again ? pid : after(game, pid), shown: added, drew }, 'show', now, SHOW_MS);
+  return enter({ ...game, turn: pid, from: again ? pid : after(game, pid), shown: added, drew }, 'show', now, SHOW_MS);
 }
 
 /** A random legal ask for the player whose turn it is (the timer ran out, or the host moved on). */
 export function anyAsk(g: Game, now: number, rand: Rand = Math.random): Game {
   const pid = g.turn;
   if (g.phase !== 'turn' || !pid) return g;
-  const targets = askable(g, pid);
+  const settled = settle(g, now);
+  if (settled !== g) return settled;
   const ranks = [...new Set(hand(g, pid).map(rankOf))];
-  if (!targets.length || !ranks.length) return begin(g, after(g, pid), now);
-  return ask({ ...g, paused: null }, pid, g.at, pick(targets, rand), pick(ranks, rand), now);
+  return ask({ ...g, paused: null }, pid, g.at, pick(askable(g, pid), rand), pick(ranks, rand), now);
 }
 
 /** The host's advance: ask for the player whose turn it is, or the next turn after an outcome. */
 export function step(g: Game, now: number, rand: Rand = Math.random): Game {
   if (g.phase === 'turn') return anyAsk(g, now, rand);
-  if (g.phase === 'show') return begin(g, g.next ?? after(g, g.turn ?? ''), now);
+  if (g.phase === 'show') return begin(g, g.from ?? after(g, g.turn ?? ''), now);
   return g;
+}
+
+/** In `show`: who will be on turn when it ends, as `begin` will decide it then; null when the game will end. */
+export function upcoming(g: Game): string | null {
+  if (g.phase !== 'show') return null;
+  const next = step(g, 0);
+  return next.phase === 'turn' ? next.turn : null;
+}
+
+/**
+ * A turn its player can no longer play (they are out, hold nothing, or nobody is left to ask) is
+ * settled at once by `begin`'s rules: the next who can play, or a draw and the turn passes. The
+ * one place this is decided, for a removal and for a timed-out turn alike.
+ */
+function settle(g: Game, now: number): Game {
+  const pid = g.turn;
+  if (g.phase !== 'turn' || !pid) return g;
+  return !playing(g, pid) || !hand(g, pid).length || !askable(g, pid).length ? begin(g, pid, now) : g;
 }
 
 /** Moves the game on by itself when the timer runs out (never while paused). */
@@ -168,8 +186,7 @@ export function out(g: Game, pid: string, now: number, rand: Rand = Math.random)
   const cards = hand(g, pid);
   g = note({ ...g, pool: shuffle([...g.pool, ...cards], rand), hands: { ...g.hands, [pid]: [] } }, [{ k: 'gone', by: pid }]).game;
   if (inPlay(g).length < 2) return finish(g, now);
-  if (g.phase === 'turn' && g.turn === pid) return begin(g, after(g, pid), now);
-  return g;
+  return settle(g, now);
 }
 
 /** Lobby: the same room and players for a fresh deal; the removed stay out, whoever left may join anew. */

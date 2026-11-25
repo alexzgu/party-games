@@ -3,6 +3,7 @@ import { GAMES } from '../../app.config';
 import { seeded } from '../../lib/room/bots';
 import { cardOf, rankOf, type Card, type Rank } from '../../lib/cards/deck';
 import * as L from './logic';
+import { view } from './view';
 
 const SUIT = { s: 'spades', h: 'hearts', d: 'diamonds', c: 'clubs' } as const;
 /** "7s 7h Kd": cards by rank (A, 2–10, J, Q, K) and suit letter. */
@@ -73,13 +74,13 @@ describe('Go Fish turns', () => {
     const g = ask(rigged(['7s 2h', '7h 7d 9c'], 'Ks Qs'), 'p0', 'p1', 7);
     expect([ranks(g, 'p0'), ranks(g, 'p1'), g.pool.length]).toEqual([[2, 7, 7, 7], [9], 2]);
     expect(g.shown[0]).toMatchObject({ k: 'asked', by: 'p0', from: 'p1', rank: 7, got: 2 });
-    expect([g.phase, g.next]).toEqual(['show', 'p0']);
+    expect([g.phase, L.upcoming(g)]).toEqual(['show', 'p0']);
     expect(L.step(g, 2).turn).toBe('p0');
   });
 
   it('go fish: draws the top of the pool and passes the turn on in seat order', () => {
     const g = ask(rigged(['7s', '9h', '4d'], 'Ks Qs'), 'p0', 'p2', 7);
-    expect([ranks(g, 'p0'), g.pool, kinds(g), g.next]).toEqual([[7, 13], cards('Qs'), ['asked', 'drew'], 'p1']);
+    expect([ranks(g, 'p0'), g.pool, kinds(g), L.upcoming(g)]).toEqual([[7, 13], cards('Qs'), ['asked', 'drew'], 'p1']);
     expect(g.shown[0]).toMatchObject({ got: 0 });
     expect(g.drew).toBe(cards('Ks')[0]);
     expect(L.step(g, 2)).toMatchObject({ phase: 'turn', turn: 'p1' });
@@ -88,14 +89,14 @@ describe('Go Fish turns', () => {
   it('fishing the rank asked for shows it and keeps the turn', () => {
     const g = ask(rigged(['7s', '9h'], '7c Qs'), 'p0', 'p1', 7);
     expect(g.shown[1]).toMatchObject({ k: 'drew', by: 'p0', why: 'fish', rank: 7 });
-    expect(g.next).toBe('p0');
+    expect(L.upcoming(g)).toBe('p0');
   });
 
   it('lays down four of a rank at once, from an ask or a fish', () => {
     const g = ask(rigged(['7s 7h 2c', '7d 7c 9h'], 'Ks'), 'p0', 'p1', 7);
     expect([kinds(g), g.books.p0, ranks(g, 'p0')]).toEqual([['asked', 'book'], [7], [2]]);
     const fished = ask(rigged(['2s 2h 2d 9c', '5h'], '2c'), 'p0', 'p1', 9);
-    expect([kinds(fished), fished.books.p0, fished.next]).toEqual([['asked', 'drew', 'book'], [2], 'p1']);
+    expect([kinds(fished), fished.books.p0, L.upcoming(fished)]).toEqual([['asked', 'drew', 'book'], [2], 'p1']);
     accounted(L.start(lobby(3), 0, seeded(4)));
   });
 
@@ -115,7 +116,7 @@ describe('Go Fish turns', () => {
 
   it('a go fish with the pool empty passes the turn', () => {
     const g = ask(rigged(['7s', '9h', '4d'], ''), 'p0', 'p1', 7);
-    expect([kinds(g), g.next]).toEqual([['asked', 'dry'], 'p1']);
+    expect([kinds(g), L.upcoming(g)]).toEqual([['asked', 'dry'], 'p1']);
   });
 
   it('ignores an ask out of turn, for a rank not held, of yourself, of a player with no cards or not in the game, a stale one, or while paused', () => {
@@ -198,5 +199,83 @@ describe('Go Fish end', () => {
     const g = ask(rigged(['7s 7h 7d', '7c'], '', [[1, 2, 3, 4, 5, 6], [8, 9, 10, 11, 12, 13]]), 'p0', 'p1', 7);
     expect([g.phase, L.booksDown(g)]).toEqual(['show', 13]);
     expect(L.step(g, 2).phase).toBe('over');
+  });
+});
+
+describe('Go Fish turns nobody can play', () => {
+  it('a removal that leaves the player on turn nobody to ask settles the turn at once: they draw one and it passes', () => {
+    const g = rigged(['7s', '', '9h'], 'Ks Qs'); // p0 on turn; p1 holds nothing, p2 the only other cards
+    expect(g.turn).toBe('p0');
+    const left = L.leave(g, 'p2', 1, seeded(3));
+    expect(left.log.slice(-3).map((e) => [e.k, e.by])).toEqual([['gone', 'p2'], ['drew', 'p0'], ['drew', 'p1']]);
+    expect(left.log.at(-2)).toMatchObject({ why: 'nobody' });
+    expect([left.phase, left.turn, L.askable(left, 'p1')]).toEqual(['turn', 'p1', ['p0']]);
+  });
+
+  it('a timed-out turn with nobody to ask follows the same rule', () => {
+    const g0 = rigged(['7s', '', '9h'], 'Ks Qs');
+    const g = { ...g0, hands: { ...g0.hands, p2: [] }, pool: [...g0.pool, ...cards('9h')] };
+    const t = L.tick(g, 30_000, seeded(1));
+    expect(t.log.slice(-2).map((e) => [e.k, e.by, 'why' in e ? e.why : ''])).toEqual([['drew', 'p0', 'nobody'], ['drew', 'p1', 'empty']]);
+    expect(t.turn).toBe('p1');
+  });
+
+  it('never announces as next a player who will be passed by, nor anyone when the game ends', () => {
+    // p0 completes a book with the last of their cards and the pool is empty: they are skipped.
+    const g = ask(rigged(['7s 7h 7d', '7c 9h', '4d'], ''), 'p0', 'p1', 7);
+    expect([g.from, L.upcoming(g), view(g, 1).next]).toEqual(['p0', 'p1', 'p1']);
+    expect(L.step(g, 2).turn).toBe('p1');
+    const end = ask(rigged(['7s 7h 7d', '7c'], '', [[1, 2, 3, 4, 5, 6], [8, 9, 10, 11, 12, 13]]), 'p0', 'p1', 7);
+    expect([L.upcoming(end), view(end, 1).next]).toEqual([null, undefined]);
+  });
+});
+
+describe('Go Fish players coming and going', () => {
+  it('a removal during the outcome, of the asker or of the next player, passes on to whoever can play', () => {
+    const again = ask(rigged(['7s 2h', '7h 9c', '4d'], 'Ks'), 'p0', 'p1', 7); // p0 goes again
+    const noAsker = L.kick(again, 'p0', 2, seeded(1));
+    expect([noAsker.phase, L.upcoming(noAsker), L.hand(noAsker, 'p0'), noAsker.pool.length]).toEqual(['show', 'p1', [], 4]);
+    expect(L.step(noAsker, 3).turn).toBe('p1');
+    const passed = ask(rigged(['7s', '9h', '4d'], 'Ks'), 'p0', 'p2', 7); // go fish: p1 is next
+    const noNext = L.leave(passed, 'p1', 2, seeded(1));
+    expect([L.upcoming(noNext), L.step(noNext, 3).turn]).toEqual(['p2', 'p2']);
+  });
+
+  it('a random game with removals, leaving and coming back keeps every card in one place and ends', () => {
+    for (const seed of [1, 2, 3, 4]) {
+      const rand = seeded(seed);
+      let g = L.start(lobby(6), 0, rand);
+      for (let t = 1; g.phase !== 'over' && t < 20_000; t++) {
+        const r = rand();
+        const seated = g.seats.filter((p) => L.playing(g, p));
+        const any = (list: string[]) => list[Math.floor(rand() * list.length)];
+        if (r < 0.03 && seated.length > 2) g = L.leave(g, any(seated), t, rand);
+        else if (r < 0.06 && g.left.length) g = (L.join(g, any(g.left), 'Back', new Set()) as { game: L.Game }).game;
+        else if (r < 0.07 && seated.length > 3) g = L.kick(g, any(seated), t, rand);
+        else g = L.step(g, t, rand);
+        accounted(g);
+        for (const p of g.seats) if (!L.playing(g, p)) expect(L.hand(g, p)).toEqual([]);
+        if (g.phase === 'turn') expect(L.askable(g, g.turn!).length).toBeGreaterThan(0);
+      }
+      expect(g.phase).toBe('over');
+    }
+  });
+});
+
+describe('Go Fish clock', () => {
+  it('after a host reload mid-turn, a turn whose time ran out meanwhile gets 12 s', () => {
+    const g = L.afterReload(rigged(['7s', '9h'], 'Ks'), 40_000);
+    expect([g.deadline, g.quiet]).toEqual([52_000, 40_000 + L.RECONNECT_MS]);
+    expect(L.tick(g, 51_999).phase).toBe('turn');
+    expect(L.tick(g, 52_000).phase).toBe('show');
+    expect(L.afterReload(rigged(['7s', '9h'], 'Ks'), 10_000).deadline).toBe(30_000);
+  });
+
+  it('a pause during an outcome holds it until resumed', () => {
+    const shown = ask(rigged(['7s', '9h'], 'Ks'), 'p0', 'p1', 7);
+    const paused = L.pause(shown, 1001);
+    expect(L.tick(paused, 1e9).phase).toBe('show');
+    const resumed = L.resume(paused, 10_000);
+    expect([resumed.deadline, L.tick(resumed, 11_999).phase, L.tick(resumed, 12_000).phase]).toEqual([12_000, 'show', 'turn']);
   });
 });

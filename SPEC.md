@@ -1623,17 +1623,22 @@ Bad Hand). Choices marked *house* are ours where the published rules vary.
   holds a card, and taps Ask ("Ask Sam for sevens"). The host settles it; the asked player does
   nothing and cannot lie. They hold that rank: all those cards move to the asker, who goes again.
   They hold none: "Go fish!", and the asker draws the top card of the pool; if it is the rank asked
-  for it is shown to the room ("Maya fished a seven and goes again.") and the asker goes again,
+  for it is shown to the room ("Maya fished a seven!") and the asker goes again,
   otherwise the turn passes to the next player in seat order (*house*: the other common variant
   gives the turn to the player asked). With the pool empty a go fish draws nothing and the turn
   passes. A player whose hand is empty at the start of their turn draws one card and then asks;
   with the pool empty they are skipped. If no other player holds a card, the asker draws one and
-  the turn passes. An ask names its turn (`at`); the host ignores one out of turn, for a rank the
+  the turn passes; this one rule also settles a turn at once whenever its player is left with
+  nobody to ask mid-turn (another player removed or gone), and a turn timed out with nobody to ask. An ask names its turn (`at`); the host ignores one out of turn, for a rank the
   asker does not hold, of themselves, of a player with no cards, who is out or watching, for
-  another turn, or while paused, and tells that phone it did not count.
+  another turn, or while paused, and tells that phone it did not count. A phone keeps only its
+  latest ask to send again after a reconnect, and drops one the host refused, so an older ask is
+  never sent again.
 - **What everyone sees**: every ask and its outcome, as at a real table ("Maya asked Sam for
   sevens. Sam gave 2.", "Maya asked Sam for sevens. Go fish!", "Maya drew a card.", "Maya laid
-  down the sevens."). An outcome stays up 3 s (`SHOW_MS`, or Next) before the next turn. Nobody
+  down the sevens."). An outcome stays up 3 s (`SHOW_MS`, or Next) before the next turn, with who
+  will really play next ("Maya goes again.", "Next: Sam."), decided by the same rules the next
+  turn uses (a player who will be passed by is never named; nothing when the game ends). Nobody
   ever sees another player's cards or the pool's order: a phone is sent its own hand, every
   player's card count and books, the pool's count, whose turn it is and the last 8 events; the
   card it just drew, to its own phone only ("You drew the 4 of clubs.").
@@ -1663,7 +1668,8 @@ Bad Hand). Choices marked *house* are ours where the published rules vary.
   card counts, and one Ask button pinned at the foot; otherwise who is asking, or the outcome;
   your books. A phone's picked rank and player, and "Asking…" once sent, belong to its seat in
   that room and that turn: they go when the turn moves on, the host refuses the ask, or the phone
-  leaves the seat. The host is saved under `fish:host`, a phone's seat under `fish:me`.
+  leaves the seat; a picked rank no longer held or a picked player no longer askable (removed, out
+  of cards) is not picked, and the Ask button says what to tap. The host is saved under `fish:host`, a phone's seat under `fish:me`.
 - Lobby, host controls, reconnects, name rules and the open-room Return as in Bad Hand; Start
   reads "Deal for 4 players".
 - Demos at `#/fish/host?demo=` with `lobby|turn|gave|fish|book|over|paused|full` and

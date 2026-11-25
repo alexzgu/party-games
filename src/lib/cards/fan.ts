@@ -12,8 +12,10 @@ export type Fan = { perRow: number; rows: number; strip: number; step: number; w
 
 /** A hand of `n` cards, each `w` wide, laid out in `room` px. */
 export function fanLayout(n: number, room: number, w: number): Fan {
+  if (n <= 0) return { perRow: 1, rows: 0, strip: 0, step: 0, width: 0, height: 0 };
+  // Not measured yet: one row, nothing placed apart, no size.
+  if (!(room > 0) || !(w > 0)) return { perRow: n, rows: 1, strip: 0, step: 0, width: 0, height: 0 };
   const h = w * 1.4;
-  if (n <= 0) return { perRow: 0, rows: 0, strip: 0, step: 0, width: 0, height: 0 };
   const apart = w + GAP;
   const fit = Math.max(1, Math.floor((room + GAP) / apart));
   if (n <= fit) return { perRow: n, rows: 1, strip: apart, step: 0, width: n * apart - GAP, height: h };

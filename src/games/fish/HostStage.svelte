@@ -7,7 +7,7 @@
   import { RANKS } from '../../lib/cards/deck';
   import Books from './Books.svelte';
   import Standings from './Standings.svelte';
-  import { nameIn, said, seatStatus } from './labels';
+  import { nameIn, nextLine, said, seatStatus } from './labels';
   import type { View } from './view';
 
   // The table, made to read from across a room: whose turn it is or the outcome of the ask in play,
@@ -20,9 +20,7 @@
   const down = $derived(v.players.reduce((n, p) => n + p.books.length, 0));
   const shownN = $derived(new Set(v.shown?.map((e) => e.n) ?? []));
   const earlier = $derived(v.log.filter((e) => !shownN.has(e.n)).slice(-4).reverse());
-  // Who plays next, unless the outcome already says so ("… fished a seven and goes again.").
-  const saysAgain = $derived(!!v.shown?.some((e) => e.k === 'drew' && e.rank));
-  const after = $derived(v.next === undefined || saysAgain ? '' : v.next === v.turn ? `${name(v.next)} goes again.` : `Next: ${name(v.next)}.`);
+  const after = $derived(nextLine(v, name));
 </script>
 
 <main class="stage">

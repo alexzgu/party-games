@@ -16,4 +16,12 @@ describe('a hand of cards', () => {
     }
     expect(fanLayout(30, room, 52).rows).toBeLessThanOrEqual(3);
   });
+
+  it('lays out a hand before anything is measured: finite numbers, never NaN', () => {
+    for (const [n, room, w] of [[5, 0, 0], [5, 0, 52], [5, 328, 0], [5, -10, -3], [0, 0, 0], [30, 20, 52]]) {
+      const f = fanLayout(n, room, w);
+      expect(Object.values(f).every(Number.isFinite), `${n} ${room} ${w}`).toBe(true);
+      expect(f.perRow).toBeGreaterThan(0);
+    }
+  });
 });

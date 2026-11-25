@@ -54,8 +54,8 @@ export type Game = {
   books: Record<string, Rank[]>;
   /** Whose turn it is (`turn`), or who asked (`show`). */
   turn: string | null;
-  /** In `show`: who plays next. */
-  next: string | null;
+  /** In `show`: whose turn the next one starts from; `begin`'s rules may draw for them or pass them by (`upcoming` says who will really play). */
+  from: string | null;
   /** In `show`: the events of the ask in play. */
   shown: Event[];
   /** The last events, oldest first (at most `LOG_SIZE`), and how many the game has had. */
@@ -67,7 +67,7 @@ export type Game = {
 export const newGame = (id: string, code: string, settings: Settings): Game => ({
   id, code, settings, phase: 'lobby', at: 0, deadline: null, paused: null, frozen: null, quiet: null,
   players: [], kicked: [], left: [], seats: [], hands: {}, pool: [], books: {},
-  turn: null, next: null, shown: [], log: [], count: 0, drew: null,
+  turn: null, from: null, shown: [], log: [], count: 0, drew: null,
 });
 
 export const active = (g: Game) => g.players.filter((p) => !g.kicked.includes(p.pid));

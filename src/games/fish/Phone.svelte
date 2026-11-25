@@ -16,7 +16,7 @@
   import { keepAwake } from '../../lib/wakelock';
   import { demo, demoPick } from './demo';
   import { ask, phone, refusals } from './player.svelte';
-  import { nameIn, said } from './labels';
+  import { nameIn, nextLine, said } from './labels';
   import Books from './Books.svelte';
   import Join from './Join.svelte';
   import Rules from './Rules.svelte';
@@ -39,13 +39,19 @@
    */
   // svelte-ignore state_referenced_locally
   let choice = $state<{ seat: string; at: number; rank?: Rank; to?: string; sent?: boolean } | null>(demoPick(fixed) && v ? { seat: 'demo', at: v.at, ...demoPick(fixed) } : null);
-  const mine = $derived(v && seat && choice?.seat === seat && choice.at === v.at ? choice : null);
   const me = $derived(v?.players.find((p) => p.pid === pid));
   const name = $derived(v ? nameIn(v) : () => '');
   const hand = $derived(v?.hand ?? []);
   const myTurn = $derived(!!v && v.phase === 'turn' && v.turn === pid && !!v.hand);
-  const asking = $derived(!!mine?.sent);
   const targets = $derived(v ? v.players.filter((p) => p.pid !== pid && !p.out && !p.watching) : []);
+  /** This turn's choice as the table stands now: a rank no longer held, or a player no longer askable (removed, out of cards), is not picked. */
+  const mine = $derived.by(() => {
+    if (!v || !seat || choice?.seat !== seat || choice.at !== v.at) return null;
+    const rank = choice.rank && hand.some((c) => rankOf(c) === choice!.rank) ? choice.rank : undefined;
+    const to = choice.to && targets.some((p) => p.pid === choice!.to && p.cards > 0) ? choice.to : undefined;
+    return { ...choice, rank, to };
+  });
+  const asking = $derived(!!mine?.sent);
   const picked = $derived(mine?.rank ? hand.filter((c) => rankOf(c) === mine.rank) : []);
 
   $effect(() => {
@@ -125,6 +131,7 @@
           {#if me?.watching}<p class="muted">You’re watching: you’ll be dealt in at the next deal.</p>{/if}
           {#if v.phase === 'show' && v.shown}
             {#each v.shown as e (e.n)}<p class="said">{said(e, name)}</p>{/each}
+            {#if nextLine(v, name)}<p class="muted">{nextLine(v, name)}</p>{/if}
           {:else if myTurn}
             <h2 class="you">Your turn!</h2>
             <p class="muted">{asking ? 'Asking…' : 'Tap a card to ask for its rank, then a player.'}</p>
