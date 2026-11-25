@@ -103,9 +103,11 @@
   .count { flex: none; font-size: 0.8rem; color: var(--text-faint); }
   .clear { position: relative; flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); background: var(--overlay); font-size: 0.8rem; }
   /* Small controls are tapped through a clear area 45 px tall and at least 44 px wide around them,
-     drawn no bigger; it stays inside the gaps, so it covers no other control. */
+     drawn no bigger. It reaches into the gaps around them and never onto another control (the
+     clear button's may lie over the edge of the "3 of 12" count, which is plain text). */
   .clear::after { content: ''; position: absolute; inset: -6.5px -6px; }
-  /* Rows 8 px apart when the chips wrap: two rows' tap areas then do not overlap. */
+  /* Rows 8 px apart when the chips wrap, so no chip's tap area reaches a chip in the other row.
+     With small text the two rows' areas can meet in the gap; there the lower row's takes the tap. */
   .sorts { display: flex; gap: 8px 6px; flex-wrap: wrap; }
   .sorts button {
     position: relative; padding: 7px 14px; border-radius: var(--r-pill); font-size: 0.88rem; font-weight: 600;

@@ -65,8 +65,9 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   `--text-scale`. Compact lowers the spacing steps (`--s-1`…`--s-7`), `--leading` and the row heights
   (`--tap`, `--tap-sm`…`--tap-xxl`), never under 44 px (`--tap-min`); a control drawn under 44 px
   tall (a sort chip, the search's clear button, the wizard note's "Got it") is tapped through a clear
-  area at least 44 px tall and wide that covers no other control, so smaller text and Compact may
-  draw it smaller but never make it harder to tap.
+  area at least 44 px tall and wide around it that never reaches another control (it may lie over
+  plain text next to it), so smaller text and Compact may draw it smaller but never make it harder
+  to tap; its focus ring and tip stay on what is drawn.
   A height guessed around a screen-fitted area (a drawing pad) is multiplied by `--chrome-scale`.
   Text boxes are at least 16 px in every mode, so phones never zoom into them. Normal/Normal is the
   original look. **Screens read from across the room show Normal text whatever the setting**
