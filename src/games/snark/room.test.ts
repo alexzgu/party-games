@@ -68,4 +68,13 @@ describe("a Snark Tank room's prompts and finals", () => {
     expect(dealIn(pool, 3, (t) => t, used, (i) => inOrder(pool[i]))).toEqual(['y', 'z', 'a']);
     expect(dealIn([picks, []], 2, (t) => t, new Set(['a']), (i) => inOrder(pool[i]))).toEqual(['b', 'c']);
   });
+
+  it('treats lending prompts and lending finals from the same packs as two questions, and says when it lends both', () => {
+    const both = [pack('mine', 6, 0, true), pack('classic', 20, 5)];
+    const prompts = roomPrompts(both, { packIds: ['mine'], ...three }, 5).ask!;
+    const finals = roomPrompts(both, { packIds: ['mine'], rounds: 2, final: 'duels' }, 3).ask!;
+    expect([prompts.noun, finals.noun, prompts.lenders, finals.lenders]).toEqual(['prompts', 'finals', ['classic'], ['classic']]);
+    expect(consent(finals, prompts.key, '')).toBeNull();
+    expect(roomPrompts(both, { packIds: ['mine'], ...duels }, 5).ask?.noun).toBe('prompts and finals');
+  });
 });

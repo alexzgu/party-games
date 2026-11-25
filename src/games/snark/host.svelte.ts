@@ -12,39 +12,14 @@ import { loadRoom, loadSettings, saveGame, saveSettings } from './store';
 import { gameRecord } from './record';
 import { snarkPacks } from '../../lib/content';
 import { consent, stillAsked } from '../../lib/lend';
-import { dealIn, finalsIn, lending, pools, poolNames, promptsOf, roomPrompts, type RoomPrompts } from './room';
-import { promptKey } from './pack';
-import { makeBag } from '../../lib/bag';
+import { lending, pools, poolNames, roomPrompts, type RoomPrompts } from './room';
+import { drawFinals, drawPrompts } from './deal';
 import { record } from '../../lib/history';
 import { Bots, isBot } from '../../lib/room/bots';
 import { snarkBrain } from './bot';
 
 /** The room's prompts and finals for `players` players: the picks', and the packs that would lend when they are too few (room.ts). */
 export const content = (s: L.Settings, players: number): RoomPrompts => roomPrompts(snarkPacks(), s, players);
-
-/**
- * Prompts for a round: the picks' first, then the lenders', none this game already dealt while
- * any is left, each with its pack's stock answer when it has one. Each pool keeps its own bag,
- * so prompts never repeat across games either until the pool runs out.
- */
-export function drawPrompts(from: ReturnType<typeof pools>, count: number, used: Set<string>): L.Dealt[] {
-  const picks = promptsOf(from.picks), mine = new Set(picks.map(promptKey));
-  const lent = promptsOf(from.prompts).filter((q) => !mine.has(promptKey(q)));
-  const safety = new Map(from.prompts.flatMap((p) => Object.entries(p.safety ?? {})));
-  const keys = ['snark', 'snark:lent'];
-  return dealIn([picks, lent], count, (q) => q, used, (i) => makeBag(keys[i], i ? lent : picks, (x) => x)).map((prompt) => {
-    const stock = safety.get(prompt);
-    return stock ? { prompt, safety: stock } : prompt;
-  });
-}
-
-/** Finals for three-line duels, dealt like prompts: the picks', then the lenders'; none when neither has any. */
-export function drawFinals(from: ReturnType<typeof pools>, count: number, used: Set<string>): L.Dealt[] {
-  const picks = finalsIn(from.picks), mine = new Set(picks.map((f) => f.prompt));
-  const lent = finalsIn(from.finals).filter((f) => !mine.has(f.prompt));
-  const keys = ['snark:finals', 'snark:finals:lent'];
-  return dealIn([picks, lent], count, (f) => f.prompt, used, (i) => makeBag(keys[i], i ? lent : picks, (f) => f.prompt));
-}
 
 /** The packs a game dealt from, for History: the picks', then the lenders'. */
 const names = (g: L.Game) => poolNames(snarkPacks(), g.settings.packIds, g.lent);
@@ -131,8 +106,8 @@ class HostSession {
 
   /** Deals for `g` from its picks and the packs lent to it (each kind on its own), read when a round starts. */
   private draw = (g: L.Game): L.Draw => (n, kind) => {
-    const from = pools(snarkPacks(), g.settings.packIds, g.lent), used = new Set(g.dealt ?? []);
-    return kind === 'lines' ? drawFinals(from, n, used) : drawPrompts(from, n, used);
+    const from = pools(snarkPacks(), g.settings.packIds, g.lent);
+    return kind === 'lines' ? drawFinals(from, n, g.dealt ?? []) : drawPrompts(from, n, g.dealt ?? []);
   };
 
   private tick(): void {

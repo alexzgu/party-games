@@ -137,6 +137,16 @@ export type Draw = (count: number, kind?: 'lines') => Dealt[];
 
 const dealtText = (d: Dealt) => (typeof d === 'string' ? d : d.prompt);
 
+/** The last resort when a game has no prompt at all (its packs emptied mid-game): a line, not a pack. */
+export const LAST_PROMPT = 'Say something funny';
+
+/** `n` prompts from `draw`, never fewer: what it dealt comes round again, and `LAST_PROMPT` when it dealt nothing. */
+function prompts(draw: Draw, n: number): Dealt[] {
+  const got = draw(n).filter((d) => !!dealtText(d));
+  const from = got.length ? got : [LAST_PROMPT];
+  return Array.from({ length: n }, (_, i) => from[i % from.length]);
+}
+
 export function newGame(code: string, settings: Settings): Game {
   return { code, settings, players: [], phase: 'lobby', round: 0, items: [], at: 0, deadline: null, paused: null, log: [], recorded: false, nextColor: 0 };
 }
@@ -207,7 +217,7 @@ export function startRound(g: Game, draw: Draw, now: number, rand: () => number 
   const pids = players.filter((p) => p.active).map((p) => p.pid);
   const final = isFinalRound(g, round);
   if (pids.length < (final ? 2 : MIN_PLAYERS)) return finish({ ...g, players });
-  const items = final ? finalItems({ ...g, players }, pids, draw, rand) : duels(pids, draw(pids.length), rand);
+  const items = final ? finalItems({ ...g, players }, pids, draw, rand) : duels(pids, prompts(draw, pids.length), rand);
   return { ...g, players, round, items, dealt: [...(g.dealt ?? []), ...items.map((x) => x.prompt)], at: 0, phase: 'write', deadline: now + g.settings.answerSecs * 1000, paused: null };
 }
 
@@ -222,7 +232,7 @@ function duels(pids: string[], dealt: Dealt[], rand: () => number): Duel[] {
 /** The final's items: three-line duels when chosen and possible, otherwise one prompt for everyone. */
 function finalItems(g: Game, pids: string[], draw: Draw, rand: () => number): Item[] {
   const lines = g.settings.final === 'duels' ? lineDuels(g, pids, draw, rand) : null;
-  return lines ?? [{ kind: 'final', prompt: dealtText(draw(1)[0]), authors: shuffle(pids, rand), answers: {}, ballots: {} }];
+  return lines ?? [{ kind: 'final', prompt: dealtText(prompts(draw, 1)[0]), authors: shuffle(pids, rand), answers: {}, ballots: {} }];
 }
 
 /**

@@ -57,7 +57,8 @@ export function roomPrompts(all: readonly SnarkPack[], s: Pick<Settings, 'packId
     (fewFinals(lent) && finalsIn([...packs, ...lent, p]).length > finalsIn([...packs, ...lent]).length);
   const lent = lenders(all.filter((p) => !packs.includes(p)), (l) => fewPrompts(l) || fewFinals(l), helps);
   const problem = promptsOf([...packs, ...lent]).length ? '' : 'No pack has prompts';
-  return { packs, lent, need, ask: ask(packs, lent, shortfall(packs, need, players), lent.length && !fewPrompts([]) ? 'finals' : 'prompts'), problem };
+  const kinds = [...(fewPrompts([]) ? ['prompts'] : []), ...(fewFinals([]) ? ['finals'] : [])];
+  return { packs, lent, need, ask: ask(packs, lent, shortfall(packs, need, players), kinds.join(' and '), kinds), problem };
 }
 
 /** "Your packs have 6 prompts. 5 players need 13." / "Your packs have no finals." / both. */
@@ -87,6 +88,9 @@ export function pools(all: readonly SnarkPack[], ids: readonly string[], lent: L
   const plus = (more: readonly string[] = []) => [...picks, ...all.filter((p) => more.includes(p.id) && !picks.includes(p))];
   return { picks, prompts: plus(lent?.prompts), finals: plus(lent?.finals) };
 }
+
+/** What a game deals from (`pools`). */
+export type Pools = ReturnType<typeof pools>;
 
 /** Deals one item at a time, so nothing comes back across games until its pool runs out (lib/bag). */
 export type Bag<T> = { next(): T | undefined };

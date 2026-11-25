@@ -8,9 +8,9 @@
   import { settingsSummary } from './settingsSummary';
   import { packEntry } from './find';
   import { snarkPacks } from '../../lib/content';
-  import { ANSWER_CHOICES, MIN_PLAYERS, VOTE_CHOICES, present, type FinalStyle } from './logic';
+  import { ANSWER_CHOICES, DEFAULT_SETTINGS, MIN_PLAYERS, VOTE_CHOICES, present, type FinalStyle } from './logic';
   import { roomPrompts } from './room';
-  import { nameList } from '../../lib/lend';
+  import { keptPicks, nameList } from '../../lib/lend';
   import { loadSettings } from './store';
   import { host } from './host.svelte';
 
@@ -26,7 +26,7 @@
   let voteSecs = $state(s.voteSecs);
   let final = $state<FinalStyle>(s.final ?? 'everyone');
   // svelte-ignore state_referenced_locally
-  let selected = $state(s.packIds.filter((id) => packs.some((p) => p.id === id)));
+  let selected = $state(keptPicks(packs, s.packIds, DEFAULT_SETTINGS.packIds));
   const locked = host.game !== null && host.game.phase !== 'lobby';
 
   // Saves (on this device, and into the lobby's game) whenever a choice changes. host.settings
