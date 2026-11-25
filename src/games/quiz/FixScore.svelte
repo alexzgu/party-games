@@ -41,7 +41,7 @@
   .label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); }
   .vals { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 6px; }
   .vals button {
-    min-height: 48px; padding: 0 2px; border-radius: var(--r-sm); font-weight: 800; font-variant-numeric: tabular-nums;
+    min-height: var(--tap-sm); padding: 0 2px; border-radius: var(--r-sm); font-weight: 800; font-variant-numeric: tabular-nums;
     background: var(--surface); border: 1.5px solid var(--line-strong); font-size: 0.95rem;
   }
   .up { color: var(--c-good); }

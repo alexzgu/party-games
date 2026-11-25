@@ -51,7 +51,7 @@
   section { display: grid; gap: var(--s-3); min-width: 0; }
   .qr { text-align: center; justify-items: center; }
   .code-box { display: grid; place-items: center; max-width: 100%; padding: var(--s-2); border-radius: var(--r-lg); background: white; }
-  .qr strong { color: var(--accent); font: 800 clamp(2.6rem, 7vw, 5rem)/1 var(--font-display); letter-spacing: 0.14em; }
+  .qr strong { color: var(--accent); font: 800 clamp(2.6rem, calc(7vw * var(--text-scale)), 5rem)/1 var(--font-display); letter-spacing: 0.14em; }
   .summary, .empty { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--bg-sunk); color: var(--text-dim); }
   @media (max-width: 760px) { .lobby { grid-template-columns: 1fr; } }
 </style>

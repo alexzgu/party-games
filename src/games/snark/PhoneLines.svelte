@@ -54,7 +54,7 @@
 <style>
   .write { display: flex; flex-direction: column; gap: var(--s-3); }
   .step { color: var(--c-gold); font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.82rem; }
-  .prompt { font-size: clamp(1.4rem, 6.4vw, 2rem); line-height: 1.15; }
+  .prompt { font-size: clamp(1.4rem, calc(6.4vw * var(--text-scale)), 2rem); line-height: 1.15; }
   .lines { display: flex; flex-direction: column; gap: var(--s-2); }
   .line { position: relative; display: flex; align-items: center; gap: var(--s-2); }
   .n { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--overlay-strong); font-weight: 800; font-size: 0.9rem; color: var(--text-dim); }

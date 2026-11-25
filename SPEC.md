@@ -55,7 +55,23 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
   to its colour token (`--c-forehead`, `--c-dial`, `--c-gibberish`, `--c-quiz`, … `--c-fish`). Playing cards
   have their own (`--card-face`, `--card-red`, `--card-black`, `--card-edge`, `--card-back`, `--card-back-2`,
-  `--card-w-sm|md|lg`), the same in both schemes.
+  `--card-w-sm|md|lg`), the same in both schemes. Sizes follow the phone's Display settings
+  (Text size: Small, Normal, Large; Spacing: Compact, Normal; kept in `settings.textSize` and
+  `settings.spacing`, anything unknown read as Normal) through `data-text` and `data-density` on
+  `<html>`, which only redefine tokens in `tokens.css`, the one place for sizes; every screen follows
+  at once with no reload. `App.svelte` sets both whenever the screen or the settings change
+  (`applyDisplay`), and `index.html` sets them from storage before the first paint. Text is sized in
+  `rem` (the root is `--text-root`); a size that grows with the screen multiplies its screen term by
+  `--text-scale`. Compact lowers the spacing steps (`--s-1`…`--s-7`), `--leading` and the row heights
+  (`--tap`, `--tap-sm`…`--tap-xxl`), never under 44 px (`--tap-min`); a control already under 44 px
+  at Normal keeps its Normal height as a floor. A height guessed around a screen-fitted area (a
+  drawing pad) is multiplied by `--chrome-scale`. Text boxes are at least 16 px in every mode, so
+  phones never zoom into them. Normal/Normal is the original look. **Screens read from across the
+  room show Normal text whatever the setting** (`src/lib/farRead.ts`, by address): every own-phones
+  game's host screen (`#/<game>/host`: lobby, play, scores, end), Big Board's play screens
+  (`#/quiz/play`: board, clue, win) and the Heads Down. round (`#/forehead/play`: ready, countdown,
+  play, results). Spacing still applies there. The setting comes back as soon as the screen is left;
+  the phones' own views of the same parts follow it.
 - `src/games/<id>/` — one folder per game; `Game.svelte` is the entry the router loads.
 - `src/content/` — built-in packs as JSON (formats in `src/lib/content.ts`).
 
@@ -419,7 +435,7 @@ preview, past its list too) and ticks the new pack, as before.
   "“<name>” added to your packs in <game>." (plus anything skipped or left out), until the next
   search, order, game or preview, or its ✕. Without a wizard server the address shows Home.
   Any other address, such as one of a game taken out of the app (`#/song`), shows Home.
-- **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours; pack lists as Tiles or List, the same choice as the switch on every pack list), Heads Down. (scored-word feedback,
+- **Settings**: Feel (sound, vibration; switching either on plays a sample chime or buzz), Look (colours; pack lists as Tiles or List, the same choice as the switch on every pack list), Display ("Text size": Small, Normal, Large; "Spacing": Compact, Normal; both Normal at first, applied at once and kept on this phone), Heads Down. (scored-word feedback,
   "Calibrate tilt" with the calibration note under it, "Check tilt" with its notes under it),
   The wizard, Cards (allow repeats), and App (refresh the offline cache and reload).
   The wizard never mentions invite links. Without a key

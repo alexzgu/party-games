@@ -29,7 +29,7 @@
 <style>
   .seg { display: flex; gap: 4px; padding: 4px; background: var(--bg-sunk); border-radius: var(--r-pill); border: 1.5px solid var(--line); }
   button {
-    flex: 1; min-height: 48px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--text-dim);
+    flex: 1; min-height: var(--tap-sm); border: 0; border-radius: var(--r-pill); background: transparent; color: var(--text-dim);
     font-family: var(--font-display); font-weight: 700; font-size: 1.05rem;
     transition: background var(--dur) var(--ease-out), color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
   }

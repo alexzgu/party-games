@@ -34,7 +34,7 @@
 <style>
   .clues { display: flex; flex-direction: column; align-items: center; gap: var(--s-3); text-align: center; padding-top: var(--s-2); }
   .kicker { color: var(--text-faint); font-weight: 700; font-size: 0.85rem; }
-  .start { font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 11vw, 3.4rem); line-height: 1.05; overflow-wrap: anywhere; }
+  .start { font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, calc(11vw * var(--text-scale)), 3.4rem); line-height: 1.05; overflow-wrap: anywhere; }
   .start span { color: var(--c); }
   .say { font-size: 1.15rem; font-weight: 600; max-width: 22em; }
   .order { list-style: none; margin: 0; padding: 0; width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: var(--s-1); }

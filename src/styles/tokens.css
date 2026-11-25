@@ -75,6 +75,8 @@
   --r-lg: 24px;
   --r-pill: 999px;
 
+  --leading: 1.45; /* line height of running text */
+
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
@@ -83,8 +85,23 @@
   --s-6: 32px;
   --s-7: 48px;
 
+  /* Text size (Settings > Display, data-text on <html>): every rem in the app is this root size,
+     and a size that grows with the screen multiplies its screen term by --text-scale. */
+  --text-scale: 1;
+  --text-root: calc(17px * var(--text-scale));
+  /* How much the parts around a screen-fitted area (a drawing pad) grow with the settings: a
+     height guessed at Normal is multiplied by it. Never under 1: smaller text and Compact only
+     leave more room, so the pad keeps its Normal size; Large text takes room from the pad. */
+  --chrome-scale: max(1, var(--text-scale));
+
   --tap: 56px; /* minimum height of anything tappable */
-  --tap-min: 44px; /* the smallest a small icon button may be */
+  --tap-min: 44px; /* the smallest a small icon button may be; never shrinks */
+  /* Heights of rows, controls and tiles, smallest first; Compact spacing lowers them, never under --tap-min. */
+  --tap-sm: 48px;
+  --tap-md: 52px;
+  --tap-lg: 64px;
+  --tap-xl: 68px;
+  --tap-xxl: 72px;
 
   /* Stacking, lowest first. Everything that covers the page uses one of these. */
   --z-pinned: 30; /* the page's pinned header and start bar */
@@ -185,6 +202,28 @@
   --word: #1a3fbf;
   --stage: #ffffff;
   --stage-tint: 0%;
+}
+
+/* Display settings (Settings > Display; applyDisplay() and index.html put them on <html>). Normal
+   is the :root values above; these only redefine tokens, so every screen follows at once. */
+:root[data-text='small'] { --text-scale: 0.88; }
+:root[data-text='large'] { --text-scale: 1.12; }
+/* Compact: about a third less vertical space in padding, gaps, rows and lines of text. */
+:root[data-density='compact'] {
+  --leading: 1.32;
+  --s-1: 3px;
+  --s-2: 5px;
+  --s-3: 7px;
+  --s-4: 11px;
+  --s-5: 14px;
+  --s-6: 19px;
+  --s-7: 28px;
+  --tap: 48px;
+  --tap-sm: 44px;
+  --tap-md: 44px;
+  --tap-lg: 52px;
+  --tap-xl: 56px;
+  --tap-xxl: 56px;
 }
 
 @media (prefers-reduced-motion: reduce) {

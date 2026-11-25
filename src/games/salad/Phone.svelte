@@ -161,7 +161,7 @@
     padding: calc(var(--safe-top) + var(--s-2)) calc(var(--safe-right) + var(--s-4))
       calc(var(--safe-bottom) + var(--s-4)) calc(var(--safe-left) + var(--s-4));
   }
-  .bar { display: flex; align-items: center; gap: var(--s-2); min-height: 56px; }
+  .bar { display: flex; align-items: center; gap: var(--s-2); min-height: var(--tap); }
   .who { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
   .who b { font-family: var(--font-display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .who small { color: var(--text-dim); }

@@ -41,7 +41,7 @@
   .answers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
   .answer {
     --c: var(--c-answer-1);
-    display: flex; align-items: center; gap: var(--s-3); min-width: 0; min-height: 64px; padding: var(--s-2) var(--s-3);
+    display: flex; align-items: center; gap: var(--s-3); min-width: 0; min-height: var(--tap-lg); padding: var(--s-2) var(--s-3);
     border: 3px solid transparent; border-radius: var(--r-md); background: var(--c); color: var(--ink, var(--on-accent)); text-align: left;
     font-weight: 800; line-height: 1.2; transition: opacity var(--dur) ease, transform var(--dur) var(--ease-out);
   }
@@ -53,13 +53,13 @@
   .tags { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
   .tag { padding: 1px var(--s-2); border-radius: var(--r-pill); background: var(--bg); color: var(--text); font: 800 0.85rem / 1.3 var(--font-display); white-space: nowrap; }
   .count { font: 800 0.95rem / 1.2 var(--font-display); white-space: nowrap; }
-  .sm .answer { min-height: 48px; padding: var(--s-1) var(--s-2); font-size: 0.95rem; }
-  .md .answer { min-height: 72px; font-size: 1.1rem; }
+  .sm .answer { min-height: var(--tap-sm); padding: var(--s-1) var(--s-2); font-size: 0.95rem; }
+  .md .answer { min-height: var(--tap-xxl); font-size: 1.1rem; }
   .lg { gap: var(--s-3); }
-  .lg .answer { min-height: clamp(64px, 11vh, 140px); padding: var(--s-2) var(--s-4); font-size: clamp(1.1rem, 2.3vw, 2.2rem); }
-  .lg .letter { font-size: clamp(1rem, 1.8vw, 1.6rem); }
-  .lg .tag { font-size: clamp(0.85rem, 1.3vw, 1.2rem); }
-  .lg .count { font-size: clamp(0.95rem, 1.5vw, 1.4rem); }
+  .lg .answer { min-height: clamp(64px, 11vh, 140px); padding: var(--s-2) var(--s-4); font-size: clamp(1.1rem, calc(2.3vw * var(--text-scale)), 2.2rem); }
+  .lg .letter { font-size: clamp(1rem, calc(1.8vw * var(--text-scale)), 1.6rem); }
+  .lg .tag { font-size: clamp(0.85rem, calc(1.3vw * var(--text-scale)), 1.2rem); }
+  .lg .count { font-size: clamp(0.95rem, calc(1.5vw * var(--text-scale)), 1.4rem); }
   button.answer { cursor: pointer; }
   button.answer:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
   button.answer:disabled { cursor: default; }
@@ -70,6 +70,6 @@
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   @media (max-width: 520px) { .answers:not(.lg) { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 700px) { .lg { grid-template-columns: minmax(0, 1fr); } }
-  @media (max-height: 620px) { .lg .answer { min-height: 48px; padding: var(--s-1) var(--s-3); font-size: clamp(1rem, 2vw, 1.4rem); } }
+  @media (max-height: 620px) { .lg .answer { min-height: var(--tap-sm); padding: var(--s-1) var(--s-3); font-size: clamp(1rem, calc(2vw * var(--text-scale)), 1.4rem); } }
   @media (prefers-reduced-motion: reduce) { .answer { transition: none; } }
 </style>

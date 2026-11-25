@@ -100,7 +100,7 @@
 <style>
   .top { position: sticky; top: var(--screen-head, 0px); z-index: 2; padding-bottom: var(--s-2); background: var(--bg); }
   .write { display: grid; gap: var(--s-1); font-weight: 700; }
-  .write input { min-height: 48px; }
+  .write input { min-height: var(--tap-sm); }
   .hint { color: var(--text-dim); }
   .hand { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s-2); grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); }
   .card {

@@ -104,7 +104,7 @@
   }
   .name {
     position: relative; font-family: var(--font-display); font-weight: 800; color: var(--c);
-    font-size: clamp(2.6rem, 16vw, 5rem); line-height: 1; letter-spacing: -0.03em; overflow-wrap: anywhere;
+    font-size: clamp(2.6rem, calc(16vw * var(--text-scale)), 5rem); line-height: 1; letter-spacing: -0.03em; overflow-wrap: anywhere;
   }
   .hint { font-size: 1.05rem; font-weight: 600; max-width: 22em; }
   .meta { text-align: center; color: var(--text-faint); }
@@ -123,7 +123,7 @@
     .verdict { font-size: 1.5rem; }
     .who { min-height: 76px; }
     .glow { width: 130px; height: 130px; }
-    .name { font-size: clamp(2.2rem, 6.5vw, 3.6rem); }
+    .name { font-size: clamp(2.2rem, calc(6.5vw * var(--text-scale)), 3.6rem); }
     .hint { font-size: 1rem; }
   }
 </style>

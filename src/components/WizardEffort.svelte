@@ -46,7 +46,7 @@
   .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; background: var(--bg-sunk); border-radius: var(--r-md); border: 1.5px solid var(--line); }
   button {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-    min-height: 64px; padding: var(--s-2) var(--s-1); border: 0; border-radius: calc(var(--r-md) - 4px);
+    min-height: var(--tap-lg); padding: var(--s-2) var(--s-1); border: 0; border-radius: calc(var(--r-md) - 4px);
     background: transparent; color: var(--text-dim); font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; line-height: 1.15;
     transition: background var(--dur) var(--ease-out), color var(--dur) ease, transform var(--dur-fast) var(--ease-out);
   }

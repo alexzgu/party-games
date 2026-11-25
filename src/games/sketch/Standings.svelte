@@ -22,5 +22,5 @@
   li { display: flex; align-items: center; gap: var(--s-3); background: var(--surface); padding: var(--s-2) var(--s-3); border-radius: var(--r-md); }
   li span { color: var(--text-dim); min-width: 2.5em; }
   strong { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-  .winner { color: var(--accent); text-align: center; font-size: clamp(1.4rem, 5vmin, 2.6rem); overflow-wrap: anywhere; }
+  .winner { color: var(--accent); text-align: center; font-size: clamp(1.4rem, calc(5vmin * var(--text-scale)), 2.6rem); overflow-wrap: anywhere; }
 </style>

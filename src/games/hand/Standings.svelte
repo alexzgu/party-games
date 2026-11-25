@@ -34,13 +34,13 @@
 <style>
   .end { display: grid; gap: var(--s-3); width: 100%; }
   .headline { color: var(--accent); overflow-wrap: anywhere; }
-  .lg .headline { font-size: clamp(1.8rem, 4.5vw, 3.6rem); text-align: center; }
+  .lg .headline { font-size: clamp(1.8rem, calc(4.5vw * var(--text-scale)), 3.6rem); text-align: center; }
   ol { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s-2); }
   .table li { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-2) var(--s-4); border-radius: var(--r-md); background: var(--surface); }
   .table strong { flex: 1; overflow-wrap: anywhere; }
   .table span { color: var(--text-dim); min-width: 2.5em; }
   .table b { font: 800 1.3rem / 1 var(--font-display); }
-  .lg .table li { font-size: clamp(1rem, 1.8vw, 1.5rem); }
+  .lg .table li { font-size: clamp(1rem, calc(1.8vw * var(--text-scale)), 1.5rem); }
   .you { outline: 2px solid var(--accent); }
   .house { border: 2px dashed var(--line-strong); }
   .wins li { display: grid; gap: 2px; padding: var(--s-2) var(--s-3); border-left: 4px solid var(--accent); background: var(--bg-sunk); border-radius: var(--r-sm); }

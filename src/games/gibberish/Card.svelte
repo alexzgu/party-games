@@ -175,7 +175,7 @@
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
   }
   .card-screen.blur { filter: blur(18px); pointer-events: none; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: 64px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: var(--tap-lg); }
   .icon-btn { width: 48px; height: 48px; border-radius: var(--r-pill); border: 0; background: var(--surface); color: var(--text); display: grid; place-items: center; flex: none; }
   .spacer { width: 48px; }
   .rname { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -202,11 +202,11 @@
 
   .tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
   .show-cat {
-    min-height: 64px; border-radius: var(--r-md); border: 0; background: var(--surface); font-weight: 700;
+    min-height: var(--tap-lg); border-radius: var(--r-md); border: 0; background: var(--surface); font-weight: 700;
     display: flex; align-items: center; justify-content: center; gap: var(--s-2);
   }
   .category {
-    min-height: 64px; border-radius: var(--r-md); background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    min-height: var(--tap-lg); border-radius: var(--r-md); background: color-mix(in srgb, var(--accent) 16%, var(--surface));
     display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--s-1) var(--s-2); text-align: center;
   }
   .category span { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 700; }
@@ -231,7 +231,7 @@
   @media (max-height: 720px) {
     .card-screen { gap: var(--s-2); }
     .bubble { flex-basis: 140px; min-height: 120px; }
-    .show-cat, .category, .tools :global(.hold) { min-height: 48px; }
+    .show-cat, .category, .tools :global(.hold) { min-height: var(--tap-sm); }
     .grid.three .player { min-height: 46px; }
   }
 
@@ -250,7 +250,7 @@
     .who { margin-top: 0; }
     .grid { gap: 6px; }
     .player, .grid.three .player { min-height: 44px; }
-    .row :global(.btn) { min-height: 48px; padding: 0 var(--s-2); }
+    .row :global(.btn) { min-height: var(--tap-sm); padding: 0 var(--s-2); }
   }
 
   .paused {

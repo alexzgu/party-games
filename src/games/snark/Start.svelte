@@ -60,5 +60,5 @@
   .emoji { grid-row: span 2; font-size: 2.6rem; line-height: 1; }
   .what { font-family: var(--font-display); font-weight: 800; font-size: 1.45rem; color: var(--text); }
   .why { color: var(--text-dim); font-size: 0.95rem; line-height: 1.35; }
-  .note { font-size: 0.9rem; line-height: 1.45; }
+  .note { font-size: 0.9rem; line-height: var(--leading); }
 </style>

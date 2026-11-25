@@ -1,6 +1,7 @@
 import { load, save } from './storage';
 import { DEFAULT_MODEL } from './wizard';
 import type { PackView } from './packList';
+import { farRead } from './farRead';
 
 export interface Settings {
   sound: boolean;
@@ -19,7 +20,21 @@ export interface Settings {
   packView: PackView;
   /** "Got it" tapped on the note under Fizzwick's results (wizardNote.ts): it never shows again on this phone. */
   wizardNoteSeen: boolean;
+  /** Display: the size of all text (Small/Normal/Large), except text read from across the room. */
+  textSize: TextSize;
+  /** Display: padding and gaps across the app; 'compact' takes about a third of the height out. */
+  spacing: Spacing;
 }
+
+export const TEXT_SIZES = ['small', 'normal', 'large'] as const;
+export const SPACINGS = ['compact', 'normal'] as const;
+export type TextSize = (typeof TEXT_SIZES)[number];
+export type Spacing = (typeof SPACINGS)[number];
+
+/** A stored value this version does not know (or none) reads as Normal. */
+const pick = <T extends string>(allowed: readonly T[], v: unknown): T | 'normal' => (allowed as readonly unknown[]).includes(v) ? (v as T) : 'normal';
+export const textSizeOf = (v: unknown): TextSize => pick(TEXT_SIZES, v);
+export const spacingOf = (v: unknown): Spacing => pick(SPACINGS, v);
 
 const DEFAULTS: Settings = {
   sound: true,
@@ -31,9 +46,16 @@ const DEFAULTS: Settings = {
   theme: 'dark',
   packView: 'tiles',
   wizardNoteSeen: false,
+  textSize: 'normal',
+  spacing: 'normal',
 };
 
-export const settings = $state<Settings>(load('settings', DEFAULTS));
+function stored(): Settings {
+  const s = load('settings', DEFAULTS);
+  return { ...s, textSize: textSizeOf(s.textSize), spacing: spacingOf(s.spacing) };
+}
+
+export const settings = $state<Settings>(stored());
 
 export function saveSettings(): void {
   save('settings', $state.snapshot(settings));
@@ -44,4 +66,13 @@ export function applyTheme(): void {
   const dark = settings.theme === 'dark' || (settings.theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#120d24');
+}
+
+/** Puts the display choices on <html> (data-text, data-density), where tokens.css turns them into
+ *  sizes for every screen at once. On a screen read from across the room (farRead) the text stays
+ *  Normal. App.svelte calls it whenever the screen or the settings change; index.html does the same
+ *  from storage before the first paint. */
+export function applyDisplay(path: string, root: { dataset: DOMStringMap } = document.documentElement): void {
+  root.dataset.text = farRead(path) ? 'normal' : textSizeOf(settings.textSize);
+  root.dataset.density = spacingOf(settings.spacing);
 }

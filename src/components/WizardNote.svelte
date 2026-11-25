@@ -15,6 +15,7 @@
   .wizard-note { margin: 0; color: var(--text-faint); font-size: 0.85rem; line-height: 1.35; }
   .got {
     padding: var(--s-1) var(--s-1); margin-left: var(--s-1); border: 0; background: none; color: var(--text-dim);
+    min-height: 27.5px; /* its height at Normal: smaller text or Compact never shrinks it */
     font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; white-space: nowrap;
   }
 </style>

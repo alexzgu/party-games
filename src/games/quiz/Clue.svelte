@@ -143,9 +143,9 @@
   .where { display: flex; align-items: baseline; justify-content: center; gap: var(--s-3); min-width: 0; padding-right: 48px; }
   .cat {
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); font-size: clamp(0.9rem, 2.4vmin, 1.8rem);
+    font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); font-size: clamp(0.9rem, calc(2.4vmin * var(--text-scale)), 1.8rem);
   }
-  .val { flex: none; font-family: var(--font-display); font-weight: 800; color: var(--accent); font-size: clamp(1.3rem, 3.6vmin, 2.8rem); }
+  .val { flex: none; font-family: var(--font-display); font-weight: 800; color: var(--accent); font-size: clamp(1.3rem, calc(3.6vmin * var(--text-scale)), 2.8rem); }
 
   .panel {
     flex: 1; min-height: 160px; display: flex; flex-direction: column; gap: var(--s-3);
@@ -155,7 +155,7 @@
     box-shadow: var(--shadow);
   }
   .text { flex: 1; min-height: 0; }
-  .small-clue { color: var(--text-dim); font-weight: 600; text-align: center; font-size: clamp(0.95rem, 2.6vmin, 1.9rem); line-height: 1.3; }
+  .small-clue { color: var(--text-dim); font-weight: 600; text-align: center; font-size: clamp(0.95rem, calc(2.6vmin * var(--text-scale)), 1.9rem); line-height: 1.3; }
   .answer { flex: 1; min-height: 0; color: var(--accent); }
 
   .ask { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); font-weight: 700; text-align: center; }
@@ -167,8 +167,8 @@
     transition: transform var(--dur-fast) var(--ease-out);
   }
   .team:active:not(:disabled) { transform: scale(0.96); }
-  .tname { font-family: var(--font-display); font-weight: 800; font-size: clamp(0.92rem, 2.8vmin, 2.2rem); line-height: 1.1; overflow-wrap: break-word; hyphens: auto; text-align: center; min-width: 0; max-width: 100%; }
-  .pts { font-weight: 700; color: var(--c-good); font-size: clamp(0.85rem, 2vmin, 1.4rem); }
+  .tname { font-family: var(--font-display); font-weight: 800; font-size: clamp(0.92rem, calc(2.8vmin * var(--text-scale)), 2.2rem); line-height: 1.1; overflow-wrap: break-word; hyphens: auto; text-align: center; min-width: 0; max-width: 100%; }
+  .pts { font-weight: 700; color: var(--c-good); font-size: clamp(0.85rem, calc(2vmin * var(--text-scale)), 1.4rem); }
   /* Four teams across a narrow phone: tighter boxes and type, so a name breaks between words. */
   @media (max-width: 420px) {
     .four .team { padding: var(--s-2) 4px; }
@@ -204,7 +204,7 @@
   }
   .cell { display: flex; min-width: 0; border-radius: var(--r-sm); border: 2px solid var(--team); background: color-mix(in srgb, var(--team) 14%, var(--surface)); overflow: hidden; }
   .got {
-    flex: 1; min-width: 0; min-height: 48px; padding: 4px 8px; border: 0; background: none; color: var(--text);
+    flex: 1; min-width: 0; min-height: var(--tap-sm); padding: 4px 8px; border: 0; background: none; color: var(--text);
     display: flex; align-items: center; gap: 6px; text-align: left;
   }
   .got:active:not(:disabled) { background: color-mix(in srgb, var(--team) 30%, transparent); }
@@ -212,7 +212,7 @@
     flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
     font-size: 0.7rem; font-weight: 800; background: var(--team); color: var(--bg);
   }
-  .cname { min-width: 0; font-weight: 800; font-size: clamp(0.85rem, 1.9vmin, 1.25rem); line-height: 1.1; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .cname { min-width: 0; font-weight: 800; font-size: clamp(0.85rem, calc(1.9vmin * var(--text-scale)), 1.25rem); line-height: 1.1; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .x {
     flex: none; width: 44px; border: 0; border-left: 1.5px solid color-mix(in srgb, var(--team) 50%, transparent);
     background: var(--surface); color: var(--text-faint); font-weight: 800; font-size: 1.05rem;
@@ -241,7 +241,7 @@
     .picks { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow-y: auto; margin-top: auto; }
     .actions { margin-bottom: auto; width: auto; }
     .teams { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
-    .team { min-height: 56px; padding: 4px; }
+    .team { min-height: var(--tap); padding: 4px; }
     .cells { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
     .cells.pen { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
     .got { min-height: 44px; }

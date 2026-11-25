@@ -176,7 +176,7 @@
   .dropdown.open { z-index: var(--z-raised); }
   /* A control, not a heading: a bordered field with an arrow, tinted with its colour. */
   .box {
-    width: 100%; min-height: 52px; display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-3) 0 var(--s-4);
+    width: 100%; min-height: var(--tap-md); display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-3) 0 var(--s-4);
     border-radius: var(--r-md); border: 1.5px solid var(--tint); color: var(--text); text-align: left;
     background: color-mix(in srgb, var(--tint) 16%, var(--surface)); font-weight: 700; font-size: 1.05rem;
   }
@@ -196,12 +196,12 @@
     animation: drop var(--dur) var(--ease-out) both; transform-origin: top;
   }
   @keyframes drop { from { opacity: 0; transform: scaleY(0.6); } }
-  input { flex: none; min-height: 48px; }
+  input { flex: none; min-height: var(--tap-sm); }
   .list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
   /* An option's own colour only (none: no mark), never the box's. */
   .row { --tint: initial; display: flex; align-items: center; gap: var(--s-1); border-radius: var(--r-sm); border-left: 4px solid var(--tint, transparent); }
   [role='option'] {
-    flex: 1; min-width: 0; min-height: 48px; display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-3); border-radius: var(--r-sm);
+    flex: 1; min-width: 0; min-height: var(--tap-sm); display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-3); border-radius: var(--r-sm);
     font-weight: 700; cursor: pointer;
   }
   [role='option']:focus { outline: none; }

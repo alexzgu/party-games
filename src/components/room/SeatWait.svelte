@@ -29,7 +29,7 @@
     position: fixed; inset: 0; z-index: var(--z-raised); display: grid; place-content: center; justify-items: center;
     gap: var(--s-4); padding: var(--s-6) var(--s-4); text-align: center; background: var(--bg);
   }
-  .emoji { font-size: min(40vw, 12rem); line-height: 1; }
+  .emoji { font-size: min(calc(40vw * var(--text-scale)), 12rem); line-height: 1; }
   .words { margin: 0; max-width: 14ch; font-family: var(--font-display); font-weight: 800; font-size: 2.6rem; line-height: 1.1; }
   p { margin: 0; }
 </style>

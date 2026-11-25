@@ -13,13 +13,24 @@
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>Party Box</title>
     <script>
-      // Puts the saved colour scheme on <html> before the first paint; applyTheme() takes over once the app loads.
-      try {
-        var t = (JSON.parse(localStorage.getItem('hr:settings') || '{}') || {}).theme || 'dark';
-        if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
-        if (t === 'light') document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f5f3fa');
-      } catch (e) {}
+      // Puts the saved colour scheme and display choices on <html> before the first paint;
+      // applyTheme() and applyDisplay() take over once the app loads. Anything unknown is Normal,
+      // and a screen read from across the room (the pattern in src/lib/farRead.ts) keeps Normal text.
+      (function () {
+        var root = document.documentElement, s = {};
+        try { s = JSON.parse(localStorage.getItem('hr:settings') || '{}'); } catch (e) {}
+        if (!s || typeof s !== 'object') s = {};
+        var path = location.hash.replace(/^#/, '').split('?')[0] || '/';
+        var far = /^\/(?:[a-z]+\/host|quiz\/play|forehead\/play)(?:\/|$)/.test(path);
+        root.dataset.text = !far && (s.textSize === 'small' || s.textSize === 'large') ? s.textSize : 'normal';
+        root.dataset.density = s.spacing === 'compact' ? 'compact' : 'normal';
+        try {
+          var t = s.theme || 'dark';
+          if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          root.dataset.theme = t === 'light' ? 'light' : 'dark';
+          if (t === 'light') document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f5f3fa');
+        } catch (e) {}
+      })();
     </script>
     <style>
       /* Paint the background before any JS or CSS bundle, in the chosen scheme (match --bg in tokens.css). */

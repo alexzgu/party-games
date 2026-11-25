@@ -189,7 +189,7 @@
   }
   /* A phone on its side: half a tile is enough before the whole screen scrolls. */
   @media (orientation: landscape) and (max-height: 500px) {
-    .listing { min-height: 64px; }
+    .listing { min-height: var(--tap-lg); }
   }
   @media (prefers-reduced-motion: reduce) {
     .fold, .fold-toggle svg { transition: none; }

@@ -207,7 +207,7 @@
   .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   .prompts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
   .row {
-    width: 100%; min-height: 52px; text-align: left; padding: var(--s-2) var(--s-4); border-radius: var(--r-md);
+    width: 100%; min-height: var(--tap-md); text-align: left; padding: var(--s-2) var(--s-4); border-radius: var(--r-md);
     border: 1.5px solid var(--line); background: var(--surface); font-weight: 700; font-size: 1.05rem;
   }
   .row.fresh { animation: fresh 1.6s var(--ease-out); }

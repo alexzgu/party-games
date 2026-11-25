@@ -78,7 +78,7 @@
   button:active { transform: scale(0.97); }
   .name {
     max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font-weight: 700; font-size: clamp(0.8rem, 1.9vmin, 1.5rem); color: var(--text-dim);
+    font-weight: 700; font-size: clamp(0.8rem, calc(1.9vmin * var(--text-scale)), 1.5rem); color: var(--text-dim);
   }
   /* Big boxes (up to four teams) give a long name a second line instead of cutting it. */
   .big .name { white-space: normal; text-overflow: clip; overflow-wrap: break-word; line-height: 1.1; text-align: center;
@@ -86,15 +86,15 @@
   .crown { margin-right: 2px; font-size: 0.85em; }
   .score {
     font-family: var(--font-display); font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums;
-    font-size: clamp(1.35rem, 5vmin, 3.6rem); letter-spacing: -0.02em;
+    font-size: clamp(1.35rem, calc(5vmin * var(--text-scale)), 3.6rem); letter-spacing: -0.02em;
   }
   .score.neg { color: var(--c-bad); }
 
   /* Compact chips (five teams or more). */
   .mid .strip, .many .strip { gap: 6px; }
-  .mid button, .many button { min-height: 48px; padding: 3px 6px; border-width: 1.5px; border-top-width: 4px; border-radius: var(--r-sm); }
-  .mid .name, .many .name { font-size: clamp(0.72rem, 1.6vmin, 1.05rem); }
-  .mid .score, .many .score { font-size: clamp(1.05rem, 3vmin, 2rem); }
+  .mid button, .many button { min-height: var(--tap-sm); padding: 3px 6px; border-width: 1.5px; border-top-width: 4px; border-radius: var(--r-sm); }
+  .mid .name, .many .name { font-size: clamp(0.72rem, calc(1.6vmin * var(--text-scale)), 1.05rem); }
+  .mid .score, .many .score { font-size: clamp(1.05rem, calc(3vmin * var(--text-scale)), 2rem); }
   .mid .strip { grid-template-columns: repeat(var(--phone), minmax(0, 1fr)); }
   .many .strip {
     display: flex; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none;
@@ -103,7 +103,7 @@
   .many li { flex: none; width: 96px; scroll-snap-align: start; }
   .many li.pinned { display: none; }
   .lead {
-    position: relative; flex: none; width: 104px; color: var(--text); min-height: 48px; margin: 0; padding: 3px 6px; border-radius: var(--r-sm);
+    position: relative; flex: none; width: 104px; color: var(--text); min-height: var(--tap-sm); margin: 0; padding: 3px 6px; border-radius: var(--r-sm);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     background: color-mix(in srgb, var(--team) 22%, var(--bg-raised)); border: 2px solid var(--team);
   }
@@ -118,7 +118,7 @@
 
   .float {
     position: absolute; left: 50%; top: 0; translate: -50% 0; pointer-events: none;
-    font-family: var(--font-display); font-weight: 800; font-size: clamp(1.3rem, 4.5vmin, 3rem); color: var(--c-good);
+    font-family: var(--font-display); font-weight: 800; font-size: clamp(1.3rem, calc(4.5vmin * var(--text-scale)), 3rem); color: var(--c-good);
     animation: float 1.4s var(--ease-out) both;
   }
   .float.down { color: var(--c-bad); }
@@ -132,7 +132,7 @@
     top: 50%; translate: -50% -50%; padding: 0 8px; border-radius: var(--r-pill);
     background: var(--bg-raised); font-size: 1.3rem; animation-name: badge;
   }
-  @media (min-width: 700px) { .many .float { top: 0; translate: -50% 0; padding: 0; background: none; animation-name: float; font-size: clamp(1.3rem, 4.5vmin, 3rem); } }
+  @media (min-width: 700px) { .many .float { top: 0; translate: -50% 0; padding: 0; background: none; animation-name: float; font-size: clamp(1.3rem, calc(4.5vmin * var(--text-scale)), 3rem); } }
   @keyframes badge {
     from { opacity: 0; transform: scale(0.6); }
     20% { opacity: 1; transform: scale(1.1); }
@@ -148,7 +148,7 @@
       display: grid; overflow: visible; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(48px, 1fr); gap: 6px;
     }
     .big .strip { grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(60px, 1fr); }
-    .big .score { font-size: clamp(1.35rem, 8dvh, 2.4rem); }
+    .big .score { font-size: clamp(1.35rem, calc(8dvh * var(--text-scale)), 2.4rem); }
     .many li { width: auto; }
     .many li.pinned { display: block; }
     .lead { display: none; }

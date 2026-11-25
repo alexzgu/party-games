@@ -27,7 +27,7 @@
 <style>
   .show { display: flex; flex-direction: column; gap: var(--s-3); }
   .step { color: var(--c-gold); font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.82rem; }
-  .prompt { font-size: clamp(1.25rem, 5.6vw, 1.7rem); line-height: 1.15; }
+  .prompt { font-size: clamp(1.25rem, calc(5.6vw * var(--text-scale)), 1.7rem); line-height: 1.15; }
   .side {
     list-style: none; margin: 0; padding: var(--s-3) var(--s-4); min-height: 104px; display: flex; flex-direction: column; justify-content: center; gap: var(--s-2);
     border-radius: var(--r-lg); background: var(--surface); border: 2.5px solid var(--line-strong);

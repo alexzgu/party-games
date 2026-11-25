@@ -121,11 +121,11 @@
   h2 { overflow-wrap: anywhere; }
   .question { font-size: 1.3rem; line-height: 1.25; }
   .cat { color: var(--accent); font: 800 0.95rem / 1.2 var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; }
-  .category { margin-block: var(--s-5); background: none; color: var(--accent); text-align: center; overflow-wrap: anywhere; font: 800 clamp(2.2rem, 11vw, 3.4rem) / 1.1 var(--font-display); }
+  .category { margin-block: var(--s-5); background: none; color: var(--accent); text-align: center; overflow-wrap: anywhere; font: 800 clamp(2.2rem, calc(11vw * var(--text-scale)), 3.4rem) / 1.1 var(--font-display); }
   .center { text-align: center; }
   .hint { color: var(--text-dim); text-align: center; }
   .verdict { font: 800 1.2rem / 1.3 var(--font-display); overflow-wrap: anywhere; }
   .verdict b { font-family: inherit; }
   .win { color: var(--accent); }
-  .score { color: var(--accent); text-align: center; font-size: clamp(2rem, 10vw, 3.2rem); }
+  .score { color: var(--accent); text-align: center; font-size: clamp(2rem, calc(10vw * var(--text-scale)), 3.2rem); }
 </style>

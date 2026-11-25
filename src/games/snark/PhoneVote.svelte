@@ -55,7 +55,7 @@
 <style>
   .vote { display: flex; flex-direction: column; gap: var(--s-3); }
   .step { color: var(--text-faint); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.82rem; }
-  .prompt { font-size: clamp(1.3rem, 6vw, 1.8rem); line-height: 1.15; }
+  .prompt { font-size: clamp(1.3rem, calc(6vw * var(--text-scale)), 1.8rem); line-height: 1.15; }
   .choices { display: flex; flex-direction: column; gap: var(--s-3); }
   .choice {
     position: relative; min-height: 104px; padding: var(--s-4) var(--s-5); border-radius: var(--r-lg); text-align: center;

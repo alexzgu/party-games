@@ -60,7 +60,7 @@
   .form { display: flex; flex-direction: column; gap: var(--s-2); }
   .word { font-weight: 800; font-family: var(--font-display); font-size: 1.15rem; }
   .banned { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
-  .banned input { min-height: 48px; padding: var(--s-2) var(--s-3); }
+  .banned input { min-height: var(--tap-sm); padding: var(--s-2) var(--s-3); }
   .err { color: var(--bad-ink); font-weight: 600; font-size: 0.92rem; }
   .buttons { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
 </style>

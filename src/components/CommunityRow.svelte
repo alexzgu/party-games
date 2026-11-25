@@ -23,7 +23,7 @@
 
 <style>
   .row {
-    width: 100%; display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); min-height: 68px;
+    width: 100%; display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); min-height: var(--tap-xl);
     border: 0; border-radius: var(--r-md); background: var(--surface); text-align: left; color: var(--text);
     transition: transform var(--dur-fast) var(--ease-out);
   }

@@ -46,7 +46,7 @@
 <div class="feed"><Feed feed={v.feed ?? []} {me} /></div>
 
 <style>
-  .pic { width: min(100%, max(160px, 100dvh - 400px)); margin-inline: auto; }
+  .pic { width: min(100%, max(160px, 100dvh - 400px * var(--chrome-scale))); margin-inline: auto; }
   form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2); align-items: center; }
   input { min-height: 44px; min-width: 0; }
   .close { color: var(--c-pass); font-weight: 800; text-align: center; }

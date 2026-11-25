@@ -141,7 +141,7 @@
       grid-template-areas: 'head head' 'side main' 'side go';
       padding-top: calc(var(--safe-top) + var(--s-3)); padding-bottom: calc(var(--safe-bottom) + var(--s-2));
     }
-    .split header { grid-area: head; position: static; height: auto; min-height: 48px; margin: 0; padding: 0; background: none; animation: none; }
+    .split header { grid-area: head; position: static; height: auto; min-height: var(--tap-sm); margin: 0; padding: 0; background: none; animation: none; }
     .split .body { display: contents; }
     .split .actions { grid-area: go; position: static; margin: 0; padding: 0; background: none; }
     .split .actions::before { content: none; }

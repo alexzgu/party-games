@@ -107,7 +107,7 @@
 
 <style>
   /* Small enough on a short phone that the name and Submit stay on screen. */
-  canvas { width: min(100%, max(200px, 100dvh - var(--draw-chrome, 350px))); margin-inline: auto; aspect-ratio: 1; display: block; background: var(--ink-paper); border-radius: var(--r-md); touch-action: none; }
+  canvas { width: min(100%, max(200px, 100dvh - var(--draw-chrome, 350px) * var(--chrome-scale))); margin-inline: auto; aspect-ratio: 1; display: block; background: var(--ink-paper); border-radius: var(--r-md); touch-action: none; }
   .palette, .tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-1); }
   .palette { grid-template-columns: repeat(8, minmax(0, 1fr)); }
   .tools.eraser { grid-template-columns: repeat(5, minmax(0, 1fr)); }

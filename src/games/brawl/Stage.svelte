@@ -102,7 +102,7 @@
 <style>
   .faceoff { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); width: min(100%, 880px); margin-inline: auto; }
   .side, .fighter { display: grid; align-content: start; gap: var(--s-2); text-align: center; overflow-wrap: anywhere; }
-  .fighter strong { font: 800 clamp(1rem, 3vw, 2rem)/1.1 var(--font-display); }
+  .fighter strong { font: 800 clamp(1rem, calc(3vw * var(--text-scale)), 2rem)/1.1 var(--font-display); }
   .blank { display: grid; place-items: center; aspect-ratio: 1; border: 2px dashed var(--line-strong); border-radius: var(--r-md); color: var(--text-dim); }
   .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(125px, 100%), 1fr)); gap: var(--s-3); }
   .gallery > * { max-width: 220px; }

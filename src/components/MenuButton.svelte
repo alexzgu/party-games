@@ -128,7 +128,7 @@
   .down { top: calc(100% + var(--s-2)); transform-origin: 50% calc(-1 * var(--s-2) - 22px); }
   @keyframes grow { from { opacity: 0; transform: scale(0.4); } }
   .item {
-    min-height: 48px; display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-3);
+    min-height: var(--tap-sm); display: flex; align-items: center; gap: var(--s-3); padding: 0 var(--s-3);
     border: 0; border-radius: var(--r-sm); background: transparent; color: var(--text); text-align: left;
     font-family: var(--font-display); font-weight: 700; font-size: 1rem;
   }

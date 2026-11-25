@@ -252,16 +252,16 @@
   main { flex: 1; width: 100%; display: grid; justify-items: center; align-content: center; padding: var(--s-4) 0; }
   .progress, .turn, .result, .scores, .actions { width: 100%; display: grid; gap: var(--s-3); min-width: 0; }
   .progress, .scores { max-width: 820px; }
-  .result { max-width: 860px; --answer-size: clamp(2.7rem, 8vw, 6rem); }
-  .headline h2 { font-size: clamp(1.6rem, 4vw, 3.7rem); overflow-wrap: anywhere; line-height: 1.08; }
+  .result { max-width: 860px; --answer-size: clamp(2.7rem, calc(8vw * var(--text-scale)), 6rem); }
+  .headline h2 { font-size: clamp(1.6rem, calc(4vw * var(--text-scale)), 3.7rem); overflow-wrap: anywhere; line-height: 1.08; }
   .progress ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--s-2); }
   .progress li { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-3); border: 2px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
   .progress li b { flex: 1; overflow-wrap: anywhere; }
   .progress li span { color: var(--text-dim); }
   .progress li.ready { border-color: var(--accent); }
   .turn { align-self: start; }
-  .turn-body { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; gap: var(--s-4); --clue-size: clamp(1.65rem, 3.1vw, 3.7rem); --clues-height: 64dvh; --guesses-height: 56dvh; --guess-size: clamp(1rem, 1.55vw, 1.55rem); }
-  .scores { --standing-size: clamp(1rem, 2vw, 1.35rem); }
+  .turn-body { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; gap: var(--s-4); --clue-size: clamp(1.65rem, calc(3.1vw * var(--text-scale)), 3.7rem); --clues-height: 64dvh; --guesses-height: 56dvh; --guess-size: clamp(1rem, calc(1.55vw * var(--text-scale)), 1.55rem); }
+  .scores { --standing-size: clamp(1rem, calc(2vw * var(--text-scale)), 1.35rem); }
   .scores .controls { flex-wrap: nowrap; }
   .paused { position: fixed; inset: 0; z-index: var(--z-overlay); display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 85%, transparent); }
   .paused > div { display: grid; gap: var(--s-3); text-align: center; padding: var(--s-5); background: var(--surface); border: 2px solid var(--line); border-radius: var(--r-lg); }

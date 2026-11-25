@@ -118,7 +118,7 @@
     font-size: 0.85rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim);
   }
   h1 {
-    font-size: clamp(2.8rem, 14vw, 4.4rem); line-height: 0.95; color: var(--team); overflow-wrap: anywhere;
+    font-size: clamp(2.8rem, calc(14vw * var(--text-scale)), 4.4rem); line-height: 0.95; color: var(--team); overflow-wrap: anywhere;
     text-shadow: 0 0 36px color-mix(in srgb, var(--team) calc(55% * var(--glow)), transparent);
   }
   .versus { font-size: 1.15rem; color: var(--text-dim); font-weight: 600; }
@@ -146,6 +146,6 @@
     .top { grid-column: 1; grid-row: 2 / 4; align-self: center; }
     .steps { grid-column: 2; grid-row: 2; align-self: center; }
     .go { grid-column: 2; grid-row: 3; }
-    h1 { font-size: clamp(2.4rem, 7vw, 3.6rem); }
+    h1 { font-size: clamp(2.4rem, calc(7vw * var(--text-scale)), 3.6rem); }
   }
 </style>

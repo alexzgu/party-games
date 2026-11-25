@@ -37,13 +37,13 @@
     font: 700 1.05rem / 1.3 var(--font-display);
     transition: opacity var(--dur) ease, border-color var(--dur) ease, transform var(--dur) var(--ease-out);
   }
-  .lg li { font-size: clamp(1.05rem, 2.2vw, 2rem); }
+  .lg li { font-size: clamp(1.05rem, calc(2.2vw * var(--text-scale)), 2rem); }
   .lg { grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
   .dimmed li:not(.on) { opacity: 0.55; }
   li.on { border-color: var(--accent); transform: translateY(-2px); }
   li.won { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent); }
   .by { font: 600 0.95rem / 1.2 var(--font-body); color: var(--text-dim); }
-  .lg .by { font-size: clamp(0.9rem, 1.4vw, 1.25rem); }
+  .lg .by { font-size: clamp(0.9rem, calc(1.4vw * var(--text-scale)), 1.25rem); }
   .by b { color: var(--accent); }
   @media (prefers-reduced-motion: reduce) { li.on { transform: none; } }
 </style>

@@ -14,7 +14,7 @@
 </header>
 
 <style>
-  .bar { display: flex; align-items: center; gap: var(--s-2); min-height: 52px; }
+  .bar { display: flex; align-items: center; gap: var(--s-2); min-height: var(--tap-md); }
   .round {
     flex: none; width: 48px; height: 48px; display: grid; place-items: center;
     background: var(--surface); border: 0; border-radius: var(--r-pill); color: var(--text);

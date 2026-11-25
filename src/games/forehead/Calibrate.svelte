@@ -172,7 +172,7 @@
   .live {
     min-height: 100dvh; display: grid; place-content: center; text-align: center; gap: var(--s-3); padding: var(--s-4);
   }
-  .cue { font-family: var(--font-display); font-size: clamp(2.5rem, 14vw, 6rem); font-weight: 800; margin: 0; }
+  .cue { font-family: var(--font-display); font-size: clamp(2.5rem, calc(14vw * var(--text-scale)), 6rem); font-weight: 800; margin: 0; }
   .cue.down { color: var(--c-good); }
   .cue.up { color: var(--c-pass); }
   .tally { font-size: 1.4rem; font-weight: 700; margin: 0; }

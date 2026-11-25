@@ -307,7 +307,7 @@
   .tip { margin: 0; color: var(--text-faint); font-size: 0.8rem; }
   .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   .items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
-  .item { width: 100%; min-height: 56px; text-align: left; padding: var(--s-2) var(--s-4); border-radius: var(--r-md); border: 1.5px solid var(--line); background: var(--surface); font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+  .item { width: 100%; min-height: var(--tap); text-align: left; padding: var(--s-2) var(--s-4); border-radius: var(--r-md); border: 1.5px solid var(--line); background: var(--surface); font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
   .item:active { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
   .form { display: flex; flex-direction: column; gap: var(--s-2); }
   .form p { margin-bottom: var(--s-2); }

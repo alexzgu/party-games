@@ -98,13 +98,14 @@
     background: var(--bg-sunk); border: 1.5px solid var(--line); border-radius: var(--r-pill);
   }
   .search:focus-within { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
-  .search input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0; color: var(--text); font: inherit; font-size: 1rem; }
+  .search input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0; color: var(--text); font: inherit; font-size: max(16px, 1rem); }
   .search input::-webkit-search-cancel-button { display: none; }
   .count { flex: none; font-size: 0.8rem; color: var(--text-faint); }
   .clear { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; color: var(--text-dim); background: var(--overlay); font-size: 0.8rem; }
   .sorts { display: flex; gap: 6px; flex-wrap: wrap; }
   .sorts button {
     padding: 7px 14px; border-radius: var(--r-pill); font-size: 0.88rem; font-weight: 600;
+    min-height: 37.6px; /* its height at Normal: smaller text or Compact never shrinks it */
     color: var(--text-dim); background: var(--surface); border: 1.5px solid var(--line);
   }
   .sorts button.on { color: var(--text); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }

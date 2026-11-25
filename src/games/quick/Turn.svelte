@@ -124,7 +124,7 @@
     -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
   }
   .turn.blur { filter: blur(18px); pointer-events: none; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: 48px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: var(--tap-sm); }
   .who { display: flex; align-items: center; gap: var(--s-2); font-weight: 800; font-size: 1.15rem; min-width: 0; }
   .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .badge {

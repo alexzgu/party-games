@@ -43,7 +43,7 @@
     <button class="gear" aria-label="History" onclick={() => { unlockAudio(); go('/history'); }} data-tip="Finished rounds and games on this device, with scores">
       <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 4v4h4M12 7.5V12l3 2"/></svg>
     </button>
-    <button class="gear" aria-label="Settings" onclick={() => { unlockAudio(); go('/settings'); }} data-tip="Your username, sound, colors, tilt and the wizard">
+    <button class="gear" aria-label="Settings" onclick={() => { unlockAudio(); go('/settings'); }} data-tip="Your username, sound, colors, text size, tilt and the wizard">
       <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1c.5.4 1.1.7 1.7 1l.4 2.5h4l.4-2.5c.6-.3 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
     </button>
     </div>

@@ -13,6 +13,7 @@
   import Tooltip from './components/Tooltip.svelte';
   import ShareNote from './components/ShareNote.svelte';
   import { acceptInvite } from './lib/join';
+  import { applyDisplay } from './lib/settings.svelte';
 
   // Games load on demand; the service worker has them cached, so this is instant offline too.
   const games: Record<string, () => Promise<{ default: any }>> = {
@@ -49,6 +50,10 @@
 
   // The Community page, while the library is on (a wizard server); otherwise its address shows Home.
   const community = communityGames();
+
+  // Text size and spacing follow the settings at once, and the text is Normal on a screen the
+  // room reads from across it (lib/farRead.ts), back to the setting when it is left.
+  $effect(() => applyDisplay(route.path));
 
   // The page glow and every default accent follow the game on screen (Community: the open tab's;
   // the main menu and the Games page: the default).

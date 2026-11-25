@@ -88,7 +88,7 @@
 <style>
   .hero { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-2) 0; }
   .big {
-    font-family: var(--font-display); font-weight: 800; font-size: clamp(5rem, 26vw, 7.5rem); line-height: 0.9;
+    font-family: var(--font-display); font-weight: 800; font-size: clamp(5rem, calc(26vw * var(--text-scale)), 7.5rem); line-height: 0.9;
     color: var(--accent); letter-spacing: -0.05em; font-variant-numeric: tabular-nums;
     text-shadow: 0 10px 40px color-mix(in srgb, var(--accent) calc(40% * var(--glow)), transparent);
   }

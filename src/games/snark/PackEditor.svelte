@@ -258,7 +258,7 @@
   .tip { margin: 0; color: var(--text-faint); font-size: 0.8rem; }
   .none { margin: 0 0 var(--s-3); color: var(--text-dim); }
   .prompts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
-  .prompt { width: 100%; min-height: 56px; text-align: left; padding: var(--s-2) var(--s-4); border-radius: var(--r-md); border: 1.5px solid var(--line); background: var(--surface); font-weight: 600; line-height: 1.3; }
+  .prompt { width: 100%; min-height: var(--tap); text-align: left; padding: var(--s-2) var(--s-4); border-radius: var(--r-md); border: 1.5px solid var(--line); background: var(--surface); font-weight: 600; line-height: 1.3; }
   .stock { display: block; margin-top: 2px; font-size: 0.85rem; font-weight: 500; color: var(--text-faint); }
   .fill { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); border-radius: var(--r-md); border: 1.5px dashed var(--line-strong); }
   .fill p { margin: 0; }

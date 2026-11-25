@@ -141,7 +141,7 @@
   h2 { overflow-wrap: anywhere; }
   .question { font-size: 1.3rem; line-height: 1.25; }
   .cat { color: var(--accent); font: 800 0.95rem / 1.2 var(--font-display); text-transform: uppercase; letter-spacing: 0.04em; }
-  .category { color: var(--accent); text-align: center; overflow-wrap: anywhere; font: 800 clamp(2.2rem, 11vw, 3.4rem) / 1.1 var(--font-display); margin-block: var(--s-5); }
+  .category { color: var(--accent); text-align: center; overflow-wrap: anywhere; font: 800 clamp(2.2rem, calc(11vw * var(--text-scale)), 3.4rem) / 1.1 var(--font-display); margin-block: var(--s-5); }
   .center { text-align: center; }
   .answer-line { overflow-wrap: anywhere; }
   .win { color: var(--accent); }
