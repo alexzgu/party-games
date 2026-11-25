@@ -13,11 +13,15 @@ import * as L from './logic';
 import * as T from './telephone';
 import * as G from './guess';
 import { latinSquare } from './square';
-import { SPARE_IDEAS, SPARE_WORDS, deal } from './spare';
+import { dealItems, roomItems, type RoomItems } from './room';
+import { consent, stillAsked } from '../../lib/lend';
 import { apply } from './live';
 import { artIds, inkId, view } from './view';
 import { ink, readToHost, type Ink } from './protocol';
 import * as store from './store';
+
+/** The room's words or ideas for `players` players: the picks', and the packs that would lend when they are too few (room.ts). */
+export const content = (s: Settings, players: number): RoomItems => roomItems(sketchPacks(), s, players);
 
 /** Live ink is saved at most this often (a reload of the host gets the rest from the drawer's phone). */
 const SAVE_INK_MS = 1000;
@@ -26,6 +30,10 @@ class Session {
   game = $state.raw<Game | null>(null);
   art = $state.raw<Record<string, Drawing>>({});
   now = $state(Date.now());
+  /** The question about lending packs the host said yes to in this room (its key), or ''. */
+  agreed = $state('');
+  /** The question about lending packs put to the host after Start (its key) while it still stands, or ''. */
+  asked = $state('');
   /** The number of the last live ink applied, per drawing. */
   private seq = new Map<string, number>();
   private unsaved = false;
@@ -75,6 +83,8 @@ class Session {
     const { game: old, room } = store.loadRoom();
     this.art = old ? store.loadArt(room) : {};
     this.now = Date.now();
+    this.agreed = '';
+    this.asked = '';
     this.game = old ? L.afterReload(old, this.now) : newGame(newPid(), newCode(), store.loadSettings());
     this.link.open(this.game.code, room);
     this.tag = room;
@@ -142,7 +152,9 @@ class Session {
   }
 
   private history(g: Game, finished: boolean) {
-    const packs = sketchPacks().filter((p) => g.settings.packs.includes(p.id)).map((p) => p.name);
+    const all = sketchPacks();
+    const lent = all.filter((p) => g.lent?.includes(p.id)).map((p) => p.name);
+    const packs = [...content(g.settings, 0).packs.map((p) => p.name), ...lent];
     if (g.tel) {
       if (finished) record({ game: 'sketch', title: `Telephone · ${g.tel.order.length} chains`, scores: [], packs, details: T.chainLines(g.tel) });
       return;
@@ -158,6 +170,7 @@ class Session {
     const ends = (x: Game | null) => x?.phase === 'over' || x?.phase === 'album';
     const finished = ends(next) && !ends(this.game);
     this.game = next;
+    this.asked = stillAsked(this.asked, next.phase === 'lobby' ? content(next.settings, active(next).length).ask : null);
     store.saveGame(next, this.tag);
     if (finished) this.history(next, true);
     // Draw & guess shows a turn's drawing until the reveal ends; then it is dropped.
@@ -175,18 +188,30 @@ class Session {
     if (this.unsaved && this.now - this.savedAt >= SAVE_INK_MS) this.saveArt();
   }
 
-  start() {
+  /**
+   * Starts the game, unless other packs would lend and the host has not said yes to that question
+   * (`yes` is its key, from the popup): then nothing starts and the question is put to the host.
+   */
+  start(yes = '') {
     const g = this.game;
-    if (!g || !L.canStart(g)) return;
-    const all = sketchPacks();
-    const chosen = all.filter((p) => g.settings.packs.includes(p.id));
-    const packs = chosen.length ? chosen : all;
+    const c = g && content(g.settings, active(g).length);
+    if (!g || !c || !L.canStart(g) || c.problem) return;
+    const agreed = consent(c.ask, this.agreed, yes);
+    if (agreed === null) {
+      this.asked = c.ask!.key;
+      return;
+    }
+    this.agreed = agreed;
     const order = active(g).map((p) => p.pid);
-    const now = Date.now();
+    const items = dealItems(c, !!c.ask, shuffle), now = Date.now();
+    const next = { ...g, lent: c.ask ? c.lent.map((p) => p.id) : undefined };
     this.commit(g.settings.mode === 'telephone'
-      ? T.startTelephone(g, order, latinSquare(order.length), deal(packs.flatMap((p) => p.ideas), SPARE_IDEAS, shuffle), now)
-      : G.startGuess(g, deal(packs.flatMap((p) => p.words), SPARE_WORDS, shuffle), now));
+      ? T.startTelephone(next, order, latinSquare(order.length), items, now)
+      : G.startGuess(next, items, now));
   }
+
+  /** The host closed the question without an answer. */
+  dismiss() { this.asked = ''; }
 
   settings(settings: Settings) {
     store.saveSettings(settings);
@@ -243,6 +268,8 @@ class Session {
     this.bots.close();
     clearInterval(this.timer);
     this.game = null;
+    this.agreed = '';
+    this.asked = '';
     this.art = {};
     this.seq.clear();
     store.saveGame(null, '');

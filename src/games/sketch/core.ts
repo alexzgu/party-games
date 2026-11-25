@@ -36,8 +36,10 @@ export type Telephone = {
   order: string[]; square: number[][]; step: number;
   /** `chains[chain][step]`, null until done. */
   chains: (Entry | null)[][];
-  /** Shuffled ideas the game fills empty lines with. */
+  /** Shuffled ideas the game fills empty lines with, not yet used. */
   ideas: string[];
+  /** The ideas used so far, least recently first: once `ideas` runs out they come round again (`nextItems`). */
+  dealt?: string[];
   /** The album page: which chain and which of its entries is shown. */
   page: { chain: number; entry: number };
 };
@@ -47,6 +49,8 @@ export type Guessing = {
   round: number; order: string[]; turn: number; drawer: string;
   /** Words not yet offered, shuffled; each offer takes three from the front. */
   pool: string[]; offer: string[]; word: string;
+  /** The words offered so far, least recently first: once `pool` runs out they come round again (`nextItems`). */
+  dealt?: string[];
   /** Letter places the hints show, in order; `shown` of them are shown now. */
   hints: number[]; shown: number;
   /** Who got it this turn, in order, and what each earned. */
@@ -69,6 +73,8 @@ export type Game = {
   /** Total ms on the current timer, for the ring. */
   total: number;
   tel?: Telephone; dg?: Guessing;
+  /** The packs lent to this game once the host said yes (ids, room.ts); none when the picks sufficed. */
+  lent?: string[];
   /** Until then (ms) phones are still reconnecting to a host that just reopened or changed broker:
    * nobody counts as away and "everyone present is done" ends nothing. */
   grace?: number;
@@ -94,3 +100,14 @@ export function enter(g: Game, phase: Phase, now: number, seconds?: number): Gam
 
 /** The first `n` items of a list, and the rest. */
 export const take = <T>(items: T[], n: number): [T[], T[]] => [items.slice(0, n), items.slice(n)];
+
+/**
+ * The next `n` of the room's items: the front of `pool` (not yet used); once it runs short, the
+ * room's own items used before (`dealt`, least recently first) come round again, never anything
+ * else. Returns them, the pool left and the items used, least recently first.
+ */
+export function nextItems(pool: string[], dealt: string[], n: number): { items: string[]; pool: string[]; dealt: string[] } {
+  const again = pool.length < n ? dealt.filter((x) => !pool.includes(x)) : [];
+  const [items, rest] = take([...pool, ...again], n);
+  return { items, pool: rest, dealt: [...(again.length ? [] : dealt), ...items] };
+}

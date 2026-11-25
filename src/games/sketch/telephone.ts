@@ -1,7 +1,6 @@
 // Telephone (Gartic Phone's normal mode): write, then draw what you were handed, then describe
 // the drawing you were handed, and so on, one chain per player; then the album.
-import { enter, isActive, type Entry, type Game, type Telephone } from './core';
-import { SPARE_IDEAS } from './spare';
+import { enter, isActive, nextItems, type Entry, type Game, type Telephone } from './core';
 
 export type StepKind = 'write' | 'draw' | 'describe';
 export const stepKind = (step: number): StepKind => step === 0 ? 'write' : step % 2 ? 'draw' : 'describe';
@@ -28,16 +27,22 @@ export function task(g: Game, pid: string) {
   };
 }
 
-/** The next dealt idea (packs, then spares; only if all are used does a spare come round again), marked as written by the game. */
-function idea(t: Telephone, by: string): [Entry, string[]] {
-  const [text = SPARE_IDEAS[t.step % SPARE_IDEAS.length], ...rest] = t.ideas;
-  return [{ kind: 'text', text, by, filled: true }, rest];
+/** An empty line's stand-in when the room has no idea at all. */
+export const NO_IDEA = 'Anything at all';
+
+/**
+ * The room's next idea, marked as written by the game: one not yet used, else (more blanks than
+ * the room counted on) the room's own ideas come round again, least recently used first.
+ */
+function idea(t: Telephone, by: string): [Entry, Pick<Telephone, 'ideas' | 'dealt'>] {
+  const { items: [text = NO_IDEA], pool: ideas, dealt } = nextItems(t.ideas, t.dealt ?? [], 1);
+  return [{ kind: 'text', text, by, filled: true }, { ideas, dealt }];
 }
 
-function put(g: Game, chain: number, entry: Entry, ideas = g.tel!.ideas): Game {
+function put(g: Game, chain: number, entry: Entry, ideas: Pick<Telephone, 'ideas' | 'dealt'> = g.tel!): Game {
   const t = g.tel!;
   const chains = t.chains.map((c, i) => i === chain ? c.map((e, s) => s === t.step ? entry : e) : c);
-  return { ...g, tel: { ...t, chains, ideas } };
+  return { ...g, tel: { ...t, chains, ideas: ideas.ideas, dealt: ideas.dealt } };
 }
 
 /** A line for a write or describe step; an empty one becomes a random idea. */

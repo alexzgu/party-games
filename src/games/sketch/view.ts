@@ -8,13 +8,18 @@ import { shape } from './hint';
 export type AlbumItem = { kind: 'text'; text: string; by: string; filled?: boolean } | { kind: 'drawing'; id: string | null; by: string };
 export type View = {
   mode: Mode; phase: Phase; at: number; left: number | null; total: number; paused: boolean;
-  players: Player[]; packs: string[];
+  players: Player[];
+  /** The room's picks and the packs lent to this game (ids), for the bots on the host screen. */
+  packs: string[];
   /** Telephone: the step (from 0) of how many, who plays and who is done. */
   step?: number; steps?: number; order?: string[]; done?: string[];
   /** Telephone: players still to finish this step who are here (online, in the room). */
   waiting?: number;
-  /** Telephone: this phone's job this step; `line` or `art` (null: left blank) is what it was handed. */
-  task?: { id: string; kind: StepKind; line?: string; art?: string | null };
+  /**
+   * Telephone: this phone's job this step; `line` or `art` (null: left blank) is what it was
+   * handed. A write step brings `ideas`, a few of the room's own for Suggest.
+   */
+  task?: { id: string; kind: StepKind; line?: string; art?: string | null; ideas?: string[] };
   /** Telephone: this phone already sent this step's entry. */
   sent?: boolean;
   album?: { chain: number; chains: number; entry: number; starter: string; items: AlbumItem[]; next?: string; end: boolean };
@@ -27,6 +32,17 @@ export type View = {
   /** Draw & guess: how many count as guessers this turn (all who got it, and the rest of the room online). */
   guessers?: number;
 };
+
+/**
+ * Ideas Suggest offers on a write step: a few of the room's own, a different few per seat, from
+ * the end of those not yet used (blank lines are filled from the front, the picks' first).
+ */
+export const SUGGESTIONS = 5;
+function suggestions(t: NonNullable<Game['tel']>, seat: number): string[] {
+  const room = [...[...t.ideas].reverse(), ...(t.dealt ?? [])];
+  const n = Math.min(SUGGESTIONS, room.length);
+  return Array.from({ length: n }, (_, i) => room[(seat * SUGGESTIONS + i) % room.length]);
+}
 
 export const inkId = (g: Game) => `${g.id}/${g.dg!.round}/${g.dg!.turn}`;
 
@@ -43,6 +59,7 @@ function telephone(g: Game, v: View, here: Set<string>, pid?: string) {
       v.sent = mine.done;
       const h = mine.handed;
       v.task = { id: mine.id, kind: mine.kind, ...h?.kind === 'text' ? { line: h.text } : h ? { art: h.id } : {} };
+      if (mine.kind === 'write') v.task.ideas = suggestions(t, t.order.indexOf(pid!));
     }
   }
   if (g.phase === 'album') {
@@ -81,7 +98,7 @@ export function view(g: Game, now: number, pid?: string, online?: ReadonlySet<st
   const v: View = {
     mode: g.settings.mode, phase: g.phase, at: g.at, left: left(g, now), total: g.total, paused: g.frozen !== null,
     players: g.phase === 'scores' || g.phase === 'over' ? standings(g).filter((p) => !g.kicked.includes(p.pid) || p.score > 0) : active(g),
-    packs: g.settings.packs,
+    packs: [...g.settings.packs, ...(g.lent ?? [])],
   };
   if (g.tel) telephone(g, v, here, pid);
   if (g.dg) guessing(g, v, on, pid);

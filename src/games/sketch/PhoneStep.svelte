@@ -2,8 +2,6 @@
   import Canvas from '../../components/draw/Canvas.svelte';
   import InkCard from '../../components/draw/InkCard.svelte';
   import Button from '../../components/Button.svelte';
-  import { sketchPacks } from '../../lib/content';
-  import { pick } from '../../lib/random';
   import type { Drawing } from '../../lib/ink';
   import { LINE_MAX } from './core';
   import { loadDraft, saveDraft } from './store';
@@ -35,11 +33,10 @@
     else ontext(draft.text.trim());
   }
 
+  /** The room's next idea after the one in the box (the host sends a few with the step). */
   function idea() {
-    const packs = sketchPacks();
-    const chosen = packs.filter((p) => v.packs.includes(p.id));
-    const ideas = (chosen.length ? chosen : packs).flatMap((p) => p.ideas).filter((x) => x !== draft.text);
-    if (ideas.length) update({ text: pick(ideas) });
+    const ideas = task.ideas ?? [];
+    if (ideas.length) update({ text: ideas[(ideas.indexOf(draft.text) + 1) % ideas.length] });
   }
 
   $effect(() => {
@@ -58,7 +55,7 @@
 {#if task.kind === 'write'}
   <p>Write something for the next player to draw: a scene, a saying, anything.</p>
   {@render send('Your line')}
-  <Button variant="secondary" disabled={off} onclick={idea} tip="Fills in an idea from the packs, replacing your line">Suggest</Button>
+  <Button variant="secondary" disabled={off || !task.ideas?.length} onclick={idea} tip="Fills in an idea from the room's packs, replacing your line">Suggest</Button>
 {:else if task.kind === 'draw'}
   <p class="handed">Draw this: <b>{task.line}</b></p>
   <div class="pad" style:--draw-chrome="390px">

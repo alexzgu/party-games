@@ -16,7 +16,7 @@
   import { brokerSetting } from '../../lib/room/broker';
   import { joinLink } from '../../lib/room/look';
   import { keepAwake } from '../../lib/wakelock';
-  import { host } from './host.svelte';
+  import { host, content } from './host.svelte';
   import { demo, demoArt } from './demo';
   import { view } from './view';
   import { active, MAX_PLAYERS } from './core';
@@ -28,6 +28,8 @@
   import Players from './Players.svelte';
   import AddBot from '../../components/room/AddBot.svelte';
   import StartButton from '../../components/room/StartButton.svelte';
+  import LendAsk from '../../components/room/LendAsk.svelte';
+  import { nameList, onScreen } from '../../lib/lend';
   import Rules from './Rules.svelte';
 
   const fixed = $derived(route.params.get('demo'));
@@ -52,9 +54,17 @@
     void brokerChanged;
     return joinLink('sketch', code, brokerSetting());
   });
+  // The same words or ideas Start deals from: Start is off when even the lenders have none, and
+  // asks before other packs lend (src/lib/lend.ts).
+  const room = $derived(game && v ? content(game.settings, v.players.length) : null);
+  const agreed = $derived(!!room?.ask && host.agreed === room.ask.key);
+  /** The question on screen: the room's while it is the one put to the host after Start (host.svelte.ts). */
+  const shown = $derived(fixed ? null : onScreen(host.asked, v?.phase === 'lobby' ? room?.ask ?? null : null));
   const summary = $derived.by(() => {
     const s = fixed ? loadSettings() : game?.settings ?? loadSettings();
-    return `${modeName(s)} · ${settingsSummary(s)}`;
+    const packs = !room ? '' : ' · ' + room.packs.map((p) => p.name).join(', ') +
+      (!room.ask ? '' : agreed ? ` (+ ${room.kind} from ${nameList(room.ask.lenders)})` : ` (too few ${room.kind} for this room)`);
+    return `${modeName(s)} · ${settingsSummary(s)}${packs}`;
   });
 
   $effect(() => {
@@ -119,8 +129,8 @@
           {/if}
           <p class="summary">{summary}</p>
           <div class="controls">
-            <StartButton players={v.players} online={fixed ? undefined : host.online} disabled={fixed ? v.players.length < 3 : !game || !canStart(game)} onstart={() => { if (!fixed) host.start(); }}>
-              {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : `Start with ${v.players.length} players`}
+            <StartButton players={v.players} online={fixed ? undefined : host.online} disabled={fixed ? v.players.length < 3 : !game || !canStart(game) || !!room?.problem} onstart={() => { if (!fixed) host.start(); }}>
+              {need ? `Need ${need} more ${need === 1 ? 'player' : 'players'}` : room?.problem ? `${room.problem}: pick packs in Settings` : `Start with ${v.players.length} players`}
             </StartButton>
             <Button variant="secondary" onclick={() => go('/sketch/settings')} tip="Pick the mode, packs, rounds and times">Settings</Button>
           </div>
@@ -151,6 +161,9 @@
     <Button variant="danger" onclick={() => { if (!fixed) host.close(); back('/sketch'); }}>Close</Button>
     <Button variant="secondary" onclick={() => (confirm = false)}>{playing ? 'Keep playing' : 'Stay'}</Button>
   </Popup>
+{/if}
+{#if shown}
+  <LendAsk ask={shown} onclose={() => host.dismiss()} onpacks={() => { host.dismiss(); go('/sketch/settings'); }} onyes={() => host.start(shown.key)} />
 {/if}
 {#if connection}
   <Connection onclose={() => (connection = false)} onchange={rebroker} />

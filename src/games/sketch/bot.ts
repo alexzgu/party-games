@@ -1,4 +1,4 @@
-// Sketchy's bot brain (simple, *house*). Telephone: writes a random idea from the room's packs,
+// Sketchy's bot brain (simple, *house*). Telephone: writes one of the room's ideas its step brings,
 // draws a random doodle, describes a drawing with a random word. Draw & guess: picks a word at
 // random and streams a random doodle a stroke at a time through the live-ink path, as a phone
 // does; as a guesser it guesses honestly, a few words per turn from the packs that fit the word's
@@ -8,19 +8,15 @@ import { pickOne, quick, slow, type Brain } from '../../lib/room/bots';
 import { doodle } from '../../lib/doodle';
 import { sketchPacks } from '../../lib/content';
 import type { Drawing } from '../../lib/ink';
-import { SPARE_IDEAS, SPARE_WORDS } from './spare';
+import { pickedOr } from '../../lib/lend';
+import { DEFAULT_SETTINGS } from './core';
 import type { View } from './view';
 
 /** Guesses per turn, at most (*house*). */
 const GUESSES = 4;
 
-function packs(ids: string[]) {
-  const all = sketchPacks();
-  const chosen = all.filter((p) => ids.includes(p.id));
-  return chosen.length ? chosen : all;
-}
-const ideas = (ids: string[]) => [...packs(ids).flatMap((p) => p.ideas), ...SPARE_IDEAS];
-const words = (ids: string[]) => [...packs(ids).flatMap((p) => p.words), ...SPARE_WORDS];
+/** The room's words: its picks' (Classic when none exists) and the packs lent to the game. */
+const words = (ids: string[]) => pickedOr(sketchPacks(), ids, DEFAULT_SETTINGS.packs).flatMap((p) => p.words);
 
 /** Whether a word fits the shape a guesser sees: `_` a hidden letter, anything else shown as is. */
 export function fits(word: string, shape: string): boolean {
@@ -45,7 +41,7 @@ export const sketchBrain = (): Brain<View> => ({
     if (t && !v.sent) {
       const act = () => [t.kind === 'draw'
         ? { t: 'draw', at: v.at, d: doodle(rand) }
-        : { t: 'line', at: v.at, text: pickOne(t.kind === 'write' ? ideas(v.packs) : words(v.packs), rand) }];
+        : { t: 'line', at: v.at, text: pickOne(t.kind === 'write' && t.ideas?.length ? t.ideas : words(v.packs), rand) ?? '' }];
       return { key: `step:${t.id}`, wait: slow(rand, left), act };
     }
     if (v.phase === 'pick' && v.offer?.length) {

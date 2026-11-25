@@ -6,7 +6,9 @@
   import PackList from '../../components/PackList.svelte';
   import RulesCard from '../../components/RulesCard.svelte';
   import { sketchPacks } from '../../lib/content';
-  import { DRAW_TIMES, GUESS_TIMES, ROUND_CHOICES, WRITE_TIMES, type Mode } from './core';
+  import { active, DRAW_TIMES, GUESS_TIMES, ROUND_CHOICES, WRITE_TIMES, type Mode } from './core';
+  import { roomItems } from './room';
+  import { nameList } from '../../lib/lend';
   import { loadSettings } from './store';
   import { host } from './host.svelte';
   import { settingsSummary } from './summary';
@@ -35,8 +37,12 @@
     untrack(() => { if (next.packs.length) host.settings(next); });
   });
 
-  const picked = $derived(packs.filter((p) => selected.includes(p.id)));
-  const count = $derived(picked.reduce((n, p) => n + (mode === 'telephone' ? p.ideas.length : p.words.length), 0));
+  // What the room would deal with these picks for the players in the lobby (at least three): the
+  // same words or ideas Start uses, and the packs Start would ask to borrow from when they are too few.
+  const players = Math.max(3, host.game ? active(host.game).length : 0);
+  const room = $derived(roomItems(packs, settings, players));
+  /** Why the room cannot start with these packs, or ''. */
+  const missing = $derived(!selected.length ? 'Pick packs' : room.problem);
 </script>
 
 <Screen fill title="Room settings" {onback}>
@@ -46,8 +52,9 @@
       {#if locked}<p class="note">A game is running: these apply to the next one.</p>{/if}
       <div class="mode">
         <Segmented label="Mode" bind:value={mode} options={[{ value: 'telephone', label: 'Telephone', tip: 'Write, draw, describe, pass it on' }, { value: 'guess', label: 'Draw & guess', tip: 'One draws a word, the rest race to guess it' }]} />
-        <span class="hint">{mode === 'telephone' ? 'Write, draw, describe, pass it on.' : 'One draws a word, the rest race to guess it.'}{#if selected.length && !count}{` The picked packs have no ${mode === 'telephone' ? 'ideas' : 'words'}, so the game uses its own spares.`}{/if}</span>
+        <span class="hint">{mode === 'telephone' ? 'Write, draw, describe, pass it on.' : 'One draws a word, the rest race to guess it.'}</span>
       </div>
+      {#if !missing && room.ask}<p class="note">{room.ask.short} The game will ask before adding {room.ask.noun} from {nameList(room.ask.lenders)}.</p>{/if}
     {/snippet}
   </PackList>
   {#snippet actions()}
@@ -75,7 +82,7 @@
         </div>
       {/if}
     </RulesCard>
-    <Button size="lg" onclick={onback} disabled={!selected.length}>{selected.length ? 'Done' : 'Pick packs'}</Button>
+    <Button size="lg" onclick={onback} disabled={!!missing}>{missing || 'Done'}</Button>
   {/snippet}
 </Screen>
 

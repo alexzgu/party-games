@@ -1,7 +1,7 @@
 // Draw & guess (skribbl.io's rules): each round everyone draws once in seat order while the
 // others type guesses; faster guesses earn more, and the drawer earns the guessers' average.
-import { GUESS_MAX, active, enter, isActive, left, settling, take, type Game, type Guessing } from './core';
-import { SPARE_WORDS } from './spare';
+import { GUESS_MAX, active, enter, isActive, left, nextItems, settling, type Game, type Guessing } from './core';
+import { OFFER } from './room';
 import { hintPlaces, hintsDue } from './hint';
 import { isClose, isMatch } from './match';
 
@@ -22,7 +22,7 @@ const blank = (): Omit<Guessing, 'round' | 'order' | 'pool'> => ({
   turn: -1, drawer: '', offer: [], word: '', hints: [], shown: 0, got: [], feed: [], close: {}, away: null, points: [],
 });
 
-/** Starts a game of Draw & guess; `pool` is every word it may deal, in order (see spare.deal). */
+/** Starts a game of Draw & guess; `pool` is every word it may deal, in order (see room.dealItems). */
 export function startGuess(g: Game, pool: string[], now: number): Game {
   return startRound({ ...g, tel: undefined, dg: { ...blank(), round: 0, order: [], pool } }, now);
 }
@@ -38,10 +38,9 @@ function nextTurn(g: Game, now: number): Game {
   let turn = dg.turn + 1;
   while (turn < dg.order.length && !isActive(g, dg.order[turn])) turn++;
   if (turn >= dg.order.length) return dg.round < g.settings.rounds ? enter(g, 'scores', now, SCORES_SECS) : enter(g, 'over', now);
-  let [offer, pool] = take(dg.pool, 3);
-  // Only once every pack and spare word has been dealt do the spares come round again.
-  if (!offer.length) offer = take(SPARE_WORDS.slice((turn * 3) % (SPARE_WORDS.length - 2)), 3)[0];
-  return enter({ ...g, dg: { ...dg, ...blank(), points: dg.points, turn, drawer: dg.order[turn], offer, pool } }, 'pick', now, PICK_SECS);
+  // Once the room's words are all offered, its own words come round again, least recently offered first.
+  const { items: offer, pool, dealt } = nextItems(dg.pool, dg.dealt ?? [], OFFER);
+  return enter({ ...g, dg: { ...dg, ...blank(), points: dg.points, turn, drawer: dg.order[turn], offer, pool, dealt } }, 'pick', now, PICK_SECS);
 }
 
 function draw(g: Game, word: string, now: number, rand: () => number): Game {
