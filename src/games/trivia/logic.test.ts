@@ -116,12 +116,42 @@ describe('Smarty Pants rounds', () => {
     const start = L.CATEGORY_MS;
     let g = tap(room(4), 'p0', 0, start); // at once: full time left
     g = tap(g, 'p1', 0, start + 10_000); // half the time left
-    g = tap(g, 'p2', 0, start + 20_000); // no time left
+    g = tap(g, 'p2', 0, start + 19_999); // the last moment: 1 ms left
     g = tap(g, 'p3', 1, start); // wrong
     g = L.step(g, start + 20_000);
     expect(g.players.map((p) => p.score)).toEqual([1000, 750, 500, 0]);
     expect(g.round!.result).toEqual({ counts: [3, 1, 0, 0], gains: [{ pid: 'p0', points: 1000 }, { pid: 'p1', points: 750 }, { pid: 'p2', points: 500 }] });
     expect(L.points(true, 6_667, 20_000)).toBe(667);
+  });
+
+  it('counts a tap only while time is left on the host clock, and a late one moves to the reveal at once', () => {
+    const g = tap(room(), 'p0', 0);
+    for (const late of [23_000, 23_100]) {
+      expect(L.answer(g, 'p1', g.at, 1, 0, late)).toBe(g);
+      const { game, refused } = L.tap(g, 'p1', g.at, 1, 0, late);
+      expect([refused, game.phase, game.round!.result!.gains.map((x) => x.pid)]).toEqual([true, 'reveal', ['p0']]);
+    }
+    expect(L.tap(g, 'p1', g.at, 1, 0, 22_999)).toMatchObject({ refused: false, game: { phase: 'answer' } });
+  });
+
+  it('scores no speed points in the extra time after a host reload, and its timers show only that time', () => {
+    let g = L.afterReload(room(2), 30_000); // 20 s question from 3,000: ran out at 23,000
+    expect([g.deadline, g.extra]).toEqual([30_000 + L.EXTRA_MS, true]);
+    expect(view(g, 31_000)).toMatchObject({ left: L.EXTRA_MS - 1000, total: L.EXTRA_MS, extra: true });
+    g = L.step(tap(g, 'p0', 0, 31_000), 32_000);
+    expect([score(g, 'p0'), g.extra, view(g, 32_000).total, view(g, 32_000).extra]).toEqual([500, false, L.REVEAL_MS, undefined]);
+    const running = L.afterReload(room(2), 10_000); // still running: no extra time
+    expect([running.deadline, running.extra]).toEqual([23_000, false]);
+  });
+
+  it('forgets the answer of a player who leaves or is removed, even when they rejoin', () => {
+    for (const out of [(g: L.Game) => L.leave(g, 'p0'), (g: L.Game) => L.kick(g, 'p0')]) {
+      const g = out(tap(tap(room(), 'p0', 0), 'p1', 0));
+      expect(Object.keys(g.round!.answers)).toEqual(['p1']);
+    }
+    let g = L.step(L.leave(tap(room(), 'p0', 0), 'p0'), 5000);
+    g = (L.join(g, 'p0', 'P0', all(g)) as { game: L.Game }).game;
+    expect([L.isActive(g, 'p0'), view(g, 5000, 'p0').mine, score(g, 'p0')]).toEqual([true, undefined, 0]);
   });
 
   it("drops the answer of a player removed or gone by the reveal", () => {

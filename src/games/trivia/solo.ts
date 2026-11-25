@@ -23,16 +23,22 @@ const enter = (s: Solo, phase: SoloPhase, now: number): Solo => ({
 
 /**
  * A new run from `pool` (the picked packs' lines, shuffled), avoiding the questions this phone
- * asked before (`asked`, keys) as a room does; null when the picks hold none. Returns the keys to
- * remember after it.
+ * asked before (`asked`, keys) as a room does; null when the picks hold none. Returns the asked keys
+ * still in the picks (none, after forgetting); each question joins them as it is shown (`shown`).
  */
 export function soloStart(pool: readonly string[], asked: readonly string[], seconds: number, now: number, rand: () => number = Math.random): { solo: Solo; asked: string[] } | null {
   const dealt = deal(pool, asked, SOLO_COUNT);
   if (!dealt.questions.length) return null;
   const questions = dealt.questions.map((line) => toAsk(line, rand));
   const solo: Solo = { questions, seconds, n: 1, phase: 'category', deadline: null, pick: null, gained: 0, score: 0, correct: 0 };
-  return { solo: enter(solo, 'category', now), asked: [...dealt.asked, ...questions.map((q) => questionKey(q.question))] };
+  return { solo: enter(solo, 'category', now), asked: dealt.asked };
 }
+
+/** `asked` with the question now on screen, as a room remembers it: a run left early skips only what it showed. */
+export const shown = (asked: readonly string[], s: Solo): string[] => {
+  const key = questionKey(current(s).question);
+  return asked.includes(key) ? [...asked] : [...asked, key];
+};
 
 /** The question in play. */
 export const current = (s: Solo): Asked => s.questions[s.n - 1];
@@ -40,9 +46,9 @@ export const current = (s: Solo): Asked => s.questions[s.n - 1];
 /** Time left on the timer, in ms (null: none). */
 export const soloLeft = (s: Solo, now: number): number | null => s.deadline === null ? null : Math.max(0, s.deadline - now);
 
-/** The first tap on an answer while the timer runs: final; scored as in a room. */
+/** The first tap on an answer while time is left: final; scored as in a room. */
 export function soloPick(s: Solo, choice: Choice, now: number): Solo {
-  if (s.phase !== 'answer' || s.pick !== null) return s;
+  if (s.phase !== 'answer' || s.pick !== null || !soloLeft(s, now)) return s;
   const right = choice === current(s).right;
   const gained = points(right, soloLeft(s, now) ?? 0, s.seconds * 1000);
   return { ...enter(s, 'reveal', now), pick: choice, gained, score: s.score + gained, correct: s.correct + (right ? 1 : 0) };

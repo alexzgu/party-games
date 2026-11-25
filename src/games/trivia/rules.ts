@@ -37,28 +37,45 @@ export const questionKey = (question: string): string => plain(question);
 /** Two questions are the same when their question parts match ignoring case, spacing and punctuation. */
 export const triviaKey = (line: string): string => questionKey(parts(line).question);
 
-/** Every part trimmed with its spaces squeezed, a trailing full stop dropped from each answer; nothing reordered. */
+/** An answer as written but for case and spacing: how the four are told apart ("C" and "C#", "40" and "-40" differ). */
+const answerKey = (s: string): string => s.toLowerCase().replace(/\s+/g, ' ').trim();
+
+/** A last word that is an abbreviation: a full stop inside it ("D.C"), or a capitalised word of up to three letters ("Jr", "Inc"). */
+const ABBREVIATION = /^(?:\S*\.\S*|\p{Lu}\p{Ll}{0,2})$/u;
+
+/** An answer without its closing full stops, unless the one full stop ends an abbreviation ("Washington D.C.", "Martin Luther King Jr."). */
+function dropStop(s: string): string {
+  const body = stripEnd(s, '.').trim();
+  const last = body.slice(body.lastIndexOf(' ') + 1);
+  return s.length - body.length === 1 && ABBREVIATION.test(last) ? s : body;
+}
+
+/** Every part trimmed with its spaces squeezed, a closing full stop dropped from each answer (not an abbreviation's); nothing reordered. */
 export function tidyTrivia(line: string): string {
   return line.split('|').map((p, i) => {
     const s = p.trim().replace(/\s+/g, ' ');
-    return i >= 2 ? stripEnd(s, '.').trim() : s;
+    return i >= 2 ? dropStop(s) : s;
   }).join(SEP);
 }
 
-const capitalFirst = (s: string) => /^[A-Z0-9]/.test(s);
+/** The first letter or digit is not a lowercase letter, in any alphabet ("Édith…", a leading quotation mark, "1984…"). */
+function capitalFirst(s: string): boolean {
+  const first = /[\p{L}\p{N}]/u.exec(s)?.[0];
+  return !!first && !/\p{Ll}/u.test(first);
+}
 
 /** Why a tidied line cannot be used, or '' when it can. */
 export function triviaProblem(line: string): string {
   const all = line.split(SEP);
   if (all.length !== 6) return 'needs six parts';
-  if (all.some((p) => !wordCount(p) || p.includes('|') || p !== p.trim())) return 'has an empty part';
+  if (all.some((p) => !p.trim() || p.includes('|') || p !== p.trim())) return 'has an empty part';
   const { category, question, right, wrong } = parts(line);
   if (category.length > CATEGORY_MAX || wordCount(category) > CATEGORY_WORDS_MAX) return 'category too long';
   if (wordCount(question) < QUESTION_WORDS_MIN) return 'question too short';
   if (question.length > QUESTION_MAX || wordCount(question) > QUESTION_WORDS_MAX) return 'question too long';
   const answers = [right, ...wrong];
   if (answers.some((a) => a.length > ANSWER_MAX || wordCount(a) > ANSWER_WORDS_MAX)) return 'answer too long';
-  if (new Set(answers.map(plain)).size !== 4) return 'answers repeat';
+  if (new Set(answers.map(answerKey)).size !== 4) return 'answers repeat';
   if (!capitalFirst(category) || !capitalFirst(question)) return 'starts oddly';
   return '';
 }

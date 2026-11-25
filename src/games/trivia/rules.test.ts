@@ -18,11 +18,18 @@ describe('Smarty Pants questions', () => {
     expect(checked(spec, '  Science|What gas do  plants take in from the air?|Carbon dioxide.| Oxygen |Nitrogen|Helium. ')).toBe(good);
   });
 
+  it("keeps the full stop that ends an abbreviation, and drops a sentence's", () => {
+    const names = 'People | Who or what is this one? | Washington D.C. | Martin Luther King Jr. | Apple Inc. | It was Dr. Seuss.';
+    expect(checked(spec, names)).toBe('People | Who or what is this one? | Washington D.C. | Martin Luther King Jr. | Apple Inc. | It was Dr. Seuss');
+    expect(checked(spec, 'Places | Which saint is this city named for? | St. Louis | Sr. | Co. | The end of the line.')).toBe('Places | Which saint is this city named for? | St. Louis | Sr. | Co. | The end of the line');
+  });
+
   it('says why a line cannot be used', () => {
     expect(triviaProblem(good)).toBe('');
     expect(triviaProblem(good.split(' | ').slice(0, 5).join(' | '))).toBe('needs six parts');
     expect(triviaProblem(`${good} | Argon`)).toBe('needs six parts');
-    expect(triviaProblem(swap(3, '?'))).toBe('has an empty part');
+    expect(triviaProblem(swap(3, ''))).toBe('has an empty part');
+    expect(triviaProblem(swap(3, ' '))).toBe('has an empty part');
     expect(triviaProblem(swap(0, 'Very Hard Science Stuff'))).toBe('category too long');
     expect(triviaProblem(swap(0, 'S'.repeat(CATEGORY_MAX + 1)))).toBe('category too long');
     expect(triviaProblem(swap(1, 'Plants breathe what?'))).toBe('');
@@ -31,10 +38,23 @@ describe('Smarty Pants questions', () => {
     expect(triviaProblem(swap(1, `What is ${'x'.repeat(QUESTION_MAX)}?`))).toBe('question too long');
     expect(triviaProblem(swap(2, 'one two three four five six seven'))).toBe('answer too long');
     expect(triviaProblem(swap(4, 'x'.repeat(ANSWER_MAX + 1)))).toBe('answer too long');
-    expect(triviaProblem(swap(5, 'CARBON  dioxide!'))).toBe('answers repeat');
+    expect(triviaProblem(swap(5, 'CARBON  dioxide'))).toBe('answers repeat');
     expect(triviaProblem(swap(0, 'science'))).toBe('starts oddly');
     expect(triviaProblem(swap(1, 'what gas do plants take in?'))).toBe('starts oddly');
     expect(triviaProblem(swap(0, '80s Music'))).toBe('');
+    expect(triviaProblem(swap(1, 'élan is a word from which language?'))).toBe('starts oddly');
+    expect(triviaProblem(swap(1, '"what gas do plants take in?"'))).toBe('starts oddly');
+  });
+
+  it('takes answers that differ only by signs or symbols, and questions starting with any capital', () => {
+    const ok = (question: string, answers: string) => triviaProblem(`Mixed | ${question} | ${answers}`);
+    expect(ok('At what temperature do Celsius and Fahrenheit agree?', '-40 | 40 | 0 | -32')).toBe('');
+    expect(ok('Which language did Microsoft make for .NET?', 'C# | C | C++ | Java')).toBe('');
+    expect(ok('What is one divided by two?', '1/2 | 12 | 2 | 21')).toBe('');
+    expect(ok('Which sign stands for per cent?', '% | # | & | @')).toBe('');
+    expect(ok('Édith Piaf sang which song?', 'La Vie en rose | Volare | Mambo No. 5 | Hey Jude')).toBe('');
+    expect(ok('"Hey Jude" was a hit for which band?', 'The Beatles | Queen | ABBA | Oasis')).toBe('');
+    expect(ok('¿Qué? means what in English?', 'What | Who | Why | When')).toBe('');
   });
 
   it('counts the same question with other answers or category as one', () => {

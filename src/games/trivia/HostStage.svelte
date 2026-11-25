@@ -36,7 +36,7 @@
       {@render head(`Question ${v.n} of ${v.count}`, 'Get ready…')}
       {#key v.at}<p class="category pop-in">{v.category}</p>{/key}
     {:else if v.phase === 'answer' && v.question && v.answers}
-      {@render head(v.question, `${v.category} · ${answered} of ${v.players.length} answered · answer on your phone`)}
+      {@render head(v.question, `${v.category} · ${answered} of ${v.players.length} answered · ${v.extra ? 'extra time, no speed points' : 'answer on your phone'}`)}
       {#key v.at}<div class="pop-in"><Answers answers={v.answers} size="lg" /></div>{/key}
       <Seats {v} {online} />
     {:else if v.phase === 'reveal' && v.question && v.answers && v.result}

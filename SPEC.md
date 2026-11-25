@@ -1699,25 +1699,32 @@ Bad Hand). Amounts marked *house* are ours.
   - **Category** (3 s, *house*): the host shows "Question 3 of 10" and the category large; phones
     show it too. Show (the host's skip) goes straight to the question.
   - **Answer** (default 20 s; 10/15/20/30, *house*): the host shows the question, its category,
-    the four answers as four tiles in four fixed colours (orange, blue, yellow, purple), each with
-    its own shape (▲ ◆ ● ■) so colour is never the only cue, the timer, and every player's name,
-    dimmed until they have answered (never what). Phones show the question and the four answers as
-    four big buttons in the same colours and shapes (stacked on a narrow screen). The first tap is
-    final: the tapped button is marked at once (a mark that belongs to that room and seat), the
-    others dim and take no more taps. A tap names its phase and question number; the host ignores
-    one for another question, a second tap, one from a player not in the game, or one after the
-    reveal. Before the reveal no view says which answer is right, and a phone is sent only its own
-    answer and who has answered.
+    the four answers as four tiles in four fixed colours (orange, blue, yellow, purple), each
+    showing its letter (A, B, C, D) so colour is never the only cue, the timer, and every player's
+    name, dimmed until they have answered (never what). Phones show the question and the four
+    answers as four big buttons in the same colours and letters (stacked on a narrow screen). The
+    first tap is final: the tapped button is marked at once (a mark that belongs to that room and
+    seat), the others dim and take no more taps. When the phone's timer reaches 0 its buttons take
+    no taps ("Time's up!"). A tap names its phase and question number; the host ignores one for
+    another question, a second tap, one from a player not in the game, or one that arrives when no
+    time is left on the host's clock (a paused game keeps the time left when it stopped); a tap that
+    finds the time up moves the game to the reveal at once instead of waiting for the timer. Before
+    the reveal no view says which answer is right, and a phone is sent only its own answer and who
+    has answered.
   - **Reveal** (8 s, *house*; or Next, Results when the next step ends the game) when every player
     in the game whose phone is connected has answered, or at the timer. The right answer is marked
     ("✓ Right"), the others dimmed, each tile with how many picked it; "Got it" lists who was right
     with the points each gained (most first), and "Top 5" the leading scores (ties share a place).
-    Phones say "Right! +870", "Not quite." or "Time's up!", the answer, their tile marked, and their
-    place and total.
+    Phones say "Right! +870", "Not quite." or "Time's up!" (no answer that counts), the answer,
+    their tile marked, and their place and total.
 - **Points**: a right answer scores 500 plus up to 500 for speed, `round(500 × time left ÷ time
   allowed)` at the moment the host received the tap (*house*; faster scoring more is the usual quiz
   rule). A wrong answer or none scores 0. A tap that arrives while paused scores the time left when
-  the clock stopped. Answers of players removed or gone by the reveal do not count.
+  the clock stopped. If the host screen reloads and a timer ran out meanwhile, that phase gets 12 s
+  of extra time (*house*) so phones can reconnect and answer; the timers show those 12 s alone,
+  the host says "extra time, no speed points", and a right answer in them scores 500 with no speed
+  points. A player who leaves or is removed has no answer to the question in play any more, even
+  after rejoining.
 - **End**: after the last question, standings with confetti (ties share a place) and how many
   questions were asked, Lobby (same players, scores at zero) or Close. History gets one entry on
   the host, one line per question ("Science: What gas do plants take in from the air? Carbon dioxide
@@ -1740,23 +1747,26 @@ Bad Hand). Amounts marked *house* are ours.
   the answer, and Next. Ten questions (*house*), then the score, how many were right, and the best
   score kept on this phone ("A new best on this phone!"), with Play again and Packs. The same pure
   rules as the room (`questions.ts`: dealing, shuffling the answers, points; `solo.ts`); the phone
-  remembers the questions Solo asked, as a room does, under `trivia:solo` with the best score.
-  The screen stays awake.
+  remembers each question as it is shown, as a room does, under `trivia:solo` with the best score
+  (leaving mid-run skips only the questions it showed; a reload mid-run loses the run). A tap
+  counts only while time is left; at 0 the buttons take no taps. The screen stays awake.
 - **Making packs**: paste questions, one per line, or ask the wizard (a theme or a suggestion,
   10–60 questions, default 30); own packs have "🧙 Add more" (5–40, default 15). Every route keeps
   a question only when it meets the content rules below (`src/games/trivia/rules.ts`; pasted and
   wizard lines are tidied first: each part trimmed with its spaces squeezed, a bar with or without
-  spaces read as the separator, and a closing full stop dropped from each answer; nothing is
-  reordered), and the wizard's are also new to every Smarty Pants pack on the phone; anything else
+  spaces read as the separator, and a closing full stop dropped from each answer unless it ends an
+  abbreviation: a last word with another full stop inside it, or a capitalised word of at most
+  three letters, as in "Washington D.C." and "Martin Luther King Jr."; nothing is reordered), and the wizard's are also new to every Smarty Pants pack on the phone; anything else
   is dropped unseen. The wizard is asked for facts that are certain and will not change, exactly
   one right answer, wrong answers of the same kind and length as the right one, and a spread of
   categories.
 - **Content** (`src/content/trivia/*.json`): `{"id", "name", "blurb", "added"?, "questions": [...]}`.
   A question is one line of six parts split by " | ": category, question, the right answer, three
-  wrong answers; none empty and none holding a bar. Category 1–3 words, at most 24 characters;
-  question 3–30 words, at most 140 characters; both start with a capital letter or a digit. Each
-  answer 1–6 words, at most 40 characters; the four answers differ (ignoring case, spacing and
-  punctuation). Questions are new across packs. The longest line the rules allow is 339 characters;
+  wrong answers; none empty after trimming (an answer may be only a sign, "%") and none holding a
+  bar. Category 1–3 words, at most 24 characters; question 3–30 words, at most 140 characters; in
+  both the first letter or digit is not a lowercase letter, in any alphabet ("Édith Piaf…" and a
+  leading quotation mark are fine). Each answer at most 6 words and 40 characters; the four
+  answers differ, ignoring only case and spacing ("C", "C++", "C#"; "40" and "-40" differ). Questions are new across packs. The longest line the rules allow is 339 characters;
   pack files and the Community library take a whole line.
 - Demos at `#/trivia/host?demo=` with `lobby|category|answer|answer-long|reveal|reveal-full|over|paused`
   and `#/trivia/join?demo=` with `join|wait|category|answer|answer-long|answered|reveal|reveal-full|over`

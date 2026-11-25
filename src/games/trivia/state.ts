@@ -15,6 +15,8 @@ export const RIGHT_POINTS = 500;
 export const SPEED_POINTS = 500;
 /** After the host screen opens or changes broker, how long phones get to reconnect before anyone counts as gone (*house*). */
 export const RECONNECT_MS = 10_000;
+/** After the host screen reloads, a timer that ran out meanwhile gets this much extra time (*house*). */
+export const EXTRA_MS = 12_000;
 
 export type Settings = { count: number; seconds: number; packs: string[] };
 export const DEFAULT_SETTINGS: Settings = { count: 10, seconds: 20, packs: ['classic'] };
@@ -44,6 +46,12 @@ export type Game = {
   deadline: number | null;
   /** When the host paused (null: running), and the timer's ms left then (null: no timer). */
   paused: number | null; frozen: number | null;
+  /**
+   * The phase's timer ran out while the host screen was reloading and was given `EXTRA_MS` more
+   * (`afterReload`), so phones can reconnect and answer: an answer then scores no speed points.
+   * Cleared when the phase changes.
+   */
+  extra: boolean;
   /** Until then phones are still reconnecting (host reload, broker change): nobody counts as gone. */
   quiet: number | null;
   players: Player[]; kicked: string[];
@@ -57,7 +65,7 @@ export type Game = {
 };
 
 export const newGame = (id: string, code: string, settings: Settings): Game => ({
-  id, code, settings, phase: 'lobby', at: 0, deadline: null, paused: null, frozen: null, quiet: null,
+  id, code, settings, phase: 'lobby', at: 0, deadline: null, paused: null, frozen: null, quiet: null, extra: false,
   players: [], kicked: [], left: [], questions: [], round: null, results: [], asked: [],
 });
 
@@ -72,7 +80,7 @@ export const phaseMs = (phase: Phase, s: Settings) => phase === 'category' ? CAT
 
 export function enter(g: Game, phase: Phase, now: number): Game {
   const ms = phaseMs(phase, g.settings);
-  return { ...g, phase, at: g.at + 1, deadline: ms ? now + ms : null, paused: null, frozen: null };
+  return { ...g, phase, at: g.at + 1, deadline: ms ? now + ms : null, paused: null, frozen: null, extra: false };
 }
 
 /** Stops the clock in any phase of play. */
@@ -85,6 +93,8 @@ export const resume = (g: Game, now: number): Game =>
 /** Phones get a moment to find the room again before anyone counts as gone. */
 export const quiet = (g: Game, now: number): Game => ({ ...g, quiet: now + RECONNECT_MS });
 
-/** After the host screen reloads: a timer that ran out meanwhile gets 12 s, and phones get time to reconnect. */
-export const afterReload = (g: Game, now: number): Game =>
-  quiet({ ...g, deadline: g.deadline !== null && g.deadline <= now ? now + 12_000 : g.deadline }, now);
+/** After the host screen reloads: a timer that ran out meanwhile gets `EXTRA_MS` more (marked `extra`), and phones get time to reconnect. */
+export function afterReload(g: Game, now: number): Game {
+  const ranOut = g.paused === null && g.deadline !== null && g.deadline <= now;
+  return quiet(ranOut ? { ...g, deadline: now + EXTRA_MS, extra: true } : g, now);
+}

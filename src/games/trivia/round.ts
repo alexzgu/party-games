@@ -30,19 +30,28 @@ function ask(g: Game, n: number, now: number): Game {
   return enter({ ...g, asked: [...g.asked, questionKey(q.question)], round: { n, q, answers: {}, result: null } }, 'category', now);
 }
 
-/** A tap on an answer: only for the question in play (its phase `at` and number `n`), from a player in the game who has not answered, before the reveal. */
+/**
+ * A tap on an answer: only for the question in play (its phase `at` and number `n`), from a player
+ * in the game who has not answered, while time is left on the host's clock (a paused game keeps
+ * the time left when it stopped). In extra time after a host reload it keeps no time for speed.
+ */
 export function answer(g: Game, pid: string, at: number, n: number, choice: Choice, now: number): Game {
   const r = g.round;
-  if (g.phase !== 'answer' || g.at !== at || !r || r.n !== n || !isActive(g, pid) || ![0, 1, 2, 3].includes(choice) || Object.hasOwn(r.answers, pid)) return g;
-  return { ...g, round: { ...r, answers: { ...r.answers, [pid]: { choice, left: timeLeft(g, now) ?? 0 } } } };
+  const left = timeLeft(g, now) ?? 0;
+  if (g.phase !== 'answer' || g.at !== at || !r || r.n !== n || !isActive(g, pid) || ![0, 1, 2, 3].includes(choice) || Object.hasOwn(r.answers, pid) || left <= 0) return g;
+  return { ...g, round: { ...r, answers: { ...r.answers, [pid]: { choice, left: g.extra ? 0 : left } } } };
 }
 
-/** A phone's tap as the host takes it: the game after it, and whether to tell the phone it did not count (a repeat of its counted tap did). */
+/**
+ * A phone's tap as the host takes it: the game after it, and whether to tell the phone it did not
+ * count (a repeat of its counted tap did). A tap that finds the time up moves to the reveal at once.
+ */
 export function tap(g: Game, pid: string, at: number, n: number, choice: Choice, now: number): { game: Game; refused: boolean } {
   const game = answer(g, pid, at, n, choice, now);
   const r = g.round;
   const counted = g.phase === 'answer' && g.at === at && r?.n === n && isActive(g, pid) && r.answers[pid]?.choice === choice;
-  return { game, refused: game === g && !counted };
+  const late = game === g && g.phase === 'answer' && g.paused === null && g.deadline !== null && g.deadline <= now;
+  return { game: late ? step(g, now) : game, refused: game === g && !counted };
 }
 
 /** The answers of players still in the game: counts per answer, and who was right with the points each gained. */

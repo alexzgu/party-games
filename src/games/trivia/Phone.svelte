@@ -67,8 +67,11 @@
     return () => keepAwake(false);
   });
 
+  /** The answer time has run out on this phone's clock: no tap is offered (the host refuses a late one anyway). */
+  const timeUp = $derived(v?.phase === 'answer' && !v.paused && remaining !== null && remaining <= 0);
+
   function pick(choice: Choice) {
-    if (!v || v.paused || v.phase !== 'answer' || mine !== undefined) return;
+    if (!v || v.paused || v.phase !== 'answer' || mine !== undefined || timeUp) return;
     sfx.tap();
     sent = { seat, at: v.at, choice };
     if (!fixed) answer(v.at, v.n, choice);
@@ -78,8 +81,8 @@
   function verdict(): string {
     const r = v?.result;
     if (!r || !v?.answers) return '';
-    if (v.mine === undefined) return 'Time’s up!';
-    return v.mine === r.right ? `Right! ${gain(gained)}` : 'Not quite.';
+    if (gained) return `Right! ${gain(gained)}`;
+    return v.mine === undefined ? 'Time’s up!' : 'Not quite.';
   }
 </script>
 
@@ -106,11 +109,11 @@
       {:else if v.phase === 'answer' && v.question && v.answers}
         <p class="cat">{v.category}</p>
         <h2 class="question">{v.question}</h2>
-        <Answers answers={v.answers} size="md" picked={mine} onpick={pick} disabled={v.paused} />
-        <p class="hint" role="status">{mine === undefined ? 'Tap your answer: your first tap is final.' : 'Locked in. Waiting for the others…'}
+        <Answers answers={v.answers} size="md" picked={mine} onpick={pick} disabled={v.paused || timeUp} />
+        <p class="hint" role="status">{mine !== undefined ? 'Locked in. Waiting for the others…' : timeUp ? 'Time’s up!' : v.extra ? 'Extra time: a right answer scores 500, no speed points.' : 'Tap your answer: your first tap is final.'}
           {v.answered?.length ?? 0} of {v.players.length} answered.</p>
       {:else if v.phase === 'reveal' && v.question && v.answers && v.result}
-        <h2 class:win={v.mine === v.result.right}>{verdict()}</h2>
+        <h2 class:win={gained > 0}>{verdict()}</h2>
         <p class="answer-line">The answer: <b>{v.answers[v.result.right]}</b></p>
         <Answers answers={v.answers} size="sm" picked={v.mine} right={v.result.right} counts={v.result.counts} />
         {#if me}<p class="muted center">You’re {place} with {me.score} {me.score === 1 ? 'point' : 'points'}.</p>{/if}

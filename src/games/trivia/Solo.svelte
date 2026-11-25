@@ -12,14 +12,15 @@
   import { keepAwake } from '../../lib/wakelock';
   import { CATEGORY_MS, type Choice } from './logic';
   import { roomQuestions } from './pack';
-  import { current, SOLO_COUNT, soloLeft, soloNext, soloPick, soloStart, soloTick, type Solo } from './solo';
+  import { current, shown, SOLO_COUNT, soloLeft, soloNext, soloPick, soloStart, soloTick, type Solo } from './solo';
   import { loadSettings, loadSolo, saveSolo } from './store';
   import { gain } from './labels';
   import Answers from './Answers.svelte';
   import Rules from './Rules.svelte';
 
   // Solo: the room's questions and scoring on this phone alone (solo.ts). The picks and seconds are
-  // the room settings'; the best score and the questions asked are kept on this phone.
+  // the room settings'; the best score and the questions shown are kept on this phone (a reload
+  // mid-run loses the run, not what it showed).
   let solo = $state.raw<Solo | null>(null);
   let now = $state(Date.now());
   let best = $state(loadSolo().best);
@@ -31,7 +32,7 @@
     const run = soloStart(roomQuestions(triviaPacks(), s.packs), mem.asked, s.seconds, Date.now());
     record = false;
     solo = run?.solo ?? null;
-    if (run) saveSolo({ ...mem, asked: run.asked });
+    if (run) saveSolo({ ...mem, asked: shown(run.asked, run.solo) });
   }
   untrack(begin);
 
@@ -47,6 +48,7 @@
   function move(next: Solo) {
     if (next === solo) return;
     if (next.phase === 'over') finish(next);
+    else if (next.n !== solo?.n) { const mem = loadSolo(); saveSolo({ ...mem, asked: shown(mem.asked, next) }); }
     solo = next;
   }
 
@@ -97,7 +99,7 @@
         <p class="cat">{q.category}</p>
         <h2 class="question">{q.question}</h2>
         {#if solo.phase === 'answer'}
-          <Answers answers={q.answers} size="md" onpick={pick} />
+          <Answers answers={q.answers} size="md" onpick={pick} disabled={!soloLeft(solo, now)} />
           <p class="hint">Your first tap is final. Faster scores more.</p>
         {:else}
           <p class="verdict" class:win={solo.pick === q.right} role="status">

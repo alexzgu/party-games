@@ -25,14 +25,22 @@ export function join(g: Game, pid: string, name: string, online: ReadonlySet<str
   return { pid, game: { ...g, players: [...g.players, { pid, name, score: 0 }] } };
 }
 
+/** The game without `pid`'s answer to the question in play: a player who leaves or is removed has none, even after rejoining. */
+function unanswered(g: Game, pid: string): Game {
+  if (!g.round || !Object.hasOwn(g.round.answers, pid)) return g;
+  const answers = { ...g.round.answers };
+  delete answers[pid];
+  return { ...g, round: { ...g.round, answers } };
+}
+
 export function kick(g: Game, pid: string): Game {
   if (g.phase === 'lobby') return { ...g, players: g.players.filter((p) => p.pid !== pid), kicked: [...g.kicked, pid] };
-  return { ...g, kicked: [...g.kicked, pid], left: g.left.filter((x) => x !== pid) };
+  return { ...unanswered(g, pid), kicked: [...g.kicked, pid], left: g.left.filter((x) => x !== pid) };
 }
 
 /** "Leave room": gone from the lobby; mid-game out like a removed player, but free to come back with their score. */
 export function leave(g: Game, pid: string): Game {
   if (!isActive(g, pid)) return g;
   if (g.phase === 'lobby') return { ...g, players: g.players.filter((p) => p.pid !== pid) };
-  return { ...g, kicked: [...g.kicked, pid], left: [...g.left, pid] };
+  return { ...unanswered(g, pid), kicked: [...g.kicked, pid], left: [...g.left, pid] };
 }
