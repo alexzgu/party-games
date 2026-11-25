@@ -51,5 +51,8 @@
   input { min-height: 44px; min-width: 0; }
   .close { color: var(--c-pass); font-weight: 800; text-align: center; }
   .note { color: var(--text-dim); text-align: center; }
-  .feed { display: grid; max-height: 24dvh; min-height: 3.5em; }
+  /* The room left under the pad (the screen fits the phone: Phone.svelte); the list is as tall as its
+     guesses up to that room, and scrolls inside it past that, newest at the bottom. */
+  .feed { flex: 1 1 0; min-height: 3.5em; display: flex; flex-direction: column; }
+  .feed :global(ol) { flex: 0 1 auto; min-height: 3.5em; max-height: 24dvh; }
 </style>

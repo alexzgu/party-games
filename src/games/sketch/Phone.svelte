@@ -25,7 +25,9 @@
 
   const fixed = $derived(route.params.get('demo'));
   const code = $derived(route.params.get('code') ?? '');
-  const v = $derived(fixed ? fixed === 'join' ? null : demo(fixed, true) : phone.view);
+  /** A demo's number of guesses (&feed=<n>), when given. */
+  const guesses = (n: string | null) => n && /^\d+$/.test(n) ? Math.min(Number(n), 200) : null;
+  const v = $derived(fixed ? fixed === 'join' ? null : demo(fixed, true, guesses(route.params.get('feed'))) : phone.view);
   const art = $derived(fixed ? demoArt : gallery.art);
   let now = $state(Date.now());
   const remaining = $derived(fixed ? v?.left ?? null : phone.left(now));
@@ -37,6 +39,9 @@
   const steps = $derived(v?.phase === 'write' || v?.phase === 'draw' || v?.phase === 'describe');
   /** Telephone: joined after the chains were dealt. */
   const watching = $derived(!!v && steps && !!me && !v.order?.includes(me.pid));
+  /** A step being done or a drawing being drawn or guessed: the screen fits the phone, nothing
+   *  under the pad scrolls the page, and the guesses take the room that is left. */
+  const fit = $derived(!!v && !watching && ((steps && !!v.task && !v.sent && sent !== v.at) || (v.phase === 'guess' && !!v.ink)));
   const name = (pid?: string) => v?.players.find((p) => p.pid === pid)?.name ?? 'The drawer';
 
   $effect(() => {
@@ -94,9 +99,9 @@
 {#if !v || (!fixed && phone.stopped)}
   {#key code}<Join code={code || phone.me?.code || ''} fixed={!!fixed} />{/key}
 {:else}
-  <Screen title={gameName('sketch')} onback={() => fixed ? back('/sketch') : (leaving = true)}>
+  <Screen title={gameName('sketch')} fill={fit} onback={() => fixed ? back('/sketch') : (leaving = true)}>
     {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
-    <div class="play">
+    <div class="play" class:fit>
       {#if !fixed && phone.link !== 'live'}<p role="status">{phone.trouble || 'Reconnecting…'}</p>{/if}
       {#if me && v.phase !== 'guess' && !(steps && v.task && !v.sent)}<p class="me"><b>{me.name}</b>{v.mode === 'guess' ? ` · ${me.score.toLocaleString()} pts` : ''} · Room {roomCode}</p>{/if}
       {#if v.phase !== 'lobby'}
@@ -162,6 +167,8 @@
 
 <style>
   .play { display: grid; gap: var(--s-2); padding-bottom: var(--s-4); }
+  /* Fills the room under the header; a part that should give way (the guesses) is the one that grows and shrinks. */
+  .play.fit { flex: 1 1 0; display: flex; flex-direction: column; }
   .heading { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
   .heading h3 { font-size: clamp(1.15rem, calc(5vw * var(--text-scale)), 1.8rem); }
   .heading p { color: var(--text-dim); }

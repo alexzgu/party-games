@@ -48,11 +48,14 @@
   } = $props();
 
   // What the page scrolls to (a new row, a focused input) stops clear of the pinned bars. The
-  // header's scroller is the page, or the screen itself when it fills the screen.
+  // header's scroller is the page, or the screen itself when it fills the screen (again when that changes).
   let head: HTMLElement;
   let headH = $state(0);
   let footH = $state(0);
-  $effect(() => padScroller(head, headH, footH));
+  $effect(() => {
+    void fill;
+    return padScroller(head, headH, footH);
+  });
 </script>
 
 <div class="screen fade-in" class:split class:fill style:--accent={accent} data-keep-scroll={fill ? keep : undefined}>

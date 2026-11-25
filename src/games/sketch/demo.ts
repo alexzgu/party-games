@@ -1,4 +1,5 @@
-// Fixed screens for checking the layout: #/sketch/host?demo=<key> and #/sketch/join?demo=<key>.
+// Fixed screens for checking the layout: #/sketch/host?demo=<key> and #/sketch/join?demo=<key>;
+// on a Draw & guess screen &feed=<n> shows that many guesses instead of the usual four.
 import type { Drawing } from '../../lib/ink';
 import type { Phase } from './core';
 import type { View } from './view';
@@ -45,14 +46,14 @@ function telephone(v: View, key: string, phone: boolean) {
   v.task = { id: 'demo/' + key, kind: v.phase as 'write', ...v.phase === 'draw' ? { line: 'A cat who is late for work' } : v.phase === 'describe' ? { art: lamp } : {} };
 }
 
-function guessing(v: View, key: string, phone: boolean) {
+function guessing(v: View, key: string, phone: boolean, guesses: number | null) {
   v.round = 1;
   v.rounds = 2;
   v.drawer = phone && (key === 'pick' || key === 'drawing') ? 'a' : 'd';
   if (v.phase === 'pick' && phone) v.offer = ['Lamp', 'Fire truck', "Jack-o'-lantern"];
   if (v.phase !== 'guess' && v.phase !== 'reveal') return;
   v.ink = lamp;
-  v.feed = feed;
+  v.feed = guesses === null ? feed : Array.from({ length: guesses }, (_, i) => ({ pid: 'c', name: 'Rae', text: `guess ${i + 1}` }));
   v.got = key === 'guessed' ? ['b', 'a'] : ['b'];
   if (v.phase === 'reveal' || (phone && (key === 'guessed' || key === 'drawing'))) v.word = 'Desk lamp';
   else v.shape = 'D___ _a__';
@@ -62,7 +63,7 @@ function guessing(v: View, key: string, phone: boolean) {
   if (v.phase === 'reveal') v.points = [{ pid: 'b', points: 390 }, { pid: 'd', points: 130 }];
 }
 
-export function demo(key: string, phone: boolean): View {
+export function demo(key: string, phone: boolean, guesses: number | null = null): View {
   const phase = phases.find((p) => p === key) ?? alias[key] ?? 'lobby';
   const mode = ['pick', 'guess', 'reveal', 'scores', 'over'].includes(phase) ? 'guess' : 'telephone';
   const v: View = {
@@ -71,6 +72,6 @@ export function demo(key: string, phone: boolean): View {
   };
   if (key === 'watching' && phone) v.players = [{ pid: 'e', name: 'Max', score: 0 }, ...players];
   if (mode === 'telephone' && phase !== 'lobby') telephone(v, key, phone);
-  if (mode === 'guess') guessing(v, key, phone);
+  if (mode === 'guess') guessing(v, key, phone, guesses);
   return v;
 }
