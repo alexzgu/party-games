@@ -38,7 +38,7 @@ describe('parsePair', () => {
 describe('buildPrompt', () => {
   it('lists existing cards to avoid', () => {
     const p = buildPrompt('Food', [{ left: 'Bland', right: 'Spicy' }]);
-    expect(p).toContain('Theme: Food');
+    expect(p).toContain('The player asks for: Food');
     expect(p).toContain('Bland | Spicy');
   });
 });

@@ -30,6 +30,9 @@ export function givesAway(phrase: string, answer: string): boolean {
   return repeatedWord(phrase, answer) !== '';
 }
 
+/** A card as the line `readLine` reads: "Phrase | Answer | Category" (no category part when it has none). */
+export const cardLine = (c: GibberishCard): string => (c.hint ? `${c.phrase} | ${c.answer} | ${c.hint}` : `${c.phrase} | ${c.answer}`);
+
 /** Why a line made no card: decoration to ignore, the wrong shape, or a giveaway phrase. */
 export type LineFault = 'noise' | 'form' | 'giveaway';
 

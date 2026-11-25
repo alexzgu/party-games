@@ -11,4 +11,4 @@
 <ListPackMake game="rather" specs={RATHER_LISTS} packs={ratherPacks} wizard={WIZARD} range={MAKE_RANGE} chips={THEME_CHIPS}
   route={() => 'prompts'} pasteLabel={'One question per line: two choices joined by "or"'}
   pastePlaceholder={"be able to fly or be invisible\nonly eat pizza or never eat pizza again\nlive without music or without movies"}
-  defaultName="My questions" themeQuestion="What should the questions be about?" {onsaved} {onback} />
+  defaultName="My questions" requestHint="e.g. food dilemmas where both choices are a little gross" {onsaved} {onback} />

@@ -1,10 +1,12 @@
-// "Make with Claude" for Spectrum: asks for one `Left | Right` card per line and turns each
+// "🧙 Ask the wizard" for Spectrum: asks for one `Left | Right` card per line and turns each
 // streamed line into a card, tolerating the list markers, quotes and odd separators models add.
 import { streamLines } from '../../lib/claude';
 import type { Spectrum, SpectrumPack } from '../../lib/content';
 import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
 import { cardId } from './state';
 import { dropNumberCells, pastedLines } from '../../lib/paste';
+import { askedFor, withNameAsk } from '../../lib/wizardAsk';
+import type { ChangeGame } from '../../lib/wizardChange';
 
 export const BATCH = 20;
 const MAX_END = 40;
@@ -22,9 +24,9 @@ Avoid: scales with only two possible answers, ends that are not true opposites, 
 Output only the cards, one per line, formatted exactly as: Left end | Right end
 No numbering, headings, blank lines or commentary.`;
 
-export function buildPrompt(theme: string, avoid: Spectrum[], count = BATCH): string {
-  const t = theme.trim() || 'Mixed bag';
-  let p = `Theme: ${t}\nWrite ${count} cards for this theme.`;
+/** The prompt for `count` cards from the player's `request`, never one in `avoid`; `named`: ask for a pack name too. */
+export function buildPrompt(request: string, avoid: Spectrum[], count = BATCH, named = false): string {
+  let p = withNameAsk([askedFor(request, 'Mixed bag'), `Write ${count} cards for this request.`], named).join('\n');
   const recent = avoid.slice(-MAX_AVOID);
   if (recent.length) {
     p += `\nThese cards already exist. Do not repeat them or closely rephrase them:\n`;
@@ -60,6 +62,9 @@ const PREFIX = /^\s*(?:[-*•]\s+|\d+[.)]\s+|card\s*\d+\s*[:.)-]\s*)/i;
 
 const hasWord = (s: string) => /[\p{L}\p{N}]/u.test(s);
 
+/** A card as the line `parsePair` reads. */
+export const pairLine = (c: Spectrum): string => `${c.left} | ${c.right}`;
+
 /** One streamed line to a card, or null when the line is not a usable `Left | Right` pair. */
 export function parsePair(raw: string): Spectrum | null {
   const line = raw.replace(/\*\*|__|`/g, '')
@@ -85,14 +90,17 @@ export interface GenerateOptions {
   theme: string;
   avoid: Spectrum[];
   onPair: (card: Spectrum) => void;
+  /** When given, Fizzwick also suggests the pack's name, handed here. */
+  onName?: (name: string) => void;
   signal?: AbortSignal;
 }
 
 export function generatePairs(opts: GenerateOptions): Promise<void> {
   return streamLines({
     system: SYSTEM,
-    prompt: buildPrompt(opts.theme, opts.avoid),
+    prompt: buildPrompt(opts.theme, opts.avoid, BATCH, !!opts.onName),
     signal: opts.signal,
+    onName: opts.onName,
     maxTokens: 2000,
     onLine: (line) => {
       const card = parsePair(line);
@@ -101,10 +109,17 @@ export function generatePairs(opts: GenerateOptions): Promise<void> {
   });
 }
 
+/** "Ask for changes" on the review of Fizzwick's cards: a run asks for `BATCH`, so a change does too. */
+export const CHANGE: ChangeGame<Spectrum> = {
+  system: SYSTEM, maxTokens: 2000, max: BATCH,
+  first: (request, count) => buildPrompt(request, [], count),
+  line: pairLine, read: (line) => parsePair(line), keyOf: cardId,
+  describe: (c) => `${c.all} cards`, avoidLine: pairLine, avoidKey: cardId,
+};
+
 /** "🧙 Add more" on a pack: how many cards to ask for. */
 export const MORE_RANGE = { start: 10, min: 5, max: 40, step: 5 };
 
-const asLine = (c: Spectrum) => `${c.left} | ${c.right}`;
 
 /**
  * More cards on top of `pack`, never one of its cards, of those already written this time or of
@@ -114,7 +129,7 @@ export function moreCards(pack: SpectrumPack, others: readonly Spectrum[], run: 
   const have = [...run.avoid, ...pack.cards];
   return streamMore({
     system: SYSTEM,
-    prompt: morePrompt({ name: pack.name, blurb: pack.blurb, have: have.map(asLine), others: others.map(asLine) }, run, 'cards'),
+    prompt: morePrompt({ name: pack.name, blurb: pack.blurb, have: have.map(pairLine), others: others.map(pairLine) }, run, 'cards'),
     count: run.count, maxTokens: 3000, read: parsePair, keyOf: cardId, taken: [...have, ...others].map(cardId), onItem: run.onItem, signal: run.signal,
   });
 }

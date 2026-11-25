@@ -9,17 +9,23 @@
   import Segmented from './Segmented.svelte';
   import WizardEffort from './WizardEffort.svelte';
   import MagicWords from './MagicWords.svelte';
+  import WizardRequest from './WizardRequest.svelte';
+  import PackNameField from './PackNameField.svelte';
+  import WizardChanges from './WizardChanges.svelte';
+  import { WizardChanges as Changes } from '../lib/wizardChanges.svelte';
+  import { PackName } from '../lib/packName.svelte';
+  import { wizardBlurb } from '../lib/wizardAsk';
   import { slugify, type PackMeta } from '../lib/content';
   import { hasKey, WANTS } from '../lib/claude';
   import { sfx } from '../lib/sound';
   import { afterRun, libraryOn, passedSoFar, shareWizardPack } from '../lib/library';
   import { NO_ROOM, putSplit, type AnyPack } from '../lib/packfile';
   import { addItems, itemKey, packItems, parseLists, type ListItem, type ListPack, type ListSpec } from '../lib/listPack';
-  import { askLine, generateItems, type ListWizard } from '../lib/listWizard';
+  import { askLine, changeGame, generateItems, type ListWizard } from '../lib/listWizard';
 
-  // "Make a pack" for a list pack (Doodle Brawl, Bad Hand, Sketchy): paste a list, one item per line
-  // (numbers, bullets and quotes dropped), or pick a theme and watch Fizzwick's items stream in;
-  // drop the duds, save as a new pack.
+  // "Make a pack" for a list pack (Doodle Brawl, Bad Hand, Sketchy, Would You Rather, Smarty Pants):
+  // paste a list, one item per line (numbers, bullets and quotes dropped), or tell Fizzwick what you
+  // want and watch his items stream in; name the pack, drop the duds, save as a new pack.
   let {
     game,
     specs,
@@ -32,7 +38,7 @@
     pastePlaceholder = '',
     pasteExamples,
     defaultName,
-    themeQuestion,
+    requestHint,
     onsaved,
     onback,
   }: {
@@ -50,15 +56,20 @@
     /** Without `route`: example lines for each list, by field. */
     pasteExamples?: Record<string, string>;
     defaultName: string;
-    themeQuestion: string;
+    /** A descriptive example request for this game, starting "e.g.". */
+    requestHint: string;
     /** The packs saved: one, or several when it was too long for one. */
     onsaved: (ids: string[]) => void;
     onback: () => void;
   } = $props();
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes a pack on a theme you pick' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes a pack from what you ask for' }];
   let mode = $state<'paste' | 'claude'>(hasKey() ? 'claude' : 'paste');
+  /** A pasted list's name, typed on the paste screen. */
   let name = $state('');
+  /** The wizard pack's name, on the review screen. */
+  const packName = new PackName();
+  /** What the player asked Fizzwick for, kept whole while the review is on screen. */
   let theme = $state('');
   // svelte-ignore state_referenced_locally
   let count = $state(range.start);
@@ -76,6 +87,16 @@
   const lists = $derived(askLine(wizard, wizard.split(count)));
   const pasteSpec = $derived(specs.find((x) => x.field === pasteField) ?? specs[0]);
   const one = $derived(specs.length > 1 ? 'items' : specs[0].many);
+
+  /** Keys of the items dropped on review. */
+  let dropped = $state(new Set<string>());
+  /** "Ask for changes" on Fizzwick's items. */
+  // svelte-ignore state_referenced_locally
+  const changes = new Changes({
+    game: changeGame(wizard, range.max), request: () => theme, asked: () => count, avoid: () => packs().flatMap((p) => packItems(specs, p)),
+    items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
+    name: () => packName, onItem: () => sfx.tick(), running: () => streaming, onStart: (n) => { byPass = libraryOn(game) && passedSoFar(byPass, n); error = ''; },
+  });
 
   function newId(n: string): string {
     const taken = new Set(packs().map((p) => p.id));
@@ -101,17 +122,20 @@
    */
   let byPass = false;
   async function run() {
+    if (changes.writing) return; // one writer at a time: a change or this run
+    changes.newRun();
     byPass = libraryOn(game) && passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
-    if (!name.trim()) name = theme.trim().replace(/^\w/, (c) => c.toUpperCase()).slice(0, 40);
+    packName.begin('wizard', theme, defaultName);
     reviewing = true;
     error = '';
     streaming = true;
     const c = (ctrl = new AbortController());
     try {
       const avoid = [...items, ...packs().flatMap((p) => packItems(specs, p))];
-      const n = await generateItems(wizard, { theme, count, avoid, onItem: (i) => { items.push(i); sfx.tick(); }, signal: c.signal });
-      if (!c.signal.aborted && n === 0) error = `No usable ${one} came back. Try again or pick another theme.`;
+      const onName = packName.wanted ? (s: string) => packName.suggest(s) : undefined;
+      const n = await generateItems(wizard, { theme, count, avoid, onItem: (i) => { items.push(i); sfx.tick(); }, onName, signal: c.signal });
+      if (!c.signal.aborted && n === 0) error = `No usable ${one} came back. Try again or ask for something else.`;
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -120,16 +144,19 @@
   }
 
   function cancel() {
+    if (changes.busy) return changes.stop();
     if (streaming) { ctrl?.abort(); return; }
     items = [];
     error = '';
     reviewing = false;
+    packName.reset();
+    changes.clear();
   }
 
   function save(kept: ListItem[]) {
-    const n = name.trim() || defaultName;
+    const n = packName.saved(theme, defaultName);
     const id = newId(n);
-    const pack = afterRun(addItems(empty(id, n, `Conjured by Fizzwick: ${theme.trim()}`), specs, $state.snapshot(kept) as ListItem[]), byPass, true);
+    const pack = afterRun(addItems(empty(id, n, wizardBlurb(theme)), specs, $state.snapshot(kept) as ListItem[]), byPass, true);
     const saved = putSplit(game, pack);
     if (!saved.length) { unsaved = NO_ROOM; return; }
     for (const p of saved) void shareWizardPack(game, p as unknown as AnyPack, byPass);
@@ -158,9 +185,8 @@
     <MagicWords intro={WANTS} />
   {:else if !reviewing}
     <form class="stack" onsubmit={(e) => { e.preventDefault(); void run(); }}>
-      <label for="{game}-theme"><h3>{themeQuestion}</h3></label>
-      <input id="{game}-theme" type="text" bind:value={theme} placeholder="e.g. our friend group, camping, the 2000s" autocomplete="off" enterkeyhint="go" maxlength="80" />
-      <div class="chips" role="group" aria-label="Quick themes">
+      <WizardRequest id="{game}-request" bind:value={theme} placeholder={requestHint} />
+      <div class="chips" role="group" aria-label="Ideas">
         {#each chips as t (t)}
           <button type="button" class="chip" class:on={theme === t} onclick={() => (theme = t)}>{t}</button>
         {/each}
@@ -171,21 +197,19 @@
       <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes it; you choose what to keep">✨ Make pack</Button>
     </form>
   {:else}
-    <label class="field">
-      <span>Pack name</span>
-      <input type="text" bind:value={name} placeholder={defaultName} maxlength="40" autocomplete="off" />
-    </label>
+    <PackNameField name={packName} placeholder={defaultName} />
     {#if error}
       <div class="error" role="alert">
         <p>{error}</p>
-        {#if !hasKey()}<MagicWords intro={WANTS} />{:else if !streaming}<Button variant="secondary" size="sm" onclick={run}>Try again</Button>{/if}
+        {#if !hasKey()}<MagicWords intro={WANTS} />{:else if !changes.writing}<Button variant="secondary" size="sm" onclick={run}>Try again</Button>{/if}
       </div>
     {/if}
     {#if items.length === 0 && streaming}
-      <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” {one}…</p>
+      <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your {one}…</p>
     {/if}
     {#if unsaved}<div class="error" role="alert"><p>{unsaved}</p></div>{/if}
-    <Triage {items} {keyOf} {streaming} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+    <Triage {items} {keyOf} bind:dropped streaming={changes.writing} stopPutsBack={changes.busy} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+      {#snippet below()}<WizardChanges {changes} />{/snippet}
       {#snippet item(i: ListItem)}
         <span class="it">
           {#if specs.length > 1}<span class="tag">{specs.find((s) => s.field === i.field)?.one}</span>{/if}
@@ -197,7 +221,6 @@
 </Screen>
 
 <style>
-  h3 { font-size: 1.3rem; }
   .small { font-size: 0.9rem; margin: 0; }
   .field { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }

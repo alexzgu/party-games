@@ -4,7 +4,9 @@ import { streamLines } from '../../lib/claude';
 import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
 import type { QuickPack } from '../../lib/content';
 import { promptKey } from './logic';
-import { cleanPrompt, promptError } from './parse';
+import { cleanPrompt, promptError, promptLine } from './parse';
+import type { ChangeGame } from '../../lib/wizardChange';
+import { askedFor, withNameAsk } from '../../lib/wizardAsk';
 
 export const THEME_CHIPS = ['Food & drink', 'Movies & TV', 'Music', 'Sports', 'Around the house', 'Animals', 'Travel', 'School & work', '2000s throwback', 'After dark'];
 
@@ -27,19 +29,24 @@ Every prompt must meet all of these:
 4. For cheeky or adult themes: cheeky, never explicit.
 Mix easy and harder prompts. Never repeat a prompt or use the examples.`;
 
-export function buildPrompt(theme: string, avoid: string[]): string {
-  let p = `Theme: ${theme.trim() || 'a mix of everything'}\nWrite ${BATCH} prompts that fit the theme.`;
+/** The prompt for a batch from the player's `request`, never one in `avoid`; `named`: ask for a pack name too. */
+export function buildPrompt(request: string, avoid: string[], named = false): string {
+  let p = withNameAsk([askedFor(request, 'a mix of everything'), `Write ${BATCH} prompts that fit the request.`], named).join('\n');
   if (avoid.length) p += `\nThese are already in the pack, so do not use them again: ${avoid.join('; ')}.`;
   return p;
 }
 
-/** Streams new prompts for a theme, skipping duplicates of `existing` and of each other. */
-export async function generatePrompts(opts: { theme: string; existing: string[]; onPrompt: (p: string) => void; signal?: AbortSignal }): Promise<void> {
+/**
+ * Streams new prompts for the player's request, skipping duplicates of `existing` and of each
+ * other. With `onName`, Fizzwick also suggests the pack's name, handed there.
+ */
+export async function generatePrompts(opts: { theme: string; existing: string[]; onPrompt: (p: string) => void; onName?: (name: string) => void; signal?: AbortSignal }): Promise<void> {
   const seen = new Set(opts.existing.map(promptKey));
   await streamLines({
     system: SYSTEM,
-    prompt: buildPrompt(opts.theme, opts.existing),
+    prompt: buildPrompt(opts.theme, opts.existing, !!opts.onName),
     signal: opts.signal,
+    onName: opts.onName,
     onLine: (line) => {
       const p = cleanPrompt(line);
       if (!p || promptError(p, []) || seen.has(promptKey(p))) return;
@@ -55,6 +62,14 @@ export const MORE_RANGE = { start: 15, min: 5, max: 40, step: 5 };
 const readPrompt = (line: string) => {
   const p = cleanPrompt(line);
   return p && !promptError(p, []) ? p : null;
+};
+
+/** "Ask for changes" on the review of Fizzwick's prompts: a run asks for `BATCH`, so a change does too. */
+export const CHANGE: ChangeGame<string> = {
+  system: SYSTEM, maxTokens: 8000, max: BATCH,
+  first: (request) => buildPrompt(request, []),
+  line: promptLine, read: (line) => readPrompt(line), keyOf: promptKey,
+  describe: (c) => `${c.all} prompts`, avoidLine: promptLine, avoidKey: promptKey,
 };
 
 /**

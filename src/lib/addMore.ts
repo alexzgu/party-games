@@ -2,7 +2,7 @@
 // spirit, never repeating what is there. Each game brings its own system prompt, how an item reads
 // in a list and how a streamed line becomes an item; this file builds the request, keeps the stream
 // to new items and merges the kept ones into the pack.
-import { streamLines } from './claude';
+import { streamLines, type Turn } from './claude';
 
 /** What the player asked for: how many, and an optional steer ("more 90s ones", "harder"). */
 export interface MoreAsk {
@@ -32,6 +32,13 @@ export interface MorePack {
 
 /** How many characters of existing items one request lists (the wizard server takes 64 KB in all). */
 export const MAX_LISTED_CHARS = 24_000;
+
+/**
+ * The most bytes the lists of one request ("Ask for changes") may bring its body to: the wizard
+ * server refuses a body over 64 KB (worker/src/validate.ts, MAX_BODY_BYTES); this leaves room for
+ * the request's other fields.
+ */
+export const MAX_REQUEST_BYTES = 56 * 1024;
 
 /** What the add-more screen says when nothing new came back. */
 export const EMPTY_HANDED = 'Fizzwick came back empty-handed. Try again, or change the steer.';
@@ -73,6 +80,8 @@ export function morePrompt(pack: MorePack, ask: MoreAsk, noun: string): string {
 export interface MoreStream<T> {
   system: string;
   prompt: string;
+  /** The whole conversation in place of `prompt`, when there is one. */
+  messages?: readonly Turn[];
   /** The most items to hand over; later lines are ignored. */
   count: number;
   maxTokens?: number;
@@ -82,6 +91,8 @@ export interface MoreStream<T> {
   /** Keys never to hand over: the pack's, other packs' where the game needs it, earlier batches'. */
   taken: Iterable<string>;
   onItem: (t: T) => void;
+  /** The pack name the prompt asked for, lifted out of the stream (never an item). */
+  onName?: (name: string) => void;
   signal?: AbortSignal;
 }
 
@@ -92,8 +103,10 @@ export async function streamMore<T>(o: MoreStream<T>): Promise<number> {
   await streamLines({
     system: o.system,
     prompt: o.prompt,
+    messages: o.messages,
     signal: o.signal,
     maxTokens: o.maxTokens,
+    onName: o.onName,
     onLine: (line) => {
       const item = n < o.count ? o.read(line) : null;
       const k = item ? o.keyOf(item) : '';

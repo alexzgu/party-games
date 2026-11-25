@@ -41,13 +41,13 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   `motion` (permission, motion stream, sign fix, upright rotation), `pitch` (forehead pitch from
   gyroscope + gravity), `tilt` (gesture detector), `calibration` (practice tilts → thresholds),
   `bag` (deal without repeats across rounds and restarts), `content` (built-in + custom packs),
-  `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
+  `claude` (live generation, streamed line by line), `wizard` (effort → model), `wizardAsk` and `packName` (the wizard's request, the name he suggests and its fallback, the description), `wizardChange` and `wizardChanges` (asking for changes on a review), `wizardServer` (the magic words), `invite` and `join` (invite links), `history` (finished rounds and games),
   `paste` (reading pasted lists), `packfile` (pack files: export, import), `menu` (a menu's keys and which way it opens), `gamePicker` (the drop-down's search, and when it focuses its field), `panel` (whether a pack page's players or teams, a pack editor's details or a Community list's search and filters start shown, each kind with its own remembered choice; which edges of a part scrolling on its own have more behind them; bringing an item into view in its list), `keepScroll` (the scroll of a page's parts scrolling on their own, kept for Back), `library` (the Community library), `communityView` (where the Community packs stand, kept in the address: search, order, filters, the open pack, the page's game; the note after an import), `communityCache` (the Community lists already loaded, kept until Community is opened anew), `communityMarks` (the Community packs this phone skips), `communityPages` (loading pages until enough fit the filters), `shareLog` (what the Community library took of each pack, and which are being sent), `username` and `usernameShape` (this phone's username; the rules for one, shared with the wizard server), `packList` (search, picks and counts for the shared pack list), `share` (share sheet or download), `gamesView` (the Games page's rules: default categories, the orders, the categories box's label, own category names, reading the stored choices defensively) and `gamesPage.svelte` (those choices on this phone), `update` (new versions switch in on the main menu or the Games page, held back while the category editor is open), `random`, `ink` (drawings: strokes, limits, inks, painting; Doodle Brawl and Sketchy), `cards/` (a 52-card deck and a hand's layout; see Playing cards).
 - `src/components/` — `Screen` (page frame: back button and title pinned at the top, actions pinned at the bottom), `PinnedPanel` (a page body where one part scrolls: a pinned top that folds away, a pinned row with the fold's button, the scroller with its edge hairlines, an optional pinned foot; used by `PackList`, every pack editor and the Community list), `PackList` (every pack game's pack page: pinned players or teams and packs row, the scrolling packs, the Add pack row), `ScrollWindow` (rows that grow, in a window scrolling on its own with fading edges), `GameCard` (one large row opening a page: a game, or the main menu's Games and Community packs), `CategoryEditor` (making or changing one of the Games page's own categories), `Dropdown` (the searchable drop-down box), `GamePicker` (its pick-one face choosing a game: the Community page, History), `CategoryMenu` (its pick-several face for the Games page's categories), `Popup`, `MenuButton` (a button opening a small menu),
   `HowTo` (the "?" header button that opens a game's rules), `RulesCard` (a setup's settings
   behind one row), `Button`,
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
-  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `WizardNote` (the line that Fizzwick can be wrong, over his results), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
+  items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `WizardRequest` (the box where the player tells Fizzwick what they want), `PackNameField` (a wizard pack's name on its review screen), `WizardChanges` (asking Fizzwick for changes on a review), `WizardNote` (the line that Fizzwick can be wrong, over his results), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
   `ExportPack` (Export), `Community` and `CommunityItems` (browse, preview, import and star
   Community packs, over a pack list or on the Community page), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown), `cards/PlayingCard` and `cards/CardFan` (see Playing cards).
 - `src/pages/` — the pages that are not a game: `Home`, `Games`, `Settings`, `History`, `CommunityPage`
@@ -81,13 +81,89 @@ Three routes, in the order the owner chose to rely on them:
    history at once (`replaceState` to `#/`), and says "Fizzwick the Wizard has moved in on this
    phone."; a link whose key does not look like an Anthropic key (`sk-ant-`, 20–300 of
    `[A-Za-z0-9_-]`) says it is broken and stores nothing. The phone calls the API directly.
-   Each make page shows "How hard Fizzwick tries" (`WizardEffort`) next to the theme and the
+   Each make page shows "How hard Fizzwick tries" (`WizardEffort`) next to the request and the
    make button, when the phone has a key: 🥱 Half-asleep (Haiku 5.5), ☕ Had his coffee (Sonnet
    5.5), 🔮 Full beard power (Opus 5.5, the default), kept in `settings.model`; an unknown stored
    id uses Opus. Without a key or pass the magic-words box (`MagicWords`) appears wherever the
    wizard is wanted: Settings and in place of the wizard's form on every make page.
    `streamLines()` hands each line over as soon as it is complete; items stream into `Triage`;
    "More" sends the items already kept so the wizard avoids repeats.
+   **Asking and naming** (every game with the wizard, present and future; `src/lib/wizardAsk.ts`,
+   `WizardRequest`, `PackNameField`, `packName.svelte.ts`): the player tells Fizzwick what they want
+   in their own words, never a title: one box labelled "Tell Fizzwick what you want", three lines
+   that grow, at most 300 characters (a quiet "N characters left" only in the last 60), Enter adds
+   a line and the make button starts him, with a placeholder per game showing a descriptive request
+   ("e.g. French pastries you'd find in a Paris bakery, nothing too obscure"); nothing on that form
+   calls it a theme, topic, title or name. The prompt carries the whole request ("The player asks
+   for: …"). The pack's name is its own "Pack name" field on the review screen (Big Board: the
+   board's name in its editor). Fizzwick suggests it in the same reply, no extra request: the
+   prompt asks him to start with one line "Name: …", the only exception to the game's output
+   rules. Only the reply's first line can be the name, and only with a colon after "Name" or
+   "Pack name" and a good name in it (1–4 words, at most 40 characters, a letter, no commas or
+   bars), put in Title Case; that line is lifted out and never shown or kept as an item. Any other
+   first line, and every later line whatever it looks like ("Name-Brand Snacks", a card for the
+   word "Name"), goes to the game's own reader as usual. Every review of Fizzwick's pack starts
+   with a name in the field: until his comes, or when it is missing or bad, a short name from the
+   request's first clause (an empty opening such as "Make me a pack about" and a narrowing clause
+   such as "…you'd find in" left out, at most 4 words and 40 characters), else the game's default
+   name. A typed name belongs to the pack on screen: "More" and "Try again" never replace it, but a
+   run started another way (paste, by hand, wizard) or with other words is a new pack and forgets
+   it; "More" asks for a name only while none has been typed or suggested; going back to the
+   request forgets an untyped name. Adding to an existing pack asks for no name. In Big Board the
+   name arriving alone updates the board in the making silently (only a clue ticks). The description
+   is "Conjured by Fizzwick: " and the request, cut at a whole word with "…" to 80 characters in
+   all (the board editor's limit, inside the library's 60 for names and 140 for descriptions).
+   **Asking for changes** (every game with the wizard, present and future; `src/lib/wizardChange.ts`,
+   `wizardChanges.svelte.ts`, `WizardChanges`): on the review of a NEW pack Fizzwick made from a
+   request, only with a key or pass (like "More"), a box "Ask for changes" (grows, at most 200
+   characters, "e.g. only the ones from France", line breaks sent as spaces) with "Change". Never on
+   pasted or typed lists, when the make screen adds to an existing pack (Heads Down. into a deck,
+   Inn Co Hear Ant and Brain Freeze into a pack, Spectrum's "more like" a saved pack), on "Add more"
+   or in a saved pack's editor. The answer replaces the list on screen: the whole list again, as
+   many as are kept on screen and never fewer than the run first asked for, keeping what still fits
+   and replacing the rest; the new items stream in as on a first run. Each request is always three
+   messages: the first run's prompt for the request and count (no avoid list, no name ask); as his
+   own answer, the items the player kept, in exactly the lines that game reads (each game's
+   serialiser sits next to its reader; `read(line(item))` gives the item back); then "The player
+   asks for a change: …", the earlier changes still applied (oldest first, at most 5), the items
+   the player removed ("never bring them back"), "Write the whole list again: exactly N …", the
+   first run's avoid list, and the name ask when a name is wanted. Same system prompt, model,
+   effort and token cap as a first run. A list longer than one run on that make screen may ask for
+   is changed in parts, one request after another (each counts as a request): each part holds at
+   most that many kept items and asks for exactly as many, the first-asked count's extra going on
+   the last; a game with two lists (Bad Hand, Sketchy, Snark Tank) cuts each list on its own, the
+   n-th part of each going into the n-th request; later requests also list what this change has
+   already written ("never repeat them"); only the first asks for a name. Every request's body stays
+   within `MAX_REQUEST_BYTES` (`src/lib/addMore.ts`, under the wizard server's 64 KB): what does not
+   fit is left out of the avoid list first, then of the removed items, then of what was already
+   written. One writer at a time: while a change or the screen's own run ("Make", "More", "Try
+   again") writes, every run control waits and the box hides (the thread stays); a new run or
+   change clears the previous error line. While a change writes the pack name is read-only. Leaving
+   the screen stops a change. A short thread sits above the box once there is a change: the
+   request on one line, then each change and Fizzwick's line "Kept 12 · replaced 28" (kept: its key
+   was in the list before the change, summed over the requests); only the latest shows, older ones
+   fold under "N earlier changes". "Undo" brings back the list before the last change, with its
+   dropped marks, and takes that change off the thread, one step at a time; it is offered only
+   while nothing has been changed by hand since that change (a dropped mark toggled, in Big Board
+   any edit but the name) and "More" ends it too; the thread stays. A change that fails, is
+   refused, is stopped, is left or brings no usable item (in any of its requests) puts the list and
+   its marks back exactly as they were, with the error line under the thread. A typed name is
+   never replaced: the name before a change comes back on a failure, Stop or Undo only when the
+   player has not typed a name since. A reply cut off by the token limit never yields its
+   unfinished last line (first runs alike).
+   Big Board has no list review: the box sits under the clues in the editor of the board Fizzwick
+   just wrote, until it is saved. Whether the unsaved board is his comes from what is stored with
+   it (the request, and whether its name was typed), so a reload and "Continue" keep the box and
+   the note below; the address says nothing about it. His list there is the board as it stands, one
+   "Category | level | clue | answer" line per filled tile, row by row, each cell made safe to read
+   back (one line, "|" written as "/"); he writes the whole board again at the editor's current
+   size (N = categories × levels, never cut into parts); a line that brings back one of the tiles
+   from before (compared in that safe form) puts the player's tile back exactly as it was, without
+   the checks on new clues, which only new clues go through; a clue counts as kept when its clue and
+   answer are both unchanged. While he writes, the whole editor is read-only (name, description,
+   size, category tabs, tiles), the board shows from memory and Stop replaces Save: the stored
+   unsaved board stays the whole board from before until the change has finished, so a reload
+   mid-change finds it untouched, box included.
    Fizzwick writes from memory and nobody checks his facts, so wherever items he wrote are on
    screen (the review of a pack he just made, its "Add more" results, and in Big Board the board
    as he writes it and the new board's editor until it is saved), one quiet line (`WizardNote`)
@@ -746,7 +822,7 @@ are 3–6 categories × 3–5 clues; packs made or edited on the phone may be 1�
   Paste (a "# Category" line then "clue | answer" lines, easiest first; tolerant of other
   headings, list markers, tables, "Q:/A:", value columns and "Category | level | clue | answer"
   lines; short categories get empty tiles; past 8 × 10 is cut off and the skipped lines are
-  counted), or 🧙 Wizard (topic, categories × levels, how hard Fizzwick tries; the model streams one line
+  counted), or 🧙 Wizard (the request, categories × levels, how hard Fizzwick tries; the model streams one line
   per clue, "Category | level | clue | answer", easiest row first, under the AGENTS.md quality
   bar, and a live preview fills tile by tile; "Stop" opens what came; a pass refused mid-preview
   shows the magic-words box under the error in place of "Try again"). Without a key it shows the
@@ -767,7 +843,7 @@ beside them watching for slips.
   45/60/90 s (default 60), play until a points target (default 15, 5–50)
   or a number of rounds (default 5; a round is one turn per team), "Skips cost a point"
   (default off); packs (the shared pack list; a pencil on each opens its editor; Add pack → New: write the
-  cards one by one or ask the wizard for a theme, 10–60 cards, default 30, reviewed before saving).
+  cards one by one or ask the wizard, 10–60 cards, default 30, reviewed before saving).
   The player's own packs have "🧙 Add more" in their editor (5–40 cards, default 15). Wizard cards
   follow the pack editor's rules (exactly five banned words, none containing the word or inside
   it); a word any Don't Say It pack on the phone has is never offered; cards that fail are dropped
@@ -895,7 +971,7 @@ prompts, answers and scores; 3–8 players join from their phones at the same si
   Make a pack or Add pack → New: paste a list or ask the wizard; "A game is running: these apply
   to the next one" under the packs row while one is), and a Rules row over Done ("3 rounds · 75 s
   to write · 15 s to vote · 3-vote final") opening rounds 2 or 3, seconds to write 45/75/90/120
-  (default 75), seconds to vote 10/15/20/30 (default 15) and the final round. The wizard takes a theme (or a tap-to-use
+  (default 75), seconds to vote 10/15/20/30 (default 15) and the final round. The wizard takes a request (or a tap-to-use
   suggestion such as Office life or Roommates) and 10–60 prompts (default 30); each prompt comes
   with a stock answer, and about one final per five prompts comes with three house lines, all
   reviewed before saving. The player's own packs have "🧙 Add more" (5–40 prompts, default 15,
@@ -1278,7 +1354,7 @@ stages the bouts. Two rounds. No spectator seats; late joiners vote.
   imported joins the picked ones; with too few titles for the lobby's players (at least three), a
   note says how many and that the game will ask before adding titles from the packs it names) and
   a Rules row over Done opening seconds per drawing. Make a pack: paste titles
-  (one per line) or ask the wizard (a theme or a suggestion, 10–60 titles, default 30); own packs
+  (one per line) or ask the wizard (a request or a suggestion, 10–60 titles, default 30); own packs
   have "🧙 Add more" (5–40, default 15). Every route keeps a title only when it meets the content
   rules (2–8 words, capital first, no closing . ! or ?, 60 characters; `src/games/brawl/rules.ts`),
   and the wizard's are also new to every Doodle Brawl pack on the phone; anything else is dropped
@@ -1339,7 +1415,7 @@ on their own phones through the shared room link; a host screen shows the room. 
   Done summarises the mode's timers and opens them, as in Snark Tank. Saved on the device at once;
   a running game keeps its own, so they apply to the next game.
 - **Making packs**: paste words or ideas (a switch says which the list is), or ask the wizard (a
-  theme or a suggestion, 15–120 words, default 45, plus one idea per three words, at least five);
+  request or a suggestion, 15–120 words, default 45, plus one idea per three words, at least five);
   own packs have "🧙 Add more" (15–90 words, default 30, ideas likewise). Every route keeps an item
   only when it meets the content rules below (`src/games/sketch/rules.ts`), and the wizard's are
   also new to every Sketchy pack on the phone; anything else is dropped unseen. A pack may hold
@@ -1524,7 +1600,7 @@ prompt and the answers. Amounts marked *house* are ours.
   packs lend only the kind that is short (answers, prompts or both). Late joiners and refills
   draw from the room's own deck.
 - **Making packs**: paste cards, one per line (a line with `___` or ending in "?" is a prompt, the
-  rest answers), or ask the wizard (a theme or a suggestion, 5–40 prompts, default 20, and four
+  rest answers), or ask the wizard (a request or a suggestion, 5–40 prompts, default 20, and four
   answers per prompt); own packs have "🧙 Add more" (5–30 prompts, default 10, answers likewise).
   Every route keeps a card only when it meets the content rules below (`src/games/hand/rules.ts`;
   pasted and wizard cards are tidied first: any run of underscores is one blank, first letter
@@ -1652,7 +1728,7 @@ own phone, with a screen everyone can see (3 to 12 players)."). Its card on the 
   Packs link to the settings. The same questions a room would ask from (`roomQuestions`), shuffled;
   the place is kept while the app stays open and the picked questions stay the same. After the last question it
   says so and offers Start over. No players, no scores, no History; the screen stays awake.
-- **Making packs**: paste questions, one per line, or ask the wizard (a theme or a suggestion,
+- **Making packs**: paste questions, one per line, or ask the wizard (a request or a suggestion,
   10–60 questions, default 30); own packs have "🧙 Add more" (5–40, default 15). Every route keeps
   a question only when it meets the content rules below (`src/games/rather/rules.ts`; pasted and
   wizard lines are tidied first: a leading "Would you rather" and closing punctuation dropped, "OR"
@@ -1816,7 +1892,7 @@ Bad Hand). Amounts marked *house* are ours.
   remembers each question as it is shown, as a room does, under `trivia:solo` with the best score
   (leaving mid-run skips only the questions it showed; a reload mid-run loses the run). A tap
   counts only while time is left; at 0 the buttons take no taps. The screen stays awake.
-- **Making packs**: paste questions, one per line, or ask the wizard (a theme or a suggestion,
+- **Making packs**: paste questions, one per line, or ask the wizard (a request or a suggestion,
   10–60 questions, default 30); own packs have "🧙 Add more" (5–40, default 15). Every route keeps
   a question only when it meets the content rules below (`src/games/trivia/rules.ts`; pasted and
   wizard lines are tidied first: each part trimmed with its spaces squeezed, a bar with or without

@@ -15,6 +15,9 @@
     onsave,
     oncancel,
     onmore,
+    dropped = $bindable(new Set<string>()),
+    below,
+    stopPutsBack = false,
   }: {
     items: T[];
     keyOf: (t: T) => string;
@@ -27,9 +30,13 @@
     onsave: (kept: T[]) => void;
     oncancel: () => void;
     onmore?: () => void;
+    /** Keys of the dropped items; bound by a screen that puts marks back (Undo of a change). */
+    dropped?: Set<string>;
+    /** Shown under the list ("Ask for changes", which hides its box while Fizzwick writes). */
+    below?: Snippet;
+    /** Stop brings back the list from before (a change), instead of keeping what is written so far. */
+    stopPutsBack?: boolean;
   } = $props();
-
-  let dropped = $state(new Set<string>());
   const kept = $derived(items.filter((t) => !dropped.has(keyOf(t))));
 
   function toggle(t: T) {
@@ -55,11 +62,12 @@
       </li>
     {/each}
   </ul>
+  {#if below}{@render below()}{/if}
   <div class="actions">
     <Button onclick={() => onsave(kept)} disabled={kept.length === 0 || streaming} size="lg" tip="Keeps these and leaves out the dropped ones">{saveLabel} {kept.length}</Button>
     <div class="row">
       {#if onmore}<Button variant="secondary" onclick={onmore} disabled={streaming} tip="Asks Fizzwick for another batch to add to these">More</Button>{/if}
-      <Button variant="ghost" onclick={oncancel} tip={streaming ? 'Stops Fizzwick; what is written so far stays' : 'Throws all of these away and goes back'}>{streaming ? 'Stop' : 'Discard all'}</Button>
+      <Button variant="ghost" onclick={oncancel} tip={streaming ? (stopPutsBack ? 'Stops Fizzwick and brings back your list as it was' : 'Stops Fizzwick; what is written so far stays') : 'Throws all of these away and goes back'}>{streaming ? 'Stop' : 'Discard all'}</Button>
     </div>
   </div>
 </div>

@@ -7,6 +7,8 @@ import type { SnarkPack } from '../../lib/content';
 import { ANSWER_MAX, LINE_MAX, LINES_EACH } from './logic';
 import { MAX_PROMPT_CHARS } from './prompts';
 import { itemKey, missingStock, packTexts, promptKey, type SnarkItem, type Stock } from './pack';
+import { askedFor, withNameAsk } from '../../lib/wizardAsk';
+import type { ChangeGame } from '../../lib/wizardChange';
 
 export const THEME_CHIPS = ['Office life', 'Roommates', 'Dating apps', 'Road trips', 'Family dinners', 'Group chats', 'Weddings', 'College', 'Pets', 'The gym', 'Holidays', 'After dark'];
 
@@ -78,15 +80,30 @@ export function readItem(line: string): SnarkItem | null {
   return { kind: 'final', prompt, house: house as [string, string, string] };
 }
 
-/** The request for `prompts` prompts and `finals` finals on `theme`, never one in `avoid`. */
-export function buildPrompt(theme: string, prompts: number, finals: number, avoid: readonly string[]): string {
-  const parts = [`Theme: ${theme.trim() || 'a mix of everything'}`, `Write ${prompts} prompts with stock answers and ${finals} ${finals === 1 ? 'final' : 'finals'} that fit the theme.`];
+/** An item as the line `readItem` reads: "Prompt | stock answer", or "Final: Prompt | one | two | three". */
+export function itemLine(i: SnarkItem): string {
+  return i.kind === 'prompt' ? `${i.prompt} | ${i.safety}` : `Final: ${i.prompt} | ${i.house.join(' | ')}`;
+}
+
+/** "Ask for changes" on the review of Fizzwick's prompts and finals; the avoid list is every other Snark prompt. */
+export const CHANGE: ChangeGame<SnarkItem, string> = {
+  system: SYSTEM, maxTokens: 6000, max: MAKE_RANGE.max,
+  first: (request, count) => buildPrompt(request, count, finalsFor(count), []),
+  line: itemLine, read: (line) => readItem(line), keyOf: itemKey,
+  kindOf: (i) => i.kind, split: (count) => ({ prompt: count, final: finalsFor(count) }),
+  describe: (c) => [c.prompt ? `${c.prompt} ${c.prompt === 1 ? 'prompt' : 'prompts'} with stock answers` : '', c.final ? `${c.final} ${c.final === 1 ? 'final' : 'finals'}` : ''].filter(Boolean).join(' and '),
+  avoidLine: (q) => q, avoidKey: promptKey,
+};
+
+/** The prompt for `prompts` prompts and `finals` finals from the player's `request`, never one in `avoid`; `named`: ask for a pack name too. */
+export function buildPrompt(request: string, prompts: number, finals: number, avoid: readonly string[], named = false): string {
+  const parts = withNameAsk([askedFor(request, 'a mix of everything'), `Write ${prompts} prompts with stock answers and ${finals} ${finals === 1 ? 'final' : 'finals'} that fit the request.`], named);
   const listed = within(avoid, MAX_LISTED_CHARS);
   if (listed.length) parts.push(`These prompts are already in use, so never use them again or closely rephrase them:\n${listed.join('\n')}`);
   return parts.join('\n\n');
 }
 
-interface ItemStream { prompt: string; prompts: number; taken: readonly string[]; onItem: (i: SnarkItem) => void; signal?: AbortSignal }
+interface ItemStream { prompt: string; prompts: number; taken: readonly string[]; onItem: (i: SnarkItem) => void; onName?: (name: string) => void; signal?: AbortSignal }
 
 /** Streams up to `prompts` prompts and finalsFor(prompts) finals, none whose prompt is in `taken`. */
 function streamItems(o: ItemStream): Promise<number> {
@@ -94,15 +111,19 @@ function streamItems(o: ItemStream): Promise<number> {
   return streamMore<SnarkItem>({
     system: SYSTEM, prompt: o.prompt, count: left.prompt + left.final, maxTokens: 6000,
     read: (line) => { const i = readItem(line); return i && left[i.kind] > 0 ? i : null; },
-    keyOf: itemKey, taken: o.taken.map(promptKey), signal: o.signal,
+    keyOf: itemKey, taken: o.taken.map(promptKey), signal: o.signal, onName: o.onName,
     onItem: (i) => { left[i.kind]--; o.onItem(i); },
   });
 }
 
-/** "Make a pack": `count` prompts and their finals on a theme, never a prompt in `avoid` (every Snark pack's, and those on screen). */
-export function generateItems(o: { theme: string; count: number; avoid: readonly string[]; onItem: (i: SnarkItem) => void; signal?: AbortSignal }): Promise<number> {
-  const prompt = buildPrompt(o.theme, o.count, finalsFor(o.count), o.avoid);
-  return streamItems({ prompt, prompts: o.count, taken: o.avoid, onItem: o.onItem, signal: o.signal });
+/**
+ * "Make a pack": `count` prompts and their finals for the player's request, never a prompt in
+ * `avoid` (every Snark pack's, and those on screen). With `onName`, Fizzwick also suggests the
+ * pack's name, handed there.
+ */
+export function generateItems(o: { theme: string; count: number; avoid: readonly string[]; onItem: (i: SnarkItem) => void; onName?: (name: string) => void; signal?: AbortSignal }): Promise<number> {
+  const prompt = buildPrompt(o.theme, o.count, finalsFor(o.count), o.avoid, !!o.onName);
+  return streamItems({ prompt, prompts: o.count, taken: o.avoid, onItem: o.onItem, onName: o.onName, signal: o.signal });
 }
 
 /** More prompts and finals on top of `pack`, never one of its own, of those already written this time or of `others` (every other pack's). */

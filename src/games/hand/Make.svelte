@@ -12,4 +12,4 @@
 <ListPackMake game="hand" specs={HAND_LISTS} packs={handPacks} wizard={WIZARD} range={MAKE_RANGE} chips={THEME_CHIPS}
   route={cardList} pasteLabel="One card per line: a line with ___ or a question mark is a prompt, the rest are answers"
   pastePlaceholder={'My RA wrote me up for ___\nWhat got me through finals?\nA suspiciously large rice cooker\nCrying in the library stairwell'}
-  defaultName="My cards" themeQuestion="What should the cards be about?" {onsaved} {onback} />
+  defaultName="My cards" requestHint="e.g. wedding season: bridesmaids, open bars, awkward speeches, a bit edgy" {onsaved} {onback} />

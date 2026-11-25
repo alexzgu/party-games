@@ -23,6 +23,9 @@ export function cleanPrompt(raw: string): string {
   return p;
 }
 
+/** A prompt as the line `cleanPrompt` reads. */
+export const promptLine = (p: string): string => p;
+
 /** Why a cleaned prompt cannot be used, or '' when it can. */
 export function promptError(p: string, others: readonly string[]): string {
   if (!p) return 'Type what to name 3 of.';

@@ -1,7 +1,8 @@
 <script lang="ts">
   // Big Board entry. Sub-routes: #/quiz (setup), #/quiz/play (board, clue, win), #/quiz/make
   // (make a board), #/quiz/board?id=<board> (see and edit one board) and #/quiz/board?new=1 (the
-  // board just made, not saved yet; `&wizard=1` when Fizzwick wrote it). Using the hash means a
+  // board just made, not saved yet; whether Fizzwick wrote it is stored with it, so an old link's
+  // `&wizard=1` is ignored). Using the hash means a
   // reload lands on the same screen; the saved game (or board in the making) puts it in the same state.
   import { route, go, back, backHome } from '../../lib/router.svelte';
   import Setup from './Setup.svelte';
@@ -51,7 +52,7 @@
     />
   {:else if sub === 'make'}
     <MakeBoard
-      onmade={(_, n, wizard) => { note = n; go(`/quiz/board?new=1${wizard ? '&wizard=1' : ''}`, true); }}
+      onmade={(_, n) => { note = n; go('/quiz/board?new=1', true); }}
       onresume={() => { note = ''; go('/quiz/board?new=1', true); }}
       onback={() => back('/quiz')}
     />
@@ -60,7 +61,6 @@
       <BoardEditor
         id={route.params.get('new') ? null : (route.params.get('id') ?? '')}
         {note}
-        wizard={!!route.params.get('wizard')}
         category={Number(route.params.get('cat')) || 0}
         onback={() => { note = ''; back('/quiz'); }}
         onsaved={() => { note = ''; back('/quiz'); }}

@@ -11,4 +11,4 @@
 <ListPackMake game="brawl" specs={BRAWL_LISTS} packs={brawlPacks} wizard={WIZARD} range={MAKE_RANGE} chips={THEME_CHIPS}
   route={() => 'titles'} pasteLabel="One title per line, 2 to 8 words"
   pastePlaceholder={"World's okayest roommate\nUndefeated at losing the TV remote\nFastest to leave the group chat"}
-  defaultName="My titles" themeQuestion="What should the titles be about?" {onsaved} {onback} />
+  defaultName="My titles" requestHint="e.g. titles about office life that are fun to draw, like the coworker who microwaves fish" {onsaved} {onback} />

@@ -94,6 +94,21 @@ export function parsePastedBoard(text: string, name = ''): PastedBoard {
 
 export interface StreamClue { category: string; /** 1 = easiest (top row). */ level: number; clue: string; answer: string }
 
+/** A tile's text as it can sit in one stream line: one line, no "|" (it separates the cells). */
+export const streamCell = (s: string): string => tidy(s.replace(/\|/g, '/'));
+
+/** One clue as Fizzwick writes it, each cell made safe (`parseStreamLine(streamLine(s))` gives back `s` made safe). */
+export const streamLine = (s: StreamClue): string => [s.category, String(s.level), s.clue, s.answer].map(streamCell).join(' | ');
+
+/** The four cells of a stream line only tidied (no labels or quotes taken off), to match a tile as sent; null when not four. */
+export function streamCells(line: string): StreamClue | null {
+  const parts = line.replace(MARKER, '').replace(/^\||\|$/g, '').split('|').map(tidy);
+  const m = parts.length === 4 ? LEVEL_CELL.exec(parts[1]) : null;
+  if (!m) return null;
+  const n = Number(m[1]);
+  return { category: parts[0], level: n >= 100 && n % 100 === 0 ? n / 100 : n, clue: parts[2], answer: parts[3] };
+}
+
 /**
  * One streamed line, "Category | level | clue | answer", or null for anything else (a header
  * row, a remark). The level may be written 3, "Level 3" or as its value, 300.

@@ -10,6 +10,7 @@ import { sizeProblem } from './board';
 const GAME = 'quiz:game';
 const SETUP = 'quiz:setup';
 const NEW_BOARD = 'quiz:new-board';
+const NEW_ASK = 'quiz:new-board-ask';
 
 export const loadGame = (): Game | null => validGame(load<unknown>(GAME, null));
 export const saveGame = (g: Game | null): void => (g ? save(GAME, g) : remove(GAME));
@@ -66,7 +67,19 @@ function validNewBoard(x: unknown): QuizBoard | null {
  * the saved board, so a board written with the host's own key stays private for good.
  */
 export const loadNewBoard = (): QuizBoard | null => validNewBoard(load<unknown>(NEW_BOARD, null));
-export const saveNewBoard = (b: QuizBoard | null): void => (b ? save(NEW_BOARD, b) : remove(NEW_BOARD));
+export function saveNewBoard(b: QuizBoard | null): void {
+  if (b) return save(NEW_BOARD, b);
+  remove(NEW_BOARD);
+  remove(NEW_ASK);
+}
+
+/** What the player asked Fizzwick for the board waiting to be saved, and whether they typed its name (for "Ask for changes"). */
+export interface NewBoardAsk { request: string; typed: boolean }
+export function loadNewAsk(): NewBoardAsk | null {
+  const a = load<Partial<NewBoardAsk> | null>(NEW_ASK, null);
+  return a && typeof a.request === 'string' && a.request.trim() ? { request: a.request, typed: a.typed === true } : null;
+}
+export const saveNewAsk = (a: NewBoardAsk | null): void => (a ? save(NEW_ASK, a) : remove(NEW_ASK));
 
 /** A fresh id for a board saved on this phone: its name as a slug, never a built-in's or another own board's. */
 export function newBoardId(name: string): string {

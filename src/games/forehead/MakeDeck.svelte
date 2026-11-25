@@ -11,24 +11,35 @@
   import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
   import { hasKey, WANTS } from '../../lib/claude';
   import MagicWords from '../../components/MagicWords.svelte';
+  import WizardRequest from '../../components/WizardRequest.svelte';
+  import PackNameField from '../../components/PackNameField.svelte';
+  import WizardChanges from '../../components/WizardChanges.svelte';
+  import { WizardChanges as Changes } from '../../lib/wizardChanges.svelte';
+  import { PackName } from '../../lib/packName.svelte';
+  import { wizardBlurb } from '../../lib/wizardAsk';
   import { back, go } from '../../lib/router.svelte';
   import { freshName } from '../../lib/packfile';
   import { sfx } from '../../lib/sound';
   import { prefs, savePrefs } from './state.svelte';
-  import { generateWords, THEME_CHIPS } from './generate';
-  import { parsePastedWords, titleCase } from './words';
+  import { CHANGE, generateWords, MAKE_RANGE, THEME_CHIPS } from './generate';
+  import { itemKey, parsePastedWords } from './words';
 
-  // "Make a deck": paste a list, type one by hand in the deck editor, or give Claude a theme and
-  // watch words stream in → drop the duds → save as a new deck or add to one of mine. "More"
-  // asks Claude for more, never repeating what is there.
+  // "Make a deck": paste a list, type one by hand in the deck editor, or tell Fizzwick what you
+  // want and watch words stream in → name the pack, drop the duds → save as a new deck or add to
+  // one of mine. "More" asks Fizzwick for more, never repeating what is there.
   let { into = null, pasting = false, demo = null }: { into?: string | null; /** Opens on its paste tab. */ pasting?: boolean; demo?: string | null } = $props();
 
   const start = untrack(() => ({ into, demo: demo === 'triage', isDemo: demo != null }));
   // Decks words can be added to: my own, plus the built-in deck this was opened from (that saves an edit of it).
   const mine = [...customDecks.all(), ...wordDecks().filter((d) => d.id === start.into && customDecks.isBuiltin(d.id))];
   let target = $state(mine.some((d) => d.id === start.into) ? start.into! : 'new');
+  /** What the player asked Fizzwick for, kept whole while the review is on screen. */
   let theme = $state('');
-  let count = $state(40);
+  /** A new wizard pack's name, on the review screen. */
+  const packName = new PackName();
+  // The review demo is a wizard review: the name field starts with a name.
+  if (start.demo) packName.begin('wizard', '', 'Wizard pack');
+  let count = $state(MAKE_RANGE.start);
   let phase = $state<'form' | 'triage'>(start.demo ? 'triage' : 'form');
   let items = $state<string[]>(start.demo ? ['Moon Landing', 'Taylor Swift', 'Pizza Rat', 'Spider-Man', 'Eiffel Tower', 'Karaoke Night', 'Hot Dog Eating Contest', 'Netflix and Chill', 'Zebra Crossing'] : []);
   let streaming = $state(start.demo);
@@ -42,7 +53,7 @@
   const MODES: { value: Mode; label: string; tip: string }[] = [
     { value: 'paste', label: 'Paste', tip: 'Type or paste a whole list of words' },
     ...(start.into ? [] : [{ value: 'hand' as const, label: 'By hand', tip: 'Type the words in one at a time' }]),
-    { value: 'claude', label: '🧙 Wizard', tip: 'Fizzwick writes words on a theme you pick' },
+    { value: 'claude', label: '🧙 Wizard', tip: 'Fizzwick writes words from what you ask for' },
   ];
   // svelte-ignore state_referenced_locally
   let mode = $state<Mode>(!pasting && (keyReady || start.isDemo) ? 'claude' : 'paste');
@@ -50,7 +61,17 @@
   let note = $state('');
   let deckName = $state('');
 
+  /** Keys of the words dropped on review. */
+  let dropped = $state(new Set<string>());
+  /** "Ask for changes" on Fizzwick's words. */
+  const changes = new Changes({
+    game: CHANGE, request: () => theme, asked: () => count, avoid: () => targetDeck?.words ?? [],
+    items: () => items, setItems: (v) => (items = v), dropped: () => dropped, setDropped: (v) => (dropped = v),
+    name: () => (targetDeck ? null : packName), onItem: () => sfx.tick(), running: () => streaming, onStart: (n) => { byPass = passedSoFar(byPass, n); error = ''; },
+  });
+
   function pasted(list: string[], skipped: string) {
+    changes.clear();
     items = list;
     note = skipped;
     error = '';
@@ -60,6 +81,8 @@
   /** Whether everything the wizard put on screen came through a magic-words pass (shared only then). */
   let byPass = false;
   async function run() {
+    if (changes.writing) return; // one writer at a time: a change or this run
+    changes.newRun();
     byPass = passedSoFar(byPass, items.length);
     error = '';
     streaming = true;
@@ -67,13 +90,17 @@
     controller?.abort();
     const ctl = (controller = new AbortController());
     const before = items.length;
+    // A new pack gets a name; words added to one of mine need none.
+    if (!targetDeck) packName.begin('wizard', theme, 'Wizard pack');
+    const onName = !targetDeck && packName.wanted ? (s: string) => packName.suggest(s) : undefined;
     try {
       await generateWords({
         theme, count, signal: ctl.signal,
         avoid: [...(targetDeck?.words ?? []), ...items],
         onItem: (w) => items.push(w),
+        onName,
       });
-      if (!ctl.signal.aborted && items.length === before) error = 'Fizzwick came back empty-handed. Try again, or reword the theme.';
+      if (!ctl.signal.aborted && items.length === before) error = 'Fizzwick came back empty-handed. Try again, or reword what you asked for.';
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -91,10 +118,10 @@
       customDecks.put(saved);
     } else {
       const fromPaste = mode === 'paste';
-      const typed = (fromPaste ? deckName.trim() : titleCase(theme.trim())).slice(0, 40) || (fromPaste ? 'My pack' : 'Wizard pack');
+      const typed = fromPaste ? deckName.trim().slice(0, 40) || 'My pack' : packName.saved(theme, 'Wizard pack');
       const name = freshName(typed, (n) => wordDecks().some((d) => d.name.toLowerCase() === n)); // never two tiles alike
       id = 'my-' + slugify(name) + '-' + Date.now().toString(36);
-      saved = afterRun<WordDeck>({ id, name, emoji: fromPaste ? '📝' : '✨', blurb: fromPaste ? 'Pasted list' : 'Conjured by Fizzwick', words: dedupe(kept) }, run, true);
+      saved = afterRun<WordDeck>({ id, name, emoji: fromPaste ? '📝' : '✨', blurb: fromPaste ? 'Pasted list' : wizardBlurb(theme), words: dedupe(kept) }, run, true);
       customDecks.put(saved);
     }
     // What the wizard made, or the pack it added to, goes to the Community library whole.
@@ -108,6 +135,7 @@
   }
 
   function cancel() {
+    if (changes.busy) return changes.stop();
     if (streaming) {
       controller?.abort();
       streaming = false;
@@ -117,6 +145,8 @@
     error = '';
     note = '';
     phase = 'form';
+    packName.reset();
+    changes.clear();
   }
 
   function chip(t: string) {
@@ -156,17 +186,13 @@
       <MagicWords intro={WANTS} />
     {:else}
       <form class="stack" onsubmit={(e) => { e.preventDefault(); if (theme.trim()) void run(); }}>
-        <label class="field">
-          <span class="lbl">Theme</span>
-          <!-- svelte-ignore a11y_autofocus -->
-          <input type="text" placeholder="e.g. Disney villains, our office" bind:value={theme} maxlength="80" enterkeyhint="go" autofocus />
-        </label>
-        <div class="chips" aria-label="Theme ideas">
+        <WizardRequest id="forehead-request" bind:value={theme} placeholder="e.g. French pastries you'd find in a Paris bakery, nothing too obscure" autofocus />
+        <div class="chips" aria-label="Ideas">
           {#each THEME_CHIPS as t (t)}
             <button type="button" class="chip" class:on={theme === t} onclick={() => chip(t)}>{t}</button>
           {/each}
         </div>
-        <Stepper label="How many words" bind:value={count} min={20} max={80} step={10} />
+        <Stepper label="How many words" bind:value={count} min={MAKE_RANGE.min} max={MAKE_RANGE.max} step={MAKE_RANGE.step} />
         {@render saveTo()}
         <WizardEffort />
         <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make {count}</Button>
@@ -185,19 +211,24 @@
           </label>
         {/if}
       {:else}
-        <h3>{theme ? `“${titleCase(theme)}”` : 'New words'}</h3>
-        <p class="faint">{targetDeck ? `Adding to ${targetDeck.name}` : 'Saving as a new pack'}</p>
+        {#if targetDeck}
+          <h3>New words</h3>
+          <p class="faint">Adding to {targetDeck.name}</p>
+        {:else}
+          <PackNameField name={packName} placeholder="Wizard pack" />
+        {/if}
       {/if}
     </div>
     {#if note}<p class="faint note">{note}</p>{/if}
     {#if error}
       <div class="error" role="alert">
         <p>{error}</p>
-        <Button size="sm" variant="secondary" onclick={run}>Try again</Button>
+        <Button size="sm" variant="secondary" onclick={run} disabled={changes.writing}>Try again</Button>
       </div>
     {/if}
-    <Triage {items} keyOf={(s: string) => s} {streaming} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' && theme ? run : undefined}>
+    <Triage {items} keyOf={itemKey} bind:dropped streaming={changes.writing} stopPutsBack={changes.busy} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' && theme ? run : undefined}>
       {#snippet item(s: string)}<span class="word">{s}</span>{/snippet}
+      {#snippet below()}{#if mode === 'claude' && theme}<WizardChanges {changes} />{/if}{/snippet}
     </Triage>
   {/if}
 </Screen>

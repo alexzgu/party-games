@@ -3,7 +3,9 @@
 // only when it passes the same rules as every other card (cards.ts) and its word is new.
 import { MAX_LISTED_CHARS, morePrompt, streamMore, within, type MoreRun } from '../../lib/addMore';
 import type { TabooCard, TabooPack } from '../../lib/content';
-import { cardId, key, parseCards } from './cards';
+import { cardId, cardLine, key, parseCards } from './cards';
+import type { ChangeGame } from '../../lib/wizardChange';
+import { askedFor, withNameAsk } from '../../lib/wizardAsk';
 
 export const THEME_CHIPS = ['Food & drink', 'Movies & TV', 'Music', 'Sports', 'Around the house', 'Animals', 'Travel', 'School & work', '2000s throwback', 'After dark'];
 
@@ -29,9 +31,9 @@ Every card must meet all of these:
 4. For cheeky or adult themes: cheeky, never explicit.
 Never repeat a word or use the examples.`;
 
-/** The request for `count` cards on `theme`, never using any word in `avoid`. */
-export function buildPrompt(theme: string, count: number, avoid: readonly string[]): string {
-  const parts = [`Theme: ${theme.trim() || 'a mix of everything'}`, `Write ${count} cards that fit the theme.`];
+/** The prompt for `count` cards from the player's `request`, never using any word in `avoid`; `named`: ask for a pack name too. */
+export function buildPrompt(request: string, count: number, avoid: readonly string[], named = false): string {
+  const parts = withNameAsk([askedFor(request, 'a mix of everything'), `Write ${count} cards that fit the request.`], named);
   const listed = within(avoid, MAX_LISTED_CHARS);
   if (listed.length) parts.push(`These words are already on cards, so never use them again:\n${listed.join('\n')}`);
   return parts.join('\n\n');
@@ -43,15 +45,24 @@ export function readCard(line: string): TabooCard | null {
 }
 
 /**
- * Streams up to `count` new cards on a theme, never one whose word is in `avoid` (every word
- * on the phone and on screen: a word is never in two packs) or repeated.
+ * Streams up to `count` new cards for the player's request, never one whose word is in `avoid`
+ * (every word on the phone and on screen: a word is never in two packs) or repeated. With
+ * `onName`, Fizzwick also suggests the pack's name, handed there.
  */
-export function generateCards(o: { theme: string; count: number; avoid: readonly string[]; onCard: (c: TabooCard) => void; signal?: AbortSignal }): Promise<number> {
+export function generateCards(o: { theme: string; count: number; avoid: readonly string[]; onCard: (c: TabooCard) => void; onName?: (name: string) => void; signal?: AbortSignal }): Promise<number> {
   return streamMore({
-    system: SYSTEM, prompt: buildPrompt(o.theme, o.count, o.avoid),
-    count: o.count, maxTokens: 4000, read: readCard, keyOf: cardId, taken: o.avoid.map(key), onItem: o.onCard, signal: o.signal,
+    system: SYSTEM, prompt: buildPrompt(o.theme, o.count, o.avoid, !!o.onName),
+    count: o.count, maxTokens: 4000, read: readCard, keyOf: cardId, taken: o.avoid.map(key), onItem: o.onCard, onName: o.onName, signal: o.signal,
   });
 }
+
+/** "Ask for changes" on the review of Fizzwick's cards; the avoid list is every other word on the phone. */
+export const CHANGE: ChangeGame<TabooCard, string> = {
+  system: SYSTEM, maxTokens: 4000, max: MAKE_RANGE.max,
+  first: (request, count) => buildPrompt(request, count, []),
+  line: cardLine, read: (line) => readCard(line), keyOf: cardId,
+  describe: (c) => `${c.all} cards`, avoidLine: (w) => w, avoidKey: key,
+};
 
 /** More cards on top of `pack`, never a word of its own, of those already written this time or of `others` (every other pack's words). */
 export function moreCards(pack: TabooPack, others: readonly string[], run: MoreRun<TabooCard>): Promise<number> {

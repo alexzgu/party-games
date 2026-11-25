@@ -2,24 +2,11 @@
 // answer, so this runs the real SDK stream, line splitting and board building.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { settings } from '../../lib/settings.svelte';
-import { buildPrompt, generateBoard, givesAway, placeClue, emptyBoardFor, SYSTEM } from './generate';
-
-/** A server-sent-events body like the Messages API streams, with `text` cut into small deltas. */
-function fakeStream(text: string): Response {
-  const ev = (type: string, data: object) => `event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`;
-  const deltas = text.match(/[\s\S]{1,7}/g) ?? [];
-  const body = [
-    ev('message_start', { message: { id: 'msg_test', type: 'message', role: 'assistant', model: 'test', content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 } } }),
-    ev('content_block_start', { index: 0, content_block: { type: 'text', text: '' } }),
-    ...deltas.map((d) => ev('content_block_delta', { index: 0, delta: { type: 'text_delta', text: d } })),
-    ev('content_block_stop', { index: 0 }),
-    ev('message_delta', { delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 50 } }),
-    ev('message_stop', {}),
-  ];
-  const enc = new TextEncoder();
-  const stream = new ReadableStream({ start(c) { for (const chunk of body) c.enqueue(enc.encode(chunk)); c.close(); } });
-  return new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } });
-}
+import { boardChange, boardClues, buildPrompt, generateBoard, givesAway, placeClue, emptyBoardFor, SYSTEM } from './generate';
+import { parseStreamLine, streamLine } from './parse';
+import { changeTurns, parts, tally } from '../../lib/wizardChange';
+import { NAME_ASK } from '../../lib/wizardAsk';
+import { fakeStream } from '../../lib/testing';
 
 const ANSWER = [
   'Here is your board:',
@@ -50,11 +37,45 @@ describe('Ask Claude for a board', () => {
     expect(calls[0].body.system).toBe(SYSTEM);
     expect(calls[0].body.messages[0].content).toContain('2 categories with 2 levels');
     expect(seen).toEqual([1, 2, 3, 4]);
-    expect(board.name).toBe('Space and snacks');
+    expect(board.name).toBe('Space and Snacks');
     expect(board.categories).toEqual([
       { name: 'Space', clues: [{ clue: 'This planet is nicknamed the Red Planet.', answer: 'Mars' }, { clue: 'The first person to walk on the Moon did it in 1969.', answer: 'Neil Armstrong' }] },
       { name: 'Snacks', clues: [{ clue: 'Movie theaters sell it by the bucket, often buttered.', answer: 'Popcorn' }, { clue: 'Tortilla chips piled with melted cheese and toppings.', answer: 'Nachos' }] },
     ]);
+  });
+  it("names the board with Fizzwick's suggestion, never as a clue, and keeps the long request out of the description", async () => {
+    settings.apiKey = 'sk-test';
+    const sent: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      sent.push(JSON.parse(String(init?.body)).messages[0].content);
+      return fakeStream(`Name: out of this world\n${ANSWER}`);
+    }));
+    const request = 'space and snacks for a crowd that loves sci-fi movies, '.repeat(5).trim();
+    const names: string[] = [];
+    const board = await generateBoard({ topic: request, cats: 2, levels: 2, onBoard: (b) => names.push(b.name) });
+    expect(sent[0]).toContain(`The player asks for: ${request}`);
+    expect(sent[0]).toMatch(/"Name: "/);
+    expect(names[0]).toBe('Out of This World');
+    expect(board.name).toBe('Out of This World');
+    expect(board.categories.map((c) => c.name)).toEqual(['Space', 'Snacks']);
+    expect(board.blurb.length).toBeLessThanOrEqual(80);
+    expect(board.blurb).toMatch(/^Conjured by Fizzwick: space and snacks .*…$/);
+  });
+  it('keeps a category whose name starts with "Name-", and makes no sound for the name alone', async () => {
+    settings.apiKey = 'sk-test';
+    vi.stubGlobal('fetch', vi.fn(async () => fakeStream([
+      'Name: Snack Attack',
+      'Name-Brand Snacks | 1 | This cheese cracker is shaped like a small fish. | Goldfish',
+      'Name-Brand Snacks | 2 | This sandwich cookie has a cream filling between two dark wafers. | Oreo',
+    ].join('\n'))));
+    const updates: boolean[] = [];
+    const board = await generateBoard({ topic: 'snacks', cats: 1, levels: 2, onBoard: (_b, clue) => updates.push(clue) });
+    expect(board.name).toBe('Snack Attack');
+    expect(board.categories).toEqual([{ name: 'Name-Brand Snacks', clues: [
+      { clue: 'This cheese cracker is shaped like a small fish.', answer: 'Goldfish' },
+      { clue: 'This sandwich cookie has a cream filling between two dark wafers.', answer: 'Oreo' },
+    ] }]);
+    expect(updates).toEqual([false, true, true]);
   });
   it('says what went wrong without a key', async () => {
     await expect(generateBoard({ topic: 'x', cats: 1, levels: 1, onBoard: () => {} })).rejects.toThrow(/isn't on this phone yet/);
@@ -76,5 +97,73 @@ describe('placing clues', () => {
   });
   it('asks for the right size', () => {
     expect(buildPrompt('Cats', 1, 3)).toContain('1 category with 3 levels each: 3 lines');
+  });
+});
+
+describe('asking for changes on a board', () => {
+  const board = {
+    id: '', name: 'Space and Snacks', blurb: '',
+    categories: [
+      { name: 'Space', clues: [{ clue: 'This planet is nicknamed the Red Planet.', answer: 'Mars' }, { clue: '', answer: '' }] },
+      { name: 'Snacks', clues: [{ clue: 'Sold by the bucket at the movies.', answer: 'Popcorn' }, { clue: 'Chips piled with melted cheese.', answer: 'Nachos' }] },
+    ],
+  };
+  const turnsFor = (b: typeof board) => {
+    const { game } = boardChange(b, () => b);
+    const o = { request: 'space and snacks', asked: game.max, kept: boardClues(b), removed: [], earlier: [], ask: 'harder', avoid: [], named: true };
+    return { game, part: parts(game, o.kept, o.asked)[0], turns: changeTurns(game, o, parts(game, o.kept, o.asked)[0]) };
+  };
+
+  it('writes each clue back in the line Fizzwick writes', () => {
+    for (const s of boardClues(board)) expect(parseStreamLine(streamLine(s))).toEqual(s);
+    expect(parseStreamLine(streamLine({ category: 'Old TV', level: 10, clue: 'A show about nothing, set in New York.', answer: 'Seinfeld' }))).toEqual({ category: 'Old TV', level: 10, clue: 'A show about nothing, set in New York.', answer: 'Seinfeld' });
+  });
+
+  it('sends the board as it stands, row by row, and asks for the whole board again at its size', () => {
+    const { turns, part } = turnsFor(board);
+    expect(turns.map((t) => t.role)).toEqual(['user', 'assistant', 'user']);
+    expect(turns[0].content).toBe(buildPrompt('space and snacks', 2, 2).replace(`\n${NAME_ASK}`, ''));
+    expect(turns[1].content).toBe('Space | 1 | This planet is nicknamed the Red Planet. | Mars\nSnacks | 1 | Sold by the bucket at the movies. | Popcorn\nSnacks | 2 | Chips piled with melted cheese. | Nachos');
+    expect(part.counts).toEqual({ all: 4 });
+    expect(turns[2].content).toContain('Write the whole list again: exactly 2 categories with 2 levels each: 4 lines in all');
+    expect(turns[2].content.endsWith(NAME_ASK)).toBe(true);
+  });
+
+  it('counts a clue as kept only when its clue and answer are both unchanged', () => {
+    const { game } = boardChange(board, () => board);
+    const after = [
+      { category: 'Planets', level: 1, clue: 'This planet is nicknamed the Red Planet.', answer: 'Mars' },
+      { category: 'Snacks', level: 1, clue: 'Sold by the bucket at the movies.', answer: 'Kettle corn' },
+    ];
+    expect(tally(boardClues(board), after, game.keyOf)).toEqual({ kept: 1, replaced: 1 });
+  });
+
+  it("puts the player's own tiles back word for word, whatever they typed in them", () => {
+    const own = {
+      id: '', name: 'Bands', blurb: '',
+      categories: [
+        { name: 'Rock | Roll', clues: [{ clue: 'This band is AC|DC.', answer: 'AC|DC' }, { clue: 'A first line\nand a second', answer: 'Two  lines' }] },
+        { name: 'Pop', clues: [{ clue: 'Repeats Mars.', answer: 'Mars' }, { clue: 'Repeats Mars again.', answer: 'Mars' }] },
+      ],
+    };
+    const { turns } = turnsFor(own);
+    const lines = turns[1].content.split('\n');
+    expect(lines).toHaveLength(4);
+    for (const l of lines) expect(l.split('|')).toHaveLength(4);
+    let cur = { ...own, categories: own.categories.map((c) => ({ ...c, clues: c.clues.map(() => ({ clue: '', answer: '' })) })) };
+    const { game, place } = boardChange(own, () => cur);
+    for (const l of lines) {
+      const s = game.read(l, '');
+      expect(s).not.toBeNull();
+      cur = place(cur, s!);
+    }
+    expect(cur.categories).toEqual(own.categories);
+  });
+
+  it('checks only new clues', () => {
+    const cur = { ...board, categories: board.categories.map((c) => ({ ...c, clues: c.clues.map(() => ({ clue: '', answer: '' })) })) };
+    const { game } = boardChange(board, () => cur);
+    expect(game.read('Space | 2 | This is the planet Mars. | Mars', '')).toBeNull(); // gives its answer away
+    expect(game.read('Space | 2 | The largest planet. | Jupiter', '')).toEqual({ category: 'Space', level: 2, clue: 'The largest planet.', answer: 'Jupiter' });
   });
 });
