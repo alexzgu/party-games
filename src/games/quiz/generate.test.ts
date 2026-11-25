@@ -3,23 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { settings } from '../../lib/settings.svelte';
 import { buildPrompt, generateBoard, givesAway, placeClue, emptyBoardFor, SYSTEM } from './generate';
-
-/** A server-sent-events body like the Messages API streams, with `text` cut into small deltas. */
-function fakeStream(text: string): Response {
-  const ev = (type: string, data: object) => `event: ${type}\ndata: ${JSON.stringify({ type, ...data })}\n\n`;
-  const deltas = text.match(/[\s\S]{1,7}/g) ?? [];
-  const body = [
-    ev('message_start', { message: { id: 'msg_test', type: 'message', role: 'assistant', model: 'test', content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 } } }),
-    ev('content_block_start', { index: 0, content_block: { type: 'text', text: '' } }),
-    ...deltas.map((d) => ev('content_block_delta', { index: 0, delta: { type: 'text_delta', text: d } })),
-    ev('content_block_stop', { index: 0 }),
-    ev('message_delta', { delta: { stop_reason: 'end_turn', stop_sequence: null }, usage: { output_tokens: 50 } }),
-    ev('message_stop', {}),
-  ];
-  const enc = new TextEncoder();
-  const stream = new ReadableStream({ start(c) { for (const chunk of body) c.enqueue(enc.encode(chunk)); c.close(); } });
-  return new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } });
-}
+import { fakeStream } from '../../lib/fakeStream';
 
 const ANSWER = [
   'Here is your board:',
@@ -50,11 +34,29 @@ describe('Ask Claude for a board', () => {
     expect(calls[0].body.system).toBe(SYSTEM);
     expect(calls[0].body.messages[0].content).toContain('2 categories with 2 levels');
     expect(seen).toEqual([1, 2, 3, 4]);
-    expect(board.name).toBe('Space and snacks');
+    expect(board.name).toBe('Space and Snacks');
     expect(board.categories).toEqual([
       { name: 'Space', clues: [{ clue: 'This planet is nicknamed the Red Planet.', answer: 'Mars' }, { clue: 'The first person to walk on the Moon did it in 1969.', answer: 'Neil Armstrong' }] },
       { name: 'Snacks', clues: [{ clue: 'Movie theaters sell it by the bucket, often buttered.', answer: 'Popcorn' }, { clue: 'Tortilla chips piled with melted cheese and toppings.', answer: 'Nachos' }] },
     ]);
+  });
+  it("names the board with Fizzwick's suggestion, never as a clue, and keeps the long request out of the description", async () => {
+    settings.apiKey = 'sk-test';
+    const sent: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      sent.push(JSON.parse(String(init?.body)).messages[0].content);
+      return fakeStream(`Name: out of this world\n${ANSWER}`);
+    }));
+    const request = 'space and snacks for a crowd that loves sci-fi movies, '.repeat(5).trim();
+    const names: string[] = [];
+    const board = await generateBoard({ topic: request, cats: 2, levels: 2, onBoard: (b) => names.push(b.name) });
+    expect(sent[0]).toContain(`The player asks for: ${request}`);
+    expect(sent[0]).toMatch(/"Name: "/);
+    expect(names[0]).toBe('Out of This World');
+    expect(board.name).toBe('Out of This World');
+    expect(board.categories.map((c) => c.name)).toEqual(['Space', 'Snacks']);
+    expect(board.blurb.length).toBeLessThanOrEqual(80);
+    expect(board.blurb).toMatch(/^Conjured by Fizzwick: space and snacks .*…$/);
   });
   it('says what went wrong without a key', async () => {
     await expect(generateBoard({ topic: 'x', cats: 1, levels: 1, onBoard: () => {} })).rejects.toThrow(/isn't on this phone yet/);

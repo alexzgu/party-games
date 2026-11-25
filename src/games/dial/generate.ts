@@ -1,10 +1,11 @@
-// "Make with Claude" for Spectrum: asks for one `Left | Right` card per line and turns each
+// "🧙 Ask the wizard" for Spectrum: asks for one `Left | Right` card per line and turns each
 // streamed line into a card, tolerating the list markers, quotes and odd separators models add.
 import { streamLines } from '../../lib/claude';
 import type { Spectrum, SpectrumPack } from '../../lib/content';
 import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
 import { cardId } from './state';
 import { dropNumberCells, pastedLines } from '../../lib/paste';
+import { askedFor, withNameAsk } from '../../lib/wizardAsk';
 
 export const BATCH = 20;
 const MAX_END = 40;
@@ -22,9 +23,9 @@ Avoid: scales with only two possible answers, ends that are not true opposites, 
 Output only the cards, one per line, formatted exactly as: Left end | Right end
 No numbering, headings, blank lines or commentary.`;
 
-export function buildPrompt(theme: string, avoid: Spectrum[], count = BATCH): string {
-  const t = theme.trim() || 'Mixed bag';
-  let p = `Theme: ${t}\nWrite ${count} cards for this theme.`;
+/** The prompt for `count` cards from the player's `request`, never one in `avoid`; `named`: ask for a pack name too. */
+export function buildPrompt(request: string, avoid: Spectrum[], count = BATCH, named = false): string {
+  let p = withNameAsk([askedFor(request, 'Mixed bag'), `Write ${count} cards for this request.`], named).join('\n');
   const recent = avoid.slice(-MAX_AVOID);
   if (recent.length) {
     p += `\nThese cards already exist. Do not repeat them or closely rephrase them:\n`;
@@ -85,14 +86,17 @@ export interface GenerateOptions {
   theme: string;
   avoid: Spectrum[];
   onPair: (card: Spectrum) => void;
+  /** When given, Fizzwick also suggests the pack's name, handed here. */
+  onName?: (name: string) => void;
   signal?: AbortSignal;
 }
 
 export function generatePairs(opts: GenerateOptions): Promise<void> {
   return streamLines({
     system: SYSTEM,
-    prompt: buildPrompt(opts.theme, opts.avoid),
+    prompt: buildPrompt(opts.theme, opts.avoid, BATCH, !!opts.onName),
     signal: opts.signal,
+    onName: opts.onName,
     maxTokens: 2000,
     onLine: (line) => {
       const card = parsePair(line);

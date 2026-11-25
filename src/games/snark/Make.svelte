@@ -8,6 +8,10 @@
   import Segmented from '../../components/Segmented.svelte';
   import WizardEffort from '../../components/WizardEffort.svelte';
   import MagicWords from '../../components/MagicWords.svelte';
+  import WizardRequest from '../../components/WizardRequest.svelte';
+  import PackNameField from '../../components/PackNameField.svelte';
+  import { PackName } from '../../lib/packName.svelte';
+  import { wizardBlurb } from '../../lib/wizardAsk';
   import { customSnark, slugify, snarkPacks } from '../../lib/content';
   import { hasKey, WANTS } from '../../lib/claude';
   import { sfx } from '../../lib/sound';
@@ -17,14 +21,18 @@
   import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
   import WizardItem from './WizardItem.svelte';
 
-  // "Make a pack": paste a list, one prompt per line (numbers, bullets and quotes dropped), or pick
-  // a theme and watch Fizzwick's prompts stream in, each with a stock answer for "Suggest",
-  // plus finals for three-line duels; drop the duds, save as a new pack.
+  // "Make a pack": paste a list, one prompt per line (numbers, bullets and quotes dropped), or tell
+  // Fizzwick what you want and watch his prompts stream in, each with a stock answer for "Suggest",
+  // plus finals for three-line duels; name the pack, drop the duds, save as a new pack.
   let { onsaved, onback }: { onsaved: (id: string) => void; onback: () => void } = $props();
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes prompts on a theme you pick' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes prompts from what you ask for' }];
   let mode = $state<'paste' | 'claude'>(hasKey() ? 'claude' : 'paste');
+  /** A pasted list's name, typed on the paste screen. */
   let name = $state('');
+  /** The wizard pack's name, on the review screen. */
+  const packName = new PackName();
+  /** What the player asked Fizzwick for, kept whole while the review is on screen. */
   let theme = $state('');
   let count = $state(MAKE_RANGE.start);
   let items = $state<SnarkItem[]>([]);
@@ -53,15 +61,16 @@
   async function run() {
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
-    if (!name.trim()) name = theme.trim().replace(/^\w/, (c) => c.toUpperCase()).slice(0, 40);
+    packName.begin(theme, 'My prompts');
+    const onName = packName.wanted ? (s: string) => packName.suggest(s) : undefined;
     reviewing = true;
     error = '';
     streaming = true;
     const c = (ctrl = new AbortController());
     try {
       const avoid = [...items.map((i) => i.prompt), ...snarkPacks().flatMap(packTexts)];
-      const n = await generateItems({ theme, count, avoid, onItem: (i) => { items.push(i); sfx.tick(); }, signal: c.signal });
-      if (!c.signal.aborted && n === 0) error = 'No usable prompts came back. Try again or pick another theme.';
+      const n = await generateItems({ theme, count, avoid, onItem: (i) => { items.push(i); sfx.tick(); }, onName, signal: c.signal });
+      if (!c.signal.aborted && n === 0) error = 'No usable prompts came back. Try again or ask for something else.';
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -74,12 +83,13 @@
     items = [];
     error = '';
     reviewing = false;
+    packName.reset();
   }
 
   function save(kept: SnarkItem[]) {
-    const n = name.trim() || 'My prompts';
+    const n = packName.saved(theme, 'My prompts');
     const id = newId(n);
-    const pack = afterRun(addItems({ id, name: n, blurb: `Conjured by Fizzwick: ${theme.trim()}`, prompts: [] }, $state.snapshot(kept) as SnarkItem[]), byPass, true);
+    const pack = afterRun(addItems({ id, name: n, blurb: wizardBlurb(theme), prompts: [] }, $state.snapshot(kept) as SnarkItem[]), byPass, true);
     customSnark.put(pack);
     void shareWizardPack('snark', pack, byPass);
     sfx.correct();
@@ -101,9 +111,8 @@
     <MagicWords intro={WANTS} />
   {:else if !reviewing}
     <form class="stack" onsubmit={(e) => { e.preventDefault(); void run(); }}>
-      <label for="snark-theme"><h3>What should the prompts be about?</h3></label>
-      <input id="snark-theme" type="text" bind:value={theme} placeholder="e.g. our friend group, camping, the 2000s" autocomplete="off" enterkeyhint="go" maxlength="80" />
-      <div class="chips" role="group" aria-label="Quick themes">
+      <WizardRequest id="snark-request" bind:value={theme} placeholder="e.g. living with roommates: chore wars, passive-aggressive notes, a bit cheeky" />
+      <div class="chips" role="group" aria-label="Ideas">
         {#each THEME_CHIPS as t (t)}
           <button type="button" class="chip" class:on={theme === t} onclick={() => (theme = t)}>{t}</button>
         {/each}
@@ -114,10 +123,7 @@
       <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make {count}</Button>
     </form>
   {:else}
-    <label class="field">
-      <span>Pack name</span>
-      <input type="text" bind:value={name} placeholder="My prompts" maxlength="40" autocomplete="off" />
-    </label>
+    <PackNameField name={packName} placeholder="My prompts" />
     {#if error}
       <div class="error" role="alert">
         <p>{error}</p>
@@ -125,7 +131,7 @@
       </div>
     {/if}
     {#if items.length === 0 && streaming}
-      <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” prompts…</p>
+      <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your prompts…</p>
     {/if}
     <Triage {items} keyOf={itemKey} {streaming} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
       {#snippet item(i: SnarkItem)}<WizardItem {i} />{/snippet}
@@ -134,7 +140,6 @@
 </Screen>
 
 <style>
-  h3 { font-size: 1.3rem; }
   .small { font-size: 0.9rem; }
   .field { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }

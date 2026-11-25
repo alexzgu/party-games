@@ -1,9 +1,10 @@
-// "Make with Claude" for Inn Co Hear Ant: the prompt carries the quality bar, and each streamed
+// "🧙 Ask the wizard" for Inn Co Hear Ant: the prompt carries the quality bar, and each streamed
 // line becomes a card the moment it arrives.
 import { streamLines } from '../../lib/claude';
 import type { GibberishCard, GibberishPack } from '../../lib/content';
 import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
 import { answerKey, parseLine } from './parse';
+import { askedFor, withNameAsk } from '../../lib/wizardAsk';
 
 export const THEME_CHIPS = ['Movies', 'Famous people', 'Food & drink', 'Songs', 'TV shows', 'Brands', 'Places', 'Sayings', 'Animals', '2000s throwback'];
 
@@ -33,26 +34,37 @@ Every card must meet all of these:
 6. The category is 1 to 3 words naming what kind of thing the answer is (Movie, Food, Singer, Saying). It never hints at the answer itself.
 Mix easy and harder cards. Never repeat an answer or use the example answers.`;
 
-export function buildPrompt(theme: string, avoid: string[]): string {
-  const t = theme.trim() || 'a mix of everything';
-  let p = `Theme: ${t}\nWrite ${BATCH} cards whose answers fit the theme.`;
+/** The prompt for a batch from the player's `request`, never an answer in `avoid`; `named`: ask for a pack name too. */
+export function buildPrompt(request: string, avoid: string[], named = false): string {
+  let p = withNameAsk([askedFor(request, 'a mix of everything'), `Write ${BATCH} cards whose answers fit the request.`], named).join('\n');
   if (avoid.length) p += `\nThese answers are already in the pack, so do not use them again: ${avoid.join('; ')}.`;
   return p;
 }
 
-/** Streams new cards for a theme, skipping duplicates of `existing` and of each other. */
+/** The category for a card that comes without one: a short request (a quick idea like "Movies") in Title Case, else none. */
+export function fallbackCategory(request: string): string {
+  const t = request.trim().replace(/\s+/g, ' ');
+  return t.split(' ').length <= 3 && t.length <= 24 ? t.replace(/\b\w/g, (c) => c.toUpperCase()) : '';
+}
+
+/**
+ * Streams new cards for the player's request, skipping duplicates of `existing` and of each
+ * other. With `onName`, Fizzwick also suggests the pack's name, handed there.
+ */
 export async function generateCards(opts: {
   theme: string;
   existing: GibberishCard[];
   onCard: (c: GibberishCard) => void;
+  onName?: (name: string) => void;
   signal?: AbortSignal;
 }): Promise<void> {
   const seen = new Set([...opts.existing.map(answerKey), ...EXAMPLES.map((e) => answerKey(parseLine(e)!))]);
-  const category = opts.theme.trim().replace(/\b\w/g, (c) => c.toUpperCase()).slice(0, 24);
+  const category = fallbackCategory(opts.theme);
   await streamLines({
     system: SYSTEM,
-    prompt: buildPrompt(opts.theme, opts.existing.map((c) => c.answer)),
+    prompt: buildPrompt(opts.theme, opts.existing.map((c) => c.answer), !!opts.onName),
     signal: opts.signal,
+    onName: opts.onName,
     onLine: (line) => {
       const card = parseLine(line, category);
       if (!card || seen.has(answerKey(card))) return;

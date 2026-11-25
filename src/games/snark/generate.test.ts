@@ -40,7 +40,7 @@ describe('Snark Tank wizard lines', () => {
   it('asks for the prompts, about one final per five, the rules and every prompt already used', () => {
     expect([10, 15, 30, 3].map(finalsFor)).toEqual([2, 3, 6, 1]);
     const p = buildPrompt('Roommates', 30, 6, ['A terrible name for a boat']);
-    expect(p).toContain('Theme: Roommates');
+    expect(p).toContain('The player asks for: Roommates');
     expect(p).toContain('Write 30 prompts with stock answers and 6 finals');
     expect(p).toMatch(/already in use[^\n]*\nA terrible name for a boat$/);
     expect(SYSTEM).toMatch(/3 to 14 words, sentence case, no punctuation at the end/);

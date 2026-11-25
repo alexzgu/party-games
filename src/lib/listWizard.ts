@@ -4,6 +4,7 @@
 // new to every pack of the game on the phone; anything else is dropped before anyone sees it.
 import { MAX_LISTED_CHARS, morePrompt, streamMore, within, type MoreRun } from './addMore';
 import { checked, itemKey, packItems, type ListItem, type ListPack, type ListSpec } from './listPack';
+import { askedFor, withNameAsk } from './wizardAsk';
 
 export interface ListWizard {
   specs: readonly ListSpec[];
@@ -34,15 +35,15 @@ export const askLine = (w: ListWizard, counts: Record<string, number>): string =
 /** Items as the request lists them: "Prompt: …". */
 const listed = (w: ListWizard, items: readonly ListItem[]): string[] => items.map((i) => `${w.labels[i.field]}: ${i.text}`);
 
-/** The request for a new pack on `theme`, never an item in `avoid`. */
-export function buildPrompt(w: ListWizard, theme: string, count: number, avoid: readonly ListItem[]): string {
-  const parts = [`Theme: ${theme.trim() || 'a mix of everything'}`, `Write ${askLine(w, w.split(count))} that fit the theme.`];
+/** The prompt for a new pack from the player's `request`, never an item in `avoid`; `named`: ask for a pack name too. */
+export function buildPrompt(w: ListWizard, request: string, count: number, avoid: readonly ListItem[], named = false): string {
+  const parts = withNameAsk([askedFor(request, 'a mix of everything'), `Write ${askLine(w, w.split(count))} that fit the request.`], named);
   const used = within(listed(w, avoid), MAX_LISTED_CHARS);
   if (used.length) parts.push(`These are already in use, so never use them again or closely rephrase them:\n${used.join('\n')}`);
   return parts.join('\n\n');
 }
 
-interface Stream { prompt: string; counts: Record<string, number>; taken: readonly ListItem[]; onItem: (i: ListItem) => void; signal?: AbortSignal }
+interface Stream { prompt: string; counts: Record<string, number>; taken: readonly ListItem[]; onItem: (i: ListItem) => void; onName?: (name: string) => void; signal?: AbortSignal }
 
 function stream(w: ListWizard, o: Stream): Promise<number> {
   const left = { ...o.counts };
@@ -51,14 +52,17 @@ function stream(w: ListWizard, o: Stream): Promise<number> {
   return streamMore<ListItem>({
     system: w.system, prompt: o.prompt, count: total, maxTokens: 8000,
     read: (line) => { const i = readLine(w, line); return i && (left[i.field] ?? 0) > 0 ? i : null; },
-    keyOf: key, taken: o.taken.map(key), signal: o.signal,
+    keyOf: key, taken: o.taken.map(key), signal: o.signal, onName: o.onName,
     onItem: (i) => { left[i.field]--; o.onItem(i); },
   });
 }
 
-/** "Make a pack": items on a theme for `count`, never one in `avoid` (every pack's of the game, and those on screen). */
-export function generateItems(w: ListWizard, o: { theme: string; count: number; avoid: readonly ListItem[]; onItem: (i: ListItem) => void; signal?: AbortSignal }): Promise<number> {
-  return stream(w, { prompt: buildPrompt(w, o.theme, o.count, o.avoid), counts: w.split(o.count), taken: o.avoid, onItem: o.onItem, signal: o.signal });
+/**
+ * "Make a pack": `count` items for the player's request, never one in `avoid` (every pack's of the
+ * game, and those on screen). With `onName`, Fizzwick also suggests the pack's name, handed there.
+ */
+export function generateItems(w: ListWizard, o: { theme: string; count: number; avoid: readonly ListItem[]; onItem: (i: ListItem) => void; onName?: (name: string) => void; signal?: AbortSignal }): Promise<number> {
+  return stream(w, { prompt: buildPrompt(w, o.theme, o.count, o.avoid, !!o.onName), counts: w.split(o.count), taken: o.avoid, onItem: o.onItem, onName: o.onName, signal: o.signal });
 }
 
 /** "🧙 Add more": more on top of `pack`, never one of its own, of those written this time or of `others` (every other pack's). */

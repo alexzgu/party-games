@@ -11,6 +11,7 @@
   import { hasKey, viaPass, WANTS } from '../../lib/claude';
   import { afterRun } from '../../lib/library';
   import MagicWords from '../../components/MagicWords.svelte';
+  import WizardRequest from '../../components/WizardRequest.svelte';
   import WizardNote from '../../components/WizardNote.svelte';
   import { sfx } from '../../lib/sound';
   import { blankBoard, DEFAULT_CATEGORIES, DEFAULT_LEVELS, emptyTiles, MAX_CATEGORIES, MAX_LEVELS } from './board';
@@ -18,9 +19,10 @@
   import { emptyBoardFor, generateBoard } from './generate';
   import { loadNewBoard, saveNewBoard } from './store';
 
-  // "Make a board": start blank at a chosen size, paste one, or ask Claude for a topic and watch
-  // the board fill in, easiest row first. Every route ends in the editor, where the host fixes
-  // anything before saving. The board in the making is kept in storage, so a reload keeps it.
+  // "Make a board": start blank at a chosen size, paste one, or tell Fizzwick what you want and
+  // watch the board fill in, easiest row first, under the name he suggests. Every route ends in the
+  // editor, where the host names the board and fixes anything before saving. The board in the
+  // making is kept in storage, so a reload keeps it.
   // No <form> around the size steppers: their buttons would submit it.
   let { onmade, onresume, onback }: {
     /** A new board is ready for the editor; `note` says what a paste skipped; `wizard`: Fizzwick wrote it. */
@@ -36,11 +38,12 @@
   const MODES = [
     { value: 'blank' as const, label: 'Blank', tip: 'Start with empty tiles and type every clue' },
     { value: 'paste' as const, label: 'Paste', tip: 'Paste clues and answers as text' },
-    { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes the clues on a topic you pick' },
+    { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes the clues from what you ask for' },
   ];
   // svelte-ignore state_referenced_locally
   let mode = $state<'blank' | 'paste' | 'claude'>(keyed ? 'claude' : 'blank');
   let name = $state('');
+  /** What the player asked Fizzwick for. */
   let topic = $state('');
   let cats = $state(DEFAULT_CATEGORIES);
   let len = $state(DEFAULT_LEVELS);
@@ -80,7 +83,7 @@
       });
       live = done;
       if (signal.aborted) return;
-      if (emptyTiles(done).length === cats * len) error = 'No usable clues came back. Try again or try another topic.';
+      if (emptyTiles(done).length === cats * len) error = 'No usable clues came back. Try again or ask for something else.';
       else { sfx.correct(); make(done, '', true); }
     } catch (e) {
       error = (e as Error).message;
@@ -160,9 +163,8 @@
       </div>
     {:else}
       <div class="form">
-        <label class="field" for="topic-in"><span>What should the pack be about?</span></label>
-        <input id="topic-in" type="text" bind:value={topic} onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void ask(); } }} placeholder="e.g. 90s cartoons, Taylor Swift, our office" autocomplete="off" enterkeyhint="go" maxlength="80" />
-        <div class="chips" role="group" aria-label="Quick topics">
+        <WizardRequest id="quiz-request" bind:value={topic} placeholder="e.g. Taylor Swift's eras for casual fans, from her country days to now" />
+        <div class="chips" role="group" aria-label="Ideas">
           {#each TOPICS as t (t)}
             <button type="button" class="chip" class:on={topic === t} onclick={() => (topic = t)}>{t}</button>
           {/each}

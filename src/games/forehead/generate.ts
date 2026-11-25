@@ -1,8 +1,9 @@
-// "Make with Claude" for Heads Down: a theme in, recognisable party words streamed out.
+// "🧙 Ask the wizard" for Heads Down: the player's request in, recognisable party words streamed out.
 import { streamLines } from '../../lib/claude';
 import { morePrompt, streamMore, type MoreRun } from '../../lib/addMore';
 import type { WordDeck } from '../../lib/content';
 import { cleanLine, itemKey } from './words';
+import { askedFor, withNameAsk } from '../../lib/wizardAsk';
 
 export const THEME_CHIPS = [
   '90s kids', 'Disney', 'Reality TV', 'Famous duos', 'Things at a wedding', 'Superheroes',
@@ -19,8 +20,9 @@ Format, strictly:
 - Title Case, at most 4 words, no subtitles or colons.
 - No duplicates or near-duplicates, and no item that gives away another.`;
 
-export function buildPrompt(theme: string, count: number, avoid: readonly string[]): string {
-  const parts = [`Theme: ${theme.trim() || 'anything fun'}`, `Write ${count} items.`];
+/** The prompt for `count` items from the player's `request`, never one in `avoid`; `named`: ask for a pack name too. */
+export function buildPrompt(request: string, count: number, avoid: readonly string[], named = false): string {
+  const parts = withNameAsk([askedFor(request, 'anything fun'), `Write ${count} items.`], named);
   if (avoid.length) {
     parts.push(
       'More in the same spirit as the items below, but none of them again (not even reworded):',
@@ -36,6 +38,8 @@ export interface GenerateOptions {
   /** Words already in the target deck or already generated; never repeated. */
   avoid: readonly string[];
   onItem: (item: string) => void;
+  /** When given, Fizzwick also suggests the pack's name, handed here. */
+  onName?: (name: string) => void;
   signal: AbortSignal;
 }
 
@@ -44,8 +48,9 @@ export async function generateWords(o: GenerateOptions): Promise<void> {
   let n = 0;
   await streamLines({
     system: SYSTEM,
-    prompt: buildPrompt(o.theme, o.count, o.avoid),
+    prompt: buildPrompt(o.theme, o.count, o.avoid, !!o.onName),
     signal: o.signal,
+    onName: o.onName,
     maxTokens: 4000,
     onLine: (line) => {
       const item = cleanLine(line);

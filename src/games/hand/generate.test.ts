@@ -32,7 +32,7 @@ describe('Bad Hand wizard lines', () => {
     const n = await generateItems(WIZARD, { theme: 'College', count: 1, avoid: [{ field: 'prompts', text: 'Why is ___ my problem?' }], onItem: (i) => got.push(i) });
     expect(n).toBe(3);
     expect(got).toEqual([{ field: 'prompts', text: 'What got me through finals?' }, { field: 'answers', text: 'Spite' }, { field: 'answers', text: 'Glitter' }]);
-    expect(sent[0].prompt).toContain('Write 1 prompt and 4 answers that fit the theme.');
+    expect(sent[0].prompt).toContain('Write 1 prompt and 4 answers that fit the request.');
     expect(sent[0].prompt).toMatch(/already in use[^\n]*\nPrompt: Why is ___ my problem\?$/);
     const pack = { id: 'dorms', name: 'Dorms', blurb: 'College', prompts: ['Why is ___ my problem?'], answers: ['Spite'] };
     reply = ['Answer: Spite', 'Answer: Ramen at 4am'];

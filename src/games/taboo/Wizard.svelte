@@ -5,6 +5,9 @@
   import Triage from '../../components/Triage.svelte';
   import WizardEffort from '../../components/WizardEffort.svelte';
   import MagicWords from '../../components/MagicWords.svelte';
+  import WizardRequest from '../../components/WizardRequest.svelte';
+  import PackNameField from '../../components/PackNameField.svelte';
+  import { PackName } from '../../lib/packName.svelte';
   import { hasKey, WANTS } from '../../lib/claude';
   import type { TabooCard } from '../../lib/content';
   import { sfx } from '../../lib/sound';
@@ -12,18 +15,21 @@
   import { passedSoFar } from '../../lib/library';
   import { generateCards, MAKE_RANGE, THEME_CHIPS } from './generate';
 
-  // "🧙 Ask the wizard" on a new pack: a theme and a size, then Fizzwick's cards stream into
-  // Triage; the kept ones become the pack. `taken` is every word already on the phone.
+  // "🧙 Ask the wizard" on a new pack: what the player wants and a size, then Fizzwick's cards
+  // stream into Triage under the pack's name; the kept ones become the pack. `taken` is every word
+  // already on the phone.
   let { taken, reviewing = $bindable(false), onsave }: {
     taken: () => string[];
     reviewing?: boolean;
     /** `byPass`: every card came through a magic-words pass, so the pack may be shared. */
-    onsave: (name: string, theme: string, cards: TabooCard[], byPass: boolean) => void;
+    /** `request`: what the player asked for, whole. */
+    onsave: (name: string, request: string, cards: TabooCard[], byPass: boolean) => void;
   } = $props();
 
+  /** What the player asked Fizzwick for, kept whole while the review is on screen. */
   let theme = $state('');
   let count = $state(MAKE_RANGE.start);
-  let name = $state('');
+  const name = new PackName();
   let items = $state<TabooCard[]>([]);
   let streaming = $state(false);
   let error = $state('');
@@ -35,15 +41,16 @@
   async function run() {
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
-    if (!name.trim()) name = theme.trim().replace(/^\w/, (c) => c.toUpperCase()).slice(0, 40);
+    name.begin(theme, 'My pack');
+    const onName = name.wanted ? (s: string) => name.suggest(s) : undefined;
     reviewing = true;
     error = '';
     streaming = true;
     const c = (ctrl = new AbortController());
     try {
       const avoid = [...items.map((x) => x.word), ...taken()];
-      const n = await generateCards({ theme, count, avoid, onCard: (x) => { items.push(x); sfx.tick(); }, signal: c.signal });
-      if (!c.signal.aborted && n === 0) error = 'No usable cards came back. Try again or pick another theme.';
+      const n = await generateCards({ theme, count, avoid, onCard: (x) => { items.push(x); sfx.tick(); }, onName, signal: c.signal });
+      if (!c.signal.aborted && n === 0) error = 'No usable cards came back. Try again or ask for something else.';
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -56,6 +63,7 @@
     items = [];
     error = '';
     reviewing = false;
+    name.reset();
   }
 </script>
 
@@ -63,9 +71,8 @@
   <MagicWords intro={WANTS} />
 {:else if !reviewing}
   <form class="stack" onsubmit={(e) => { e.preventDefault(); void run(); }}>
-    <label for="taboo-theme"><h3>What should the cards be about?</h3></label>
-    <input id="taboo-theme" type="text" bind:value={theme} placeholder="e.g. our college, 2000s TV, camping" autocomplete="off" enterkeyhint="go" maxlength="80" />
-    <div class="chips" role="group" aria-label="Quick themes">
+    <WizardRequest id="taboo-request" bind:value={theme} placeholder="e.g. summer camp memories: activities, camp food, counselors, nothing too niche" />
+    <div class="chips" role="group" aria-label="Ideas">
       {#each THEME_CHIPS as t (t)}
         <button type="button" class="chip" class:on={theme === t} onclick={() => (theme = t)}>{t}</button>
       {/each}
@@ -76,10 +83,7 @@
     <Button type="submit" size="lg" disabled={!theme.trim()} tip="Fizzwick writes them; you choose which to keep">✨ Make {count}</Button>
   </form>
 {:else}
-  <label class="name">
-    <span>Pack name</span>
-    <input type="text" bind:value={name} placeholder="My pack" maxlength="40" autocomplete="off" />
-  </label>
+  <PackNameField {name} />
   {#if error}
     <div class="error" role="alert">
       <p>{error}</p>
@@ -87,20 +91,18 @@
     </div>
   {/if}
   {#if items.length === 0 && streaming}
-    <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” cards…</p>
+    <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your cards…</p>
   {/if}
-  <Triage {items} keyOf={cardId} {streaming} wizard onsave={(kept) => onsave(name, theme, kept, byPass)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
+  <Triage {items} keyOf={cardId} {streaming} wizard onsave={(kept) => onsave(name.saved(theme, 'My pack'), theme, kept, byPass)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
     {#snippet item(c: TabooCard)}<span class="txt"><span class="w">{c.word}</span><span class="b">{c.banned.join(' · ')}</span></span>{/snippet}
   </Triage>
 {/if}
 
 <style>
-  h3 { font-size: 1.3rem; }
   .small { font-size: 0.9rem; }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
   .chip { min-height: 44px; padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1.5px solid var(--line-strong); background: var(--surface); font-weight: 600; }
   .chip.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
-  .name { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
   .error { display: flex; flex-direction: column; gap: var(--s-2); align-items: flex-start; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: color-mix(in srgb, var(--c-bad) 16%, var(--surface)); }
   .waiting { display: flex; align-items: center; gap: var(--s-2); color: var(--text-dim); }
   .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pulse 1s ease-in-out infinite; }

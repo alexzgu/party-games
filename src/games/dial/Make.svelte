@@ -1,6 +1,7 @@
 <script lang="ts">
-  // "Make a pack": paste a list, or give Claude a theme and watch cards stream in → review in
-  // Triage → save as a new pack or add to one of yours → add more, avoiding every card there.
+  // "Make a pack": paste a list, or tell Fizzwick what you want and watch cards stream in → name
+  // the pack and review in Triage → save as a new pack or add to one of yours → add more, avoiding
+  // every card there.
   import { onDestroy } from 'svelte';
   import Screen from '../../components/Screen.svelte';
   import Button from '../../components/Button.svelte';
@@ -10,6 +11,10 @@
   import WizardEffort from '../../components/WizardEffort.svelte';
   import { hasKey, WANTS } from '../../lib/claude';
   import MagicWords from '../../components/MagicWords.svelte';
+  import WizardRequest from '../../components/WizardRequest.svelte';
+  import PackNameField from '../../components/PackNameField.svelte';
+  import { PackName } from '../../lib/packName.svelte';
+  import { wizardBlurb } from '../../lib/wizardAsk';
   import { customSpectra, slugify, type Spectrum, type SpectrumPack } from '../../lib/content';
   import { generatePairs, parsePastedPairs, THEME_CHIPS } from './generate';
   import { cardId } from './state';
@@ -21,6 +26,7 @@
   type Step = 'theme' | 'review' | 'save' | 'saved';
   // svelte-ignore state_referenced_locally
   let step = $state<Step>(initial.length ? 'review' : 'theme');
+  /** What the player asked Fizzwick for, kept whole while the review is on screen. */
   let theme = $state('');
   // svelte-ignore state_referenced_locally
   let items = $state<Spectrum[]>(initial.slice());
@@ -28,12 +34,13 @@
   let streaming = $state(false);
   let error = $state('');
   let kept = $state<Spectrum[]>([]);
-  let packName = $state('');
+  /** A new pack's name: on the review screen for Fizzwick's cards, and on the save step. */
+  const packName = new PackName();
   let savedPack = $state<SpectrumPack | null>(null);
   let controller: AbortController | null = null;
   onDestroy(() => controller?.abort());
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes cards from what you ask for' }];
   // svelte-ignore state_referenced_locally
   let mode = $state<'paste' | 'claude'>(hasKey() || initial.length ? 'claude' : 'paste');
   let pasteText = $state('');
@@ -64,10 +71,14 @@
     streaming = true;
     controller = new AbortController();
     const seen = new Set([...avoid, ...items].map(cardId));
+    // A new pack gets a name; cards added to the pack just saved need none.
+    if (!savedPack) packName.begin(theme, 'My pack');
+    const onName = !savedPack && packName.wanted ? (s: string) => packName.suggest(s) : undefined;
     try {
       await generatePairs({
         theme,
         avoid,
+        onName,
         signal: controller.signal,
         onPair: (c) => {
           if (seen.has(cardId(c))) return;
@@ -108,12 +119,13 @@
     if (streaming) { controller?.abort(); return; }
     items = [];
     step = savedPack ? 'saved' : 'theme';
+    packName.reset();
   }
 
   function onsave(k: Spectrum[]) {
     kept = k;
     if (savedPack) { addTo(savedPack); return; }
-    packName = titleCase(theme || 'My pack');
+    if (mode === 'paste') packName.begin('', 'My pack');
     step = 'save';
   }
 
@@ -123,8 +135,8 @@
   }
 
   function saveNew() {
-    const name = packName.trim() || 'My pack';
-    const blurb = mode === 'paste' ? 'Pasted list' : `Conjured by Fizzwick: ${theme || name}`;
+    const name = packName.saved(theme, 'My pack');
+    const blurb = mode === 'paste' ? 'Pasted list' : wizardBlurb(theme || name);
     const pack = afterRun<SpectrumPack>({ id: `my-${slugify(name)}-${Date.now().toString(36)}`, name, blurb, cards: kept, custom: true }, passMade(), true);
     customSpectra.put(pack);
     finish(pack);
@@ -147,8 +159,6 @@
     items = [];
     step = 'saved';
   }
-
-  const titleCase = (s: string) => s.trim().replace(/\b\p{L}/gu, (c) => c.toUpperCase()).slice(0, 40);
 </script>
 
 {#snippet savedActions()}
@@ -172,14 +182,11 @@
     <MagicWords intro={WANTS} />
   {:else if step === 'theme'}
     <form class="stack" onsubmit={(e) => { e.preventDefault(); startFresh(theme); }}>
-      <label class="stack">
-        <span class="lbl">What should the cards be about?</span>
-        <input type="text" maxlength="80" placeholder="e.g. 90s cartoons, our office, wine" bind:value={theme} enterkeyhint="go" />
-      </label>
+      <WizardRequest id="dial-request" bind:value={theme} placeholder="e.g. food and cooking scales that would start arguments at a dinner party" />
       <WizardEffort />
       <Button type="submit" size="lg" tip="Fizzwick writes them; you choose which to keep">Make 20</Button>
     </form>
-    <div class="chips" aria-label="Quick themes">
+    <div class="chips" aria-label="Ideas">
       {#each THEME_CHIPS as c (c)}
         <button class="chip" onclick={() => startFresh(c)} data-tip="Asks Fizzwick for cards about this right away">{c}</button>
       {/each}
@@ -189,7 +196,12 @@
       <p class="muted">Your list. Tap a card to drop it.</p>
       {#if note}<p class="faint note">{note}</p>{/if}
     {:else}
-      <p class="muted">Theme: <b>{theme || 'More like your pack'}</b>. Tap a card to drop it.</p>
+      {#if savedPack}
+        <p class="muted">Adding to <b>{savedPack.name}</b>. Tap a card to drop it.</p>
+      {:else}
+        <PackNameField name={packName} />
+        <p class="muted">Tap a card to drop it.</p>
+      {/if}
     {/if}
     {#if error}<p class="err" role="alert">{error}</p>{/if}
     {#if error && !streaming && items.length === 0}
@@ -207,10 +219,7 @@
   {:else if step === 'save'}
     <div class="stack">
       <h3>Save {kept.length} cards</h3>
-      <label class="stack">
-        <span class="lbl">New pack name</span>
-        <input type="text" maxlength="40" bind:value={packName} />
-      </label>
+      <PackNameField name={packName} />
       <Button size="lg" onclick={saveNew}>New pack</Button>
       {#if mine.length}
         <p class="faint or">or add them to one of yours</p>
@@ -231,7 +240,6 @@
 
 <style>
   .note { font-size: 0.92rem; }
-  .lbl { font-weight: 700; }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
   .chip {
     min-height: 44px; padding: 0 var(--s-4); border-radius: var(--r-pill);

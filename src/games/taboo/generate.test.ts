@@ -16,7 +16,7 @@ const { buildPrompt, generateCards, moreCards, readCard, SYSTEM } = await import
 describe('Don\'t Say It wizard', () => {
   it('asks for the theme and size, with the quality bar and every word already taken', () => {
     const p = buildPrompt(' camping ', 30, ['Tent', 'Campfire']);
-    expect(p).toContain('Theme: camping');
+    expect(p).toContain('The player asks for: camping');
     expect(p).toContain('Write 30 cards');
     expect(p).toMatch(/never use them again:\nTent\nCampfire$/);
     expect(SYSTEM).toMatch(/Exactly 5 banned words/);

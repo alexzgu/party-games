@@ -11,4 +11,4 @@
 
 <ListPackMake game="sketch" specs={SKETCH_LISTS} packs={sketchPacks} wizard={WIZARD} range={MAKE_RANGE} chips={THEME_CHIPS}
   pasteExamples={{ words: 'Bunk bed\nRamen\nLava lamp', ideas: 'A raccoon cramming for finals\nA cat filing its taxes\nA shark taking a selfie' }}
-  defaultName="My drawings" themeQuestion="What should the drawings be about?" {onsaved} {onback} />
+  defaultName="My drawings" requestHint="e.g. a beach holiday, things easy enough to draw on a phone in a minute" {onsaved} {onback} />

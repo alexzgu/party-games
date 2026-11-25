@@ -5,6 +5,7 @@ import { streamLines } from '../../lib/claude';
 import type { QuizBoard } from '../../lib/content';
 import { parseStreamLine, type StreamClue } from './parse';
 import { MAX_CATEGORIES, MAX_LEVELS } from './board';
+import { askedFor, cleanName, nameFrom, NAME_ASK, wizardBlurb } from '../../lib/wizardAsk';
 
 export const SYSTEM = `You write boards for a team quiz game that a host reads aloud at a house party. Players are adults in their 20s in the US.
 
@@ -28,9 +29,9 @@ Every clue must meet all of these:
 6. Check every fact. Leave out anything you are not sure of or that may have changed recently.
 7. Never repeat a clue or an answer anywhere on the board.`;
 
-export function buildPrompt(topic: string, cats: number, levels: number): string {
-  const t = topic.trim() || 'a mix of everything';
-  return `Topic: ${t}\nWrite a board of ${cats} ${cats === 1 ? 'category' : 'categories'} with ${levels} ${levels === 1 ? 'level' : 'levels'} each: ${cats * levels} lines in all, levels numbered 1 to ${levels}.`;
+/** The prompt for a board from the player's `request`, with a name for it. */
+export function buildPrompt(request: string, cats: number, levels: number): string {
+  return `${askedFor(request, 'a mix of everything')}\nWrite a board of ${cats} ${cats === 1 ? 'category' : 'categories'} with ${levels} ${levels === 1 ? 'level' : 'levels'} each: ${cats * levels} lines in all, levels numbered 1 to ${levels}.\n${NAME_ASK}`;
 }
 
 /** Text compared loosely: case and spacing ignored. */
@@ -71,16 +72,15 @@ export function placeClue(b: QuizBoard, s: StreamClue, cats: number, levels: num
   };
 }
 
-/** An empty board of the asked size, named for the topic, for the stream to fill. */
-export function emptyBoardFor(topic: string, cats: number, levels: number): QuizBoard {
-  const name = topic.trim().replace(/\s+/g, ' ').replace(/^\w/, (c) => c.toUpperCase()).slice(0, 40) || 'My pack';
+/** An empty board of the asked size, for the stream to fill: named from the request's first words until Fizzwick names it. */
+export function emptyBoardFor(request: string, cats: number, levels: number): QuizBoard {
   return {
-    id: '', name, blurb: `Conjured by Fizzwick: ${topic.trim() || name}`,
+    id: '', name: nameFrom(request, 'My pack'), blurb: wizardBlurb(request),
     categories: Array.from({ length: cats }, (_, i) => ({ name: `Category ${i + 1}`, clues: Array.from({ length: levels }, () => ({ clue: '', answer: '' })) })),
   };
 }
 
-/** Streams a board for a topic; `onBoard` gets the board after every clue that lands. */
+/** Streams a board for the player's request; `onBoard` gets the board after every clue that lands, and after its name. */
 export async function generateBoard(opts: {
   topic: string;
   cats: number;
@@ -96,6 +96,13 @@ export async function generateBoard(opts: {
     prompt: buildPrompt(opts.topic, cats, levels),
     signal: opts.signal,
     maxTokens: Math.max(4000, 600 + cats * levels * 100),
+    // Nobody can type in the board's name while it streams: Fizzwick's good name replaces the stand-in.
+    onName: (raw) => {
+      const name = cleanName(raw);
+      if (!name) return;
+      board = { ...board, name };
+      opts.onBoard(board);
+    },
     onLine: (line) => {
       const s = parseStreamLine(line);
       if (!s) return;

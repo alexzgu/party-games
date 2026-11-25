@@ -5,6 +5,7 @@
 import { settings, saveSettings } from './settings.svelte';
 import { canFallBack, modelFor, SERVER_MAX_TOKENS, WIZARD_BETAS } from './wizard';
 import { SERVER_TROUBLE, WIZARD_SERVER } from './wizardServer';
+import { liftName } from './wizardAsk';
 
 export class ClaudeError extends Error {}
 
@@ -77,6 +78,8 @@ export interface StreamOptions {
   prompt: string;
   /** Called once per completed line of output, as it arrives. */
   onLine: (line: string) => void;
+  /** When given, a "Name: …" line (the pack name the prompt asked for) comes here and never to `onLine`. */
+  onName?: (name: string) => void;
   signal?: AbortSignal;
   maxTokens?: number;
 }
@@ -89,12 +92,13 @@ export async function streamLines(opts: StreamOptions): Promise<void> {
   const pass = viaPass() ? settings.wizardPass.trim() : '';
   const anthropic = await client(pass);
   let buffer = '';
+  const onLine = opts.onName ? liftName(opts.onLine, opts.onName) : opts.onLine;
   const flush = (final: boolean) => {
     const parts = buffer.split('\n');
     buffer = final ? '' : parts.pop() ?? '';
     for (const p of parts) {
       const line = p.trim();
-      if (line) opts.onLine(line);
+      if (line) onLine(line);
     }
   };
   try {
@@ -121,7 +125,7 @@ export async function streamLines(opts: StreamOptions): Promise<void> {
     });
     const message = await stream.finalMessage();
     flush(true);
-    if (message.stop_reason === 'refusal') throw new ClaudeError('Fizzwick refused that one. Try a different theme.');
+    if (message.stop_reason === 'refusal') throw new ClaudeError('Fizzwick refused that one. Try asking for something else.');
   } catch (err) {
     if (opts.signal?.aborted) return;
     throw friendly(err, pass);

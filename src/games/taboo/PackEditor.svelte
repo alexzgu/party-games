@@ -25,6 +25,7 @@
   import { selectPack } from './persist';
   import { MORE_RANGE, moreCards } from './generate';
   import { afterRun, shareWizardPack } from '../../lib/library';
+  import { wizardBlurb } from '../../lib/wizardAsk';
 
   let { id, onback }: { id: string | null; onback: () => void } = $props();
 
@@ -137,16 +138,16 @@
   }
 
   /** A new pack: typed card by card, or asked of the wizard. */
-  const MODES = [{ value: 'write' as const, label: 'Write', tip: 'Type or paste your own cards' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
+  const MODES = [{ value: 'write' as const, label: 'Write', tip: 'Type or paste your own cards' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes cards from what you ask for' }];
   let mode = $state<'write' | 'claude'>(hasKey() ? 'claude' : 'write');
   /** The wizard's cards are on screen for review: the mode switch is hidden. */
   let reviewing = $state(false);
   /** Every word on the phone except this pack's: a word is never in two packs. */
   const otherWords = () => tabooPacks().filter((p) => p.id !== pack?.id).flatMap((p) => p.cards.map((c) => c.word));
 
-  function conjured(n: string, theme: string, cards: TabooCard[], byPass: boolean) {
+  function conjured(n: string, request: string, cards: TabooCard[], byPass: boolean) {
     if (!pack) return;
-    save(afterRun({ ...pack, name: clean(n) || 'My pack', blurb: `Conjured by Fizzwick: ${theme.trim()}`, cards: $state.snapshot(cards) }, byPass, true));
+    save(afterRun({ ...pack, name: clean(n) || 'My pack', blurb: wizardBlurb(request), cards: $state.snapshot(cards) }, byPass, true));
     if (pack) void shareWizardPack('taboo', $state.snapshot(pack), byPass);
     sfx.correct();
   }

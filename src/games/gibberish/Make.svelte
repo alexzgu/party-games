@@ -9,13 +9,17 @@
   import { customGibberish, isBuiltin, slugify, type GibberishCard, type GibberishPack } from '../../lib/content';
   import { hasKey, WANTS } from '../../lib/claude';
   import MagicWords from '../../components/MagicWords.svelte';
+  import WizardRequest from '../../components/WizardRequest.svelte';
+  import PackNameField from '../../components/PackNameField.svelte';
+  import { PackName } from '../../lib/packName.svelte';
+  import { wizardBlurb } from '../../lib/wizardAsk';
   import { sfx } from '../../lib/sound';
   import { generateCards, THEME_CHIPS } from './generate';
   import { answerKey, parsePastedCards } from './parse';
   import { afterRun, passedSoFar, shareWizardPack } from '../../lib/library';
 
-  // "Make a pack": paste a list, or pick a theme and watch Claude's cards stream in; drop the
-  // duds, save as a pack.
+  // "Make a pack": paste a list, or tell Fizzwick what you want and watch his cards stream in;
+  // name the pack, drop the duds, save as a pack.
   let { onsaved, onback, demoItems = null, demoNoKey = false }: {
     onsaved: (packId: string) => void;
     onback: () => void;
@@ -30,10 +34,13 @@
   let items = $state<GibberishCard[]>(demoItems ?? []);
   // svelte-ignore state_referenced_locally
   let reviewing = $state(!!demoItems);
+  /** What the player asked Fizzwick for, kept whole while the review is on screen. */
   // svelte-ignore state_referenced_locally
   let theme = $state(demoItems ? 'Movies' : '');
+  /** A new pack's name: Fizzwick's on the review screen, or typed for a pasted list. */
+  const packName = new PackName();
   // svelte-ignore state_referenced_locally
-  let packName = $state(demoItems ? 'Movies' : '');
+  if (demoItems) packName.begin(theme, 'My pack');
   let dest = $state('new');
   let streaming = $state(false);
   let error = $state('');
@@ -41,7 +48,7 @@
 
   const destPack = $derived(myPacks.find((p) => p.id === dest));
 
-  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes cards on a theme you pick' }];
+  const MODES = [{ value: 'paste' as const, label: 'Paste', tip: 'Type or paste your own, one per line' }, { value: 'claude' as const, label: '🧙 Wizard', tip: 'Fizzwick writes cards from what you ask for' }];
   // svelte-ignore state_referenced_locally
   let mode = $state<'paste' | 'claude'>(keyed ? 'claude' : 'paste');
   let pasteText = $state('');
@@ -59,7 +66,9 @@
   async function run() {
     byPass = passedSoFar(byPass, items.length);
     if (!theme.trim()) return;
-    if (!packName.trim()) packName = theme.trim().replace(/^\w/, (c) => c.toUpperCase());
+    // A new pack gets a name; cards added to one of mine need none.
+    if (!destPack) packName.begin(theme, 'My pack');
+    const onName = !destPack && packName.wanted ? (s: string) => packName.suggest(s) : undefined;
     reviewing = true;
     error = '';
     streaming = true;
@@ -70,10 +79,11 @@
       await generateCards({
         theme,
         existing: [...$state.snapshot(items), ...(destPack?.cards ?? [])],
+        onName,
         onCard: (c) => { items.push(c); sfx.tick(); },
         signal,
       });
-      if (!signal.aborted && items.length === before) error = 'No usable cards came back. Try again or pick another theme.';
+      if (!signal.aborted && items.length === before) error = 'No usable cards came back. Try again or ask for something else.';
     } catch (e) {
       error = (e as Error).message;
     } finally {
@@ -88,6 +98,7 @@
     error = '';
     note = '';
     reviewing = false;
+    packName.reset();
   }
 
   function uniqueId(name: string): string {
@@ -111,9 +122,9 @@
       share(pack);
       onsaved(destPack.id);
     } else {
-      const name = packName.trim() || 'My pack';
+      const name = mode === 'paste' ? packName.value.trim() || 'My pack' : packName.saved(theme, 'My pack');
       const id = uniqueId(name);
-      const blurb = mode === 'paste' ? 'Pasted list' : `Conjured by Fizzwick: ${theme.trim() || name}`;
+      const blurb = mode === 'paste' ? 'Pasted list' : wizardBlurb(theme.trim() || name);
       const pack = afterRun<GibberishPack>({ id, name, blurb, cards }, passMade(), true);
       customGibberish.put(pack);
       share(pack);
@@ -151,9 +162,8 @@
     <MagicWords intro={WANTS} demo={demoNoKey} />
   {:else if !reviewing}
     <form class="theme" onsubmit={(e) => { e.preventDefault(); void run(); }}>
-      <label for="theme-in"><h3>What should the cards be about?</h3></label>
-      <input id="theme-in" type="text" bind:value={theme} placeholder="e.g. 90s cartoons, Taylor Swift, our office" autocomplete="off" enterkeyhint="go" maxlength="80" />
-      <div class="chips" role="group" aria-label="Quick themes">
+      <WizardRequest id="gibberish-request" bind:value={theme} placeholder="e.g. famous 90s movies and the stars in them, nothing too obscure" />
+      <div class="chips" role="group" aria-label="Ideas">
         {#each THEME_CHIPS as c (c)}
           <button type="button" class="chip" class:on={theme === c} onclick={() => (theme = c)}>{c}</button>
         {/each}
@@ -165,10 +175,7 @@
     </form>
   {:else}
     {#if !destPack}
-      <label class="name">
-        <span>Pack name</span>
-        <input type="text" bind:value={packName} placeholder="My pack" maxlength="40" autocomplete="off" />
-      </label>
+      <PackNameField name={packName} />
     {:else}
       <p class="muted">Adding to <b>{destPack.name}</b></p>
     {/if}
@@ -182,7 +189,7 @@
     {/if}
 
     {#if items.length === 0 && streaming}
-      <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring “{theme}” cards…</p>
+      <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your cards…</p>
     {/if}
 
     <Triage {items} keyOf={answerKey} {streaming} wizard={mode === 'claude'} onsave={save} oncancel={cancel} onmore={mode === 'claude' ? run : undefined}>
@@ -198,13 +205,12 @@
 </Screen>
 
 <style>
-  h3 { font-size: 1.3rem; }
   .small { font-size: 0.9rem; }
   .theme { display: flex; flex-direction: column; gap: var(--s-3); }
   .chips { display: flex; flex-wrap: wrap; gap: var(--s-2); }
   .chip { min-height: 44px; padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1.5px solid var(--line-strong); background: var(--surface); font-weight: 600; }
   .chip.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
-  .dest, .name { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
+  .dest { display: flex; flex-direction: column; gap: var(--s-1); font-weight: 600; color: var(--text-dim); }
   .error { display: flex; flex-direction: column; gap: var(--s-2); align-items: flex-start; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: color-mix(in srgb, var(--c-bad) 16%, var(--surface)); }
   .waiting { display: flex; align-items: center; gap: var(--s-2); color: var(--text-dim); }
   .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); animation: pulse 1s ease-in-out infinite; }

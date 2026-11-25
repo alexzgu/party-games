@@ -82,6 +82,8 @@ export interface MoreStream<T> {
   /** Keys never to hand over: the pack's, other packs' where the game needs it, earlier batches'. */
   taken: Iterable<string>;
   onItem: (t: T) => void;
+  /** The pack name the prompt asked for, lifted out of the stream (never an item). */
+  onName?: (name: string) => void;
   signal?: AbortSignal;
 }
 
@@ -94,6 +96,7 @@ export async function streamMore<T>(o: MoreStream<T>): Promise<number> {
     prompt: o.prompt,
     signal: o.signal,
     maxTokens: o.maxTokens,
+    onName: o.onName,
     onLine: (line) => {
       const item = n < o.count ? o.read(line) : null;
       const k = item ? o.keyOf(item) : '';
