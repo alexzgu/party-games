@@ -825,7 +825,10 @@ describe('the app\'s phone', () => {
     const far = (p as unknown as { conn: End }).conn.other!;
     far.send = () => {}; // the link goes dead one way: nothing more arrives, not even its close
     far.close = () => {};
-    await vi.advanceTimersByTimeAsync(LINK_TIMEOUT + 2000);
+    // The watchdog (every 2 s) drops the silent link at LINK_TIMEOUT + 1 s and the redial is due 1 s later, at exactly
+    // LINK_TIMEOUT + 2 s. Stopping on that instant raced the redial's real-time handshake (and the host's answer, which
+    // may be a refusal) against the end of the advance; stopping just before it looks only at the link having gone.
+    await vi.advanceTimersByTimeAsync(LINK_TIMEOUT + 1000);
     expect([p.sign, p.link]).toEqual([null, 'joining']);
     close(host);
   });
