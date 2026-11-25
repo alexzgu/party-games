@@ -148,7 +148,7 @@
       <p class="waiting"><span class="dot" aria-hidden="true"></span> Fizzwick is conjuring your prompts…</p>
     {/if}
     <Triage {items} keyOf={itemKey} bind:dropped streaming={streaming || changes.busy} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
-      {#snippet below()}{#if true}<WizardChanges {changes} request={theme} />{/if}{/snippet}
+      {#snippet below()}<WizardChanges {changes} request={theme} />{/snippet}
       {#snippet item(i: SnarkItem)}<WizardItem {i} />{/snippet}
     </Triage>
   {/if}

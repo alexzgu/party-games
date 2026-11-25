@@ -109,7 +109,7 @@
   {/if}
   <Triage {items} keyOf={cardId} bind:dropped streaming={streaming || changes.busy} wizard onsave={(kept) => onsave(name.saved(theme, 'My pack'), theme, kept, byPass)} oncancel={cancel} onmore={hasKey() ? run : undefined}>
     {#snippet item(c: TabooCard)}<span class="txt"><span class="w">{c.word}</span><span class="b">{c.banned.join(' · ')}</span></span>{/snippet}
-    {#snippet below()}{#if true}<WizardChanges {changes} request={theme} />{/if}{/snippet}
+    {#snippet below()}<WizardChanges {changes} request={theme} />{/snippet}
   </Triage>
 {/if}
 

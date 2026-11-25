@@ -208,7 +208,7 @@
     {/if}
     {#if unsaved}<div class="error" role="alert"><p>{unsaved}</p></div>{/if}
     <Triage {items} {keyOf} bind:dropped streaming={streaming || changes.busy} wizard onsave={save} oncancel={cancel} onmore={hasKey() ? run : undefined}>
-      {#snippet below()}{#if true}<WizardChanges {changes} request={theme} />{/if}{/snippet}
+      {#snippet below()}<WizardChanges {changes} request={theme} />{/snippet}
       {#snippet item(i: ListItem)}
         <span class="it">
           {#if specs.length > 1}<span class="tag">{specs.find((s) => s.field === i.field)?.one}</span>{/if}
