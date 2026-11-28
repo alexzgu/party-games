@@ -27,7 +27,7 @@ describe('shownGames', () => {
     expect(ids(togglePick(s, 'tag:Teams'))).toEqual(['forehead', 'gibberish', 'taboo', 'quick', 'salad', 'odd']);
   });
   it('sorts A–Z and by last opened, never-opened games after in default order', () => {
-    expect(ids({ ...EMPTY, order: 'az' }).slice(0, 3)).toEqual(['hand', 'quiz', 'quick']);
+    expect(ids({ ...EMPTY, order: 'az' }).slice(0, 3)).toEqual(['hand', 'big2', 'quiz']);
     const s = markOpened(markOpened({ ...EMPTY, order: 'recent' }, 'hand', 100), 'dial', 200);
     expect(ids(s).slice(0, 4)).toEqual(['dial', 'hand', 'forehead', 'gibberish']);
     expect(shownGames(s, GAMES, { hand: 100 }).slice(0, 2).map((g) => g.id)).toEqual(['hand', 'forehead']); // the times the page opened with

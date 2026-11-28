@@ -170,6 +170,7 @@ const GAMES = {
   hand: () => import('../../games/hand/host.svelte'),
   fish: () => import('../../games/fish/host.svelte'),
   trivia: () => import('../../games/trivia/host.svelte'),
+  big2: () => import('../../games/big2/host.svelte'),
 };
 interface Host { link: HostLink; game: { phase: string; code: string; id?: string } | null; open(): Promise<void>; kick(pid: string): void; rematch(): void; addBot(): string | null; start(): void }
 /** Another tab with this page, opened now (the tabs before it still open). */

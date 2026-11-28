@@ -21,7 +21,7 @@
         try { s = JSON.parse(localStorage.getItem('hr:settings') || '{}'); } catch (e) {}
         if (!s || typeof s !== 'object') s = {};
         var path = location.hash.replace(/^#/, '').split('?')[0] || '/';
-        var far = /^\/(?:[a-z]+\/host|quiz\/play|forehead\/play)(?:\/|$)/.test(path);
+        var far = /^\/(?:[a-z0-9]+\/host|quiz\/play|forehead\/play)(?:\/|$)/.test(path);
         root.dataset.text = !far && (s.textSize === 'small' || s.textSize === 'large') ? s.textSize : 'normal';
         root.dataset.density = s.spacing === 'compact' ? 'compact' : 'normal';
         try {

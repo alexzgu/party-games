@@ -3,6 +3,6 @@
 // show at Normal text size; the Text size setting does not apply while one is up (applyDisplay in
 // settings.svelte.ts). index.html repeats the pattern for the first paint; display.test.ts keeps
 // the two the same and checks every game with a host screen is covered.
-export const FAR_READ = /^\/(?:[a-z]+\/host|quiz\/play|forehead\/play)(?:\/|$)/;
+export const FAR_READ = /^\/(?:[a-z0-9]+\/host|quiz\/play|forehead\/play)(?:\/|$)/;
 
 export const farRead = (path: string): boolean => FAR_READ.test(path);

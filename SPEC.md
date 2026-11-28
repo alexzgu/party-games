@@ -49,7 +49,7 @@ Svelte 5 (runes) + TypeScript + Vite, `vite-plugin-pwa` precaches everything. Ha
   `FitText` (text as large as its box allows), `Stepper`, `Toggle`, `Triage` (review generated
   items while they stream in), `WizardEffort` (how hard Fizzwick tries, on every make page), `WizardRequest` (the box where the player tells Fizzwick what they want), `PackNameField` (a wizard pack's name on its review screen), `WizardChanges` (asking Fizzwick for changes on a review), `WizardNote` (the line that Fizzwick can be wrong, over his results), `PackFile` (the row under every pack list: Add pack — New, Community, Import — and Export),
   `ExportPack` (Export), `Community` and `CommunityItems` (browse, preview, import and star
-  Community packs, over a pack list or on the Community page), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown), `cards/PlayingCard` and `cards/CardFan` (see Playing cards).
+  Community packs, over a pack list or on the Community page), `ShareNote` (the note a failed Community share leaves), `UsernameField` (Settings' username box), `draw/Canvas` (the drawing pad: colours, pens, optional eraser, undo, clear) and `draw/InkCard` (a drawing shown), `cards/PlayingCard` and `cards/CardFan` (see Playing cards), `room/StartRoom`, `room/JoinRoom` and `room/LobbySeats` (the card games' first, join and lobby screens).
 - `src/pages/` — the pages that are not a game: `Home`, `Games`, `Settings`, `History`, `CommunityPage`
   (the Community packs, a game at a time), `Joined` (an invite link) and `Crashed`.
 - `src/styles/tokens.css` — every colour, radius, spacing and duration. Each game sets `--accent`
@@ -1084,7 +1084,7 @@ games saved before it load as) or "Three-line duels". Rules from Quiplash 3; amo
 
 ## Shared room link (`src/lib/room/`)
 
-Every own-phones game (Snark Tank, Word Salad, Doodle Brawl, Sketchy, Bad Hand, Would You Rather, Go Fish, Smarty Pants) uses one link layer: room codes,
+Every own-phones game (Snark Tank, Word Salad, Doodle Brawl, Sketchy, Bad Hand, Would You Rather, Go Fish, Smarty Pants, Big 2) uses one link layer: room codes,
 broker choice (`?peer=`, stored under the existing `snark:broker` key so the setting carries
 over), PeerJS peers, ping/timeout/redial, hello/welcome/reject/ended, the phone's outbox and the
 host's one-view-per-phone sending. Each game supplies its own message reader, view builder and
@@ -1104,7 +1104,7 @@ them) but may rejoin with the same code and keeps their score; a removed player 
 after Play again. A
 refusal or the end of the room is shown on the join screen even on a phone that came by QR code.
 The join screen's name box starts with the phone's username, cut to that game's name limit (Snark
-Tank 14, Word Salad 18, Doodle Brawl, Sketchy, Bad Hand, Would You Rather, Go Fish and Smarty Pants 20 characters); after a refused join (a name already taken,
+Tank 14, Word Salad 18, Doodle Brawl, Sketchy, Bad Hand, Would You Rather, Go Fish, Smarty Pants and Big 2 20 characters); after a refused join (a name already taken,
 say) it keeps what was typed, so it can be fixed. A name typed there is for that room only (kept
 for rejoining it) and never changes the username.
 The browser's or Android's back gesture walks the same path as Back and never lands on a closed host screen. Any message whose JSON is 15,000 UTF-8
@@ -1262,7 +1262,11 @@ bots draw a random doodle (`lib/doodle.ts`) within the drawing limits.
 
 ## Playing cards (`src/lib/cards/`, `src/components/cards/`)
 
-A kit for any game played with a standard 52-card deck (Go Fish first).
+A kit for any game played with a standard 52-card deck (Go Fish, Big 2). The two table games also
+share their turn clock and event log (`lib/room/table.ts`), joining and leaving
+(`lib/room/seating.ts`), the one move a phone resends (`lib/room/latest.ts`), the short card
+notation of their tests and demos (`lib/cards/notation.ts`, "7s Kd 10c") and their first, join and lobby
+screens (`components/room/StartRoom`, `JoinRoom`, `LobbySeats`).
 
 - **Cards** (`deck.ts`, pure): a card is its id 0–51; its suit is `Math.floor(id / 13)` (spades,
   hearts, diamonds, clubs) and its rank `id % 13 + 1` (1 ace … 11 jack, 12 queen, 13 king). A new
@@ -1945,3 +1949,82 @@ Bad Hand). Amounts marked *house* are ours.
 - **Bots** (see Shared room link): answer once a question after 2–8 s, right about 55% of the time
   (*house*). A bot's view never says which answer is right; the host screen running it tells it,
   only to play at that rate.
+
+## Game 16 — Big 2 (`big2`)
+
+Traditional Big 2 (Big Two), our look, on the playing-card kit after Go Fish. The host screen is
+the table; each phone is that player's hand (`#/big2`: Host and Join, with the Return / Rejoin
+banner as in Bad Hand). Choices marked *house* are ours where the published rules vary.
+
+- **Own phones**: 2–4 players join a host screen through the shared room link; name limit 20
+  characters. No packs: one standard 52-card deck.
+- **Deal**: a shuffled deck, one card at a time around the table, 13 cards each; with 2 or 3
+  players the rest is set aside face down, unseen by anyone (*house*).
+- **Card order**: rank 3 lowest … K, A, 2 highest; within a rank diamonds < clubs < hearts <
+  spades (`order.ts`). Phones show the hand sorted in this order.
+- **Plays** (`combos.ts`): a single; a pair; three of a kind; or a five-card hand: straight <
+  flush < full house < four of a kind plus any one card < straight flush. Straights run 3-4-5-6-7
+  up to 10-J-Q-K-A; a 2 is never in a straight and nothing wraps round (*house*). The same kind
+  compares as follows: singles by card; pairs and triples by rank, then the highest suit in them;
+  straights and straight flushes by their top card; flushes by the top card's rank, then down the
+  cards, then the top card's suit; full houses by the triple's rank; four of a kind by the four's
+  rank. A five-card hand of a higher kind beats any of a lower kind.
+- **Tricks** (`round.ts`, `moves.ts`): the player holding the lowest card dealt (the 3 of diamonds
+  when it was dealt) leads the first trick, and that card must be in their first play. Play goes in
+  seat order. A play is the same number of cards as the trick's lead and beats the play on the
+  table. A player may pass; a player who passed is out until the trick ends (*house*). When
+  everyone else has passed, the last player to play leads anything. The player leading a trick
+  cannot pass. A play or pass names its turn (`at`); the host ignores one out of turn, of cards the
+  player does not hold, the same card twice, not a hand, the wrong size, too low, missing the
+  lowest card on the first play, a pass by the leader, for another turn, or while paused, and tells
+  that phone it did not count. A phone keeps only its latest move to send again after a reconnect,
+  and drops one the host refused.
+- **Scoring**: a deal ends when one player has no cards. The others score one penalty point per
+  card left, doubled with 10 or more left, tripled with all 13 (*house*). Lowest total after the
+  last deal wins; ties share a place. Between deals the result stays up 10 s (`RESULT_MS`, or
+  Next deal): who went out and each player's cards left, points and total. The next deal is led by
+  the last deal's winner, with any play (their lowest card is not forced); if they are gone, by the
+  holder of the lowest card, as in the first deal.
+- **Settings** (`#/big2/settings`, rules only): deals per game 1 / 3 / 5 (default 3); seconds per
+  turn 20 / 30 / 45 / no limit (default 30). When the time runs out the game passes for that
+  player or, when they lead (or must play the lowest card), plays their lowest legal single; with
+  no limit the host's "Play for them" does the same.
+- **What everyone sees**: every play face up and every pass, as at a real table ("Maya played a
+  pair of kings.", "Sam passed.", "Maya leads.", "Maya is out of cards!"). A phone is sent its
+  own hand and nothing of anyone else's: every player's card count, points and whether they
+  passed, the play on the table, the card the first play must hold, whose turn it is, the deal's
+  result and the last 8 events. Nobody sees another hand or the set-aside cards.
+- **Players**: a phone that drops keeps its hand and nobody waits but the timer. A player who is
+  removed or leaves mid-deal is out of it: their cards are set aside ("Sam is out. Their cards were
+  set aside.") and count as their cards left if the deal is scored; their turn passes on; a trick
+  they made the last play of goes, to lead, to the next player after them who has not passed in it
+  (when all have, the next player). One who left may come back: they watch the rest of the deal and
+  are dealt in at the next one, keeping their points. Fewer than two players in the game ends it;
+  fewer than two left in a deal ends that deal, nobody going out (*house*). The standings count only
+  players still in the game. Late joiners are seated and watch ("You're watching: you'll be dealt
+  in at the next game."), since points add up over the whole game (*house*).
+- **Host screen** (the table): whose turn it is, large ("Maya's turn"), with the deal ("Deal 2 of
+  3") and whether to beat the table or lead; the timer; each player in a panel in seat order
+  (name, status: Leading, Playing, Passed, Away, Out, Next deal, Next game; a fan of backs with
+  their card count; their total points); in the middle the play on the table face up with who
+  played it, or who leads, and the last four events. Skip reads "Play for them" or "Next"; pause
+  stops the turn's and the result's clock. A Players button mid-game removes a player (after a
+  confirm). Fits four 20-character names at 1366×768. The end: the standings, fewest points
+  first, with confetti; Lobby (same players, a fresh game) or Close. History gets one entry on the
+  host: who won, each player's points and how many deals were played.
+- **Phone**: the hand as cards in Big 2 order (`CardFan`, large; 13 cards fit a 360×640 phone with
+  nothing scrolling); tap cards to pick several (any time, to plan ahead; they stay picked while
+  still held). The play to beat face up, the other players' card counts, and a line saying what
+  the pick is ("Pair of kings", "Not a hand", "Pair of fives: doesn't beat it", "Needs a pair",
+  "Must include the 3 of diamonds"). Play and Pass pinned at the foot: Play only when the pick is
+  a legal play on your turn, Pass only on your turn when you are not leading. On your turn "Your
+  turn!", a buzz and a sound. While the phone holds cards in play its Leave room button gives way to
+  the hand (the back arrow still leaves, after asking). The host is saved under `big2:host`, a
+  phone's seat under `big2:me`.
+- Lobby, host controls, reconnects, name rules and the open-room Return as in Bad Hand; Start
+  reads "Deal for 4 players".
+- Demos at `#/big2/host?demo=` with `lobby|turn|lead|result|over|paused|full` and
+  `#/big2/join?demo=` with `join|wait|turn|lead|picked|watching|result|over|full` (`full`: on the
+  host a table of four 20-character names, on the phone a hand of 13 cards).
+- **Bots** (see Shared room link): on their turn, after 1–4 s, lead their lowest card, or play the
+  weakest play that beats the table, or pass when they have none (*house*).
