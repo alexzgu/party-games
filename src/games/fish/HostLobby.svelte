@@ -8,7 +8,7 @@
   import { joinLink } from '../../lib/room/look';
   import { host } from './host.svelte';
   import { DEFAULT_SETTINGS, MAX_PLAYERS, MIN_PLAYERS, handSize } from './logic';
-  import Seats from './Seats.svelte';
+  import LobbySeats from '../../components/room/LobbySeats.svelte';
   import AddBot from '../../components/room/AddBot.svelte';
   import StartButton from '../../components/room/StartButton.svelte';
   import type { View } from './view';
@@ -32,7 +32,7 @@
   </section>
   <section class="room">
     <h2>Players · {v.players.length} / {MAX_PLAYERS}</h2>
-    {#if v.players.length}<Seats {v} {online} {onkick} />
+    {#if v.players.length}<LobbySeats players={v.players} {online} {onkick} />
     {:else}<p class="empty muted">Waiting for players. Scan the code or type it on the join screen.</p>{/if}
     {#if !demo}<AddBot onadd={() => host.addBot()} full={v.players.length >= MAX_PLAYERS} />{/if}
     <div class="summary">

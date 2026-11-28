@@ -1,5 +1,10 @@
 // Go Fish's game state on the host, and the small reads every other module shares.
 import { RANKS, rankOf, type Card, type Rank } from '../../lib/cards/deck';
+import { active, isActive, type Player } from '../../lib/room/seating';
+import * as T from '../../lib/room/table';
+
+export { RECONNECT_MS, left, reconnecting, pause, resume, quiet, afterReload } from '../../lib/room/table';
+export { active, isActive, type Player } from '../../lib/room/seating';
 
 export const NAME_MAX = 20;
 export const MIN_PLAYERS = 2;
@@ -8,8 +13,6 @@ export const MAX_PLAYERS = 6;
 export const TURN_TIMES = [20, 30, 45, 0] as const;
 /** How long an outcome stays up before the next turn. */
 export const SHOW_MS = 3_000;
-/** After the host screen opens or changes broker, how long phones get to reconnect before anyone counts as gone (*house*). */
-export const RECONNECT_MS = 10_000;
 /** Events the views carry: the outcome in play and the last few before it. */
 export const LOG_SIZE = 8;
 
@@ -18,7 +21,6 @@ export const DEFAULT_SETTINGS: Settings = { seconds: 30 };
 
 /** `turn`: waiting for a player's ask; `show`: its outcome is up. */
 export type Phase = 'lobby' | 'turn' | 'show' | 'over';
-export type Player = { pid: string; name: string };
 /**
  * What happened, in the order it happened; `n` counts the game's events from 1, so a bot can tell
  * which it has seen. `asked`: `got` cards of `rank` moved from `from` to `by` (0: "Go fish!").
@@ -70,8 +72,6 @@ export const newGame = (id: string, code: string, settings: Settings): Game => (
   turn: null, from: null, shown: [], log: [], count: 0, drew: null,
 });
 
-export const active = (g: Game) => g.players.filter((p) => !g.kicked.includes(p.pid));
-export const isActive = (g: Game, pid: string) => g.players.some((p) => p.pid === pid) && !g.kicked.includes(pid);
 /** Dealt in and still in the game. */
 export const playing = (g: Game, pid: string) => g.seats.includes(pid) && isActive(g, pid);
 export const hand = (g: Game, pid: string): Card[] => g.hands[pid] ?? [];
@@ -82,30 +82,9 @@ export const allDown = (g: Game) => booksDown(g) === RANKS;
 export const standings = (g: Game) => g.seats.filter((pid) => isActive(g, pid))
   .map((pid) => g.players.find((p) => p.pid === pid)!)
   .sort((a, b) => (g.books[b.pid]?.length ?? 0) - (g.books[a.pid]?.length ?? 0));
-export const left = (g: Game, now: number) => g.paused !== null ? g.frozen : g.deadline === null ? null : Math.max(0, g.deadline - now);
-export const reconnecting = (g: Game, now: number) => g.quiet !== null && now < g.quiet;
 export const canStart = (g: Game) => g.phase === 'lobby' && active(g).length >= MIN_PLAYERS;
 
-export function enter(g: Game, phase: Phase, now: number, ms?: number): Game {
-  return { ...g, phase, at: g.at + 1, deadline: ms === undefined ? null : now + ms, paused: null, frozen: null };
-}
+export const enter = (g: Game, phase: Phase, now: number, ms?: number): Game => T.enter(g, phase, now, ms);
 
 /** Adds events to the log, numbered. */
-export function note(g: Game, events: readonly NewEvent[]): { game: Game; added: Event[] } {
-  const added: Event[] = events.map((e, i) => ({ ...e, n: g.count + i + 1 }));
-  return { game: { ...g, log: [...g.log, ...added].slice(-LOG_SIZE), count: g.count + added.length }, added };
-}
-
-/** Stops the clock in any phase of play. */
-export const pause = (g: Game, now: number): Game =>
-  g.paused !== null || g.phase === 'lobby' || g.phase === 'over' ? g : { ...g, paused: now, frozen: left(g, now) };
-
-export const resume = (g: Game, now: number): Game =>
-  g.paused === null ? g : { ...g, paused: null, frozen: null, deadline: g.frozen !== null ? now + g.frozen : g.deadline };
-
-/** Phones get a moment to find the room again before anyone counts as gone. */
-export const quiet = (g: Game, now: number): Game => ({ ...g, quiet: now + RECONNECT_MS });
-
-/** After the host screen reloads: a timer that ran out meanwhile gets 12 s, and phones get time to reconnect. */
-export const afterReload = (g: Game, now: number): Game =>
-  quiet({ ...g, deadline: g.deadline !== null && g.deadline <= now ? now + 12_000 : g.deadline }, now);
+export const note = (g: Game, events: readonly NewEvent[]): { game: Game; added: Event[] } => T.note(g, events, LOG_SIZE);

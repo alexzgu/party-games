@@ -1,13 +1,14 @@
 <script lang="ts">
-  import Avatar from '../../components/room/Avatar.svelte';
-  import type { View } from './view';
+  import Avatar from './Avatar.svelte';
 
-  // The lobby's players; the host's lobby adds ✕ to remove.
-  let { v, online, onkick }: { v: View; online?: ReadonlySet<string>; onkick?: (pid: string) => void } = $props();
+  // A table game's lobby players (Go Fish, Big 2); the host's lobby adds ✕ to remove.
+  let { players, online, onkick }: {
+    players: readonly { pid: string; name: string }[]; online?: ReadonlySet<string>; onkick?: (pid: string) => void;
+  } = $props();
 </script>
 
 <ul class="seats">
-  {#each v.players as p, i (p.pid)}
+  {#each players as p, i (p.pid)}
     {@const away = online ? !online.has(p.pid) : false}
     <li>
       <Avatar name={p.name} color={i} size={36} dim={away} />

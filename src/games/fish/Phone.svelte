@@ -18,9 +18,10 @@
   import { ask, phone, refusals } from './player.svelte';
   import { nameIn, nextLine, said } from './labels';
   import Books from './Books.svelte';
-  import Join from './Join.svelte';
+  import JoinRoom from '../../components/room/JoinRoom.svelte';
+  import { NAME_MAX } from './logic';
   import Rules from './Rules.svelte';
-  import Seats from './Seats.svelte';
+  import LobbySeats from '../../components/room/LobbySeats.svelte';
   import Standings from './Standings.svelte';
 
   const fixed = $derived(route.params.get('demo'));
@@ -110,7 +111,7 @@
 {#if !fixed}<SeatWait link={phone} />{/if}
 
 {#if !v || (!fixed && phone.stopped)}
-  {#key code}<Join code={code || phone.me?.code || ''} fixed={!!fixed} />{/key}
+  {#key code}<JoinRoom game="fish" {phone} nameMax={NAME_MAX} rules={Rules} code={code || phone.me?.code || ''} fixed={!!fixed} />{/key}
 {:else}
   <Screen title={gameName('fish')} onback={() => fixed ? back('/fish') : (leaving = true)} actions={myTurn ? askBar : undefined}>
     {#snippet trailing()}<HowTo><Rules /></HowTo>{/snippet}
@@ -123,7 +124,7 @@
       {#if v.phase === 'lobby'}
         <h2>You’re in!</h2>
         <p class="muted">The cards are dealt from the host screen. Keep this screen open.</p>
-        <Seats {v} />
+        <LobbySeats players={v.players} />
       {:else if v.phase === 'over'}
         <Standings {v} you={pid} />
       {:else}
