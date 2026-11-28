@@ -18,7 +18,7 @@
     </ul>
     <p><b>{name(v.table.by)}</b> played {what}</p>
   {:else if v.turn}
-    <p class="clear">{name(v.turn)} leads{v.first !== undefined ? ` with the ${cardName(v.first)}` : ': anything goes'}</p>
+    <p class="clear">{name(v.turn)} leads{v.first !== undefined ? ` and must play the ${cardName(v.first)}` : ': anything goes'}</p>
   {/if}
 </div>
 

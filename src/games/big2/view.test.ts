@@ -13,7 +13,7 @@ function dealt(n = 3) {
 }
 
 /** The fields each part of a view may have: only `hand`, `table`, `first` and events' plays hold cards. */
-const VIEW = ['phase', 'at', 'left', 'total', 'paused', 'deal', 'deals', 'players', 'turn', 'table', 'first', 'result', 'log', 'hand'];
+const VIEW = ['phase', 'at', 'left', 'total', 'paused', 'deal', 'deals', 'scored', 'players', 'turn', 'table', 'first', 'result', 'log', 'hand'];
 const SEAT = ['pid', 'name', 'cards', 'points', 'passed', 'out', 'watching'];
 
 /** Every hidden card a view shows: its own hand; the table, first card and events are face up for everyone. */

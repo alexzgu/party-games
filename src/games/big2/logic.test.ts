@@ -112,7 +112,13 @@ describe('Big 2 players', () => {
   it('a removed player’s cards are set aside, their turn passes on, and they score what they held', () => {
     const g = rigged(['3d 9s', '4c Kd', '5h 2s']);
     const k = L.kick(g, 'p0', 1);
-    expect([L.hand(k, 'p0'), k.seats, k.turn, k.table, k.log.at(-1)?.k, k.gone]).toEqual([[], ['p1', 'p2'], 'p1', null, 'gone', { p0: 2 }]);
+    expect([L.hand(k, 'p0'), k.seats, k.turn, k.table, k.gone]).toEqual([[], ['p1', 'p2'], 'p1', null, { p0: 2 }]);
+    expect(k.log.slice(-2).map((e) => e.k)).toEqual(['gone', 'lead']);
+  });
+
+  it('a game ended in the middle of a deal does not count that deal as played', () => {
+    const k = L.kick(rigged(['3d 9s', '4c Kd']), 'p0', 1);
+    expect([k.phase, k.scored]).toEqual(['over', 0]);
   });
 
   it('a trick whose last play was made by a player who left goes to the next player still in it, to lead', () => {

@@ -26,12 +26,12 @@ const trick = (p: readonly Seat[]): Event[] => [
 const result = { out: 'b', rows: [{ pid: 'a', cards: 4, points: 4 }, { pid: 'b', cards: 0, points: 0 }, { pid: 'c', cards: 12, points: 24 }, { pid: 'd', cards: 1, points: 1 }] };
 
 export function demo(key: string, phone: boolean): View {
-  const base = { at: 3, paused: key === 'paused', deal: 2, deals: 3, log: trick(key === 'full' ? full : short) };
-  if (key === 'lobby' || key === 'wait') return { ...base, phase: 'lobby', left: null, total: 0, deal: 0, players: short.map((p) => ({ pid: p.pid, name: p.name, cards: 0, points: 0 })), log: [] };
+  const base = { at: 3, paused: key === 'paused', deal: 2, deals: 3, scored: 1, log: trick(key === 'full' ? full : short) };
+  if (key === 'lobby' || key === 'wait') return { ...base, phase: 'lobby', left: null, total: 0, deal: 0, scored: 0, players: short.map((p) => ({ pid: p.pid, name: p.name, cards: 0, points: 0 })), log: [] };
   if (key === 'result') return { ...base, phase: 'result', left: 7000, total: 10_000, players: short.map((p) => ({ ...p, passed: undefined })), result };
   if (key === 'over') {
     const players = [...short].sort((x, y) => x.points - y.points).map((p) => ({ ...p, passed: undefined }));
-    return { ...base, deal: 3, phase: 'over', left: null, total: 0, players, result };
+    return { ...base, deal: 3, scored: 3, phase: 'over', left: null, total: 0, players, result };
   }
   const players = key === 'full' ? full : key === 'watching' ? [...short.slice(1), { pid: 'a', name: 'Jules', cards: 0, points: 0, watching: 'game' as const }] : short;
   const leading = key === 'lead';

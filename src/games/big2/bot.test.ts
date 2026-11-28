@@ -6,7 +6,7 @@ import { readToHost } from './protocol';
 import type { View } from './view';
 
 const base: View = {
-  phase: 'turn', at: 5, left: 25000, total: 30000, paused: false, deal: 1, deals: 3, turn: 'b1', log: [],
+  phase: 'turn', at: 5, left: 25000, total: 30000, paused: false, deal: 1, deals: 3, scored: 0, turn: 'b1', log: [],
   players: [{ pid: 'b1', name: '🤖 Ada', cards: 3, points: 0 }, { pid: 'p1', name: 'Sam', cards: 4, points: 0 }],
   hand: cards('4c 9h 9s'),
 };

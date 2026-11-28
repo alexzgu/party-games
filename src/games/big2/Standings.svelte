@@ -12,7 +12,7 @@
 <Confetti colors={['var(--c-big2)', 'var(--card-red)', 'var(--c-gold)']} />
 <div class="end {size}">
   <h2 class="headline">{winners.length ? `${winners.join(' & ')} win${winners.length === 1 ? 's' : ''}!` : 'Game over'}</h2>
-  <p class="muted">Fewest points wins, after {v.deal} {v.deal === 1 ? 'deal' : 'deals'}.</p>
+  <p class="muted">Fewest points wins, after {v.scored} {v.scored === 1 ? 'deal' : 'deals'}.</p>
   <ol class="table">
     {#each v.players as p (p.pid)}
       <li class:you={p.pid === you}>

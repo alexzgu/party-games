@@ -78,7 +78,7 @@ class Session {
     if (!g.roster.length) return;
     const scores = L.standings(g).map((p) => ({ name: p.name, score: L.total(g, p.pid) }));
     const top = scores.filter((s) => s.score === scores[0]?.score).map((s) => s.name);
-    const details = [`${g.deal} of ${g.settings.deals} ${g.settings.deals === 1 ? 'deal' : 'deals'} played; fewest points wins.`];
+    const details = [`${g.scored} of ${g.settings.deals} ${g.settings.deals === 1 ? 'deal' : 'deals'} played; fewest points wins.`];
     record({ game: 'big2', title: top.join(' & ') + (finished ? ' won' : ' led'), finished, scores, packs: [], details });
   }
 

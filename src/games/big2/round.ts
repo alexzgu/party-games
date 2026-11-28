@@ -60,7 +60,7 @@ function score(g: Game, out: string | null, now: number, events: NewEvent[]): Ga
   const totals = { ...g.totals };
   for (const r of rows) totals[r.pid] = total(g, r.pid) + r.points;
   const result: Result = { out: out ?? '', rows };
-  const next = { ...g, totals, result, table: null, passed: [] };
+  const next = { ...g, totals, result, table: null, passed: [], scored: g.scored + 1 };
   if (g.deal >= g.settings.deals || inGame(g).length < 2) return finish(next, now, events);
   return enter({ ...note(next, events), turn: null }, 'result', now, RESULT_MS);
 }
@@ -85,7 +85,7 @@ function dealOut(g: Game, now: number, rand: Rand, leader: string | null): Game 
 /** Deals the first deal to everyone in the room; their seat order is the game's. */
 export function start(g: Game, now: number, rand: Rand = Math.random): Game {
   const roster = active(g).map((p) => p.pid);
-  const game: Game = { ...g, roster, totals: Object.fromEntries(roster.map((p) => [p, 0])), deal: 0, result: null, log: [], count: 0 };
+  const game: Game = { ...g, roster, totals: Object.fromEntries(roster.map((p) => [p, 0])), deal: 0, result: null, scored: 0, log: [], count: 0 };
   return dealOut(game, now, rand, null);
 }
 
@@ -154,7 +154,7 @@ export function out(g: Game, pid: string, now: number): Game {
     const still = around(next, pid);
     return lead(next, still.find((p) => !g.passed.includes(p)) ?? still[0], now, events);
   }
-  if (g.turn === pid) return advance(next, pid, now, events);
+  if (g.turn === pid) return g.table ? advance(next, pid, now, events) : lead(next, around(next, pid)[0], now, events);
   return { ...note(next, events) };
 }
 

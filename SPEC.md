@@ -1996,7 +1996,7 @@ banner as in Bad Hand). Choices marked *house* are ours where the published rule
   result and the last 8 events. Nobody sees another hand or the set-aside cards.
 - **Players**: a phone that drops keeps its hand and nobody waits but the timer. A player who is
   removed or leaves mid-deal is out of it: their cards are set aside ("Sam is out. Their cards were
-  set aside.") and count as their cards left if the deal is scored; their turn passes on; a trick
+  set aside.") and count as their cards left if the deal is scored; their turn passes on (when they were to lead, the next player leads, and nothing is forced); a trick
   they made the last play of goes, to lead, to the next player after them who has not passed in it
   (when all have, the next player). One who left may come back: they watch the rest of the deal and
   are dealt in at the next one, keeping their points. Fewer than two players in the game ends it;
@@ -2011,10 +2011,10 @@ banner as in Bad Hand). Choices marked *house* are ours where the published rule
   stops the turn's and the result's clock. A Players button mid-game removes a player (after a
   confirm). Fits four 20-character names at 1366×768. The end: the standings, fewest points
   first, with confetti; Lobby (same players, a fresh game) or Close. History gets one entry on the
-  host: who won, each player's points and how many deals were played.
+  host: who won, each player's points and how many deals were played (a deal the game ended in the middle of is not counted, there or on the standings).
 - **Phone**: the hand as cards in Big 2 order (`CardFan`, large; 13 cards fit a 360×640 phone with
   nothing scrolling); tap cards to pick several (any time, to plan ahead; they stay picked while
-  still held). The play to beat face up, the other players' card counts, and a line saying what
+  still held, until the next deal). The play to beat face up, the other players' card counts, and a line saying what
   the pick is ("Pair of kings", "Not a hand", "Pair of fives: doesn't beat it", "Needs a pair",
   "Must include the 3 of diamonds"). Play and Pass pinned at the foot: Play only when the pick is
   a legal play on your turn, Pass only on your turn when you are not leading. On your turn "Your

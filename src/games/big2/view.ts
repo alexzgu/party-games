@@ -23,6 +23,8 @@ export type View = {
   phase: L.Phase; at: number; left: number | null; total: number; paused: boolean;
   /** The deal in play and how many the game has. */
   deal: number; deals: number;
+  /** How many deals have been scored. */
+  scored: number;
   /** Lobby: the room; play: the table in seat order, then whoever watches; over: the standings. */
   players: Seat[];
   turn?: string;
@@ -58,7 +60,7 @@ export function view(g: L.Game, now: number, pid?: string): View {
   const v: View = {
     phase: g.phase, at: g.at, left: L.left(g, now), paused: g.paused !== null,
     total: g.phase === 'turn' ? g.settings.seconds * 1000 : g.phase === 'result' ? L.RESULT_MS : 0,
-    deal: g.deal, deals: g.settings.deals, players: table(g).map((p) => seat(g, p)), log: g.log,
+    deal: g.deal, deals: g.settings.deals, scored: g.scored, players: table(g).map((p) => seat(g, p)), log: g.log,
   };
   if (g.phase === 'turn' && g.turn) v.turn = g.turn;
   if (g.phase === 'turn' && g.table) v.table = { by: g.table.by, cards: g.table.combo.cards, kind: g.table.combo.kind };

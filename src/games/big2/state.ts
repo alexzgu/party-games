@@ -72,12 +72,14 @@ export type Game = T.Clocked & T.Logged<NewEvent> & {
   first: Card | null;
   /** The last deal's result. */
   result: Result | null;
+  /** How many deals have been scored (a deal the game ended in the middle of is not). */
+  scored: number;
 };
 
 export const newGame = (id: string, code: string, settings: Settings): Game => ({
   id, code, settings, phase: 'lobby', at: 0, deadline: null, paused: null, frozen: null, quiet: null,
   players: [], kicked: [], left: [], roster: [], seats: [], hands: {}, gone: {}, totals: {}, deal: 0,
-  turn: null, table: null, passed: [], first: null, result: null, log: [], count: 0,
+  turn: null, table: null, passed: [], first: null, result: null, scored: 0, log: [], count: 0,
 });
 
 /** Dealt in this deal and still in the game. */

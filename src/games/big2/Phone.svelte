@@ -78,6 +78,15 @@
     const now = seat;
     untrack(() => { if (choice.seat !== now) choice = { seat: now, cards: [] }; });
   });
+  // A new deal: the cards tapped in the last one go, even one dealt again.
+  let dealAt = 0;
+  $effect(() => {
+    const deal = v?.deal ?? 0;
+    untrack(() => {
+      if (!fixed && dealAt && deal && deal !== dealAt) choice = { seat: choice.seat, cards: [] };
+      if (deal) dealAt = deal;
+    });
+  });
   // A buzz when this phone's turn starts.
   let turnAt = 0;
   $effect(() => {
